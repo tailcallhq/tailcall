@@ -9,7 +9,9 @@ expression: plan.into_nested()
         output_name: "users",
         ir: "Some(..)",
         type_of: [User],
-        type_condition: "Query",
+        type_condition: Some(
+            "Query",
+        ),
         extensions: Some(
             Nested(
                 [
@@ -18,7 +20,9 @@ expression: plan.into_nested()
                         name: "id",
                         output_name: "id",
                         type_of: ID!,
-                        type_condition: "User",
+                        type_condition: Some(
+                            "User",
+                        ),
                         directives: [
                             Directive {
                                 name: "options",
@@ -38,7 +42,9 @@ expression: plan.into_nested()
                         name: "name",
                         output_name: "name",
                         type_of: String!,
-                        type_condition: "User",
+                        type_condition: Some(
+                            "User",
+                        ),
                         include: Some(
                             Variable(
                                 "includeName",

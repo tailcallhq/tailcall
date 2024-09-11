@@ -17,10 +17,14 @@
     "Query": {
       "fields": {
         "user": {
-          "type": "User",
+          "type": {
+            "name": "User"
+          },
           "args": {
             "id": {
-              "type": "Int"
+              "type": {
+                "name": "Int"
+              }
             }
           },
           "http": {
@@ -42,11 +46,15 @@
     "User": {
       "fields": {
         "id": {
-          "type": "Int",
+          "type": {
+            "name": "Int"
+          },
           "cache": null
         },
         "name": {
-          "type": "String",
+          "type": {
+            "name": "String"
+          },
           "cache": null
         }
       },

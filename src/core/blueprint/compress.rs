@@ -42,12 +42,12 @@ pub fn compress(mut blueprint: Blueprint) -> Blueprint {
     blueprint
 }
 
-fn build_dependency_graph(blueprint: &Blueprint) -> HashMap<&str, Vec<&str>> {
-    let mut graph: HashMap<&str, Vec<&str>> = HashMap::new();
+fn build_dependency_graph(blueprint: &Blueprint) -> HashMap<&str, Vec<&String>> {
+    let mut graph = HashMap::new();
 
     for def in &blueprint.definitions {
         let type_name = def.name();
-        let mut dependencies: Vec<&str> = Vec::new();
+        let mut dependencies = Vec::new();
 
         match def {
             Definition::Object(def) => {
@@ -55,7 +55,7 @@ fn build_dependency_graph(blueprint: &Blueprint) -> HashMap<&str, Vec<&str>> {
                 for field in &def.fields {
                     dependencies.extend(field.args.iter().map(|arg| arg.of_type.name()));
                 }
-                dependencies.extend(def.implements.iter().map(|s| s.as_str()));
+                dependencies.extend(def.implements.iter());
             }
             Definition::Interface(def) => {
                 dependencies.extend(def.fields.iter().map(|field| field.of_type.name()));
@@ -71,13 +71,13 @@ fn build_dependency_graph(blueprint: &Blueprint) -> HashMap<&str, Vec<&str>> {
                 dependencies.extend(def.fields.iter().map(|field| field.of_type.name()));
             }
             Definition::Enum(def) => {
-                dependencies.extend(def.enum_values.iter().map(|value| value.name.as_str()));
+                dependencies.extend(def.enum_values.iter().map(|value| &value.name));
             }
             Definition::Union(def) => {
-                dependencies.extend(def.types.iter().map(|s| s.as_str()));
+                dependencies.extend(def.types.iter());
             }
             Definition::Scalar(sc) => {
-                dependencies.push(sc.name.as_str());
+                dependencies.push(&sc.name);
             }
         }
 
@@ -87,7 +87,10 @@ fn build_dependency_graph(blueprint: &Blueprint) -> HashMap<&str, Vec<&str>> {
 }
 
 // Function to perform DFS and identify all reachable types
-fn identify_referenced_types(graph: &HashMap<&str, Vec<&str>>, root: Vec<&str>) -> HashSet<String> {
+fn identify_referenced_types(
+    graph: &HashMap<&str, Vec<&String>>,
+    root: Vec<&str>,
+) -> HashSet<String> {
     let mut stack = root;
     let mut referenced_types = HashSet::new();
 

@@ -11,7 +11,7 @@ Response {
     },
     errors: [
         ServerError {
-            message: "TypeName shape doesn't satisfy the processed object",
+            message: "internal: invalid item for enum \"EnumDef\"",
             locations: [
                 Pos(3:4),
             ],

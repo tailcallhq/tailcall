@@ -12,6 +12,7 @@ pub mod data_loader;
 pub mod directive;
 pub mod document;
 pub mod endpoint;
+mod errata;
 pub mod error;
 pub mod generator;
 pub mod graphql;
@@ -47,6 +48,8 @@ use std::hash::Hash;
 use std::num::NonZeroU64;
 
 use async_graphql_value::ConstValue;
+pub use blueprint::Type;
+pub use errata::Errata;
 pub use error::{Error, Result};
 use http::Response;
 use ir::model::IoId;

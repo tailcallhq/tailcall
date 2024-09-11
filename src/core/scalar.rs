@@ -75,14 +75,14 @@ pub enum Scalar {
     Bytes,
 }
 
-fn eval_str<'a, Value: JsonLike<'a> + 'a, F: Fn(&str) -> bool>(val: &'a Value, fxn: F) -> bool {
+fn eval_str<'a, Value: JsonLike<'a>, F: Fn(&str) -> bool>(val: &'a Value, fxn: F) -> bool {
     val.as_str().map_or(false, fxn)
 }
 
 fn eval_signed<
     'a,
     Num,
-    Value: JsonLike<'a> + 'a,
+    Value: JsonLike<'a>,
     F: Fn(i64) -> Result<Num, std::num::TryFromIntError>,
 >(
     val: &'a Value,
@@ -94,7 +94,7 @@ fn eval_signed<
 fn eval_unsigned<
     'a,
     Num,
-    Value: JsonLike<'a> + 'a,
+    Value: JsonLike<'a>,
     F: Fn(u64) -> Result<Num, std::num::TryFromIntError>,
 >(
     val: &'a Value,
@@ -114,7 +114,7 @@ impl Scalar {
         }
     }
 
-    pub fn validate<'a, Value: JsonLike<'a> + 'a>(&self, value: &'a Value) -> bool {
+    pub fn validate<'a, Value: JsonLike<'a>>(&self, value: &'a Value) -> bool {
         match self {
             Scalar::JSON => true,
             Scalar::Empty => true,

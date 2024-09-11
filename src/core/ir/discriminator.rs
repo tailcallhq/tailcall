@@ -8,17 +8,39 @@ use indenter::indented;
 use indexmap::IndexMap;
 
 use crate::core::config::Type;
+use crate::core::json::{JsonLike, JsonObjectLike};
 use crate::core::valid::{Cause, Valid, Validator};
 
-/// Represents the type name for the resolved value.
-/// It is used when the GraphQL executor needs to resolve values of a union
-/// type. In order to select the correct fields, the executor must know the
-/// exact type name for each resolved value. When the output is a list of a
-/// union type, it should resolve the exact type for every entry in the list.
-#[derive(PartialEq, Eq, Debug, Clone)]
-pub enum TypeName {
-    Single(String),
-    Vec(Vec<String>),
+pub trait TypedValue<'a> {
+    type Error;
+
+    fn get_type_name(&'a self) -> Option<&'a str>;
+    fn set_type_name(&'a mut self, type_name: String) -> Result<(), Self::Error>;
+}
+
+const TYPENAME_FIELD: &str = "__typename";
+
+impl<'json, T> TypedValue<'json> for T
+where
+    T: JsonLike<'json>,
+{
+    type Error = anyhow::Error;
+
+    fn get_type_name(&'json self) -> Option<&'json str> {
+        self.as_object()
+            .and_then(|obj| obj.get_key(TYPENAME_FIELD))
+            .and_then(|val| val.as_str())
+    }
+
+    fn set_type_name(&'json mut self, type_name: String) -> Result<(), Self::Error> {
+        if let Some(obj) = self.as_object_mut() {
+            obj.insert_key(TYPENAME_FIELD, T::string(type_name.into()));
+
+            Ok(())
+        } else {
+            bail!("Expected object")
+        }
+    }
 }
 
 /// Resolver for type member of a union.
@@ -124,7 +146,7 @@ impl Discriminator {
                 info.presented_in |= repr;
 
                 // And information if it is required in this type.
-                if field.required {
+                if !field.type_of.is_nullable() {
                     info.required_in |= repr;
                 }
             }
@@ -214,22 +236,7 @@ impl Discriminator {
         Valid::succeed(discriminator)
     }
 
-    pub fn resolve_type(&self, value: &Value) -> Result<TypeName> {
-        if let Value::List(list) = value {
-            let results: Result<Vec<_>> = list
-                .iter()
-                .map(|item| Ok(self.resolve_type_for_single(item)?.to_string()))
-                .collect();
-
-            Ok(TypeName::Vec(results?))
-        } else {
-            Ok(TypeName::Single(
-                self.resolve_type_for_single(value)?.to_string(),
-            ))
-        }
-    }
-
-    fn resolve_type_for_single(&self, value: &Value) -> Result<&str> {
+    pub fn resolve_type(&self, value: &Value) -> Result<&str> {
         let Value::Object(obj) = value else {
             bail!("Value expected to be object");
         };
@@ -345,14 +352,14 @@ mod tests {
     use test_log::test;
 
     use super::Discriminator;
-    use crate::core::config::{Field, Type};
-    use crate::core::ir::discriminator::TypeName;
+    use crate::core::config::Field;
     use crate::core::valid::Validator;
+    use crate::core::{config, Type};
 
     #[test]
     fn test_single_distinct_field_optional() {
-        let foo = Type::default().fields(vec![("foo", Field::default())]);
-        let bar = Type::default().fields(vec![("bar", Field::default())]);
+        let foo = config::Type::default().fields(vec![("foo", Field::default())]);
+        let bar = config::Type::default().fields(vec![("bar", Field::default())]);
         let types = vec![("Foo", &foo), ("Bar", &bar)];
 
         let discriminator = Discriminator::new("Test", &types).to_result().unwrap();
@@ -361,14 +368,14 @@ mod tests {
             discriminator
                 .resolve_type(&Value::from_json(json!({ "foo": "test" })).unwrap())
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "bar": "test" })).unwrap())
                 .unwrap(),
-            TypeName::Single("Bar".to_string())
+            "Bar"
         );
 
         // ambiguous cases
@@ -376,30 +383,34 @@ mod tests {
             discriminator
                 .resolve_type(&Value::from_json(json!({ "foo": "test", "bar": "test" })).unwrap())
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({})).unwrap())
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "unknown": { "foo": "bar" }})).unwrap())
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
     }
 
     #[test]
     fn test_single_distinct_field_required() {
-        let foo =
-            Type::default().fields(vec![("foo", Field { required: true, ..Field::default() })]);
-        let bar =
-            Type::default().fields(vec![("bar", Field { required: true, ..Field::default() })]);
+        let foo = config::Type::default().fields(vec![(
+            "foo",
+            Field { type_of: Type::default().into_required(), ..Field::default() },
+        )]);
+        let bar = config::Type::default().fields(vec![(
+            "bar",
+            Field { type_of: Type::default().into_required(), ..Field::default() },
+        )]);
         let types = vec![("Foo", &foo), ("Bar", &bar)];
 
         let discriminator = Discriminator::new("Test", &types).to_result().unwrap();
@@ -408,14 +419,14 @@ mod tests {
             discriminator
                 .resolve_type(&Value::from_json(json!({ "foo": "test" })).unwrap())
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "bar": "test" })).unwrap())
                 .unwrap(),
-            TypeName::Single("Bar".to_string())
+            "Bar"
         );
 
         // ambiguous cases
@@ -423,40 +434,67 @@ mod tests {
             discriminator
                 .resolve_type(&Value::from_json(json!({ "foo": "test", "bar": "test" })).unwrap())
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({})).unwrap())
                 .unwrap(),
-            TypeName::Single("Bar".to_string())
+            "Bar"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "unknown": { "foo": "bar" }})).unwrap())
                 .unwrap(),
-            TypeName::Single("Bar".to_string())
+            "Bar"
         );
     }
 
     #[test]
     fn test_multiple_distinct_field_required() {
-        let a = Type::default().fields(vec![
-            ("a", Field { required: true, ..Field::default() }),
-            ("ab", Field { required: true, ..Field::default() }),
-            ("abab", Field { required: true, ..Field::default() }),
+        let a = config::Type::default().fields(vec![
+            (
+                "a",
+                Field { type_of: Type::default().into_required(), ..Field::default() },
+            ),
+            (
+                "ab",
+                Field { type_of: Type::default().into_required(), ..Field::default() },
+            ),
+            (
+                "abab",
+                Field { type_of: Type::default().into_required(), ..Field::default() },
+            ),
         ]);
-        let b = Type::default().fields(vec![
-            ("b", Field { required: true, ..Field::default() }),
-            ("ab", Field { required: true, ..Field::default() }),
-            ("abab", Field { required: true, ..Field::default() }),
-            ("ac", Field { required: true, ..Field::default() }),
+        let b = config::Type::default().fields(vec![
+            (
+                "b",
+                Field { type_of: Type::default().into_required(), ..Field::default() },
+            ),
+            (
+                "ab",
+                Field { type_of: Type::default().into_required(), ..Field::default() },
+            ),
+            (
+                "abab",
+                Field { type_of: Type::default().into_required(), ..Field::default() },
+            ),
+            (
+                "ac",
+                Field { type_of: Type::default().into_required(), ..Field::default() },
+            ),
         ]);
-        let c = Type::default().fields(vec![
-            ("c", Field { required: true, ..Field::default() }),
-            ("ac", Field { required: true, ..Field::default() }),
+        let c = config::Type::default().fields(vec![
+            (
+                "c",
+                Field { type_of: Type::default().into_required(), ..Field::default() },
+            ),
+            (
+                "ac",
+                Field { type_of: Type::default().into_required(), ..Field::default() },
+            ),
         ]);
         let types = vec![("A", &a), ("B", &b), ("C", &c)];
 
@@ -466,21 +504,21 @@ mod tests {
             discriminator
                 .resolve_type(&Value::from_json(json!({ "a": 1, "ab": 1, "abab": 1 })).unwrap())
                 .unwrap(),
-            TypeName::Single("A".to_string())
+            "A"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "b": 1, "ab": 1, "abab": 1 })).unwrap())
                 .unwrap(),
-            TypeName::Single("B".to_string())
+            "B"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "c": 1, "ac": 1 })).unwrap())
                 .unwrap(),
-            TypeName::Single("C".to_string())
+            "C"
         );
 
         // ambiguous cases
@@ -488,32 +526,32 @@ mod tests {
             discriminator
                 .resolve_type(&Value::from_json(json!({ "a": 1, "b": 1, "c": 1 })).unwrap())
                 .unwrap(),
-            TypeName::Single("A".to_string())
+            "A"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({})).unwrap())
                 .unwrap(),
-            TypeName::Single("C".to_string())
+            "C"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "unknown": { "foo": "bar" }})).unwrap())
                 .unwrap(),
-            TypeName::Single("C".to_string())
+            "C"
         );
     }
 
     #[test]
     fn test_single_distinct_field_optional_and_shared_fields() {
-        let foo = Type::default().fields(vec![
+        let foo = config::Type::default().fields(vec![
             ("a", Field::default()),
             ("b", Field::default()),
             ("foo", Field::default()),
         ]);
-        let bar = Type::default().fields(vec![
+        let bar = config::Type::default().fields(vec![
             ("a", Field::default()),
             ("b", Field::default()),
             ("bar", Field::default()),
@@ -528,14 +566,14 @@ mod tests {
                     &Value::from_json(json!({ "a": 123, "b": true, "foo": "test" })).unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "bar": "test" })).unwrap())
                 .unwrap(),
-            TypeName::Single("Bar".to_string())
+            "Bar"
         );
 
         // ambiguous cases
@@ -543,21 +581,21 @@ mod tests {
             discriminator
                 .resolve_type(&Value::from_json(json!({ "foo": "test", "bar": "test" })).unwrap())
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({})).unwrap())
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "unknown": { "foo": "bar" }})).unwrap())
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
 
         // ambiguous cases
@@ -565,32 +603,32 @@ mod tests {
             discriminator
                 .resolve_type(&Value::from_json(json!({ "foo": "test", "bar": "test" })).unwrap())
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({})).unwrap())
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "unknown": { "foo": "bar" }})).unwrap())
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
     }
 
     #[test]
     fn test_multiple_distinct_fields() {
-        let foo = Type::default().fields(vec![
+        let foo = config::Type::default().fields(vec![
             ("a", Field::default()),
             ("b", Field::default()),
             ("foo", Field::default()),
         ]);
-        let bar = Type::default().fields(vec![("bar", Field::default())]);
+        let bar = config::Type::default().fields(vec![("bar", Field::default())]);
         let types = vec![("Foo", &foo), ("Bar", &bar)];
 
         let discriminator = Discriminator::new("Test", &types).to_result().unwrap();
@@ -599,14 +637,14 @@ mod tests {
             discriminator
                 .resolve_type(&Value::from_json(json!({ "b": 123, "foo": "test" })).unwrap())
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "bar": "test" })).unwrap())
                 .unwrap(),
-            TypeName::Single("Bar".to_string())
+            "Bar"
         );
 
         assert_eq!(
@@ -615,7 +653,7 @@ mod tests {
                     &Value::from_json(json!({ "unknown": { "foo": "bar" }, "a": 1 })).unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
 
         // ambiguous cases
@@ -623,38 +661,38 @@ mod tests {
             discriminator
                 .resolve_type(&Value::from_json(json!({ "foo": "test", "bar": "test" })).unwrap())
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({})).unwrap())
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "unknown": { "foo": "bar" }})).unwrap())
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
     }
 
     #[test]
     fn test_fields_intersection() {
-        let a = Type::default().fields(vec![
+        let a = config::Type::default().fields(vec![
             ("shared", Field::default()),
             ("a", Field::default()),
             ("aa", Field::default()),
             ("aaa", Field::default()),
         ]);
-        let b = Type::default().fields(vec![
+        let b = config::Type::default().fields(vec![
             ("shared", Field::default()),
             ("b", Field::default()),
             ("aa", Field::default()),
         ]);
-        let c = Type::default().fields(vec![
+        let c = config::Type::default().fields(vec![
             ("shared", Field::default()),
             ("c", Field::default()),
             ("aaa", Field::default()),
@@ -667,21 +705,21 @@ mod tests {
             discriminator
                 .resolve_type(&Value::from_json(json!({ "a": 1 })).unwrap())
                 .unwrap(),
-            TypeName::Single("A".to_string())
+            "A"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "b": 1, "aa": 1 })).unwrap())
                 .unwrap(),
-            TypeName::Single("B".to_string())
+            "B"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "c": 1, "aaa": 1 })).unwrap())
                 .unwrap(),
-            TypeName::Single("C".to_string())
+            "C"
         );
 
         // ambiguous cases
@@ -691,62 +729,98 @@ mod tests {
                     &Value::from_json(json!({ "shared": 1, "a": 1, "b": 1, "c": 1 })).unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("A".to_string())
+            "A"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({})).unwrap())
                 .unwrap(),
-            TypeName::Single("A".to_string())
+            "A"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "unknown": { "foo": "bar" }})).unwrap())
                 .unwrap(),
-            TypeName::Single("A".to_string())
+            "A"
         );
     }
 
     #[test]
     fn test_fields_protobuf_oneof() {
-        let var_var = Type::default().fields(vec![("usual", Field::default())]);
-        let var0_var = Type::default().fields(vec![
+        let var_var = config::Type::default().fields(vec![("usual", Field::default())]);
+        let var0_var = config::Type::default().fields(vec![
             ("usual", Field::default()),
-            ("payload", Field { required: true, ..Field::default() }),
+            (
+                "payload",
+                Field { type_of: Type::default().into_required(), ..Field::default() },
+            ),
         ]);
-        let var1_var = Type::default().fields(vec![
+        let var1_var = config::Type::default().fields(vec![
             ("usual", Field::default()),
-            ("command", Field { required: true, ..Field::default() }),
+            (
+                "command",
+                Field { type_of: Type::default().into_required(), ..Field::default() },
+            ),
         ]);
-        let var_var0 = Type::default().fields(vec![
+        let var_var0 = config::Type::default().fields(vec![
             ("usual", Field::default()),
-            ("flag", Field { required: true, ..Field::default() }),
+            (
+                "flag",
+                Field { type_of: Type::default().into_required(), ..Field::default() },
+            ),
         ]);
-        let var_var1 = Type::default().fields(vec![
+        let var_var1 = config::Type::default().fields(vec![
             ("usual", Field::default()),
-            ("optPayload", Field { required: true, ..Field::default() }),
+            (
+                "optPayload",
+                Field { type_of: Type::default().into_required(), ..Field::default() },
+            ),
         ]);
-        let var0_var0 = Type::default().fields(vec![
+        let var0_var0 = config::Type::default().fields(vec![
             ("usual", Field::default()),
-            ("payload", Field { required: true, ..Field::default() }),
-            ("flag", Field { required: true, ..Field::default() }),
+            (
+                "payload",
+                Field { type_of: Type::default().into_required(), ..Field::default() },
+            ),
+            (
+                "flag",
+                Field { type_of: Type::default().into_required(), ..Field::default() },
+            ),
         ]);
-        let var1_var0 = Type::default().fields(vec![
+        let var1_var0 = config::Type::default().fields(vec![
             ("usual", Field::default()),
-            ("command", Field { required: true, ..Field::default() }),
-            ("flag", Field { required: true, ..Field::default() }),
+            (
+                "command",
+                Field { type_of: Type::default().into_required(), ..Field::default() },
+            ),
+            (
+                "flag",
+                Field { type_of: Type::default().into_required(), ..Field::default() },
+            ),
         ]);
-        let var0_var1 = Type::default().fields(vec![
+        let var0_var1 = config::Type::default().fields(vec![
             ("usual", Field::default()),
-            ("payload", Field { required: true, ..Field::default() }),
-            ("optPayload", Field { required: true, ..Field::default() }),
+            (
+                "payload",
+                Field { type_of: Type::default().into_required(), ..Field::default() },
+            ),
+            (
+                "optPayload",
+                Field { type_of: Type::default().into_required(), ..Field::default() },
+            ),
         ]);
-        let var1_var1 = Type::default().fields(vec![
+        let var1_var1 = config::Type::default().fields(vec![
             ("usual", Field::default()),
-            ("command", Field { required: true, ..Field::default() }),
-            ("optPayload", Field { required: true, ..Field::default() }),
+            (
+                "command",
+                Field { type_of: Type::default().into_required(), ..Field::default() },
+            ),
+            (
+                "optPayload",
+                Field { type_of: Type::default().into_required(), ..Field::default() },
+            ),
         ]);
         let types = vec![
             ("Var_Var", &var_var),
@@ -766,14 +840,14 @@ mod tests {
             discriminator
                 .resolve_type(&Value::from_json(json!({ "usual": 1 })).unwrap())
                 .unwrap(),
-            TypeName::Single("Var_Var".to_string())
+            "Var_Var"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "usual": 1, "payload": 1 })).unwrap())
                 .unwrap(),
-            TypeName::Single("Var0_Var".to_string())
+            "Var0_Var"
         );
 
         assert_eq!(
@@ -782,14 +856,14 @@ mod tests {
                     &Value::from_json(json!({ "usual": 1, "command": 2, "useless": 1 })).unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("Var1_Var".to_string())
+            "Var1_Var"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "usual": 1, "flag": true })).unwrap())
                 .unwrap(),
-            TypeName::Single("Var_Var0".to_string())
+            "Var_Var0"
         );
 
         assert_eq!(
@@ -799,7 +873,7 @@ mod tests {
                         .unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("Var_Var1".to_string())
+            "Var_Var1"
         );
 
         assert_eq!(
@@ -808,7 +882,7 @@ mod tests {
                     &Value::from_json(json!({ "usual": 1, "payload": 1, "flag": true })).unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("Var0_Var0".to_string())
+            "Var0_Var0"
         );
 
         assert_eq!(
@@ -818,7 +892,7 @@ mod tests {
                         .unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("Var0_Var1".to_string())
+            "Var0_Var1"
         );
 
         assert_eq!(
@@ -827,7 +901,7 @@ mod tests {
                     &Value::from_json(json!({ "usual": 1, "command": 1, "flag": true })).unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("Var1_Var0".to_string())
+            "Var1_Var0"
         );
 
         assert_eq!(
@@ -837,7 +911,7 @@ mod tests {
                         .unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("Var1_Var1".to_string())
+            "Var1_Var1"
         );
 
         // ambiguous cases
@@ -855,35 +929,41 @@ mod tests {
             discriminator
                 .resolve_type(&Value::from_json(json!({})).unwrap())
                 .unwrap(),
-            TypeName::Single("Var_Var".to_string())
+            "Var_Var"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "unknown": { "foo": "bar" }})).unwrap())
                 .unwrap(),
-            TypeName::Single("Var_Var".to_string())
+            "Var_Var"
         );
     }
 
     #[test]
     fn test_additional_types() {
-        let type_a = Type::default().fields(vec![
+        let type_a = config::Type::default().fields(vec![
             ("uniqueA1", Field::default()),
             ("common", Field::default()),
         ]);
-        let type_b = Type::default().fields(vec![
-            ("uniqueB1", Field { required: true, ..Field::default() }),
+        let type_b = config::Type::default().fields(vec![
+            (
+                "uniqueB1",
+                Field { type_of: Type::default().into_required(), ..Field::default() },
+            ),
             ("common", Field::default()),
         ]);
-        let type_c = Type::default().fields(vec![
+        let type_c = config::Type::default().fields(vec![
             ("uniqueC1", Field::default()),
             ("uniqueC2", Field::default()),
         ]);
-        let type_d = Type::default().fields(vec![
+        let type_d = config::Type::default().fields(vec![
             ("uniqueD1", Field::default()),
             ("common", Field::default()),
-            ("uniqueD2", Field { required: true, ..Field::default() }),
+            (
+                "uniqueD2",
+                Field { type_of: Type::default().into_required(), ..Field::default() },
+            ),
         ]);
 
         let types = vec![
@@ -901,14 +981,14 @@ mod tests {
                     &Value::from_json(json!({ "uniqueA1": "value", "common": 1 })).unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("TypeA".to_string())
+            "TypeA"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "uniqueB1": true, "common": 2 })).unwrap())
                 .unwrap(),
-            TypeName::Single("TypeB".to_string())
+            "TypeB"
         );
 
         assert_eq!(
@@ -918,7 +998,7 @@ mod tests {
                         .unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("TypeC".to_string())
+            "TypeC"
         );
 
         assert_eq!(
@@ -930,7 +1010,7 @@ mod tests {
                     .unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("TypeD".to_string())
+            "TypeD"
         );
 
         // ambiguous cases
@@ -943,42 +1023,45 @@ mod tests {
                     .unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("TypeA".to_string())
+            "TypeA"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({})).unwrap())
                 .unwrap(),
-            TypeName::Single("TypeA".to_string())
+            "TypeA"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "unknown": { "foo": "bar" }})).unwrap())
                 .unwrap(),
-            TypeName::Single("TypeA".to_string())
+            "TypeA"
         );
     }
 
     #[test]
     fn test_combination_of_shared_fields() {
-        let type_a = Type::default().fields(vec![
+        let type_a = config::Type::default().fields(vec![
             ("field1", Field::default()),
             ("field2", Field::default()),
         ]);
-        let type_b = Type::default().fields(vec![
+        let type_b = config::Type::default().fields(vec![
             ("field2", Field::default()),
             ("field3", Field::default()),
         ]);
-        let type_c = Type::default().fields(vec![
+        let type_c = config::Type::default().fields(vec![
             ("field1", Field::default()),
             ("field3", Field::default()),
         ]);
-        let type_d = Type::default().fields(vec![
+        let type_d = config::Type::default().fields(vec![
             ("field1", Field::default()),
             ("field2", Field::default()),
-            ("field4", Field { required: true, ..Field::default() }),
+            (
+                "field4",
+                Field { type_of: Type::default().into_required(), ..Field::default() },
+            ),
         ]);
 
         let types = vec![
@@ -996,7 +1079,7 @@ mod tests {
                     &Value::from_json(json!({ "field1": "value", "field2": "value" })).unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("TypeA".to_string())
+            "TypeA"
         );
 
         assert_eq!(
@@ -1005,7 +1088,7 @@ mod tests {
                     &Value::from_json(json!({ "field2": "value", "field3": "value" })).unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("TypeB".to_string())
+            "TypeB"
         );
 
         assert_eq!(
@@ -1014,7 +1097,7 @@ mod tests {
                     &Value::from_json(json!({ "field1": "value", "field3": "value" })).unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("TypeC".to_string())
+            "TypeC"
         );
 
         assert_eq!(
@@ -1026,7 +1109,7 @@ mod tests {
                     .unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("TypeD".to_string())
+            "TypeD"
         );
 
         // ambiguous cases
@@ -1047,20 +1130,22 @@ mod tests {
             discriminator
                 .resolve_type(&Value::from_json(json!({})).unwrap())
                 .unwrap(),
-            TypeName::Single("TypeA".to_string())
+            "TypeA"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "unknown": { "foo": "bar" }})).unwrap())
                 .unwrap(),
-            TypeName::Single("TypeA".to_string())
+            "TypeA"
         );
     }
 
     #[test]
     fn validation_number_of_types() {
-        let types: Vec<_> = (0..136).map(|i| (i.to_string(), Type::default())).collect();
+        let types: Vec<_> = (0..136)
+            .map(|i| (i.to_string(), config::Type::default()))
+            .collect();
         let union_types: Vec<_> = types
             .iter()
             .map(|(name, type_)| (name.as_str(), type_))
@@ -1082,21 +1167,33 @@ mod tests {
 
     #[test]
     fn test_validation_equal_types() {
-        let a = Type::default().fields(vec![("a", Field::default()), ("b", Field::default())]);
-        let b = Type::default().fields(vec![
-            ("a", Field { required: true, ..Field::default() }),
+        let a =
+            config::Type::default().fields(vec![("a", Field::default()), ("b", Field::default())]);
+        let b = config::Type::default().fields(vec![
+            (
+                "a",
+                Field { type_of: Type::default().into_required(), ..Field::default() },
+            ),
             ("b", Field::default()),
         ]);
-        let c = Type::default().fields(vec![("a", Field::default()), ("b", Field::default())]);
-        let d = Type::default().fields(vec![
+        let c =
+            config::Type::default().fields(vec![("a", Field::default()), ("b", Field::default())]);
+        let d = config::Type::default().fields(vec![
             ("a", Field::default()),
             ("b", Field::default()),
-            ("c", Field { required: true, ..Field::default() }),
+            (
+                "c",
+                Field { type_of: Type::default().into_required(), ..Field::default() },
+            ),
         ]);
-        let e = Type::default().fields(vec![("c", Field::default()), ("d", Field::default())]);
-        let f = Type::default().fields(vec![
+        let e =
+            config::Type::default().fields(vec![("c", Field::default()), ("d", Field::default())]);
+        let f = config::Type::default().fields(vec![
             ("c", Field::default()),
-            ("d", Field { required: true, ..Field::default() }),
+            (
+                "d",
+                Field { type_of: Type::default().into_required(), ..Field::default() },
+            ),
         ]);
 
         let types = vec![
@@ -1122,8 +1219,8 @@ mod tests {
 
     #[test]
     fn test_validation_non_object() {
-        let foo = Type::default().fields(vec![("foo", Field::default())]);
-        let bar = Type::default().fields(vec![("bar", Field::default())]);
+        let foo = config::Type::default().fields(vec![("foo", Field::default())]);
+        let bar = config::Type::default().fields(vec![("bar", Field::default())]);
         let types = vec![("Foo", &foo), ("Bar", &bar)];
 
         let discriminator = Discriminator::new("Test", &types).to_result().unwrap();
