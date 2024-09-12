@@ -31,7 +31,6 @@ impl ProtoReader {
         Self { reader, runtime }
     }
 
-    #[allow(clippy::too_many_arguments)]
     /// Fetches proto files from a grpc server (grpc reflection)
     pub async fn fetch<T: AsRef<str>>(
         &self,

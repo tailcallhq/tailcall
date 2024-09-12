@@ -71,7 +71,6 @@ struct ReflectionResponse {
     file_descriptor_response: Option<FileDescriptorProtoResponse>,
 }
 
-#[allow(dead_code)]
 pub struct GrpcReflection {
     server_reflection_method: GrpcMethod,
     url: String,
@@ -79,7 +78,6 @@ pub struct GrpcReflection {
     target_runtime: TargetRuntime,
 }
 
-#[allow(clippy::too_many_arguments)]
 impl GrpcReflection {
     pub fn new<T: AsRef<str>>(
         url: T,
@@ -147,10 +145,10 @@ impl GrpcReflection {
         );
 
         let mut headers = vec![];
-        if let Some(custom_headers) = self.headers.clone() {
+        if let Some(custom_headers) = &self.headers {
             for header in custom_headers {
                 headers.push((
-                    HeaderName::from_str(&header.key.clone())?,
+                    HeaderName::from_str(&header.key)?,
                     Mustache::parse(header.value.as_str()),
                 ));
             }
