@@ -41,7 +41,6 @@ mod transform;
 pub mod try_fold;
 pub mod valid;
 pub mod worker;
-pub mod wrapping_type;
 
 // Re-export everything from `tailcall_macros` as `macros`
 use std::borrow::Cow;
