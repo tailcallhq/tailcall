@@ -167,7 +167,6 @@ pathdiff = "0.2.1"
 num = "0.4.3"
 indenter = "0.3.3"
 derive_more = { workspace = true }
-enum_dispatch = "0.3.13"
 strum = "0.26.2"
 maplit = "1.0.2"
 
@@ -180,7 +179,6 @@ stripmargin = "0.1.1"
 markdown = "1.0.0-alpha.17"
 insta = { workspace = true }
 tempfile = "3.10.1"
-temp-env = "0.3.6"
 maplit = "1.0.2"
 tailcall-fixtures = { path = "./tailcall-fixtures" }
 http-cache-semantics = { version = "1.0.1", default-features = false, features = [

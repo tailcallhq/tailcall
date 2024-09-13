@@ -1487,18 +1487,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "enum_dispatch"
-version = "0.3.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aa18ce2bc66555b3218614519ac839ddb759a7d6720732f979ef8d13be147ecd"
-dependencies = [
- "once_cell",
- "proc-macro2",
- "quote",
- "syn 2.0.76",
-]
-
-[[package]]
 name = "env_filter"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5471,7 +5459,6 @@ dependencies = [
  "derive_more 0.99.18",
  "derive_setters",
  "dotenvy",
- "enum_dispatch",
  "exitcode",
  "flate2",
  "fnv",
@@ -5550,7 +5537,6 @@ dependencies = [
  "tailcall-tracker",
  "tailcall-typedefs-common",
  "tailcall-version",
- "temp-env",
  "tempfile",
  "test-log",
  "thiserror",
@@ -5764,15 +5750,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba323866e5d033818e3240feeb9f7db2c4296674e4d9e16b97b7bf8f490434e8"
 dependencies = [
  "pin-utils",
-]
-
-[[package]]
-name = "temp-env"
-version = "0.3.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "96374855068f47402c3121c6eed88d29cb1de8f3ab27090e273e420bdabcf050"
-dependencies = [
- "parking_lot",
 ]
 
 [[package]]
