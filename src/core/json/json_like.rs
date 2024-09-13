@@ -16,6 +16,7 @@ pub trait JsonLike<'json>: Sized {
 
     // Operators
     fn as_array(&self) -> Option<&Vec<Self>>;
+    fn as_array_mut(&mut self) -> Option<&mut Vec<Self>>;
     fn into_array(self) -> Option<Vec<Self>>;
     fn as_object(&self) -> Option<&Self::JsonObject>;
     fn as_object_mut(&mut self) -> Option<&mut Self::JsonObject>;

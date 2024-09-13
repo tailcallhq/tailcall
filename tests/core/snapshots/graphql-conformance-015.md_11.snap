@@ -9,11 +9,10 @@ expression: response
   },
   "body": {
     "data": {
-      "oneof__OneOfService__GetOneOfVar3": {
-        "usual": 5,
-        "command": {
-          "command": "end"
-        }
+      "user": {
+        "id": 4,
+        "name": "User 4",
+        "spam": "FIZZ: [{\"bar\":\"BUZZ\"},{\"bar\":\"test\"}]"
       }
     }
   }

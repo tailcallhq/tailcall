@@ -1,6 +1,8 @@
 use async_graphql_value::{ConstValue, Value};
 
 use super::{Arg, Field, OperationPlan, ResolveInputError, Variables};
+use crate::core::json::{JsonLikeOwned, JsonObjectLike};
+use crate::core::Type;
 
 /// Trait to represent conversion from some dynamic type (with variables)
 /// to the resolved variant based on the additional provided info.
@@ -15,21 +17,9 @@ pub trait InputResolvable {
     ) -> Result<Self::Output, ResolveInputError>;
 }
 
-pub trait OutputTrait {
-    fn is_null_value(&self) -> bool;
-}
-
-impl OutputTrait for ConstValue {
-    fn is_null_value(&self) -> bool {
-        self.eq(&ConstValue::Null)
-    }
-}
-
 impl InputResolvable for Value {
     type Output = ConstValue;
 
-    // TODO:
-    // - provide default values
     fn resolve(self, variables: &Variables<ConstValue>) -> Result<Self::Output, ResolveInputError> {
         self.into_const_with(|name| {
             variables
@@ -37,6 +27,19 @@ impl InputResolvable for Value {
                 .cloned()
                 .ok_or_else(|| ResolveInputError::VariableIsNotFound(name.to_string()))
         })
+    }
+}
+
+pub trait OutputHelpers {
+    type Output;
+
+    fn from_json(value: Option<serde_json::Value>) -> Option<Self::Output>;
+}
+
+impl OutputHelpers for ConstValue {
+    type Output = ConstValue;
+    fn from_json(value: Option<serde_json::Value>) -> Option<Self::Output> {
+        value.map(ConstValue::from_json).and_then(Result::ok)
     }
 }
 
@@ -55,7 +58,7 @@ impl<Input> InputResolver<Input> {
 impl<Input, Output> InputResolver<Input>
 where
     Input: Clone,
-    Output: Clone + OutputTrait,
+    Output: Clone + JsonLikeOwned + OutputHelpers<Output = Output>,
     Input: InputResolvable<Output = Output>,
 {
     pub fn resolve_input(
@@ -73,28 +76,14 @@ where
                         .args
                         .into_iter()
                         .map(|arg| {
-                            // TODO: this should recursively check the InputType for field presence
-                            if arg
-                                .value
-                                .as_ref()
-                                .map(|val| val.is_null_value())
-                                .unwrap_or(true)
-                                && !arg.type_of.is_nullable()
-                            {
-                                let default_value = arg.default_value.clone();
-                                match default_value {
-                                    Some(value) => Ok(Arg { value: Some(value), ..arg }),
-                                    None => Err(ResolveInputError::ArgumentIsRequired {
-                                        arg_name: arg.name,
-                                        field_name: field.output_name.clone(),
-                                    }),
-                                }
-                            } else if arg.value.is_none() {
-                                let default_value = arg.default_value.clone();
-                                Ok(Arg { value: default_value, ..arg })
-                            } else {
-                                Ok(arg)
-                            }
+                            let value = self.recursive_parse_arg(
+                                &field.name,
+                                &arg.name,
+                                &arg.type_of,
+                                &arg.default_value,
+                                arg.value,
+                            )?;
+                            Ok(Arg { value, ..arg })
                         })
                         .collect::<Result<_, _>>()?;
 
@@ -110,5 +99,80 @@ where
             self.plan.index.clone(),
             self.plan.is_introspection_query,
         ))
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn recursive_parse_arg(
+        &self,
+        parent_name: &str,
+        arg_name: &str,
+        type_of: &Type,
+        default_value: &Option<Output>,
+        value: Option<Output>,
+    ) -> Result<Option<Output>, ResolveInputError> {
+        let is_value_null = value.as_ref().map(|val| val.is_null()).unwrap_or(true);
+        let value: Result<Option<Output>, ResolveInputError> =
+            if !type_of.is_nullable() && value.is_none() {
+                let default_value = default_value.clone();
+                match default_value {
+                    Some(value) => Ok(Some(value)),
+                    None => Err(ResolveInputError::ArgumentIsRequired {
+                        arg_name: arg_name.to_string(),
+                        field_name: parent_name.to_string(),
+                    }),
+                }
+            } else if !type_of.is_nullable() && is_value_null {
+                Err(ResolveInputError::ArgumentIsRequired {
+                    arg_name: arg_name.to_string(),
+                    field_name: parent_name.to_string(),
+                })
+            } else if value.is_none() {
+                let default_value = default_value.clone();
+                Ok(default_value)
+            } else {
+                Ok(value)
+            };
+
+        match value? {
+            Some(mut value) => match self.plan.index.get_input_type_definition(type_of.name()) {
+                Some(def) => {
+                    if let Some(obj) = value.as_object_mut() {
+                        for arg_field in &def.fields {
+                            let parent_name = format!("{}.{}", parent_name, arg_name);
+                            let field_value = obj.get_key(&arg_field.name).cloned();
+                            let field_default = arg_field.default_value.clone();
+                            let field_default = Output::from_json(field_default);
+                            let value = self.recursive_parse_arg(
+                                &parent_name,
+                                &arg_field.name,
+                                &arg_field.of_type,
+                                &field_default,
+                                field_value,
+                            )?;
+                            if let Some(value) = value {
+                                obj.insert_key(&arg_field.name, value);
+                            }
+                        }
+                    } else if let Some(arr) = value.as_array_mut() {
+                        for (index, item) in arr.iter_mut().enumerate() {
+                            let parent_name = format!("{}.{}.{}", parent_name, arg_name, index);
+
+                            *item = self
+                                .recursive_parse_arg(
+                                    &parent_name,
+                                    &index.to_string(),
+                                    type_of,
+                                    default_value,
+                                    Some(item.clone()),
+                                )?
+                                .expect("Because we start with `Some`, we will end with `Some`");
+                        }
+                    }
+                    Ok(Some(value))
+                }
+                None => Ok(Some(value)),
+            },
+            None => Ok(None),
+        }
     }
 }
