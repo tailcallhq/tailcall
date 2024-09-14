@@ -168,7 +168,6 @@ strum = "0.26.2"
 
 [dev-dependencies]
 datatest-stable = "0.2.9"
-enum_dispatch = "0.3.0"
 tokio-test = "0.4.4"
 tailcall-prettier = { path = "tailcall-prettier" }
 criterion = "0.5.1"
