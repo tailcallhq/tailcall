@@ -1,36 +1,36 @@
 # for test upstream server see [repo](https://github.com/tailcallhq/tailcall/tree/main/tailcall-upstream-grpc)
 schema
-  @server(port: 8000)
+  @server(port: 8000,lint: {field: "pascalCase", type: "pascalCase", enum: "pascalCase", enumValue: "pascalCase", autoFix: true})
   @upstream(baseURL: "http://localhost:50051", httpCache: 42, batch: {delay: 10})
   @link(src: "http://localhost:50051", type: Grpc) {
   query: Query
 }
 
 type Query {
-  news: NewsData! @grpc(method: "news.NewsService.GetAllNews")
-  newsById(news: NewsInput!): News! @grpc(method: "news.NewsService.GetNews", body: "{{args.news}}")
-  newsByIdBatch(news: NewsInput!): News!
+  news: newsData! @grpc(method: "news.NewsService.GetAllNews")
+  newsById(news: news_input!): News! @grpc(method: "news.NewsService.GetNews", body: "{{args.news}}")
+  newsByIdBatch(news: news_input!): News!
     @grpc(method: "news.NewsService.GetMultipleNews", body: "{{args.news}}", batchKey: ["news", "id"])
 }
 
 type News {
   id: Int
-  title: String
-  body: String
-  postImage: String
+  TITLE: String
+  Body: String
+  post_image: String
   status: Status
 }
 
-enum Status {
-  PUBLISHED
-  DRAFT
-  DELETED
+enum status {
+  published
+  draft
+  deleted
 }
 
-input NewsInput {
+input news_input {
   id: Int
 }
 
-type NewsData {
+type newsData {
   news: [News]
 }

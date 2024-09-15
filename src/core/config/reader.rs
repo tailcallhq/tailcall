@@ -8,6 +8,7 @@ use rustls_pki_types::{
 use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType};
+use crate::core::config::lint::{self};
 use crate::core::config::{Config, ConfigReaderContext, Source};
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoReader;
@@ -183,18 +184,19 @@ impl ConfigReader {
     ) -> anyhow::Result<ConfigModule> {
         let files = self.resource_reader.read_files(files).await?;
         let mut config_module = ConfigModule::default();
+        // tracing::warn!("original config module is {:#?}", config_module);
 
         for file in files.iter() {
             let source = Source::detect(&file.path)?;
             let schema = &file.content;
+            // tracing::warn!("schema is {:#?}", schema);
 
+            let mut config = Config::from_source(source, schema)?;
+            config = lint::lint(config)?;
+            // tracing::warn!("final config is {:#?}", config);
             // Create initial config module
-            let new_config_module = self
-                .resolve(
-                    Config::from_source(source, schema)?,
-                    Path::new(&file.path).parent(),
-                )
-                .await?;
+            let new_config_module = self.resolve(config, Path::new(&file.path).parent()).await?;
+            // tracing::warn!("new config module is {:#?}", new_config_module);
 
             // Merge it with the original config set
             config_module = config_module.merge_right(new_config_module);
