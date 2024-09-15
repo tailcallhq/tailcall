@@ -803,6 +803,9 @@
             "null"
           ]
         },
+        "metadata": {
+          "description": "Metadata"
+        },
         "src": {
           "description": "The source of the link. It can be a URL or a path to a file. If a path is provided, it is relative to the file that imports the link.",
           "type": "string"
