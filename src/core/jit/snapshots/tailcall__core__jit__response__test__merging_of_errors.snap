@@ -1,0 +1,21 @@
+---
+source: src/core/jit/response.rs
+expression: merged_resp
+---
+{
+  "data": null,
+  "errors": [
+    {
+      "message": "Error-1"
+    },
+    {
+      "message": "Error-2",
+      "locations": [
+        {
+          "line": 0,
+          "column": 0
+        }
+      ]
+    }
+  ]
+}

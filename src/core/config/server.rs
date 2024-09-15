@@ -31,7 +31,7 @@ use crate::core::merge_right::MergeRight;
 pub struct Server {
     // The `enableJIT` option activates Just-In-Time (JIT) compilation. When set to true, it
     // optimizes execution of each incoming request independently, resulting in significantly
-    // better performance in most cases.
+    // better performance in most cases, it's enabled by default.
     #[serde(default, skip_serializing_if = "is_default", rename = "enableJIT")]
     pub enable_jit: Option<bool>,
 
@@ -229,7 +229,7 @@ impl Server {
         self.dedupe.unwrap_or(false)
     }
     pub fn enable_jit(&self) -> bool {
-        self.enable_jit.unwrap_or(false)
+        self.enable_jit.unwrap_or(true)
     }
 }
 

@@ -1,40 +1,16 @@
-use std::borrow::Cow;
 use std::sync::Arc;
 
-use anyhow::{bail, Result};
-use async_graphql::dynamic::{self, FieldFuture, FieldValue, SchemaBuilder};
+use async_graphql::dynamic::{self, FieldFuture, FieldValue, SchemaBuilder, TypeRef};
 use async_graphql::ErrorExtensions;
 use async_graphql_value::ConstValue;
 use futures_util::TryFutureExt;
 use strum::IntoEnumIterator;
 use tracing::Instrument;
 
-use crate::core::blueprint::{Blueprint, Definition, Type};
+use crate::core::blueprint::{Blueprint, Definition};
 use crate::core::http::RequestContext;
-use crate::core::ir::{EvalContext, ResolverContext, TypeName};
+use crate::core::ir::{EvalContext, ResolverContext, TypedValue};
 use crate::core::scalar;
-
-fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
-    match type_of {
-        Type::NamedType { name, non_null } => {
-            if *non_null {
-                dynamic::TypeRef::NonNull(Box::from(dynamic::TypeRef::Named(Cow::Owned(
-                    name.clone(),
-                ))))
-            } else {
-                dynamic::TypeRef::Named(Cow::Owned(name.clone()))
-            }
-        }
-        Type::ListType { of_type, non_null } => {
-            let inner = Box::new(to_type_ref(of_type));
-            if *non_null {
-                dynamic::TypeRef::NonNull(Box::from(dynamic::TypeRef::List(inner)))
-            } else {
-                dynamic::TypeRef::List(inner)
-            }
-        }
-    }
-}
 
 /// We set the default value for an `InputValue` by reading it from the
 /// blueprint and assigning it to the provided `InputValue` during the
@@ -59,27 +35,21 @@ fn set_default_value(
     }
 }
 
-fn to_field_value<'a>(
-    ctx: &mut EvalContext<'a, ResolverContext<'a>>,
-    value: async_graphql::Value,
-) -> Result<FieldValue<'static>> {
-    let type_name = ctx.type_name.take();
+fn to_field_value(value: async_graphql::Value) -> FieldValue<'static> {
+    match value {
+        ConstValue::List(vec) => FieldValue::list(vec.into_iter().map(to_field_value)),
+        value => {
+            let type_name = value.get_type_name().map(|s| s.to_string());
 
-    Ok(match (value, type_name) {
-        // NOTE: Mostly type_name is going to be None so we should keep that as the first check.
-        (value, None) => FieldValue::from(value),
-        (ConstValue::List(values), Some(TypeName::Vec(names))) => FieldValue::list(
-            values
-                .into_iter()
-                .zip(names)
-                .map(|(value, type_name)| FieldValue::from(value).with_type(type_name)),
-        ),
-        (value @ ConstValue::Object(_), Some(TypeName::Single(type_name))) => {
-            FieldValue::from(value).with_type(type_name)
+            let field_value = FieldValue::from(value);
+
+            if let Some(type_name) = type_name {
+                field_value.with_type(type_name)
+            } else {
+                field_value
+            }
         }
-        (ConstValue::Null, _) => FieldValue::NULL,
-        (_, Some(_)) => bail!("Failed to match type_name"),
-    })
+    }
 }
 
 fn to_type(def: &Definition) -> dynamic::Type {
@@ -88,7 +58,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
             let mut object = dynamic::Object::new(def.name.clone());
             for field in def.fields.iter() {
                 let field = field.clone();
-                let type_ref = to_type_ref(&field.of_type);
+                let type_ref = TypeRef::from(&field.of_type);
                 let field_name = &field.name.clone();
 
                 let mut dyn_schema_field = dynamic::Field::new(
@@ -131,7 +101,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                         if let ConstValue::Null = value {
                                             Ok(FieldValue::NONE)
                                         } else {
-                                            Ok(Some(to_field_value(ctx, value)?))
+                                            Ok(Some(to_field_value(value)))
                                         }
                                     }
                                     .instrument(span)
@@ -151,7 +121,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                 }
                 for arg in field.args.iter() {
                     dyn_schema_field = dyn_schema_field.argument(set_default_value(
-                        dynamic::InputValue::new(arg.name.clone(), to_type_ref(&arg.of_type)),
+                        dynamic::InputValue::new(arg.name.clone(), TypeRef::from(&arg.of_type)),
                         arg.default_value.clone(),
                     ));
                 }
@@ -171,7 +141,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
             for field in def.fields.iter() {
                 interface = interface.field(dynamic::InterfaceField::new(
                     field.name.clone(),
-                    to_type_ref(&field.of_type),
+                    TypeRef::from(&field.of_type),
                 ));
             }
 
@@ -181,7 +151,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
             let mut input_object = dynamic::InputObject::new(def.name.clone());
             for field in def.fields.iter() {
                 let mut input_field =
-                    dynamic::InputValue::new(field.name.clone(), to_type_ref(&field.of_type));
+                    dynamic::InputValue::new(field.name.clone(), TypeRef::from(&field.of_type));
                 if let Some(description) = &field.description {
                     input_field = input_field.description(description);
                 }

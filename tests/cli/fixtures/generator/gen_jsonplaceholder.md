@@ -1,74 +1,79 @@
+```json @config
 {
   "inputs": [
     {
       "curl": {
-        "src": "https://jsonplaceholder.typicode.com/posts/1",
+        "src": "{{.env.BASE_URL}}/posts/1",
+        "headers": {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
         "fieldName": "post"
       }
     },
     {
       "curl": {
-        "src": "https://jsonplaceholder.typicode.com/users/1",
+        "src": "{{.env.BASE_URL}}/users/1",
         "fieldName": "user"
       }
     },
     {
       "curl": {
-        "src": "https://jsonplaceholder.typicode.com/users",
+        "src": "{{.env.BASE_URL}}/users",
         "fieldName": "users"
       }
     },
     {
       "curl": {
-        "src": "https://jsonplaceholder.typicode.com/posts",
+        "src": "{{.env.BASE_URL}}/posts",
         "fieldName": "posts"
       }
     },
     {
       "curl": {
-        "src": "https://jsonplaceholder.typicode.com/comments",
+        "src": "{{.env.BASE_URL}}/comments",
         "fieldName": "comments"
       }
     },
     {
       "curl": {
-        "src": "https://jsonplaceholder.typicode.com/comments/1",
+        "src": "{{.env.BASE_URL}}/comments/1",
         "fieldName": "comment"
       }
     },
     {
       "curl": {
-        "src": "https://jsonplaceholder.typicode.com/photos",
+        "src": "{{.env.BASE_URL}}/photos",
         "fieldName": "photos"
       }
     },
     {
       "curl": {
-        "src": "https://jsonplaceholder.typicode.com/photos/1",
+        "src": "{{.env.BASE_URL}}/photos/1",
         "fieldName": "photo"
       }
     },
     {
       "curl": {
-        "src": "https://jsonplaceholder.typicode.com/todos",
+        "src": "{{.env.BASE_URL}}/todos",
         "fieldName": "todos"
       }
     },
     {
       "curl": {
-        "src": "https://jsonplaceholder.typicode.com/todos/1",
+        "src": "{{.env.BASE_URL}}/todos/1",
         "fieldName": "todo"
       }
     },
     {
       "curl": {
-        "src": "https://jsonplaceholder.typicode.com/comments?postId=1",
+        "src": "{{.env.BASE_URL}}/comments?postId=1",
         "fieldName": "postComments"
       }
     }
   ],
   "preset": {
-    "mergeType": 1,
+    "mergeType": 1.0,
     "consolidateURL": 0.5,
     "treeShake": true,
     "inferTypeNames": true
@@ -81,3 +86,10 @@
     "query": "Query"
   }
 }
+```
+
+```json @env
+{
+  "BASE_URL": "https://jsonplaceholder.typicode.com"
+}
+```

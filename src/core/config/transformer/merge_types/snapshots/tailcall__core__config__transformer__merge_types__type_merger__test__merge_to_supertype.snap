@@ -1,0 +1,17 @@
+---
+source: src/core/config/transformer/merge_types/type_merger.rs
+expression: config.to_sdl()
+---
+schema @server @upstream {
+  query: Query
+}
+
+type M1 {
+  id: Int
+  name: JSON
+}
+
+type Query {
+  bar: M1
+  foo: M1
+}
