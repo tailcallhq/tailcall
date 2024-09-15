@@ -24,19 +24,23 @@ fn qjs_print(msg: String, is_err: bool) {
     }
 }
 
+static CONSOLE_JS: &[u8] = include_bytes!("shim/console.js");
+
 fn setup_builtins(ctx: &Ctx<'_>) -> rquickjs::Result<()> {
     ctx.globals().set("__qjs_print", js_qjs_print)?;
-    let _: Value = ctx.eval_file("src/cli/javascript/shim/console.js")?;
+    let _: Value = ctx.eval(CONSOLE_JS)?;
 
     Ok(())
 }
 
-impl LocalRuntime {
-    fn try_new(script: blueprint::Script) -> anyhow::Result<Self> {
+impl TryFrom<blueprint::Script> for LocalRuntime {
+    type Error = anyhow::Error;
+
+    fn try_from(script: blueprint::Script) -> Result<Self, Self::Error> {
         let source = script.source;
         let js_runtime = rquickjs::Runtime::new()?;
         let context = Context::full(&js_runtime)?;
-        context.with(|ctx| {
+        let _: () = context.with(|ctx| {
             setup_builtins(&ctx)?;
             ctx.eval(source)
         })?;
@@ -126,7 +130,7 @@ fn init_rt(script: blueprint::Script) -> anyhow::Result<()> {
     // exit if failed to initialize
     LOCAL_RUNTIME.with(move |cell| {
         if cell.borrow().get().is_none() {
-            LocalRuntime::try_new(script).and_then(|runtime| {
+            LocalRuntime::try_from(script).and_then(|runtime| {
                 cell.borrow().set(runtime).map_err(|_| {
                     anyhow::anyhow!("trying to reinitialize an already initialized QuickJS runtime")
                 })
