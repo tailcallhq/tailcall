@@ -5,6 +5,9 @@ use crate::core::http::Method;
 use crate::core::is_default;
 use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
+use crate::core::valid::Valid;
+use crate::core::valid::Validator;
+
 
 /// Type to configure Cross-Origin Resource Sharing (CORS) for a server.
 #[derive(

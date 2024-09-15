@@ -2,6 +2,7 @@ use std::marker::PhantomData;
 use std::num::NonZeroU64;
 
 use crate::core::merge_right::MergeRight;
+use crate::core::valid::Valid;
 
 pub trait Primitive {}
 
@@ -23,7 +24,10 @@ impl Primitive for usize {}
 impl<A> Primitive for PhantomData<A> {}
 
 impl<A: Primitive> MergeRight for A {
-    fn merge_right(self, other: Self) -> Self {
-        other
+    fn merge_right(self, other: Self) -> Valid<Self, String>
+    where
+        Self: Sized,
+    {
+        Valid::succeed(other)
     }
 }

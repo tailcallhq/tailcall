@@ -6,6 +6,7 @@ use serde::Serialize;
 use super::Positioned;
 use crate::core::jit;
 use crate::core::merge_right::MergeRight;
+use crate::core::valid::Valid;
 
 #[derive(Setters, Serialize)]
 pub struct Response<Value, Error> {
@@ -35,7 +36,7 @@ impl<Value, Error> Response<Value, Error> {
 }
 
 impl MergeRight for async_graphql::Response {
-    fn merge_right(mut self, other: Self) -> Self {
+    fn merge_right(mut self, other: Self) -> Valid<Self, String> {
         if let async_graphql::Value::Object(mut other_obj) = other.data {
             if let async_graphql::Value::Object(self_obj) = std::mem::take(self.data.borrow_mut()) {
                 other_obj.extend(self_obj);
@@ -46,7 +47,7 @@ impl MergeRight for async_graphql::Response {
         self.errors.extend(other.errors);
         self.extensions.extend(other.extensions);
 
-        self
+        Valid::succeed(self)
     }
 }
 
@@ -70,6 +71,7 @@ mod test {
     use super::Response;
     use crate::core::jit::{self, Pos, Positioned};
     use crate::core::merge_right::MergeRight;
+    use crate::core::valid::Validator;
 
     #[test]
     fn test_with_response() {
@@ -178,7 +180,10 @@ mod test {
             ConstValue::from_json(serde_json::from_str(user_response).unwrap()).unwrap();
         let query_response = async_graphql::Response::new(user_data);
 
-        let merged_response = introspection_response.merge_right(query_response);
+        let merged_response = introspection_response
+            .merge_right(query_response)
+            .to_result()
+            .unwrap();
 
         insta::assert_json_snapshot!(merged_response);
     }
@@ -196,7 +201,7 @@ mod test {
         )];
         resp2.errors.append(&mut err2);
 
-        let merged_resp = resp1.merge_right(resp2);
+        let merged_resp = resp1.merge_right(resp2).to_result().unwrap();
         insta::assert_json_snapshot!(merged_resp);
     }
 }

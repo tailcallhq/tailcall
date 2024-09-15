@@ -62,9 +62,9 @@ pub fn expand_merge_right_derive(input: TokenStream) -> TokenStream {
             let fields = if let Fields::Named(fields) = data.fields {
                 fields.named
             } else {
-                // Adjust this match arm to handle other kinds of struct fields (unnamed/tuple
-                // structs, unit structs)
-                unimplemented!()
+                if let Fields::Unnamed(unnamed) = data.fields {
+                    unnamed.unnamed
+                }else { unimplemented!() }
             };
 
             let merge_logic = fields.iter().map(|f| {
@@ -74,15 +74,32 @@ pub fn expand_merge_right_derive(input: TokenStream) -> TokenStream {
                 }
                 let attrs = attrs.unwrap();
                 let name = &f.ident;
+
                 if let Some(merge_right_fn) = attrs.merge_right_fn {
                     quote! {
-                        #name: #merge_right_fn(self.#name, other.#name),
+                        #name: #merge_right_fn(self.#name, other.#name).to_result().unwrap(),
                     }
                 } else {
                     quote! {
-                        #name: self.#name.merge_right(other.#name),
+                        #name: self.#name.merge_right(other.#name).to_result().unwrap(),
                     }
                 }
+
+                /*if let Some(merge_right_fn) = attrs.merge_right_fn {
+                    quote! {
+                        match #merge_right_fn(self.#name, other.#name).to_result() {
+                            Ok(value) => value,
+                            Err(err) => return Err(err),
+                        }
+                    }
+                } else {
+                    quote! {
+                        match self.#name.merge_right(other.#name) {
+                            Ok(value) => value,
+                            Err(err) => return Err(err),
+                        }
+                    }
+                }*/
             });
 
             let generics_lt = generics.lt_token;
@@ -95,10 +112,10 @@ pub fn expand_merge_right_derive(input: TokenStream) -> TokenStream {
 
             quote! {
                 impl #generics_del MergeRight for #name #generics_del {
-                    fn merge_right(self, other: Self) -> Self {
-                        Self {
+                    fn merge_right(self, other: Self) -> Valid<Self, String> {
+                        Valid::succeed(Self {
                             #(#merge_logic)*
-                        }
+                        })
                     }
                 }
             }
@@ -106,8 +123,8 @@ pub fn expand_merge_right_derive(input: TokenStream) -> TokenStream {
         // Implement for enums
         Data::Enum(_) => quote! {
             impl MergeRight for #name {
-                fn merge_right(self, other: Self) -> Self {
-                    other
+                fn merge_right(self, other: Self) -> Valid<Self, String> {
+                    Valid::succeed(other)
                 }
             }
         },

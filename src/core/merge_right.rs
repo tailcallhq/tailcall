@@ -2,21 +2,22 @@ use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::sync::Arc;
 
 use serde_yaml::Value;
+
 use crate::core::valid::{Valid, Validator};
 
 pub trait MergeRight {
-    fn merge_right(self, other: Self) -> Valid<Self, String>;
+    fn merge_right(self, other: Self) -> Valid<Self, String> where Self: Sized;
 }
 
 impl<A: MergeRight> MergeRight for Option<A> {
     fn merge_right(self, other: Self) -> Valid<Self, String> {
         let valid = match (self, other) {
-            (Some(this), Some(that)) => Some(this.merge_right(that)),
-            (None, Some(that)) => Some(that),
-            (Some(this), None) => Some(this),
-            (None, None) => None,
+            (Some(this), Some(that)) => this.merge_right(that).map(Some),
+            (None, Some(that)) => Valid::succeed(Some(that)),
+            (Some(this), None) => Valid::succeed(Some(this)),
+            (None, None) => Valid::succeed(None),
         };
-        Valid::succeed(valid)
+        valid
     }
 }
 
@@ -24,8 +25,8 @@ impl<A: MergeRight + Default> MergeRight for Arc<A> {
     fn merge_right(self, other: Self) -> Valid<Self, String> {
         let l = Arc::into_inner(self);
         let r = Arc::into_inner(other);
-        let valid = Arc::new(l.merge_right(r).unwrap_or_default());
-        Valid::succeed(valid)
+        let valid = l.merge_right(r).map(|v| v.unwrap_or_default()).map(Arc::new);
+        valid
     }
 }
 
@@ -42,14 +43,18 @@ where
     V: Clone + MergeRight,
 {
     fn merge_right(mut self, other: Self) -> Valid<Self, String> {
-        for (other_name, mut other_value) in other {
+        Valid::from_iter(other, |(other_name, other_value)| {
             if let Some(self_value) = self.remove(&other_name) {
-                other_value = self_value.merge_right(other_value);
+                other_value.merge_right(self_value).map(|value| (other_name, value))
+            } else {
+                Valid::succeed((other_name, other_value))
             }
-
-            self.insert(other_name, other_value);
-        }
-        Valid::succeed(self)
+        }).map(|value| {
+            for (k, v) in value {
+                self.insert(k, v);
+            }
+            self
+        })
     }
 }
 
@@ -67,9 +72,9 @@ impl<V> MergeRight for HashSet<V>
 where
     V: Eq + std::hash::Hash,
 {
-    fn merge_right(mut self, other: Self) -> Self {
+    fn merge_right(mut self, other: Self) -> Valid<Self, String> {
         self.extend(other);
-        self
+        Valid::succeed(self)
     }
 }
 
@@ -86,11 +91,13 @@ where
 impl MergeRight for Value {
     fn merge_right(self, other: Self) -> Valid<Self, String> {
         match (self, other) {
-            (Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_), other) => Valid::succeed(other),
+            (Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_), other) => {
+                Valid::succeed(other)
+            }
             (Value::Sequence(mut lhs), other) => match other {
                 Value::Sequence(rhs) => {
                     lhs.extend(rhs);
-                   Valid::succeed( Value::Sequence(lhs))
+                    Valid::succeed(Value::Sequence(lhs))
                 }
                 other => {
                     lhs.push(other);
@@ -98,20 +105,19 @@ impl MergeRight for Value {
                 }
             },
             (Value::Mapping(mut lhs), other) => match other {
-                Value::Mapping(rhs) => {
-                    Valid::from_iter(rhs, |(key, value)| {
-                        if let Some(lhs_value) = lhs.remove(&key) {
-                            value.merge_right(lhs_value).map(|value| (key, value))
-                        } else {
-                            Valid::succeed((key, value))
-                        }
-                    }).and_then(|(value)| {
-                        for (k,v) in value {
-                            lhs.insert(k,v);
-                        }
-                        Valid::succeed(Value::Mapping(lhs))
-                    })
-                }
+                Value::Mapping(rhs) => Valid::from_iter(rhs, |(key, value)| {
+                    if let Some(lhs_value) = lhs.remove(&key) {
+                        value.merge_right(lhs_value).map(|value| (key, value))
+                    } else {
+                        Valid::succeed((key, value))
+                    }
+                })
+                .and_then(|value| {
+                    for (k, v) in value {
+                        lhs.insert(k, v);
+                    }
+                    Valid::succeed(Value::Mapping(lhs))
+                }),
                 Value::Sequence(mut rhs) => {
                     rhs.push(Value::Mapping(lhs));
                     Valid::succeed(Value::Sequence(rhs))

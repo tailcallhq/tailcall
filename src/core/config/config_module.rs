@@ -48,8 +48,8 @@ impl From<Config> for Cache {
 }
 
 impl MergeRight for Cache {
-    fn merge_right(self, other: Self) -> Self {
-        Cache::from(self.config.merge_right(other.config))
+    fn merge_right(self, other: Self) -> Valid<Self, String> {
+        self.config.merge_right(other.config).map(Cache::from)
     }
 }
 
@@ -60,11 +60,6 @@ impl ConfigModule {
 
     pub fn set_extensions(mut self, extensions: Extensions) -> Self {
         self.extensions = extensions;
-        self
-    }
-
-    pub fn merge_extensions(mut self, extensions: Extensions) -> Self {
-        self.extensions = self.extensions.merge_right(extensions);
         self
     }
 
@@ -151,10 +146,9 @@ impl Extensions {
 }
 
 impl MergeRight for FileDescriptorSet {
-    fn merge_right(mut self, other: Self) -> Self {
+    fn merge_right(mut self, other: Self) -> Valid<Self, String> {
         self.file.extend(other.file);
-
-        self
+        Valid::succeed(self)
     }
 }
 

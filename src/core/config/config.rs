@@ -280,8 +280,8 @@ pub struct Field {
 
 // It's a terminal implementation of MergeRight
 impl MergeRight for Field {
-    fn merge_right(self, other: Self) -> Self {
-        other
+    fn merge_right(self, other: Self) -> Valid<Self, String> {
+        Valid::succeed(other)
     }
 }
 

@@ -10,6 +10,7 @@ use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
 use crate::core::mustache::Mustache;
 use crate::core::valid::Validator;
+use crate::core::valid::Valid;
 
 mod defaults {
     pub mod prometheus {
@@ -79,6 +80,7 @@ pub enum TelemetryExporter {
     schemars::JsonSchema,
     DirectiveDefinition,
     InputDefinition,
+    MergeRight,
 )]
 #[directive_definition(locations = "Schema")]
 #[serde(deny_unknown_fields)]
@@ -103,7 +105,7 @@ impl Telemetry {
             (None, None) => None,
             (None, Some(export)) => Some(export),
             (Some(export), None) => Some(export.clone()),
-            (Some(left), Some(right)) => Some(left.clone().merge_right(right.clone())),
+            (Some(left), Some(right)) => left.clone().merge_right(right.clone()).to_result().ok(),
         };
         self.request_headers.extend(other.request_headers);
 

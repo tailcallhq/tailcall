@@ -2,8 +2,11 @@ use std::collections::BTreeMap;
 use std::ops::Deref;
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use tailcall_macros::MergeRight;
+use crate::core::valid::{Valid,Validator};
+use crate::core::merge_right::MergeRight;
 
-#[derive(Clone, Debug, Default, Eq, PartialEq, schemars::JsonSchema)]
+#[derive(Clone, Debug, Default, Eq, PartialEq, MergeRight, schemars::JsonSchema)]
 pub struct KeyValues(pub BTreeMap<String, String>);
 
 impl Deref for KeyValues {
@@ -20,7 +23,7 @@ impl FromIterator<(String, String)> for KeyValues {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, Eq, PartialEq, schemars::JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, Eq, PartialEq, schemars::JsonSchema, MergeRight)]
 pub struct KeyValue {
     pub key: String,
     pub value: String,

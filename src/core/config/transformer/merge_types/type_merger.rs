@@ -196,13 +196,25 @@ impl TypeMerger {
 
 fn merge_type(type_: &Type, mut merge_into: Type) -> Type {
     // Merge the simple fields using `merge_right`.
-    merge_into.added_fields = merge_into
+     let mut merge_into = merge_into
         .added_fields
-        .merge_right(type_.added_fields.clone());
-    merge_into.implements = merge_into.implements.merge_right(type_.implements.clone());
-    merge_into.cache = merge_into.cache.merge_right(type_.cache.clone());
-    merge_into.protected = merge_into.protected.merge_right(type_.protected.clone());
-    merge_into.doc = merge_into.doc.merge_right(type_.doc.clone());
+         .clone()
+        .merge_right(type_.added_fields.clone()).and_then(|fields| {
+         merge_into.implements.clone().merge_right(type_.implements.clone()).map(|implements| (fields, implements))
+     }).and_then(|(fields, implements)| {
+         merge_into.cache.clone().merge_right(type_.cache.clone()).map(|cache| (fields, implements, cache))
+     }).and_then(|(fields, implements, cache)| {
+         merge_into.protected.clone().merge_right(type_.protected.clone()).map(|protected| (fields, implements, cache, protected))
+     }).and_then(|(fields, implements, cache, protected)| {
+         merge_into.doc.clone().merge_right(type_.doc.clone()).map(|doc| (fields, implements, cache, protected, doc))
+     }).and_then(|(fields, implements, cache, protected, doc)| {
+         merge_into.added_fields = fields;
+         merge_into.implements = implements;
+         merge_into.cache = cache;
+         merge_into.protected = protected;
+         merge_into.doc = doc;
+         Valid::succeed(merge_into)
+     }).to_result().unwrap_or_default();
 
     // Handle field output type merging correctly.
     type_.fields.iter().for_each(|(key, new_field)| {
@@ -210,13 +222,14 @@ fn merge_type(type_: &Type, mut merge_into: Type) -> Type {
             .fields
             .entry(key.to_owned())
             .and_modify(|existing_field| {
-                let mut merged_field = existing_field.clone().merge_right(new_field.clone());
-                if existing_field.type_of.name() == &Scalar::JSON.to_string()
-                    || new_field.type_of.name() == &Scalar::JSON.to_string()
-                {
-                    merged_field.type_of = Scalar::JSON.to_string().into();
-                }
-                *existing_field = merged_field;
+                existing_field.clone().merge_right(new_field.clone()).map(|mut merged_field| {
+                    if existing_field.type_of.name() == &Scalar::JSON.to_string()
+                        || new_field.type_of.name() == &Scalar::JSON.to_string()
+                    {
+                        merged_field.type_of = Scalar::JSON.to_string().into();
+                    }
+                    *existing_field = merged_field;
+                }).to_result().unwrap_or_default();
             })
             .or_insert_with(|| new_field.to_owned());
     });
