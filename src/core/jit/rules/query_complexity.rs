@@ -1,3 +1,5 @@
+use async_graphql::Value;
+
 use super::Rule;
 use crate::core::jit::{Field, Nested, OperationPlan};
 use crate::core::valid::Valid;
@@ -11,11 +13,10 @@ impl QueryComplexity {
 }
 
 impl Rule for QueryComplexity {
-    type Value = async_graphql_value::Value;
+    type Value = Value;
     type Error = String;
     fn validate(&self, plan: &OperationPlan<Self::Value>) -> Valid<(), Self::Error> {
         let complexity: usize = plan.as_nested().iter().map(Self::complexity_helper).sum();
-
         if complexity > self.0 {
             Valid::fail("Query Complexity validation failed.".into())
         } else {
@@ -25,15 +26,85 @@ impl Rule for QueryComplexity {
 }
 
 impl QueryComplexity {
-    fn complexity_helper(
-        field: &Field<Nested<async_graphql_value::Value>, async_graphql_value::Value>,
-    ) -> usize {
+    fn complexity_helper(field: &Field<Nested<Value>, Value>) -> usize {
         let mut complexity = 1;
 
-        for child in field.iter_only(|_| true) {
+        let fields = field.iter_only(|_|  true).collect::<Vec<_>>();
+        for child in fields {
             complexity += Self::complexity_helper(child);
         }
 
         complexity
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use async_graphql::Value;
+
+    use super::QueryComplexity;
+    use crate::core::blueprint::Blueprint;
+    use crate::core::config::Config;
+    use crate::core::jit::rules::Rule;
+    use crate::core::jit::{Builder, OperationPlan, Variables};
+    use crate::core::valid::Validator;
+
+    const CONFIG: &str = include_str!("./../fixtures/jsonplaceholder-mutation.graphql");
+
+    fn plan(query: impl AsRef<str>, variables: &Variables<Value>) -> OperationPlan<Value> {
+        let config = Config::from_sdl(CONFIG).to_result().unwrap();
+        let blueprint = Blueprint::try_from(&config.into()).unwrap();
+        let document = async_graphql::parser::parse_query(query).unwrap();
+        Builder::new(&blueprint, document)
+            .build(variables, None)
+            .unwrap()
+    }
+
+    #[test]
+    fn test_query_complexity() {
+        let query = r#"
+            {
+                posts {
+                        id
+                        userId
+                        title
+                }
+            }
+        "#;
+
+        let plan = plan(query, &Default::default());
+        let query_complexity = QueryComplexity::new(4);
+        let val_result = query_complexity.validate(&plan);
+        assert!(val_result.is_succeed());
+
+        let query_complexity = QueryComplexity::new(2);
+        let val_result = query_complexity.validate(&plan);
+        assert!(!val_result.is_succeed());
+    }
+
+    #[test]
+    fn test_nested_query_complexity() {
+        let query = r#"
+            {
+                posts {
+                    id
+                    title
+                    user {
+                        id
+                        name
+                    }
+                }
+            }
+        "#;
+
+        let plan = plan(query, &Default::default());
+        
+        let query_complexity = QueryComplexity::new(6);
+        let val_result = query_complexity.validate(&plan);
+        assert!(val_result.is_succeed());
+
+        let query_complexity = QueryComplexity::new(5);
+        let val_result = query_complexity.validate(&plan);
+        assert!(!val_result.is_succeed());
     }
 }

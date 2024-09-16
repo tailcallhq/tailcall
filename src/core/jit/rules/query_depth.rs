@@ -11,7 +11,7 @@ impl QueryDepth {
 }
 
 impl Rule for QueryDepth {
-    type Value = async_graphql_value::Value;
+    type Value = async_graphql::Value;
     type Error = String;
     fn validate(&self, plan: &OperationPlan<Self::Value>) -> Valid<(), Self::Error> {
         let depth = plan
@@ -32,7 +32,7 @@ impl Rule for QueryDepth {
 impl QueryDepth {
     /// Helper function to recursively calculate depth.
     fn depth_helper(
-        field: &Field<Nested<async_graphql_value::Value>, async_graphql_value::Value>,
+        field: &Field<Nested<async_graphql::Value>, async_graphql::Value>,
         current_depth: usize,
     ) -> usize {
         let mut max_depth = current_depth;
@@ -46,5 +46,78 @@ impl QueryDepth {
             }
         }
         max_depth
+    }
+}
+
+
+
+#[cfg(test)]
+mod test {
+    use async_graphql::Value;
+
+    use super::QueryDepth;
+    use crate::core::blueprint::Blueprint;
+    use crate::core::config::Config;
+    use crate::core::jit::rules::Rule;
+    use crate::core::jit::{Builder, OperationPlan, Variables};
+    use crate::core::valid::Validator;
+
+    const CONFIG: &str = include_str!("./../fixtures/jsonplaceholder-mutation.graphql");
+
+    fn plan(query: impl AsRef<str>, variables: &Variables<Value>) -> OperationPlan<Value> {
+        let config = Config::from_sdl(CONFIG).to_result().unwrap();
+        let blueprint = Blueprint::try_from(&config.into()).unwrap();
+        let document = async_graphql::parser::parse_query(query).unwrap();
+        Builder::new(&blueprint, document)
+            .build(variables, None)
+            .unwrap()
+    }
+
+    #[test]
+    fn test_query_complexity() {
+        let query = r#"
+            {
+                posts {
+                        id
+                        userId
+                        title
+                }
+            }
+        "#;
+
+        let plan = plan(query, &Default::default());
+        let query_complexity = QueryDepth::new(4);
+        let val_result = query_complexity.validate(&plan);
+        assert!(val_result.is_succeed());
+
+        let query_complexity = QueryDepth::new(1);
+        let val_result = query_complexity.validate(&plan);
+        assert!(!val_result.is_succeed());
+    }
+
+    #[test]
+    fn test_nested_query_complexity() {
+        let query = r#"
+            {
+                posts {
+                    id
+                    title
+                    user {
+                        id
+                        name
+                    }
+                }
+            }
+        "#;
+
+        let plan = plan(query, &Default::default());
+        
+        let query_complexity = QueryDepth::new(4);
+        let val_result = query_complexity.validate(&plan);
+        assert!(val_result.is_succeed());
+
+        let query_complexity = QueryDepth::new(2);
+        let val_result = query_complexity.validate(&plan);
+        assert!(!val_result.is_succeed());
     }
 }
