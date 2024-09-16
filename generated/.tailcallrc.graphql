@@ -207,7 +207,7 @@ directive @link(
   """
   id: String
   """
-  Metadata
+  Additional metadata pertaining to the linked resource.
   """
   meta: JSON
   """

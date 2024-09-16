@@ -57,7 +57,7 @@ pub struct Link {
     /// The type of the link. It can be `Config`, or `Protobuf`.
     #[serde(default, skip_serializing_if = "is_default", rename = "type")]
     pub type_of: LinkType,
-    /// Metadata
+    /// Additional metadata pertaining to the linked resource.
     #[serde(default, skip_serializing_if = "is_default")]
     pub meta: Option<serde_json::Value>,
 }
