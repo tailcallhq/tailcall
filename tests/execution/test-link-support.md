@@ -28,7 +28,7 @@ message NewsId {
 schema
   @server(port: 8000)
   @upstream(baseURL: "http://localhost:50051", batch: {delay: 10, headers: [], maxSize: 1000})
-@link(id: "news", src: "news.proto", metadata: {description: "Test"}, type: Protobuf) {
+  @link(id: "news", src: "news.proto", metadata: {description: "Test"}, type: Protobuf) {
   query: Query
 }
 
