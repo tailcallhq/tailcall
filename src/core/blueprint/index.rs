@@ -1,7 +1,7 @@
 use indexmap::IndexMap;
 
 use crate::core::blueprint::{
-    Blueprint, Definition, FieldDefinition, InputFieldDefinition, SchemaDefinition,
+    Blueprint, Definition, FieldDefinition, InputFieldDefinition, SchemaDefinition, Server,
 };
 use crate::core::scalar;
 
@@ -13,6 +13,7 @@ use crate::core::scalar;
 pub struct Index {
     map: IndexMap<String, (Definition, IndexMap<String, QueryField>)>,
     schema: SchemaDefinition,
+    server: Server,
 }
 
 #[derive(Debug)]
@@ -77,6 +78,14 @@ impl Index {
         } else {
             false
         }
+    }
+
+    pub fn query_complexity(&self) -> Option<usize> {
+        self.server.query_complexity
+    }
+
+    pub fn query_depth(&self) -> Option<usize> {
+        self.server.query_depth
     }
 }
 
@@ -169,7 +178,11 @@ impl From<&Blueprint> for Index {
             }
         }
 
-        Self { map, schema: blueprint.schema.to_owned() }
+        Self {
+            map,
+            schema: blueprint.schema.to_owned(),
+            server: blueprint.server.to_owned(),
+        }
     }
 }
 

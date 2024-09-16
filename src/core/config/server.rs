@@ -120,6 +120,19 @@ pub struct Server {
     /// `workers` sets the number of worker threads. @default the number of
     /// system cores.
     pub workers: Option<usize>,
+
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// `query_complexity` sets the maximum allowed complexity for a GraphQL
+    /// query. It helps prevent resource-intensive queries by limiting their
+    /// complexity. If set, queries exceeding this complexity will be
+    /// rejected.
+    pub query_complexity: Option<usize>,
+
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// `query_depth` sets the maximum allowed depth for a GraphQL query.
+    /// It helps prevent deeply nested queries that could potentially overload
+    /// the server. If set, queries exceeding this depth will be rejected.
+    pub query_depth: Option<usize>,
 }
 
 fn merge_right_vars(mut left: Vec<KeyValue>, right: Vec<KeyValue>) -> Vec<KeyValue> {
@@ -230,6 +243,12 @@ impl Server {
     }
     pub fn enable_jit(&self) -> bool {
         self.enable_jit.unwrap_or(true)
+    }
+    pub fn get_query_complexity(&self) -> Option<usize> {
+        self.query_complexity
+    }
+    pub fn get_query_depth(&self) -> Option<usize> {
+        self.query_depth
     }
 }
 

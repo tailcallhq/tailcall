@@ -369,8 +369,8 @@ impl Builder {
         let plan = input_resolver.resolve_input(variables)?;
 
         // perform the rule check.
-        QueryComplexity::new(2)
-            .pipe(QueryDepth::new(2))
+        QueryComplexity::new(self.index.query_complexity())
+            .pipe(QueryDepth::new(self.index.query_depth()))
             .validate(&plan)
             .to_result()
             .map_err(|e| BuildError::CustomError(e.to_string()))?;
