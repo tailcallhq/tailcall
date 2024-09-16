@@ -48,6 +48,7 @@ use std::hash::Hash;
 use std::num::NonZeroU64;
 
 use async_graphql_value::ConstValue;
+pub use blueprint::Type;
 pub use errata::Errata;
 pub use error::{Error, Result};
 use http::Response;

@@ -2,23 +2,23 @@
 source: src/core/generator/generator.rs
 expression: cfg_module.config().to_sdl()
 ---
-schema @server @upstream(baseURL: "https://example.com") {
+schema @server @upstream(allowedHeaders: ["authorization"], baseURL: "https://example.com") {
   query: Query
 }
 
-type F1 {
+type InCompatibleProperty {
   campaignTemplates: JSON
   colors: [JSON]
 }
 
-type F3 {
+type Query {
+  inCompatibleObjects: [JSON] @http(path: "/api/v2/users")
+  inCompatibleProperties: InCompatibleProperty @http(path: "/")
+  userData: [Userdatum] @http(path: "/users")
+}
+
+type Userdatum {
   adult: Boolean
   age: Int
   name: String
-}
-
-type Query {
-  f1: F1 @http(path: "/")
-  f2: [JSON] @http(path: "/api/v2/users")
-  f3: [F3] @http(path: "/users")
 }

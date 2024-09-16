@@ -1,3 +1,4 @@
+```json @config
 {
   "inputs": [
     {
@@ -8,12 +9,12 @@
     },
     {
       "proto": {
-        "src": "../../../../../../tailcall-fixtures/fixtures/protobuf/news.proto"
+        "src": "tailcall-fixtures/fixtures/protobuf/news.proto"
       }
     }
   ],
   "preset": {
-    "mergeType": 1,
+    "mergeType": 1.0,
     "consolidateURL": 0.5,
     "inferTypeNames": true,
     "treeShake": true
@@ -26,3 +27,4 @@
     "query": "Query"
   }
 }
+```

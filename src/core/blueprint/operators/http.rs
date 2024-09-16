@@ -103,7 +103,7 @@ pub fn update_http<'a>(
                 return Valid::succeed(b_field);
             };
 
-            compile_http(config_module, http, field.list)
+            compile_http(config_module, http, field.type_of.is_list())
                 .map(|resolver| b_field.resolver(Some(resolver)))
                 .and_then(|b_field| {
                     b_field

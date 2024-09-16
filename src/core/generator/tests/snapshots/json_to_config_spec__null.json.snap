@@ -7,5 +7,5 @@ schema @server @upstream {
 }
 
 type Query {
-  usersAge(age: Int): Empty @http(baseURL: "https://example.com", path: "/users", query: [{key: "age", value: "{{.args.age}}"}])
+  usersAge(age: Int): JSON @http(baseURL: "https://example.com", path: "/users", query: [{key: "age", value: "{{.args.age}}"}])
 }

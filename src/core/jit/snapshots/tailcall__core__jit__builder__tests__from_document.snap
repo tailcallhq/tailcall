@@ -9,7 +9,9 @@ expression: plan.into_nested()
         output_name: "posts",
         ir: "Some(..)",
         type_of: [Post],
-        type_condition: "Query",
+        type_condition: Some(
+            "Query",
+        ),
         extensions: Some(
             Nested(
                 [
@@ -19,7 +21,9 @@ expression: plan.into_nested()
                         output_name: "user",
                         ir: "Some(..)",
                         type_of: User,
-                        type_condition: "Post",
+                        type_condition: Some(
+                            "Post",
+                        ),
                         extensions: Some(
                             Nested(
                                 [
@@ -28,7 +32,9 @@ expression: plan.into_nested()
                                         name: "id",
                                         output_name: "id",
                                         type_of: ID!,
-                                        type_condition: "User",
+                                        type_condition: Some(
+                                            "User",
+                                        ),
                                         directives: [],
                                     },
                                     Field {
@@ -36,7 +42,9 @@ expression: plan.into_nested()
                                         name: "name",
                                         output_name: "name",
                                         type_of: String!,
-                                        type_condition: "User",
+                                        type_condition: Some(
+                                            "User",
+                                        ),
                                         directives: [],
                                     },
                                 ],

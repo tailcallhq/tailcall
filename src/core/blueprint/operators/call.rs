@@ -38,7 +38,7 @@ pub fn compile_call(
                 .args
                 .iter()
                 .filter_map(|(k, arg)| {
-                    if arg.required && !args.clone().any(|(k1, _)| k1.eq(k)) {
+                    if !arg.type_of.is_nullable() && !args.clone().any(|(k1, _)| k1.eq(k)) {
                         Some(k)
                     } else {
                         None
@@ -64,7 +64,7 @@ pub fn compile_call(
                 object_name,
                 config_module,
                 type_of,
-                &field.type_of,
+                field.type_of.name(),
             )
             .and_then(|b_field| {
                 if b_field.resolver.is_none() {

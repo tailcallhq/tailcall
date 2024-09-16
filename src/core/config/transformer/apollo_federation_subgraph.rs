@@ -8,13 +8,13 @@ use tailcall_macros::MergeRight;
 
 use crate::core::config::{
     self, ApolloFederation, Arg, Call, Config, Field, GraphQL, Grpc, Http, Key, KeyValue, Resolver,
-    Type, Union,
+    Union,
 };
 use crate::core::directive::DirectiveCodec;
 use crate::core::merge_right::MergeRight;
 use crate::core::mustache::Segment;
 use crate::core::valid::{Valid, Validator};
-use crate::core::{Mustache, Transform};
+use crate::core::{Mustache, Transform, Type};
 
 const ENTITIES_FIELD_NAME: &str = "_entities";
 const SERVICE_FIELD_NAME: &str = "_service";
@@ -73,11 +73,11 @@ impl Transform for ApolloFederationSubgraph {
         // any scalar for argument `representations`
         config
             .types
-            .insert(ENTITIES_TYPE_NAME.to_owned(), Type::default());
+            .insert(ENTITIES_TYPE_NAME.to_owned(), config::Type::default());
 
-        let service_field = Field { type_of: "String".to_string(), ..Default::default() };
+        let service_field = Field { type_of: "String".to_string().into(), ..Default::default() };
 
-        let service_type = Type {
+        let service_type = config::Type {
             fields: [("sdl".to_string(), service_field)].into_iter().collect(),
             ..Default::default()
         };
@@ -98,18 +98,19 @@ impl Transform for ApolloFederationSubgraph {
         let query_type = config.types.entry(query_type.to_owned()).or_default();
 
         let arg = Arg {
-            type_of: ENTITIES_TYPE_NAME.to_string(),
-            list: true,
-            required: true,
+            type_of: Type::from(ENTITIES_TYPE_NAME.to_string())
+                .into_required()
+                .into_list()
+                .into_required(),
             ..Default::default()
         };
 
         query_type.fields.insert(
             ENTITIES_FIELD_NAME.to_string(),
             Field {
-                type_of: UNION_ENTITIES_NAME.to_owned(),
-                list: true,
-                required: true,
+                type_of: Type::from(UNION_ENTITIES_NAME.to_owned())
+                    .into_list()
+                    .into_required(),
                 args: [(ENTITIES_ARG_NAME.to_owned(), arg)].into_iter().collect(),
                 doc: Some("Apollo federation Query._entities resolver".to_string()),
                 resolver: Some(Resolver::ApolloFederation(
@@ -122,8 +123,7 @@ impl Transform for ApolloFederationSubgraph {
         query_type.fields.insert(
             SERVICE_FIELD_NAME.to_string(),
             Field {
-                type_of: SERVICE_TYPE_NAME.to_owned(),
-                required: true,
+                type_of: Type::from(SERVICE_TYPE_NAME.to_owned()).into_required(),
                 doc: Some("Apollo federation Query._service resolver".to_string()),
                 resolver: Some(Resolver::ApolloFederation(ApolloFederation::Service)),
                 ..Default::default()

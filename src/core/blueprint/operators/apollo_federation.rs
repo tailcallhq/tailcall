@@ -5,11 +5,11 @@ use super::{compile_call, compile_expr, compile_graphql, compile_grpc, compile_h
 use crate::core::blueprint::FieldDefinition;
 use crate::core::config::{
     ApolloFederation, Config, ConfigModule, EntityResolver, Field, GraphQLOperationType, Resolver,
-    Type,
 };
 use crate::core::ir::model::IR;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, Validator};
+use crate::core::{config, Type};
 
 pub struct CompileEntityResolver<'a> {
     config_module: &'a ConfigModule,
@@ -27,7 +27,7 @@ pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, S
             // Fake field that is required for validation in some cases
             // TODO: should be a proper way to run the validation both
             // on types and fields
-            let field = &Field { type_of: type_name.clone(), ..Default::default() };
+            let field = &Field { type_of: Type::from(type_name.clone()), ..Default::default() };
 
             // TODO: make this code reusable in other operators like call
             let ir = match resolver {
@@ -101,8 +101,9 @@ pub fn compile_service(config: &ConfigModule) -> Valid<IR, String> {
 
 pub fn update_apollo_federation<'a>(
     operation_type: &'a GraphQLOperationType,
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a Type, &'a str), FieldDefinition, String> {
-    TryFold::<(&ConfigModule, &Field, &Type, &'a str), FieldDefinition, String>::new(
+) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
+{
+    TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
         |(config_module, field, _, _), b_field| {
             let Some(Resolver::ApolloFederation(federation)) = &field.resolver else {
                 return Valid::succeed(b_field);

@@ -21,7 +21,7 @@ type Query {
   """
   Apollo federation Query._entities resolver
   """
-  _entities(representations: [_Any]!): [_Entity]!
+  _entities(representations: [_Any!]!): [_Entity]!
   """
   Apollo federation Query._service resolver
   """

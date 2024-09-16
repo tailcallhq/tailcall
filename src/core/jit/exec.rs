@@ -25,8 +25,7 @@ pub struct Executor<IRExec, Input> {
 
 impl<Input, Output, Exec> Executor<Exec, Input>
 where
-    Output:
-        for<'b> JsonLike<'b, JsonObject<'b>: JsonObjectLike<'b, Value = Output>> + Debug + Clone,
+    Output: for<'b> JsonLike<'b> + Debug + Clone,
     Input: Clone + Debug,
     Exec: IRExecutor<Input = Input, Output = Output, Error = jit::Error>,
 {
@@ -94,13 +93,16 @@ where
             // Check if the value is an array
             if let Some(array) = value.as_array() {
                 join_all(array.iter().enumerate().map(|(index, value)| {
-                    let type_name = value.get_type_name().unwrap_or(field.type_of.name());
-
-                    join_all(field.nested_iter(type_name).map(|field| {
-                        let ctx = ctx.with_value_and_field(value, field);
-                        let data_path = data_path.clone().with_index(index);
-                        async move { self.execute(&ctx, data_path).await }
-                    }))
+                    join_all(
+                        self.request
+                            .plan()
+                            .field_iter_only(field, value)
+                            .map(|field| {
+                                let ctx = ctx.with_value_and_field(value, field);
+                                let data_path = data_path.clone().with_index(index);
+                                async move { self.execute(&ctx, data_path).await }
+                            }),
+                    )
                 }))
                 .await;
             }
@@ -111,13 +113,16 @@ where
         // TODO: Validate if the value is an Object
         // Has to be an Object, we don't do anything while executing if its a Scalar
         else {
-            let type_name = value.get_type_name().unwrap_or(field.type_of.name());
-
-            join_all(field.nested_iter(type_name).map(|child| {
-                let ctx = ctx.with_value_and_field(value, child);
-                let data_path = data_path.clone();
-                async move { self.execute(&ctx, data_path).await }
-            }))
+            join_all(
+                self.request
+                    .plan()
+                    .field_iter_only(field, value)
+                    .map(|child| {
+                        let ctx = ctx.with_value_and_field(value, child);
+                        let data_path = data_path.clone();
+                        async move { self.execute(&ctx, data_path).await }
+                    }),
+            )
             .await;
         }
 
