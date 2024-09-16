@@ -2,6 +2,8 @@ use super::Rule;
 use crate::core::jit::{Field, Nested, OperationPlan};
 use crate::core::valid::Valid;
 
+use async_graphql_value::ConstValue;
+
 pub struct QueryDepth(usize);
 
 impl QueryDepth {
@@ -11,7 +13,7 @@ impl QueryDepth {
 }
 
 impl Rule for QueryDepth {
-    type Value = async_graphql::Value;
+    type Value = ConstValue;
     type Error = String;
     fn validate(&self, plan: &OperationPlan<Self::Value>) -> Valid<(), Self::Error> {
         let depth = plan
@@ -31,10 +33,7 @@ impl Rule for QueryDepth {
 
 impl QueryDepth {
     /// Helper function to recursively calculate depth.
-    fn depth_helper(
-        field: &Field<Nested<async_graphql::Value>, async_graphql::Value>,
-        current_depth: usize,
-    ) -> usize {
+    fn depth_helper(field: &Field<Nested<ConstValue>, ConstValue>, current_depth: usize) -> usize {
         let mut max_depth = current_depth;
 
         if let Some(child) = field.extensions.as_ref() {
@@ -49,11 +48,9 @@ impl QueryDepth {
     }
 }
 
-
-
 #[cfg(test)]
 mod test {
-    use async_graphql::Value;
+    use async_graphql_value::ConstValue;
 
     use super::QueryDepth;
     use crate::core::blueprint::Blueprint;
@@ -64,7 +61,7 @@ mod test {
 
     const CONFIG: &str = include_str!("./../fixtures/jsonplaceholder-mutation.graphql");
 
-    fn plan(query: impl AsRef<str>, variables: &Variables<Value>) -> OperationPlan<Value> {
+    fn plan(query: impl AsRef<str>, variables: &Variables<ConstValue>) -> OperationPlan<ConstValue> {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
@@ -111,7 +108,7 @@ mod test {
         "#;
 
         let plan = plan(query, &Default::default());
-        
+
         let query_complexity = QueryDepth::new(4);
         let val_result = query_complexity.validate(&plan);
         assert!(val_result.is_succeed());

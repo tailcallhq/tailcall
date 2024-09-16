@@ -1,4 +1,4 @@
-use async_graphql::Value;
+use async_graphql_value::ConstValue;
 
 use super::Rule;
 use crate::core::jit::{Field, Nested, OperationPlan};
@@ -13,7 +13,7 @@ impl QueryComplexity {
 }
 
 impl Rule for QueryComplexity {
-    type Value = Value;
+    type Value = ConstValue;
     type Error = String;
     fn validate(&self, plan: &OperationPlan<Self::Value>) -> Valid<(), Self::Error> {
         let complexity: usize = plan.as_nested().iter().map(Self::complexity_helper).sum();
@@ -26,10 +26,10 @@ impl Rule for QueryComplexity {
 }
 
 impl QueryComplexity {
-    fn complexity_helper(field: &Field<Nested<Value>, Value>) -> usize {
+    fn complexity_helper(field: &Field<Nested<ConstValue>, ConstValue>) -> usize {
         let mut complexity = 1;
 
-        let fields = field.iter_only(|_|  true).collect::<Vec<_>>();
+        let fields = field.iter_only(|_| true).collect::<Vec<_>>();
         for child in fields {
             complexity += Self::complexity_helper(child);
         }
@@ -40,7 +40,7 @@ impl QueryComplexity {
 
 #[cfg(test)]
 mod test {
-    use async_graphql::Value;
+    use async_graphql_value::ConstValue;
 
     use super::QueryComplexity;
     use crate::core::blueprint::Blueprint;
@@ -51,7 +51,7 @@ mod test {
 
     const CONFIG: &str = include_str!("./../fixtures/jsonplaceholder-mutation.graphql");
 
-    fn plan(query: impl AsRef<str>, variables: &Variables<Value>) -> OperationPlan<Value> {
+    fn plan(query: impl AsRef<str>, variables: &Variables<ConstValue>) -> OperationPlan<ConstValue> {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
@@ -98,7 +98,7 @@ mod test {
         "#;
 
         let plan = plan(query, &Default::default());
-        
+
         let query_complexity = QueryComplexity::new(6);
         let val_result = query_complexity.validate(&plan);
         assert!(val_result.is_succeed());
