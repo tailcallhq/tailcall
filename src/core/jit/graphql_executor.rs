@@ -3,6 +3,7 @@ use std::future::Future;
 use std::sync::Arc;
 
 use async_graphql::{Data, Executor, Response, Value};
+use async_graphql_value::Extensions;
 use futures_util::stream::BoxStream;
 
 use crate::core::app_context::AppContext;
@@ -34,7 +35,7 @@ impl From<jit::Request<Value>> for async_graphql::Request {
                 .map(|(k, v)| (async_graphql::Name::new(k), v))
                 .collect::<BTreeMap<_, _>>(),
         );
-        request.extensions = value.extensions;
+        request.extensions = Extensions(value.extensions);
         request.operation_name = value.operation_name;
         request
     }
