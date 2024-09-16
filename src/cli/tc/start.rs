@@ -10,7 +10,6 @@ pub(super) async fn start_command(
     config_reader: &ConfigReader,
 ) -> Result<()> {
     let config_module = config_reader.read_all(&file_paths).await?;
-    // tracing::warn!("config module is {:#?}", config_module);
     log_endpoint_set(&config_module.extensions().endpoint_set);
     Fmt::log_n_plus_one(false, config_module.config());
     let server = Server::new(config_module);

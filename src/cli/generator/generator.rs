@@ -182,11 +182,7 @@ impl Generator {
 
         let mut config = config_gen.mutation(mutation_type_name).generate(true)?;
 
-        // TODO: dont do this here for now. might do it later but this not validating the user
-        // provided schema its instead in generating the config.
-        // need to find a place where blueprint is made
-        // let lint = lint::field_lint(config.config().to_owned());
-        // config = ConfigModule::from(lint);
+        // TODO: link check the generated config
 
         if infer_type_names {
             if let Some(LLMConfig { model: Some(model), secret }) = llm {
