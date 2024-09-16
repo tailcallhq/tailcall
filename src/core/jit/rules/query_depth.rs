@@ -20,7 +20,7 @@ impl Rule for QueryDepth {
             .unwrap_or(0);
 
         if depth > self.0 {
-            Valid::fail("Query Depth validation failed.".into())
+            Valid::fail("Query is nested too deep.".into())
         } else {
             Valid::succeed(())
         }

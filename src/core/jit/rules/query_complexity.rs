@@ -14,7 +14,7 @@ impl Rule for QueryComplexity {
     fn validate<T: std::fmt::Debug>(&self, plan: &OperationPlan<T>) -> Valid<(), String> {
         let complexity: usize = plan.as_nested().iter().map(Self::complexity_helper).sum();
         if complexity > self.0 {
-            Valid::fail("Query Complexity validation failed.".into())
+            Valid::fail("Query is too complex.".into())
         } else {
             Valid::succeed(())
         }
