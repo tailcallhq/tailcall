@@ -368,9 +368,10 @@ impl Builder {
                 QueryComplexity::new(self.index.query_complexity().unwrap_or_default())
                     .when(self.index.query_complexity().is_some()),
             )
-            .pipe(QueryDepth::new(
-                self.index.query_depth().unwrap_or_default(),
-            ))
+            .pipe(
+                QueryDepth::new(self.index.query_depth().unwrap_or_default())
+                    .when(self.index.query_depth().is_some()),
+            )
             .validate(&plan)
             .to_result()
             .map_err(|e| BuildError::CustomError(e.to_string()))?;
