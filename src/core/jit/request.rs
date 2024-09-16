@@ -28,7 +28,7 @@ impl From<async_graphql::Request> for Request<ConstValue> {
             query: value.query,
             operation_name: value.operation_name,
             variables: Variables::from_iter(variables.into_iter().map(|(k, v)| (k.to_string(), v))),
-            extensions: value.extensions,
+            extensions: value.extensions.0,
         }
     }
 }
