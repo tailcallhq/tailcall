@@ -1,7 +1,7 @@
+use async_graphql_value::Value;
+
 use super::OperationPlan;
 use crate::core::valid::{Valid, Validator};
-
-use async_graphql_value::Value;
 
 mod query_complexity;
 mod query_depth;

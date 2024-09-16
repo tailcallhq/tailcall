@@ -1,9 +1,6 @@
-use crate::core::{
-    jit::{Field, Nested, OperationPlan},
-    valid::Valid,
-};
-
 use super::Rule;
+use crate::core::jit::{Field, Nested, OperationPlan};
+use crate::core::valid::Valid;
 
 pub struct QueryDepth(usize);
 
@@ -21,7 +18,7 @@ impl Rule for QueryDepth {
             .map(|field| Self::depth_helper(field, 1))
             .max()
             .unwrap_or(0);
-        
+
         if depth > self.0 {
             Valid::fail("Query Depth validation failed.".into())
         } else {
@@ -38,7 +35,7 @@ impl QueryDepth {
     ) -> usize {
         let mut max_depth = current_depth;
 
-        for child in field.extensions.as_ref() {
+        if let Some(child) = field.extensions.as_ref() {
             for nested_child in child.0.iter() {
                 let depth = Self::depth_helper(nested_child, current_depth + 1);
                 if depth > max_depth {

@@ -1,9 +1,6 @@
-use crate::core::{
-    jit::{Field, Nested, OperationPlan},
-    valid::Valid,
-};
-
 use super::Rule;
+use crate::core::jit::{Field, Nested, OperationPlan};
+use crate::core::valid::Valid;
 
 pub struct QueryComplexity(usize);
 
@@ -15,11 +12,7 @@ impl QueryComplexity {
 
 impl Rule for QueryComplexity {
     fn validate(&self, plan: &OperationPlan<async_graphql_value::Value>) -> Valid<(), String> {
-        let complexity: usize = plan
-            .as_nested()
-            .iter()
-            .map(|field| Self::complexity_helper(field))
-            .sum();
+        let complexity: usize = plan.as_nested().iter().map(Self::complexity_helper).sum();
 
         if complexity > self.0 {
             Valid::fail("Query Complexity validation failed.".into())
