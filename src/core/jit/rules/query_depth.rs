@@ -1,4 +1,7 @@
-use crate::core::{jit::OperationPlan, valid::Valid};
+use crate::core::{
+    jit::{Field, Nested, OperationPlan},
+    valid::Valid,
+};
 
 use super::Rule;
 
@@ -12,11 +15,37 @@ impl QueryDepth {
 
 impl Rule for QueryDepth {
     fn validate(&self, plan: &OperationPlan<async_graphql_value::Value>) -> Valid<(), String> {
-        let depth = plan.calculate_depth();
+        let depth = plan
+            .as_nested()
+            .iter()
+            .map(|field| Self::depth_helper(field, 1))
+            .max()
+            .unwrap_or(0);
+        
         if depth > self.0 {
             Valid::fail("Query Depth validation failed.".into())
         } else {
             Valid::succeed(())
         }
+    }
+}
+
+impl QueryDepth {
+    /// Helper function to recursively calculate depth.
+    fn depth_helper(
+        field: &Field<Nested<async_graphql_value::Value>, async_graphql_value::Value>,
+        current_depth: usize,
+    ) -> usize {
+        let mut max_depth = current_depth;
+
+        for child in field.extensions.as_ref() {
+            for nested_child in child.0.iter() {
+                let depth = Self::depth_helper(nested_child, current_depth + 1);
+                if depth > max_depth {
+                    max_depth = depth;
+                }
+            }
+        }
+        max_depth
     }
 }

@@ -17,6 +17,7 @@ use crate::core::blueprint::{Blueprint, Index, QueryField};
 use crate::core::counter::{Count, Counter};
 use crate::core::jit::model::OperationPlan;
 use crate::core::merge_right::MergeRight;
+use crate::core::valid::Validator;
 use crate::core::Type;
 
 #[derive(PartialEq, strum_macros::Display)]
@@ -361,9 +362,13 @@ impl Builder {
             is_introspection_query,
         );
 
-        let _ = QueryComplexity::new(2)
+        let res = QueryComplexity::new(2)
             .pipe(QueryDepth::new(2))
             .validate(&plan);
+
+        if !res.is_succeed() {
+            // TODO: raise the error.
+        }
 
         // TODO: operation from [ExecutableDocument] could contain definitions for
         // default values of arguments. That info should be passed to
