@@ -60,6 +60,7 @@ where
             .collect::<Result<_, _>>()?;
 
         Ok(OperationPlan::new(
+            self.plan.root_name(),
             new_fields,
             self.plan.operation_type(),
             self.plan.index.clone(),
