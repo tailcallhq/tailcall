@@ -14,7 +14,7 @@ type Query {
 type User {
   id: ID!
   name: String!
-  accountRef: String! @expr(body: "ref-{{.value.id}}-{{.value.name}}")
+  accountRef: String! @http(path: "/refs/{{.value.id}}")
 }
 
 type Admin {
@@ -29,7 +29,6 @@ union Role = User | Admin
 - request:
     method: GET
     url: http://upstream/users
-  expectedHits: 1
   response:
     status: 200
     body:
@@ -44,6 +43,25 @@ union Role = User | Admin
         - name: admin-2
           region: us
 
+# refs
+- request:
+    method: GET
+    url: http://upstream/refs/1
+  response:
+    status: 200
+    body: ref-1-user-1
+- request:
+    method: GET
+    url: http://upstream/refs/2
+  response:
+    status: 200
+    body: ref-2-user-2
+- request:
+    method: GET
+    url: http://upstream/refs/3
+  response:
+    status: 200
+    body: ref-3-user-3
 ```
 
 ```yml @test
@@ -65,5 +83,4 @@ union Role = User | Admin
           }
         }
       }
-
 ```

@@ -162,7 +162,10 @@ where
                 (_, Some(obj)) => {
                     let mut ans = Value::JsonObject::new();
 
-                    for child in self.plan.field_iter_only(node, value) {
+                    for child in node
+                        .iter()
+                        .filter(|field| self.plan.field_is_part_of_value(field, value))
+                    {
                         // all checks for skip must occur in `iter_inner`
                         // and include be checked before calling `iter` or recursing.
                         if self.include(child) {

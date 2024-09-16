@@ -20,7 +20,7 @@ type Query {
 }
 
 type User {
-  accountRef: String! @expr(body: "ref-{{.value.id}}-{{.value.name}}")
+  accountRef: String! @http(path: "/refs/{{.value.id}}")
   id: ID!
   name: String!
 }

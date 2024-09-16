@@ -28,9 +28,9 @@ impl ConstValueExecutor {
         req_ctx: &RequestContext,
         request: &Request<ConstValue>,
     ) -> Response<ConstValue, Error> {
-        let exec = ConstValueExec::new(req_ctx);
         let plan = self.plan;
         // TODO: drop the clones in plan
+        let exec = ConstValueExec::new(plan.clone(), req_ctx);
         let vars = request.variables.clone();
         let exe = Executor::new(plan.clone(), exec);
         let store = exe.store().await;
@@ -40,12 +40,13 @@ impl ConstValueExecutor {
 }
 
 struct ConstValueExec<'a> {
+    plan: OperationPlan<ConstValue>,
     req_context: &'a RequestContext,
 }
 
 impl<'a> ConstValueExec<'a> {
-    pub fn new(ctx: &'a RequestContext) -> Self {
-        Self { req_context: ctx }
+    pub fn new(plan: OperationPlan<ConstValue>, req_context: &'a RequestContext) -> Self {
+        Self { req_context, plan }
     }
 
     async fn call(
@@ -74,6 +75,8 @@ impl<'ctx> IRExecutor for ConstValueExec<'ctx> {
         ir: &'a IR,
         ctx: &'a Context<'a, Self::Input, Self::Output>,
     ) -> Result<Self::Output> {
+        let field = ctx.field();
+
         match ctx.value() {
             // TODO: check that field is expected list and it's a list of the required deepness
             Some(value) if value.as_array().is_some() => {
@@ -81,12 +84,16 @@ impl<'ctx> IRExecutor for ConstValueExec<'ctx> {
 
                 // collect the async tasks first before creating the final result
                 value.for_each(&mut |value| {
-                    let ctx = ctx.with_value(value);
-                    tasks.push(async move {
-                        let req_context = &self.req_context;
-                        let mut eval_ctx = EvalContext::new(req_context, &ctx);
-                        ir.eval(&mut eval_ctx).await
-                    })
+                    // execute the resolver only for fields that are related to current value
+                    // for fragments on union/interface
+                    if self.plan.field_is_part_of_value(field, value) {
+                        let ctx = ctx.with_value(value);
+                        tasks.push(async move {
+                            let req_context = &self.req_context;
+                            let mut eval_ctx = EvalContext::new(req_context, &ctx);
+                            ir.eval(&mut eval_ctx).await
+                        })
+                    }
                 });
 
                 let results = join_all(tasks).await;
@@ -95,10 +102,17 @@ impl<'ctx> IRExecutor for ConstValueExec<'ctx> {
 
                 // map input value to the calculated results preserving the shape
                 // of the input
-                Ok(value.map_ref(&mut |_| {
-                    iter.next().unwrap_or(Err(ir::Error::IO(
-                        "Expected value to be present".to_string(),
-                    )))
+                Ok(value.map_ref(&mut |value| {
+                    // for fragments on union/interface we will
+                    // have less entries for resolved values based on the type
+                    // pull from the result only field is related and fill with null otherwise
+                    if self.plan.field_is_part_of_value(field, value) {
+                        iter.next().unwrap_or(Err(ir::Error::IO(
+                            "Expected value to be present".to_string(),
+                        )))
+                    } else {
+                        Ok(Self::Output::default())
+                    }
                 })?)
             }
             _ => Ok(self.call(ctx, ir).await?),
