@@ -517,9 +517,17 @@
       "description": "The @graphQL operator allows to specify GraphQL API server request to fetch data from.",
       "type": "object",
       "required": [
-        "name"
+        "name",
+        "query"
       ],
       "properties": {
+        "allowed_headers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
         "args": {
           "description": "Named arguments for the requested field. More info [here](https://tailcall.run/docs/guides/operators/#args)",
           "type": [
@@ -538,8 +546,14 @@
           ]
         },
         "batch": {
-          "description": "If the upstream GraphQL server supports request batching, you can specify the 'batch' argument to batch several requests into a single batch request.\n\nMake sure you have also specified batch settings to the `@upstream` and to the `@graphQL` operator.",
-          "type": "boolean"
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Batch"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "headers": {
           "description": "The headers parameter allows you to customize the headers of the GraphQL request made by the `@graphQL` operator. It is used by specifying a key-value map of header names and their values.",
@@ -551,6 +565,12 @@
         "name": {
           "description": "Specifies the root field on the upstream to request data from. This maps a field in your schema to a field in the upstream schema. When a query is received for this field, Tailcall requests data from the corresponding upstream field.",
           "type": "string"
+        },
+        "query": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/URLQuery"
+          }
         }
       },
       "additionalProperties": false
@@ -562,11 +582,28 @@
         "method"
       ],
       "properties": {
+        "allowedHeaders": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
         "baseURL": {
           "description": "This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator.",
           "type": [
             "string",
             "null"
+          ]
+        },
+        "batch": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Batch"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "batchKey": {
@@ -589,6 +626,12 @@
         "method": {
           "description": "This refers to the gRPC method you're going to call. For instance `GetAllNews`.",
           "type": "string"
+        },
+        "onRequest": {
+          "type": [
+            "string",
+            "null"
+          ]
         }
       },
       "additionalProperties": false
@@ -648,11 +691,28 @@
         "path"
       ],
       "properties": {
+        "allowed_headers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
         "baseURL": {
           "description": "This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator.",
           "type": [
             "string",
             "null"
+          ]
+        },
+        "batch": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Batch"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "batchKey": {

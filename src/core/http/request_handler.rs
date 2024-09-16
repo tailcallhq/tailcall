@@ -54,8 +54,11 @@ fn not_found() -> Result<Response<Body>> {
 }
 
 fn create_request_context(req: &Request<Body>, app_ctx: &AppContext) -> RequestContext {
-    let upstream = app_ctx.blueprint.upstream.clone();
-    let allowed = upstream.allowed_headers;
+    // TODO: this must be addressed before merging
+    let _upstream = app_ctx.blueprint.upstream.clone();
+    // let allowed = upstream.allowed_headers;
+    // TODO: this must be addressed before merging
+    let allowed = Default::default();
     let allowed_headers = create_allowed_headers(req.headers(), &allowed);
 
     let _allowed = app_ctx.blueprint.server.get_experimental_headers();

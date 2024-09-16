@@ -70,7 +70,7 @@ pub fn compile_graphql(
     })
     .map(|req_template| {
         let field_name = graphql.name.clone();
-        let batch = graphql.batch;
+        let batch = graphql.batch.clone();
         IR::IO(IO::GraphQL { req_template, field_name, batch, dl_id: None })
     })
 }

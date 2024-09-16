@@ -15,7 +15,7 @@ use tailcall_typedefs_common::input_definition::InputDefinition;
 use tailcall_typedefs_common::ServiceDocumentBuilder;
 
 use super::telemetry::Telemetry;
-use super::{KeyValue, Link, Server, Upstream};
+use super::{Batch, KeyValue, Link, Server, Upstream};
 use crate::core::config::from_document::from_document;
 use crate::core::config::npo::QueryPath;
 use crate::core::config::source::Source;
@@ -294,7 +294,7 @@ impl Field {
             match resolver {
                 Resolver::Http(http) => !http.batch_key.is_empty(),
                 Resolver::Grpc(grpc) => !grpc.batch_key.is_empty(),
-                Resolver::Graphql(graphql) => graphql.batch,
+                Resolver::Graphql(graphql) => graphql.batch.is_some(),
                 Resolver::Call(_) => false,
                 Resolver::Js(_) => false,
                 Resolver::Expr(_) => false,
@@ -524,6 +524,14 @@ pub struct Http {
     /// first parameter referencing a field in the current value using mustache
     /// syntax is automatically selected as the batching parameter.
     pub query: Vec<URLQuery>,
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub allowed_headers: BTreeSet<String>,
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub batch: Option<Batch>,
+    /*#[serde(default, skip_serializing_if = "is_default")]
+    pub base_url: Option<String>,
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub on_request: Option<String>,*/
 }
 
 ///
@@ -612,6 +620,12 @@ pub struct Grpc {
     /// This refers to the gRPC method you're going to call. For instance
     /// `GetAllNews`.
     pub method: String,
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub allowed_headers: BTreeSet<String>,
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub batch: Option<Batch>,
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub on_request: Option<String>,
 }
 
 #[derive(
@@ -640,15 +654,14 @@ pub struct GraphQL {
     /// base URL is the one specified in the `@upstream` operator.
     pub base_url: Option<String>,
 
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// If the upstream GraphQL server supports request batching, you can
-    /// specify the 'batch' argument to batch several requests into a single
-    /// batch request.
-    ///
-    /// Make sure you have also specified batch settings to the `@upstream` and
-    /// to the `@graphQL` operator.
-    pub batch: bool,
-
+    // #[serde(default, skip_serializing_if = "is_default")]
+    // /// If the upstream GraphQL server supports request batching, you can
+    // /// specify the 'batch' argument to batch several requests into a single
+    // /// batch request.
+    // ///
+    // /// Make sure you have also specified batch settings to the `@upstream` and
+    // /// to the `@graphQL` operator.
+    // pub batch: bool,
     #[serde(default, skip_serializing_if = "is_default")]
     /// The headers parameter allows you to customize the headers of the GraphQL
     /// request made by the `@graphQL` operator. It is used by specifying a
@@ -660,6 +673,15 @@ pub struct GraphQL {
     /// is received for this field, Tailcall requests data from the
     /// corresponding upstream field.
     pub name: String,
+    pub query: Vec<URLQuery>,
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub allowed_headers: BTreeSet<String>,
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub batch: Option<Batch>,
+    // #[serde(default, skip_serializing_if = "is_default")]
+    // pub base_url: Option<String>,
+    // #[serde(default, skip_serializing_if = "is_default")]
+    // pub on_request: Option<String>,
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

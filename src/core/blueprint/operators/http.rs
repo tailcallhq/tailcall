@@ -79,9 +79,16 @@ pub fn compile_http(
                     group_by: Some(GroupBy::new(http.batch_key.clone(), key)),
                     dl_id: None,
                     http_filter,
+                    batch: http.batch.clone(),
                 })
             } else {
-                IR::IO(IO::Http { req_template, group_by: None, dl_id: None, http_filter })
+                IR::IO(IO::Http {
+                    req_template,
+                    group_by: None,
+                    dl_id: None,
+                    http_filter,
+                    batch: http.batch.clone(),
+                })
             }
         })
 }

@@ -151,9 +151,11 @@ impl RequestContext {
         self.runtime.cache.set(key, value, ttl).await
     }
 
+    /*
+    TODO: drop commented code and tests
     pub fn is_batching_enabled(&self) -> bool {
         self.upstream.is_batching_enabled()
-    }
+    }*/
 
     /// Checks if experimental headers is enabled
     pub fn has_experimental_headers(&self) -> bool {
@@ -214,7 +216,6 @@ mod test {
     use cache_control::Cachability;
 
     use crate::core::blueprint::{Server, Upstream};
-    use crate::core::config::{self, Batch};
     use crate::core::http::RequestContext;
 
     impl Default for RequestContext {
@@ -264,38 +265,5 @@ mod test {
         let req_ctx: RequestContext = RequestContext::default();
         req_ctx.set_cache_visibility(&Some(Cachability::Public));
         assert_eq!(req_ctx.is_cache_public(), None);
-    }
-
-    fn create_req_ctx_with_batch(batch: Batch) -> RequestContext {
-        let config_module = config::ConfigModule::default();
-        let mut upstream = Upstream::try_from(&config_module).unwrap();
-        let server = Server::try_from(config_module).unwrap();
-        upstream.batch = Some(batch);
-        RequestContext::default().upstream(upstream).server(server)
-    }
-
-    #[test]
-    fn test_is_batching_disabled_default() {
-        let req_ctx = create_req_ctx_with_batch(Default::default());
-        assert!(!req_ctx.is_batching_enabled());
-    }
-
-    #[test]
-    fn test_is_batching_disabled_for_delay_zero() {
-        let req_ctx = create_req_ctx_with_batch(Batch { delay: 0, ..Default::default() });
-        assert!(!req_ctx.is_batching_enabled());
-    }
-
-    #[test]
-    fn test_is_batching_disabled_for_max_size_none() {
-        let req_ctx = create_req_ctx_with_batch(Batch { max_size: None, ..Default::default() });
-        assert!(!req_ctx.is_batching_enabled());
-    }
-
-    #[test]
-    fn test_is_batching_enabled() {
-        let req_ctx =
-            create_req_ctx_with_batch(Batch { delay: 1, max_size: Some(1), ..Default::default() });
-        assert!(req_ctx.is_batching_enabled());
     }
 }

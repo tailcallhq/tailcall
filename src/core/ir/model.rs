@@ -9,6 +9,7 @@ use super::discriminator::Discriminator;
 use super::{EvalContext, ResolverContextLike};
 use crate::core::blueprint::DynamicValue;
 use crate::core::config::group_by::GroupBy;
+use crate::core::config::Batch;
 use crate::core::graphql::{self};
 use crate::core::http::HttpFilter;
 use crate::core::{grpc, http};
@@ -42,17 +43,19 @@ pub enum IO {
         group_by: Option<GroupBy>,
         dl_id: Option<DataLoaderId>,
         http_filter: Option<HttpFilter>,
+        batch: Option<Batch>,
     },
     GraphQL {
         req_template: graphql::RequestTemplate,
         field_name: String,
-        batch: bool,
+        batch: Option<Batch>,
         dl_id: Option<DataLoaderId>,
     },
     Grpc {
         req_template: grpc::RequestTemplate,
         group_by: Option<GroupBy>,
         dl_id: Option<DataLoaderId>,
+        batch: Option<Batch>,
     },
     Js {
         name: String,

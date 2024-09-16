@@ -44,23 +44,23 @@ impl AppContext {
             if let Definition::Object(def) = def {
                 for field in &mut def.fields {
                     let of_type = field.of_type.clone();
-                    let upstream_batch = &blueprint.upstream.batch;
                     field.map_expr(|expr| {
                         expr.modify(|expr| match expr {
                             IR::IO(io) => match io {
-                                IO::Http { req_template, group_by, http_filter, .. } => {
+                                IO::Http { req_template, group_by, http_filter, batch, .. } => {
                                     let data_loader = HttpDataLoader::new(
                                         runtime.clone(),
                                         group_by.clone(),
                                         of_type.is_list(),
                                     )
-                                    .to_data_loader(upstream_batch.clone().unwrap_or_default());
+                                    .to_data_loader(batch.clone().unwrap_or_default());
 
                                     let result = Some(IR::IO(IO::Http {
                                         req_template: req_template.clone(),
                                         group_by: group_by.clone(),
                                         dl_id: Some(DataLoaderId::new(http_data_loaders.len())),
                                         http_filter: http_filter.clone(),
+                                        batch: batch.clone(),
                                     }));
 
                                     http_data_loaders.push(data_loader);
@@ -70,15 +70,13 @@ impl AppContext {
 
                                 IO::GraphQL { req_template, field_name, batch, .. } => {
                                     let graphql_data_loader =
-                                        GraphqlDataLoader::new(runtime.clone(), *batch)
-                                            .into_data_loader(
-                                                upstream_batch.clone().unwrap_or_default(),
-                                            );
+                                        GraphqlDataLoader::new(runtime.clone(), batch.is_some())
+                                            .into_data_loader(batch.clone().unwrap_or_default());
 
                                     let result = Some(IR::IO(IO::GraphQL {
                                         req_template: req_template.clone(),
                                         field_name: field_name.clone(),
-                                        batch: *batch,
+                                        batch: batch.clone(),
                                         dl_id: Some(DataLoaderId::new(gql_data_loaders.len())),
                                     }));
 
@@ -87,20 +85,20 @@ impl AppContext {
                                     result
                                 }
 
-                                IO::Grpc { req_template, group_by, .. } => {
+                                IO::Grpc { req_template, group_by, batch, .. } => {
                                     let data_loader = GrpcDataLoader {
                                         runtime: runtime.clone(),
                                         operation: req_template.operation.clone(),
                                         group_by: group_by.clone(),
                                     };
-                                    let data_loader = data_loader.into_data_loader(
-                                        upstream_batch.clone().unwrap_or_default(),
-                                    );
+                                    let data_loader = data_loader
+                                        .into_data_loader(batch.clone().unwrap_or_default());
 
                                     let result = Some(IR::IO(IO::Grpc {
                                         req_template: req_template.clone(),
                                         group_by: group_by.clone(),
                                         dl_id: Some(DataLoaderId::new(grpc_data_loaders.len())),
+                                        batch: batch.clone(),
                                     }));
 
                                     grpc_data_loaders.push(data_loader);

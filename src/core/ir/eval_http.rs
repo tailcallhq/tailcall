@@ -5,6 +5,7 @@ use reqwest::Request;
 
 use super::model::DataLoaderId;
 use super::{EvalContext, ResolverContextLike};
+use crate::core::config::Batch;
 use crate::core::data_loader::{DataLoader, Loader};
 use crate::core::grpc::protobuf::ProtobufOperation;
 use crate::core::grpc::request::execute_grpc_request;
@@ -33,8 +34,9 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         evaluation_ctx: &'ctx EvalContext<'a, Context>,
         request_template: &'a RequestTemplate,
         id: &Option<DataLoaderId>,
+        batch: &Option<Batch>,
     ) -> Self {
-        let data_loader = if evaluation_ctx.request_ctx.is_batching_enabled() {
+        let data_loader = if batch.is_some() {
             id.and_then(|id| {
                 evaluation_ctx
                     .request_ctx
@@ -52,12 +54,16 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         Ok(self.request_template.to_request(self.evaluation_ctx)?)
     }
 
-    pub async fn execute(&self, req: Request) -> Result<Response<async_graphql::Value>, Error> {
+    pub async fn execute(
+        &self,
+        req: Request,
+        batch: &Option<Batch>,
+    ) -> Result<Response<async_graphql::Value>, Error> {
         let ctx = &self.evaluation_ctx;
         let is_get = req.method() == reqwest::Method::GET;
         let dl = &self.data_loader;
         let response = if is_get && dl.is_some() {
-            execute_request_with_dl(ctx, req, self.data_loader).await?
+            execute_request_with_dl(req, self.data_loader, batch).await?
         } else {
             execute_raw_request(ctx, req).await?
         };
@@ -91,7 +97,7 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         match command {
             Some(command) => match command {
                 worker::Command::Request(w_request) => {
-                    let response = self.execute(w_request.into()).await?;
+                    let response = self.execute(w_request.into(), &None).await?;
                     Ok(response)
                 }
                 worker::Command::Response(w_response) => {
@@ -108,27 +114,19 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
                     }
                 }
             },
-            None => self.execute(request).await,
+            None => self.execute(request, &None).await,
         }
     }
 }
 
 pub async fn execute_request_with_dl<
-    'ctx,
-    Ctx: ResolverContextLike,
     Dl: Loader<DataLoaderRequest, Value = Response<async_graphql::Value>, Error = Arc<anyhow::Error>>,
 >(
-    ctx: &EvalContext<'ctx, Ctx>,
     req: Request,
     data_loader: Option<&DataLoader<DataLoaderRequest, Dl>>,
+    batch: &Option<Batch>,
 ) -> Result<Response<async_graphql::Value>, Error> {
-    let headers = ctx
-        .request_ctx
-        .upstream
-        .batch
-        .clone()
-        .map(|s| s.headers)
-        .unwrap_or_default();
+    let headers = batch.clone().map(|s| s.headers).unwrap_or_default();
     let endpoint_key = crate::core::http::DataLoaderRequest::new(req, headers);
 
     Ok(data_loader
@@ -202,24 +200,17 @@ pub async fn execute_raw_grpc_request<Ctx: ResolverContextLike>(
 }
 
 pub async fn execute_grpc_request_with_dl<
-    Ctx: ResolverContextLike,
     Dl: Loader<
         grpc::DataLoaderRequest,
         Value = Response<async_graphql::Value>,
         Error = Arc<anyhow::Error>,
     >,
 >(
-    ctx: &EvalContext<'_, Ctx>,
     rendered: RenderedRequestTemplate,
     data_loader: Option<&DataLoader<grpc::DataLoaderRequest, Dl>>,
+    batch: &Option<Batch>,
 ) -> Result<Response<async_graphql::Value>, Error> {
-    let headers = ctx
-        .request_ctx
-        .upstream
-        .batch
-        .clone()
-        .map(|s| s.headers)
-        .unwrap_or_default();
+    let headers = batch.clone().map(|s| s.headers).unwrap_or_default();
     let endpoint_key = grpc::DataLoaderRequest::new(rendered, headers);
 
     Ok(data_loader
