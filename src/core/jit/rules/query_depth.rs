@@ -29,7 +29,10 @@ impl Rule for QueryDepth {
 
 impl QueryDepth {
     /// Helper function to recursively calculate depth.
-    fn depth_helper<T: std::fmt::Debug>(field: &Field<Nested<T>, T>, current_depth: usize) -> usize {
+    fn depth_helper<T: std::fmt::Debug>(
+        field: &Field<Nested<T>, T>,
+        current_depth: usize,
+    ) -> usize {
         let mut max_depth = current_depth;
 
         if let Some(child) = field.extensions.as_ref() {
