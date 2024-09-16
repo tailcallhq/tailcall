@@ -1042,6 +1042,24 @@
           "format": "uint16",
           "minimum": 0.0
         },
+        "queryComplexity": {
+          "description": "`query_complexity` sets the maximum allowed complexity for a GraphQL query. It helps prevent resource-intensive queries by limiting their complexity. If set, queries exceeding this complexity will be rejected.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "queryDepth": {
+          "description": "`query_depth` sets the maximum allowed depth for a GraphQL query. It helps prevent deeply nested queries that could potentially overload the server. If set, queries exceeding this depth will be rejected.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0.0
+        },
         "queryValidation": {
           "description": "`queryValidation` checks incoming GraphQL queries against the schema, preventing errors from invalid queries. Can be disabled for performance. @default `false`.",
           "type": [
