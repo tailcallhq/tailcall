@@ -197,8 +197,9 @@ mod test {
         let config = include_config!("./fixture/all-constructs.graphql").unwrap();
         let cfg_module = ConfigModule::from(config);
         let mut blueprint = Blueprint::try_from(&cfg_module).unwrap();
-        // Set a fixed number of workers to ensure consistent snapshots across different environments
-        // This is necessary because the number of workers might vary on different CI systems
+        // Set a fixed number of workers to ensure consistent snapshots across different
+        // environments This is necessary because the number of workers might
+        // vary on different CI systems
         blueprint.server = blueprint.server.worker(4);
 
         Index::from(&blueprint)
