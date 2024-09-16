@@ -209,7 +209,7 @@ directive @link(
   """
   Metadata
   """
-  metadata: JSON
+  meta: JSON
   """
   The source of the link. It can be a URL or a path to a file. If a path is provided, 
   it is relative to the file that imports the link.
