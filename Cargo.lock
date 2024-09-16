@@ -337,9 +337,9 @@ dependencies = [
 
 [[package]]
 name = "async-graphql-value"
-version = "7.0.7"
+version = "7.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69117c43c01d81a69890a9f5dd6235f2f027ca8d1ec62d6d3c5e01ca0edb4f2b"
+checksum = "3b0206011cad065420c27988f17dd7fe201a0e056b20c262209b7bffcd6fa176"
 dependencies = [
  "bytes",
  "indexmap 2.4.0",
