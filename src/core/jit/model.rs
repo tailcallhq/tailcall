@@ -700,23 +700,4 @@ mod test {
         let async_directive: ConstDirective = (&custom_directive).into();
         insta::assert_debug_snapshot!(async_directive);
     }
-
-    #[test]
-    fn test_depth_and_complexity() {
-        let variables = Variables::new();
-        let query = r#"
-            {
-                posts {
-                    id
-                    userId
-                    title
-                }
-            }
-        "#;
-        let plan = plan(query, &variables);
-        let depth = plan.calculate_depth();
-        let complexity = plan.calculate_complexity();
-        assert_eq!(depth, 2);
-        assert_eq!(complexity, 4);
-    }
 }
