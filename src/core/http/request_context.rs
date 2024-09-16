@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::num::NonZeroU64;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
@@ -10,6 +11,7 @@ use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use crate::core::app_context::AppContext;
 use crate::core::auth::context::AuthContext;
 use crate::core::blueprint::{Server, Upstream};
+use crate::core::config::Proxy;
 use crate::core::data_loader::{DataLoader, DedupeResult};
 use crate::core::graphql::GraphqlDataLoader;
 use crate::core::grpc::data_loader::GrpcDataLoader;

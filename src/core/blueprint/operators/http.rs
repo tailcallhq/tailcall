@@ -34,6 +34,7 @@ pub fn compile_http(
         .and_then(|(base_url, headers)| {
             let mut base_url = base_url.trim_end_matches('/').to_owned();
             base_url.push_str(http.path.clone().as_str());
+            let proxy = http.proxy.clone().or(config_module.upstream.proxy.clone());
 
             let query = http
                 .query
@@ -50,6 +51,7 @@ pub fn compile_http(
 
             RequestTemplate::try_from(
                 Endpoint::new(base_url.to_string())
+                    .proxy(proxy)
                     .method(http.method.clone())
                     .query(query)
                     .body(http.body.clone())

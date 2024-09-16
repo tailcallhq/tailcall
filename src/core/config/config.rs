@@ -15,7 +15,7 @@ use tailcall_typedefs_common::input_definition::InputDefinition;
 use tailcall_typedefs_common::ServiceDocumentBuilder;
 
 use super::telemetry::Telemetry;
-use super::{KeyValue, Link, Server, Upstream};
+use super::{KeyValue, Link, Proxy, Server, Upstream};
 use crate::core::config::from_document::from_document;
 use crate::core::config::npo::QueryPath;
 use crate::core::config::source::Source;
@@ -477,6 +477,10 @@ pub struct Http {
     /// send data to the server. You can pass it as a static object or use a
     /// Mustache template to substitute variables from the GraphQL variables.
     pub body: Option<String>,
+
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// Set custom proxy
+    pub proxy: Option<Proxy>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// The `encoding` parameter specifies the encoding of the request body. It

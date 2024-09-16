@@ -68,7 +68,8 @@ where
                     dl_id.and_then(|dl| ctx.request_ctx.gql_data_loaders.get(dl.as_usize()));
                 execute_request_with_dl(ctx, req, data_loader).await?
             } else {
-                execute_raw_request(ctx, req).await?
+                //TODO: proxy
+                execute_raw_request(ctx, req, &None).await?
             };
 
             set_headers(ctx, &res);

@@ -1,10 +1,13 @@
+use reqwest::Proxy as reqwestProxy;
 use std::sync::Arc;
 
 use async_graphql::from_value;
-use reqwest::Request;
+use reqwest::{Client, Request};
 
 use super::model::DataLoaderId;
 use super::{EvalContext, ResolverContextLike};
+use crate::cli::runtime::NativeHttp;
+use crate::core::config::Proxy;
 use crate::core::data_loader::{DataLoader, Loader};
 use crate::core::grpc::protobuf::ProtobufOperation;
 use crate::core::grpc::request::execute_grpc_request;
@@ -56,10 +59,12 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         let ctx = &self.evaluation_ctx;
         let is_get = req.method() == reqwest::Method::GET;
         let dl = &self.data_loader;
+        let proxy = &self.request_template.proxy;
         let response = if is_get && dl.is_some() {
+            // TODO: proxy
             execute_request_with_dl(ctx, req, self.data_loader).await?
         } else {
-            execute_raw_request(ctx, req).await?
+            execute_raw_request(ctx, req, proxy).await?
         };
 
         if ctx.request_ctx.server.get_enable_http_validation() {
@@ -178,7 +183,26 @@ fn set_cookie_headers<Ctx: ResolverContextLike>(
 pub async fn execute_raw_request<Ctx: ResolverContextLike>(
     ctx: &EvalContext<'_, Ctx>,
     req: Request,
+    proxy: &Option<Proxy>,
 ) -> Result<Response<async_graphql::Value>, Error> {
+    if let Some(proxy_url) = proxy {
+        if proxy_url.url != ctx.request_ctx.upstream.proxy.as_ref().unwrap().url {
+            tracing::warn!("using proxy: {:?} for req {:?}", proxy, req.url().path());
+            let mut proxy_clients = ctx.request_ctx.runtime.proxy_clients.lock().await;
+            let client = proxy_clients
+                .entry(proxy_url.url.clone())
+                .or_insert_with(|| {
+                    tracing::warn!("creating proxy client for {:?}", proxy_url.url);
+                    Arc::new(NativeHttp::init(
+                        &ctx.request_ctx.upstream.clone(),
+                        &Default::default(),
+                        Some(proxy_url.clone()),
+                    ))
+                });
+            let response = client.execute(req).await.map_err(Error::from)?.to_json()?;
+            return Ok(response);
+        }
+    }
     let response = ctx
         .request_ctx
         .runtime

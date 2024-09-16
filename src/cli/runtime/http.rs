@@ -19,6 +19,7 @@ use tracing_opentelemetry::OpenTelemetrySpanExt;
 use super::HttpIO;
 use crate::core::blueprint::telemetry::Telemetry;
 use crate::core::blueprint::Upstream;
+use crate::core::config::Proxy;
 use crate::core::http::Response;
 
 static HTTP_CLIENT_REQUEST_COUNT: Lazy<Counter<u64>> = Lazy::new(|| {
@@ -85,7 +86,7 @@ impl Default for NativeHttp {
 }
 
 impl NativeHttp {
-    pub fn init(upstream: &Upstream, telemetry: &Telemetry) -> Self {
+    pub fn init(upstream: &Upstream, telemetry: &Telemetry, custom_proxy: Option<Proxy>) -> Self {
         let mut builder = Client::builder()
             .tcp_keepalive(Some(Duration::from_secs(upstream.tcp_keep_alive)))
             .timeout(Duration::from_secs(upstream.timeout))
@@ -103,12 +104,21 @@ impl NativeHttp {
         }
 
         // Add Http Proxy
-        if let Some(ref proxy) = upstream.proxy {
+        if let Some(ref proxy) = custom_proxy {
+            tracing::warn!("custom proxy: {:?}", proxy);
+            builder = builder.proxy(
+                reqwest::Proxy::http(proxy.url.clone())
+                    .expect("Failed to set proxy in http client"),
+            );
+        } else if let Some(ref proxy) = upstream.proxy {
+            tracing::warn!("upstream proxy: {:?}", proxy);
             builder = builder.proxy(
                 reqwest::Proxy::http(proxy.url.clone())
                     .expect("Failed to set proxy in http client"),
             );
         }
+
+        tracing::warn!("client proxy is : {:?}", builder);
 
         let mut client = ClientBuilder::new(builder.build().expect("Failed to build client"));
 
@@ -143,6 +153,8 @@ impl HttpIO for NativeHttp {
         )
     )]
     async fn execute(&self, mut request: reqwest::Request) -> Result<Response<Bytes>> {
+        tracing::warn!("request: {:?}", request);
+        tracing::warn!("self.client: {:?}", self.client);
         if self.http2_only {
             *request.version_mut() = reqwest::Version::HTTP_2;
         }
@@ -211,7 +223,7 @@ mod tests {
             then.status(200).body("Hello");
         });
 
-        let native_http = NativeHttp::init(&Default::default(), &Default::default());
+        let native_http = NativeHttp::init(&Default::default(), &Default::default(), None);
         let port = server.port();
         // Build a GET request to the mock server
         let request_url = format!("http://localhost:{}/test", port);
@@ -253,7 +265,7 @@ mod tests {
         });
 
         let upstream = Upstream { http_cache: 2, ..Default::default() };
-        let native_http = NativeHttp::init(&upstream, &Default::default());
+        let native_http = NativeHttp::init(&upstream, &Default::default(), None);
         let port = server.port();
 
         let url1 = format!("http://localhost:{}/test-1", port);

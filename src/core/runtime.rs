@@ -1,6 +1,8 @@
-use std::sync::Arc;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 use async_graphql_value::ConstValue;
+use reqwest::Client;
 
 use super::ir::model::IoId;
 use crate::core::schema_extension::SchemaExtension;
@@ -32,6 +34,8 @@ pub struct TargetRuntime {
     pub cmd_worker: Option<Arc<dyn WorkerIO<Event, Command>>>,
     /// Worker middleware for resolving data.
     pub worker: Option<Arc<dyn WorkerIO<ConstValue, ConstValue>>>,
+    /// Proxy clients
+    pub proxy_clients: Arc<tokio::sync::Mutex<HashMap<String, Arc<dyn HttpIO + Send + Sync>>>>,
 }
 
 impl TargetRuntime {
@@ -44,7 +48,7 @@ impl TargetRuntime {
 pub mod test {
     use std::borrow::Cow;
     use std::collections::HashMap;
-    use std::sync::Arc;
+    use std::sync::{Arc, Mutex};
     use std::time::Duration;
 
     use anyhow::{anyhow, Result};
@@ -187,6 +191,7 @@ pub mod test {
             file: Arc::new(file),
             cache: Arc::new(InMemoryCache::new()),
             extensions: Arc::new(vec![]),
+            proxy_clients: Arc::new(tokio::sync::Mutex::new(HashMap::new())),
             cmd_worker: match &script {
                 Some(script) => Some(init_worker_io::<Event, Command>(script.to_owned())),
                 None => None,

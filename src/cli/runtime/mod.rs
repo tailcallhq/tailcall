@@ -2,6 +2,7 @@ mod env;
 mod file;
 mod http;
 
+use std::collections::HashMap;
 use std::fs;
 use std::hash::Hash;
 use std::sync::Arc;
@@ -54,6 +55,7 @@ fn init_http(blueprint: &Blueprint) -> Arc<dyn HttpIO> {
     Arc::new(http::NativeHttp::init(
         &blueprint.upstream,
         &blueprint.telemetry,
+        None,
     ))
 }
 
@@ -62,6 +64,7 @@ fn init_http2_only(blueprint: &Blueprint) -> Arc<dyn HttpIO> {
     Arc::new(http::NativeHttp::init(
         &blueprint.upstream.clone().http2_only(true),
         &blueprint.telemetry,
+        None,
     ))
 }
 
@@ -79,6 +82,7 @@ pub fn init(blueprint: &Blueprint) -> TargetRuntime {
         env: init_env(),
         file: init_file(),
         cache: Arc::new(init_in_memory_cache()),
+        proxy_clients: Arc::new(tokio::sync::Mutex::new(HashMap::new())),
         extensions: Arc::new(vec![]),
         cmd_worker: init_http_worker_io(blueprint.server.script.clone()),
         worker: init_resolver_worker_io(blueprint.server.script.clone()),

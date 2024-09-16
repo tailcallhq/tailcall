@@ -5,11 +5,14 @@ use crate::core::config::Encoding;
 use crate::core::http::Method;
 use crate::core::json::JsonSchema;
 
+use super::config::Proxy;
+
 #[derive(Clone, Debug, Setters)]
 pub struct Endpoint {
     pub path: String,
     pub query: Vec<(String, String, bool)>,
     pub method: Method,
+    pub proxy: Option<Proxy>,
     pub input: JsonSchema,
     pub output: JsonSchema,
     pub headers: HeaderMap,
@@ -24,6 +27,7 @@ impl Endpoint {
             path: url,
             query: Default::default(),
             method: Default::default(),
+            proxy: Default::default(),
             input: Default::default(),
             output: Default::default(),
             headers: Default::default(),

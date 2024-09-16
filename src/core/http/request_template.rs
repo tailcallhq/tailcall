@@ -8,7 +8,7 @@ use tailcall_hasher::TailcallHasher;
 use url::Url;
 
 use super::query_encoder::QueryEncoder;
-use crate::core::config::Encoding;
+use crate::core::config::{Encoding, Proxy};
 use crate::core::endpoint::Endpoint;
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
@@ -25,6 +25,7 @@ pub struct RequestTemplate {
     pub root_url: Mustache,
     pub query: Vec<Query>,
     pub method: reqwest::Method,
+    pub proxy: Option<Proxy>,
     pub headers: MustacheHeaders,
     pub body_path: Option<Mustache>,
     pub endpoint: Endpoint,
@@ -188,6 +189,7 @@ impl RequestTemplate {
             root_url: Mustache::parse(root_url),
             query: Default::default(),
             method: reqwest::Method::GET,
+            proxy: Default::default(),
             headers: Default::default(),
             body_path: Default::default(),
             endpoint: Endpoint::new(root_url.to_string()),
@@ -233,12 +235,14 @@ impl TryFrom<Endpoint> for RequestTemplate {
             .body
             .as_ref()
             .map(|body| Mustache::parse(body.as_str()));
+        let proxy = endpoint.proxy.clone();
         let encoding = endpoint.encoding.clone();
 
         Ok(Self {
             root_url: path,
             query,
             method,
+            proxy,
             headers,
             body_path: body,
             endpoint,
