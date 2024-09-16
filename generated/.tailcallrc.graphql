@@ -282,6 +282,18 @@ directive @server(
   """
   port: Int
   """
+  `query_complexity` sets the maximum allowed complexity for a GraphQL query. It helps 
+  prevent resource-intensive queries by limiting their complexity. If set, queries 
+  exceeding this complexity will be rejected.
+  """
+  queryComplexity: Int
+  """
+  `query_depth` sets the maximum allowed depth for a GraphQL query. It helps prevent 
+  deeply nested queries that could potentially overload the server. If set, queries 
+  exceeding this depth will be rejected.
+  """
+  queryDepth: Int
+  """
   `queryValidation` checks incoming GraphQL queries against the schema, preventing 
   errors from invalid queries. Can be disabled for performance. @default `false`.
   """
