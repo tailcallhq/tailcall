@@ -88,11 +88,11 @@ impl Transform for RenameTypes {
                 type_.implements = type_
                     .implements
                     .iter()
-                    .filter_map(|interface_type_name| {
+                    .map(|interface_type_name| {
                         lookup
                             .get(interface_type_name)
                             .cloned()
-                            .or(Some(interface_type_name.clone()))
+                            .unwrap_or_else(|| interface_type_name.to_owned())
                     })
                     .collect();
             }
@@ -124,8 +124,11 @@ impl Transform for RenameTypes {
                 union_type_.types = union_type_
                     .types
                     .iter()
-                    .filter_map(|type_name| {
-                        lookup.get(type_name).cloned().or(Some(type_name.clone()))
+                    .map(|type_name| {
+                        lookup
+                            .get(type_name)
+                            .cloned()
+                            .unwrap_or_else(|| type_name.to_owned())
                     })
                     .collect();
             }
