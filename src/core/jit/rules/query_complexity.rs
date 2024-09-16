@@ -13,9 +13,7 @@ impl QueryComplexity {
 }
 
 impl Rule for QueryComplexity {
-    type Value = ConstValue;
-    type Error = String;
-    fn validate(&self, plan: &OperationPlan<Self::Value>) -> Valid<(), Self::Error> {
+    fn validate(&self, plan: &OperationPlan<ConstValue>) -> Valid<(), String> {
         let complexity: usize = plan.as_nested().iter().map(Self::complexity_helper).sum();
         if complexity > self.0 {
             Valid::fail("Query Complexity validation failed.".into())
@@ -42,21 +40,22 @@ impl QueryComplexity {
 mod test {
     use async_graphql_value::ConstValue;
 
-    use super::QueryComplexity;
     use crate::core::blueprint::Blueprint;
     use crate::core::config::Config;
-    use crate::core::jit::rules::Rule;
+    use crate::core::jit::rules::{QueryComplexity, Rule};
     use crate::core::jit::{Builder, OperationPlan, Variables};
     use crate::core::valid::Validator;
 
     const CONFIG: &str = include_str!("./../fixtures/jsonplaceholder-mutation.graphql");
 
-    fn plan(query: impl AsRef<str>, variables: &Variables<ConstValue>) -> OperationPlan<ConstValue> {
+    fn plan(query: impl AsRef<str>) -> OperationPlan<ConstValue> {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
+        let variables: Variables<ConstValue> = Variables::default();
+
         Builder::new(&blueprint, document)
-            .build(variables, None)
+            .build(&variables, None)
             .unwrap()
     }
 
@@ -72,7 +71,7 @@ mod test {
             }
         "#;
 
-        let plan = plan(query, &Default::default());
+        let plan = plan(query);
         let query_complexity = QueryComplexity::new(4);
         let val_result = query_complexity.validate(&plan);
         assert!(val_result.is_succeed());
@@ -97,7 +96,7 @@ mod test {
             }
         "#;
 
-        let plan = plan(query, &Default::default());
+        let plan = plan(query);
 
         let query_complexity = QueryComplexity::new(6);
         let val_result = query_complexity.validate(&plan);

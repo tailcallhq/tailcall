@@ -13,6 +13,8 @@ pub enum BuildError {
     OperationNotFound(String),
     #[error("Operation name required in request")]
     OperationNameRequired,
+    #[error("{0}")]
+    CustomError(String),
 }
 
 #[derive(Error, Debug, Clone, PartialEq, Eq)]

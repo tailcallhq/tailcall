@@ -1,8 +1,8 @@
+use async_graphql_value::ConstValue;
+
 use super::Rule;
 use crate::core::jit::{Field, Nested, OperationPlan};
 use crate::core::valid::Valid;
-
-use async_graphql_value::ConstValue;
 
 pub struct QueryDepth(usize);
 
@@ -13,9 +13,7 @@ impl QueryDepth {
 }
 
 impl Rule for QueryDepth {
-    type Value = ConstValue;
-    type Error = String;
-    fn validate(&self, plan: &OperationPlan<Self::Value>) -> Valid<(), Self::Error> {
+    fn validate(&self, plan: &OperationPlan<ConstValue>) -> Valid<(), String> {
         let depth = plan
             .as_nested()
             .iter()
@@ -61,15 +59,16 @@ mod test {
 
     const CONFIG: &str = include_str!("./../fixtures/jsonplaceholder-mutation.graphql");
 
-    fn plan(query: impl AsRef<str>, variables: &Variables<ConstValue>) -> OperationPlan<ConstValue> {
+    fn plan(query: impl AsRef<str>) -> OperationPlan<ConstValue> {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
+        let variables: Variables<ConstValue> = Variables::default();
+
         Builder::new(&blueprint, document)
-            .build(variables, None)
+            .build(&variables, None)
             .unwrap()
     }
-
     #[test]
     fn test_query_complexity() {
         let query = r#"
@@ -82,7 +81,7 @@ mod test {
             }
         "#;
 
-        let plan = plan(query, &Default::default());
+        let plan = plan(query);
         let query_complexity = QueryDepth::new(4);
         let val_result = query_complexity.validate(&plan);
         assert!(val_result.is_succeed());
@@ -107,7 +106,7 @@ mod test {
             }
         "#;
 
-        let plan = plan(query, &Default::default());
+        let plan = plan(query);
 
         let query_complexity = QueryDepth::new(4);
         let val_result = query_complexity.validate(&plan);

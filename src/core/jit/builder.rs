@@ -362,20 +362,20 @@ impl Builder {
             is_introspection_query,
         );
 
-        let res = QueryComplexity::new(2)
-            .pipe(QueryDepth::new(2))
-            .validate(&plan);
-
-        if !res.is_succeed() {
-            // TODO: raise the error.
-        }
-
         // TODO: operation from [ExecutableDocument] could contain definitions for
         // default values of arguments. That info should be passed to
         // [InputResolver] to resolve defaults properly
         let input_resolver = InputResolver::new(plan);
+        let plan = input_resolver.resolve_input(variables)?;
 
-        Ok(input_resolver.resolve_input(variables)?)
+        // perform the rule check.
+        QueryComplexity::new(2)
+            .pipe(QueryDepth::new(2))
+            .validate(&plan)
+            .to_result()
+            .map_err(|e| BuildError::CustomError(e.to_string()))?;
+
+        Ok(plan)
     }
 }
 
