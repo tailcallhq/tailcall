@@ -16,6 +16,9 @@ pub trait RuleOps: Sized + Rule {
     fn pipe<Other: Rule>(self, other: Other) -> Pipe<Self, Other> {
         Pipe(self, other)
     }
+    fn when(self, cond: bool) -> When<Self> {
+        When(self, cond)
+    }
 }
 
 impl<T: Rule> RuleOps for T {}
@@ -29,5 +32,20 @@ where
 {
     fn validate(&self, plan: &OperationPlan<ConstValue>) -> Valid<(), String> {
         self.0.validate(plan).and_then(|_| self.1.validate(plan))
+    }
+}
+
+pub struct When<A>(A, bool);
+
+impl<A> Rule for When<A>
+where
+    A: Rule,
+{
+    fn validate(&self, plan: &OperationPlan<ConstValue>) -> Valid<(), String> {
+        if self.1 {
+            self.0.validate(plan)
+        } else {
+            Valid::succeed(())
+        }
     }
 }
