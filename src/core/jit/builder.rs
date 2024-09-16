@@ -11,6 +11,7 @@ use async_graphql_value::{ConstValue, Value};
 
 use super::input_resolver::InputResolver;
 use super::model::{Directive as JitDirective, *};
+use super::rules::{QueryComplexity, QueryDepth, Rule, RuleOps};
 use super::BuildError;
 use crate::core::blueprint::{Blueprint, Index, QueryField};
 use crate::core::counter::{Count, Counter};
@@ -359,6 +360,10 @@ impl Builder {
             self.index.clone(),
             is_introspection_query,
         );
+
+        let _ = QueryComplexity::new(2)
+            .pipe(QueryDepth::new(2))
+            .validate(&plan);
 
         // TODO: operation from [ExecutableDocument] could contain definitions for
         // default values of arguments. That info should be passed to

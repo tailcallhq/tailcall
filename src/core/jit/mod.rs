@@ -11,6 +11,7 @@ mod exec_const;
 mod input_resolver;
 mod request;
 mod response;
+mod rules;
 
 // NOTE: Only used in tests and benchmarks
 mod builder;

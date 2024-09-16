@@ -357,6 +357,52 @@ pub struct OperationPlan<Input> {
     pub is_introspection_query: bool,
 }
 
+impl<Input> OperationPlan<Input> {
+    /// Calculates the maximum depth of the query.
+    pub fn calculate_depth(&self) -> usize {
+        self.as_nested()
+            .iter()
+            .map(|field| Self::depth_helper(field, 1))
+            .max()
+            .unwrap_or(0)
+    }
+
+    /// Helper function to recursively calculate depth.
+    fn depth_helper(field: &Field<Nested<Input>, Input>, current_depth: usize) -> usize {
+        let mut max_depth = current_depth;
+
+        for child in field.extensions.as_ref() {
+            for nested_child in child.0.iter() {
+                let depth = Self::depth_helper(nested_child, current_depth + 1);
+                if depth > max_depth {
+                    max_depth = depth;
+                }
+            }
+        }
+
+        max_depth
+    }
+
+    /// Calculates the total complexity of the query.
+    pub fn calculate_complexity(&self) -> usize {
+        self.as_nested()
+            .iter()
+            .map(|field| Self::complexity_helper(field))
+            .sum()
+    }
+
+    /// Helper function to recursively calculate complexity.
+    fn complexity_helper(field: &Field<Nested<Input>, Input>) -> usize {
+        let mut complexity = 1; // Default complexity of each field is 1
+
+        for child in field.iter_only(|_| true) {
+            complexity += Self::complexity_helper(child);
+        }
+
+        complexity
+    }
+}
+
 impl<Input> std::fmt::Debug for OperationPlan<Input> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("OperationPlan")
@@ -672,7 +718,23 @@ mod test {
     use async_graphql::parser::types::ConstDirective;
     use async_graphql_value::ConstValue;
 
-    use super::Directive;
+    use crate::core::{blueprint::Blueprint, config::Config, jit::Builder, valid::Validator};
+
+    use super::{Directive, OperationPlan, Variables};
+
+    const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
+
+    fn plan(
+        query: impl AsRef<str>,
+        variables: &Variables<ConstValue>,
+    ) -> OperationPlan<ConstValue> {
+        let config = Config::from_sdl(CONFIG).to_result().unwrap();
+        let blueprint = Blueprint::try_from(&config.into()).unwrap();
+        let document = async_graphql::parser::parse_query(query).unwrap();
+        Builder::new(&blueprint, document)
+            .build(variables, None)
+            .unwrap()
+    }
 
     #[test]
     fn test_from_custom_directive() {
@@ -683,5 +745,24 @@ mod test {
 
         let async_directive: ConstDirective = (&custom_directive).into();
         insta::assert_debug_snapshot!(async_directive);
+    }
+
+    #[test]
+    fn test_depth_and_complexity() {
+        let variables = Variables::new();
+        let query = r#"
+            {
+                posts {
+                    id
+                    userId
+                    title
+                }
+            }
+        "#;
+        let plan = plan(query, &variables);
+        let depth = plan.calculate_depth();
+        let complexity = plan.calculate_complexity();
+        assert_eq!(depth, 2);
+        assert_eq!(complexity, 4);
     }
 }
