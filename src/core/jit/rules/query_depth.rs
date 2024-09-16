@@ -1,5 +1,3 @@
-use async_graphql_value::ConstValue;
-
 use super::Rule;
 use crate::core::jit::{Field, Nested, OperationPlan};
 use crate::core::valid::Valid;
@@ -13,7 +11,7 @@ impl QueryDepth {
 }
 
 impl Rule for QueryDepth {
-    fn validate(&self, plan: &OperationPlan<ConstValue>) -> Valid<(), String> {
+    fn validate<T>(&self, plan: &OperationPlan<T>) -> Valid<(), String> {
         let depth = plan
             .as_nested()
             .iter()
@@ -31,7 +29,7 @@ impl Rule for QueryDepth {
 
 impl QueryDepth {
     /// Helper function to recursively calculate depth.
-    fn depth_helper(field: &Field<Nested<ConstValue>, ConstValue>, current_depth: usize) -> usize {
+    fn depth_helper<T>(field: &Field<Nested<T>, T>, current_depth: usize) -> usize {
         let mut max_depth = current_depth;
 
         if let Some(child) = field.extensions.as_ref() {

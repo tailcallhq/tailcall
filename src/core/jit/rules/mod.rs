@@ -4,12 +4,11 @@ use crate::core::valid::{Valid, Validator};
 mod query_complexity;
 mod query_depth;
 
-use async_graphql_value::ConstValue;
 pub use query_complexity::QueryComplexity;
 pub use query_depth::QueryDepth;
 
 pub trait Rule {
-    fn validate(&self, plan: &OperationPlan<ConstValue>) -> Valid<(), String>;
+    fn validate<T>(&self, plan: &OperationPlan<T>) -> Valid<(), String>;
 }
 
 pub trait RuleOps: Sized + Rule {
@@ -30,7 +29,7 @@ where
     A: Rule,
     B: Rule,
 {
-    fn validate(&self, plan: &OperationPlan<ConstValue>) -> Valid<(), String> {
+    fn validate<T>(&self, plan: &OperationPlan<T>) -> Valid<(), String> {
         self.0.validate(plan).and_then(|_| self.1.validate(plan))
     }
 }
@@ -41,7 +40,7 @@ impl<A> Rule for When<A>
 where
     A: Rule,
 {
-    fn validate(&self, plan: &OperationPlan<ConstValue>) -> Valid<(), String> {
+    fn validate<T>(&self, plan: &OperationPlan<T>) -> Valid<(), String> {
         if self.1 {
             self.0.validate(plan)
         } else {

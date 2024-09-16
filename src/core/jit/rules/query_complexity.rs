@@ -1,5 +1,3 @@
-use async_graphql_value::ConstValue;
-
 use super::Rule;
 use crate::core::jit::{Field, Nested, OperationPlan};
 use crate::core::valid::Valid;
@@ -13,7 +11,7 @@ impl QueryComplexity {
 }
 
 impl Rule for QueryComplexity {
-    fn validate(&self, plan: &OperationPlan<ConstValue>) -> Valid<(), String> {
+    fn validate<T>(&self, plan: &OperationPlan<T>) -> Valid<(), String> {
         let complexity: usize = plan.as_nested().iter().map(Self::complexity_helper).sum();
         if complexity > self.0 {
             Valid::fail("Query Complexity validation failed.".into())
@@ -24,7 +22,7 @@ impl Rule for QueryComplexity {
 }
 
 impl QueryComplexity {
-    fn complexity_helper(field: &Field<Nested<ConstValue>, ConstValue>) -> usize {
+    fn complexity_helper<T>(field: &Field<Nested<T>, T>) -> usize {
         let mut complexity = 1;
 
         let fields = field.iter_only(|_| true).collect::<Vec<_>>();

@@ -362,12 +362,6 @@ impl Builder {
             is_introspection_query,
         );
 
-        // TODO: operation from [ExecutableDocument] could contain definitions for
-        // default values of arguments. That info should be passed to
-        // [InputResolver] to resolve defaults properly
-        let input_resolver = InputResolver::new(plan);
-        let plan = input_resolver.resolve_input(variables)?;
-
         // perform the rule check.
         QueryComplexity::new(self.index.query_complexity().unwrap_or(0))
             .when(self.index.query_complexity().is_some())
@@ -378,6 +372,12 @@ impl Builder {
             .validate(&plan)
             .to_result()
             .map_err(|e| BuildError::CustomError(e.to_string()))?;
+
+        // TODO: operation from [ExecutableDocument] could contain definitions for
+        // default values of arguments. That info should be passed to
+        // [InputResolver] to resolve defaults properly
+        let input_resolver = InputResolver::new(plan);
+        let plan = input_resolver.resolve_input(variables)?;
 
         Ok(plan)
     }
