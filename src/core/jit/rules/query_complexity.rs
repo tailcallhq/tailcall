@@ -1,4 +1,4 @@
-use super::Rule;
+use super::ExecutionRule;
 use crate::core::jit::{Field, Nested, OperationPlan};
 use crate::core::valid::Valid;
 
@@ -10,7 +10,7 @@ impl QueryComplexity {
     }
 }
 
-impl Rule for QueryComplexity {
+impl ExecutionRule for QueryComplexity {
     fn validate<T: std::fmt::Debug>(&self, plan: &OperationPlan<T>) -> Valid<(), String> {
         let complexity: usize = plan.as_nested().iter().map(Self::complexity_helper).sum();
         if complexity > self.0 {
@@ -40,7 +40,7 @@ mod test {
 
     use crate::core::blueprint::Blueprint;
     use crate::core::config::Config;
-    use crate::core::jit::rules::{QueryComplexity, Rule};
+    use crate::core::jit::rules::{ExecutionRule, QueryComplexity};
     use crate::core::jit::{Builder, OperationPlan, Variables};
     use crate::core::valid::Validator;
 

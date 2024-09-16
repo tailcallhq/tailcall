@@ -1,4 +1,4 @@
-use super::Rule;
+use super::ExecutionRule;
 use crate::core::jit::{Field, Nested, OperationPlan};
 use crate::core::valid::Valid;
 
@@ -10,7 +10,7 @@ impl QueryDepth {
     }
 }
 
-impl Rule for QueryDepth {
+impl ExecutionRule for QueryDepth {
     fn validate<T: std::fmt::Debug>(&self, plan: &OperationPlan<T>) -> Valid<(), String> {
         let depth = plan
             .as_nested()
@@ -54,7 +54,7 @@ mod test {
     use super::QueryDepth;
     use crate::core::blueprint::Blueprint;
     use crate::core::config::Config;
-    use crate::core::jit::rules::Rule;
+    use crate::core::jit::rules::ExecutionRule;
     use crate::core::jit::{Builder, OperationPlan, Variables};
     use crate::core::valid::Validator;
 

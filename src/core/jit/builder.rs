@@ -11,7 +11,7 @@ use async_graphql_value::{ConstValue, Value};
 
 use super::input_resolver::InputResolver;
 use super::model::{Directive as JitDirective, *};
-use super::rules::{Default, QueryComplexity, QueryDepth, Rule, RuleOps};
+use super::rules::{ExecutionRule, QueryComplexity, QueryDepth, RuleOps, Rules};
 use super::BuildError;
 use crate::core::blueprint::{Blueprint, Index, QueryField};
 use crate::core::counter::{Count, Counter};
@@ -363,7 +363,7 @@ impl Builder {
         );
 
         // perform the rule check.
-        Default::default()
+        Rules
             .pipe(
                 QueryComplexity::new(self.index.query_complexity().unwrap_or_default())
                     .when(self.index.query_complexity().is_some()),

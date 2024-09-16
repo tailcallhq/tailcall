@@ -7,12 +7,12 @@ mod query_depth;
 pub use query_complexity::QueryComplexity;
 pub use query_depth::QueryDepth;
 
-pub trait Rule {
+pub trait ExecutionRule {
     fn validate<T: std::fmt::Debug>(&self, plan: &OperationPlan<T>) -> Valid<(), String>;
 }
 
-pub trait RuleOps: Sized + Rule {
-    fn pipe<Other: Rule>(self, other: Other) -> Pipe<Self, Other> {
+pub trait RuleOps: Sized + ExecutionRule {
+    fn pipe<Other: ExecutionRule>(self, other: Other) -> Pipe<Self, Other> {
         Pipe(self, other)
     }
     fn when(self, cond: bool) -> When<Self> {
@@ -20,14 +20,14 @@ pub trait RuleOps: Sized + Rule {
     }
 }
 
-impl<T: Rule> RuleOps for T {}
+impl<T: ExecutionRule> RuleOps for T {}
 
 pub struct Pipe<A, B>(A, B);
 
-impl<A, B> Rule for Pipe<A, B>
+impl<A, B> ExecutionRule for Pipe<A, B>
 where
-    A: Rule,
-    B: Rule,
+    A: ExecutionRule,
+    B: ExecutionRule,
 {
     fn validate<T: std::fmt::Debug>(&self, plan: &OperationPlan<T>) -> Valid<(), String> {
         self.0.validate(plan).and_then(|_| self.1.validate(plan))
@@ -36,9 +36,9 @@ where
 
 pub struct When<A>(A, bool);
 
-impl<A> Rule for When<A>
+impl<A> ExecutionRule for When<A>
 where
-    A: Rule,
+    A: ExecutionRule,
 {
     fn validate<T: std::fmt::Debug>(&self, plan: &OperationPlan<T>) -> Valid<(), String> {
         if self.1 {
@@ -50,9 +50,9 @@ where
 }
 
 #[derive(Default)]
-pub struct Default();
+pub struct Rules;
 
-impl Rule for Default {
+impl ExecutionRule for Rules {
     fn validate<T: std::fmt::Debug>(&self, _: &OperationPlan<T>) -> Valid<(), String> {
         Valid::succeed(())
     }
