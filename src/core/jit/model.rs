@@ -672,23 +672,7 @@ mod test {
     use async_graphql::parser::types::ConstDirective;
     use async_graphql_value::ConstValue;
 
-    use crate::core::{blueprint::Blueprint, config::Config, jit::Builder, valid::Validator};
-
-    use super::{Directive, OperationPlan, Variables};
-
-    const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
-
-    fn plan(
-        query: impl AsRef<str>,
-        variables: &Variables<ConstValue>,
-    ) -> OperationPlan<ConstValue> {
-        let config = Config::from_sdl(CONFIG).to_result().unwrap();
-        let blueprint = Blueprint::try_from(&config.into()).unwrap();
-        let document = async_graphql::parser::parse_query(query).unwrap();
-        Builder::new(&blueprint, document)
-            .build(variables, None)
-            .unwrap()
-    }
+    use super::Directive;
 
     #[test]
     fn test_from_custom_directive() {
