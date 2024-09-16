@@ -672,7 +672,9 @@ pub struct GraphQL {
     /// a field in your schema to a field in the upstream schema. When a query
     /// is received for this field, Tailcall requests data from the
     /// corresponding upstream field.
+    #[serde(default, skip_serializing_if = "is_default")]
     pub name: String,
+    #[serde(default, skip_serializing_if = "is_default")]
     pub query: Vec<URLQuery>,
     #[serde(default, skip_serializing_if = "is_default")]
     pub allowed_headers: BTreeSet<String>,

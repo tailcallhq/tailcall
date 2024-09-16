@@ -2,14 +2,9 @@
 
 ```json @config
 {
+  "$schema": "/Users/ssdd/RustroverProjects/tco/generated/.tailcallrc.schema.json",
   "server": {},
-  "upstream": {
-    "batch": {
-      "maxSize": 100,
-      "delay": 1,
-      "headers": []
-    }
-  },
+  "upstream": {},
   "schema": {
     "query": "Query"
   },
@@ -28,6 +23,11 @@
             }
           },
           "http": {
+            "batch": {
+              "maxSize": 100,
+              "delay": 1,
+              "headers": []
+            },
             "path": "/users",
             "query": [
               {
