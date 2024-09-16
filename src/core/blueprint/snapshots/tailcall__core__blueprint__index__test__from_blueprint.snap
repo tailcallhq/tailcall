@@ -1211,7 +1211,7 @@ Index {
         enable_batch_requests: false,
         enable_showcase: false,
         global_response_timeout: 0,
-        worker: 8,
+        worker: 4,
         port: 8000,
         hostname: 127.0.0.1,
         vars: {},
