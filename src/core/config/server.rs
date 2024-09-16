@@ -122,14 +122,14 @@ pub struct Server {
     pub workers: Option<usize>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// `query_complexity` sets the maximum allowed complexity for a GraphQL
+    /// `queryComplexity` sets the maximum allowed complexity for a GraphQL
     /// query. It helps prevent resource-intensive queries by limiting their
     /// complexity. If set, queries exceeding this complexity will be
     /// rejected.
     pub query_complexity: Option<usize>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// `query_depth` sets the maximum allowed depth for a GraphQL query.
+    /// `queryDepth` sets the maximum allowed depth for a GraphQL query.
     /// It helps prevent deeply nested queries that could potentially overload
     /// the server. If set, queries exceeding this depth will be rejected.
     pub query_depth: Option<usize>,

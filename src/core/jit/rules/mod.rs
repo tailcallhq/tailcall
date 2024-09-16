@@ -8,7 +8,7 @@ pub use query_complexity::QueryComplexity;
 pub use query_depth::QueryDepth;
 
 pub trait Rule {
-    fn validate<T>(&self, plan: &OperationPlan<T>) -> Valid<(), String>;
+    fn validate<T: std::fmt::Debug>(&self, plan: &OperationPlan<T>) -> Valid<(), String>;
 }
 
 pub trait RuleOps: Sized + Rule {
@@ -29,7 +29,7 @@ where
     A: Rule,
     B: Rule,
 {
-    fn validate<T>(&self, plan: &OperationPlan<T>) -> Valid<(), String> {
+    fn validate<T: std::fmt::Debug>(&self, plan: &OperationPlan<T>) -> Valid<(), String> {
         self.0.validate(plan).and_then(|_| self.1.validate(plan))
     }
 }
@@ -40,11 +40,20 @@ impl<A> Rule for When<A>
 where
     A: Rule,
 {
-    fn validate<T>(&self, plan: &OperationPlan<T>) -> Valid<(), String> {
+    fn validate<T: std::fmt::Debug>(&self, plan: &OperationPlan<T>) -> Valid<(), String> {
         if self.1 {
             self.0.validate(plan)
         } else {
             Valid::succeed(())
         }
+    }
+}
+
+#[derive(Default)]
+pub struct Default();
+
+impl Rule for Default {
+    fn validate<T: std::fmt::Debug>(&self, _: &OperationPlan<T>) -> Valid<(), String> {
+        Valid::succeed(())
     }
 }
