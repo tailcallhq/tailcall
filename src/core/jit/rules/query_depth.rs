@@ -11,7 +11,9 @@ impl QueryDepth {
 }
 
 impl Rule for QueryDepth {
-    fn validate(&self, plan: &OperationPlan<async_graphql_value::Value>) -> Valid<(), String> {
+    type Value = async_graphql_value::Value;
+    type Error = String;
+    fn validate(&self, plan: &OperationPlan<Self::Value>) -> Valid<(), Self::Error> {
         let depth = plan
             .as_nested()
             .iter()

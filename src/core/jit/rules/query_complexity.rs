@@ -11,7 +11,9 @@ impl QueryComplexity {
 }
 
 impl Rule for QueryComplexity {
-    fn validate(&self, plan: &OperationPlan<async_graphql_value::Value>) -> Valid<(), String> {
+    type Value = async_graphql_value::Value;
+    type Error = String;
+    fn validate(&self, plan: &OperationPlan<Self::Value>) -> Valid<(), Self::Error> {
         let complexity: usize = plan.as_nested().iter().map(Self::complexity_helper).sum();
 
         if complexity > self.0 {
