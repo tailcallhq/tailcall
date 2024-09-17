@@ -345,7 +345,7 @@ impl Flat {
 /// Store field relationships in a nested structure like a tree where each field
 /// links to its children.
 #[derive(Clone, Debug)]
-pub struct Nested<Input>(pub Vec<Field<Nested<Input>, Input>>);
+pub struct Nested<Input>(Vec<Field<Nested<Input>, Input>>);
 
 #[derive(Clone)]
 pub struct OperationPlan<Input> {
