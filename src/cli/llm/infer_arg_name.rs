@@ -117,10 +117,16 @@ impl InferArgName {
                 let mut used_arg_name = IndexSet::new();
 
                 // filter out query params as we shouldn't change the names of query params.
-                for (arg_name, arg) in field.args.iter().filter(|(k, _)| match &field.resolver {
-                    Some(Resolver::Http(http)) => !http.query.iter().any(|q| &q.key == *k),
-                    _ => true,
-                }) {
+                for (arg_name, arg) in field
+                    .args
+                    .iter()
+                    .filter(|(k, _)| match &field.resolver {
+                        Some(Resolver::Http(http)) => !http.query.iter().any(|q| &q.key == *k),
+                        _ => true,
+                    })
+                    .filter(|(k, _)| k.starts_with("GEN__"))
+                // FIXME: use static const name of PREFIX once that PR is merged.
+                {
                     let question = OperationDefinition {
                         argument: MetaData {
                             name: arg_name.to_string(),
