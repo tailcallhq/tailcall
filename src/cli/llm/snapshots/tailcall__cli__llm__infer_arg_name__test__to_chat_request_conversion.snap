@@ -8,7 +8,7 @@ ChatRequest {
         ChatMessage {
             role: System,
             content: Text(
-                "Given the Operation Definition of GraphQL, suggest 5 meaningful names for the argument names.\nThe name should be concise and preferably a single word.\n\nExample Input:\n{\n  \"definition\": {\n    \"argument\": {\n      \"name\": \"input2\",\n      \"outputType\": \"Article\"\n    },\n    \"field\": {\n      \"name\": \"createPost\",\n      \"outputType\": \"Post\"\n    }\n  }\n}\n\nExample Output:\n{\n  \"suggestions\": [\n    \"createPostInput\",\n    \"postInput\",\n    \"articleInput\",\n    \"noteInput\",\n    \"messageInput\"\n  ]\n}\n\nEnsure the output is in valid JSON format.\n",
+                "Given the Operation Definition of GraphQL, suggest 5 meaningful names for the argument names.\nThe name should be concise, preferably a single word and must not be in the `ignore` list.\n\nExample Input:\n{\n  \"definition\": {\n    \"argument\": {\n      \"name\": \"input2\",\n      \"outputType\": \"Article\"\n    },\n    \"field\": {\n      \"name\": \"createPost\",\n      \"outputType\": \"Post\"\n    }\n  },\n  \"ignore\": [\n    \"createPost\"\n  ]\n}\n\nExample Output:\n{\n  \"suggestions\": [\n    \"createPostInput\",\n    \"postInput\",\n    \"articleInput\",\n    \"noteInput\",\n    \"messageInput\"\n  ]\n}\n\nEnsure the output is in valid JSON format.\n",
             ),
             extra: None,
         },

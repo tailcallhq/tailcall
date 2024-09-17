@@ -1,6 +1,5 @@
-use std::collections::HashSet;
-
 use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
+use indexmap::{indexset, IndexSet};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -47,13 +46,14 @@ impl TryFrom<ChatResponse> for Answer {
 #[derive(Clone, Serialize)]
 struct Question {
     definition: OperationDefinition,
+    ignore: IndexSet<String>,
 }
 
 impl TryInto<ChatRequest> for Question {
     type Error = Error;
 
     fn try_into(self) -> Result<ChatRequest> {
-        let input2 = OperationDefinition {
+        let input = OperationDefinition {
             argument: {
                 MetaData {
                     name: "input2".to_string(),
@@ -68,7 +68,10 @@ impl TryInto<ChatRequest> for Question {
             },
         };
 
-        let input = serde_json::to_string_pretty(&Question { definition: input2 })?;
+        let input = serde_json::to_string_pretty(&Question {
+            definition: input,
+            ignore: indexset! {"createPost".into()},
+        })?;
         let output = serde_json::to_string_pretty(&Answer {
             suggestions: vec![
                 "createPostInput".into(),
@@ -111,7 +114,7 @@ impl InferArgName {
                     continue;
                 }
 
-                let mut used_arg_name = HashSet::new();
+                let mut used_arg_name = IndexSet::new();
 
                 // filter out query params as we shouldn't change the names of query params.
                 for (arg_name, arg) in field.args.iter().filter(|(k, _)| match &field.resolver {
@@ -129,7 +132,7 @@ impl InferArgName {
                         },
                     };
 
-                    let question = Question { definition: question };
+                    let question = Question { definition: question, ignore: used_arg_name.clone() };
 
                     let mut delay = 3;
                     loop {
@@ -203,6 +206,7 @@ impl AsyncTransform for InferArgName {
 #[cfg(test)]
 mod test {
     use genai::chat::{ChatRequest, ChatResponse, MessageContent};
+    use indexmap::indexset;
 
     use super::{Answer, Question};
     use crate::cli::llm::infer_arg_name::{MetaData, OperationDefinition};
@@ -220,6 +224,7 @@ mod test {
                     output_type: "Post".to_string(),
                 },
             },
+            ignore: indexset! {"createPost".into()},
         };
         let request: ChatRequest = question.try_into().unwrap();
         insta::assert_debug_snapshot!(request);
