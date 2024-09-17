@@ -7,6 +7,7 @@ use serde_json::json;
 
 use super::{Error, Result, Wizard};
 use crate::core::config::Config;
+use crate::core::generator::PREFIX;
 use crate::core::Mustache;
 
 const BASE_TEMPLATE: &str = include_str!("prompts/infer_type_name.md");
@@ -84,10 +85,10 @@ impl InferTypeName {
         Self { wizard: Wizard::new(model, secret) }
     }
 
-    /// All generated type names starts with "GEN__"
+    /// All generated type names starts with PREFIX
     #[inline]
     fn is_auto_generated(type_name: &str) -> bool {
-        type_name.starts_with("GEN__")
+        type_name.starts_with(PREFIX)
     }
 
     pub async fn generate(&mut self, config: &Config) -> Result<HashMap<String, String>> {

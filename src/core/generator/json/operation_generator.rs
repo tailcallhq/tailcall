@@ -3,7 +3,7 @@ use convert_case::{Case, Casing};
 use super::http_directive_generator::HttpDirectiveGenerator;
 use crate::core::config::{Arg, Config, Field, GraphQLOperationType, Resolver};
 use crate::core::generator::json::types_generator::TypeGenerator;
-use crate::core::generator::{NameGenerator, RequestSample};
+use crate::core::generator::{NameGenerator, RequestSample, PREFIX};
 use crate::core::valid::Valid;
 use crate::core::{config, Type};
 
@@ -39,7 +39,8 @@ impl OperationTypeGenerator {
             let root_ty = TypeGenerator::new(name_generator)
                 .generate_types(&request_sample.req_body, &mut config);
             // add input type to field.
-            let arg_name_gen = NameGenerator::new("GEN__Input");
+            let prefix = format!("{}Input", PREFIX);
+            let arg_name_gen = NameGenerator::new(prefix.as_str());
             let arg_name = arg_name_gen.next();
             if let Some(Resolver::Http(http)) = &mut field.resolver {
                 http.body = Some(format!("{{{{.args.{}}}}}", arg_name));

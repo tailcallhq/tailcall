@@ -5,6 +5,7 @@ use indexmap::{IndexMap, IndexSet};
 use super::mergeable_types::MergeableTypes;
 use super::similarity::Similarity;
 use crate::core::config::{Config, Type};
+use crate::core::generator::PREFIX;
 use crate::core::merge_right::MergeRight;
 use crate::core::scalar::Scalar;
 use crate::core::transform::Transform;
@@ -97,7 +98,7 @@ impl TypeMerger {
         // step 2: merge similar types into single merged type.
         for same_types in similar_type_group_list {
             let mut merged_into = Type::default();
-            let merged_type_name = format!("GEN__M{}", merge_counter);
+            let merged_type_name = format!("{}M{}", PREFIX, merge_counter);
             let mut did_we_merge = false;
             for type_name in same_types {
                 if let Some(type_) = config.types.get(type_name.as_str()) {

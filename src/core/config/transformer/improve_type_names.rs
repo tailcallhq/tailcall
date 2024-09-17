@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, HashSet};
 use convert_case::{Case, Casing};
 
 use crate::core::config::Config;
+use crate::core::generator::PREFIX;
 use crate::core::transform::Transform;
 use crate::core::valid::Valid;
 
@@ -77,7 +78,7 @@ impl<'a> CandidateGeneration<'a> {
         for (type_name, type_info) in self.config.types.iter() {
             for (field_name, field_info) in type_info.fields.iter() {
                 if self.config.is_scalar(field_info.type_of.name())
-                    || field_name.starts_with("GEN__")
+                    || field_name.starts_with(PREFIX)
                 {
                     // If field type is scalar or auto generated then ignore type name inference.
                     continue;

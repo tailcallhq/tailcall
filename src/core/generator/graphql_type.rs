@@ -2,6 +2,7 @@ use std::fmt::Display;
 
 use convert_case::{Case, Casing};
 
+use super::PREFIX;
 use crate::core::scalar::Scalar;
 pub(super) static DEFAULT_SEPARATOR: &str = "__";
 static PACKAGE_SEPARATOR: &str = ".";
@@ -146,7 +147,7 @@ enum Entity {
 }
 
 impl Display for GraphQLType<Parsed> {
-    // The "GEN__" prefix is used to identify auto-generated type names in the
+    // The PREFIX is used to identify auto-generated type names in the
     // LLM-based name correction process.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let parsed = &self.0;
@@ -154,7 +155,7 @@ impl Display for GraphQLType<Parsed> {
             Entity::EnumVariant => f.write_str(parsed.name.as_str())?,
             Entity::Field => f.write_str(parsed.name.to_case(Case::Camel).as_str())?,
             Entity::Method => {
-                f.write_str("GEN__")?;
+                f.write_str(PREFIX)?;
                 if !parsed.namespace.is_empty() {
                     f.write_str(parsed.namespace.to_string().as_str())?;
                     f.write_str(DEFAULT_SEPARATOR)?;
@@ -164,7 +165,7 @@ impl Display for GraphQLType<Parsed> {
             Entity::Enum | Entity::ObjectType => {
                 // if output type is scalar, then skip the prefix.
                 if !Scalar::is_predefined(&parsed.name) {
-                    f.write_str("GEN__")?;
+                    f.write_str(PREFIX)?;
                 }
                 if !parsed.namespace.is_empty() {
                     f.write_str(parsed.namespace.to_string().as_str())?;
@@ -310,8 +311,8 @@ mod tests {
     fn assert_type_names(input: Vec<TestParams>) {
         for ((entity, namespaces, name), expected) in input {
             let prefix = match entity {
-                Entity::Enum | Entity::ObjectType | Entity::Method => "GEN__",
-                _ => ""
+                Entity::Enum | Entity::ObjectType | Entity::Method => PREFIX,
+                _ => "",
             };
 
             let mut g = GraphQLType::new(name);
