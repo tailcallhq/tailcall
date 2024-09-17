@@ -51,8 +51,6 @@ impl TryInto<ChatRequest> for Question {
             ],
         })?;
 
-        println!("[Finder]: input: {}", input);
-
         let output = serde_json::to_string_pretty(&Answer {
             suggestions: vec![
                 "Person".into(),
