@@ -373,8 +373,7 @@ impl Builder {
                     .when(self.index.query_depth().is_some()),
             )
             .validate(&plan)
-            .to_result()
-            .map_err(|e| BuildError::CustomError(e.to_string()))?;
+            .to_result()?;
 
         // TODO: operation from [ExecutableDocument] could contain definitions for
         // default values of arguments. That info should be passed to
