@@ -88,7 +88,7 @@ impl IR {
                     second.eval(ctx).await
                 }
                 IR::Discriminate(discriminator, expr) => expr.eval(ctx).await.and_then(|value| {
-                    let value = value.map(|mut value| {
+                    let value = value.map(&mut |mut value| {
                         if value.get_type_name().is_some() {
                             // if typename is already present in value just reuse it instead
                             // of recalculating from scratch
