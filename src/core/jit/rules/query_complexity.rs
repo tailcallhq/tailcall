@@ -25,8 +25,7 @@ impl QueryComplexity {
     fn complexity_helper<T: std::fmt::Debug>(field: &Field<Nested<T>, T>) -> usize {
         let mut complexity = 1;
 
-        let fields = field.iter_only(|_| true).collect::<Vec<_>>();
-        for child in fields {
+        for child in field.iter_only(|_| true) {
             complexity += Self::complexity_helper(child);
         }
 
