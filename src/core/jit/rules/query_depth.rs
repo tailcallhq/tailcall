@@ -35,12 +35,10 @@ impl QueryDepth {
     ) -> usize {
         let mut max_depth = current_depth;
 
-        if let Some(child) = field.extensions.as_ref() {
-            for nested_child in child.0.iter() {
-                let depth = Self::depth_helper(nested_child, current_depth + 1);
-                if depth > max_depth {
-                    max_depth = depth;
-                }
+        for child in field.iter_only(|_| true) {
+            let depth = Self::depth_helper(child, current_depth + 1);
+            if depth > max_depth {
+                max_depth = depth;
             }
         }
         max_depth
