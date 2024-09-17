@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
-use indexmap::IndexSet;
+use indexmap::{indexset, IndexSet};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -34,7 +34,7 @@ impl TryFrom<ChatResponse> for Answer {
 #[derive(Clone, Serialize)]
 struct Question {
     #[serde(skip_serializing_if = "IndexSet::is_empty")]
-    used_types: IndexSet<String>,
+    ingore: IndexSet<String>,
     fields: Vec<(String, String)>,
 }
 
@@ -43,13 +43,15 @@ impl TryInto<ChatRequest> for Question {
 
     fn try_into(self) -> Result<ChatRequest> {
         let input = serde_json::to_string_pretty(&Question {
-            used_types: IndexSet::default(),
+            ingore: indexset! { "User".into()},
             fields: vec![
                 ("id".to_string(), "String".to_string()),
                 ("name".to_string(), "String".to_string()),
                 ("age".to_string(), "Int".to_string()),
             ],
         })?;
+
+        println!("[Finder]: input: {}", input);
 
         let output = serde_json::to_string_pretty(&Answer {
             suggestions: vec![
@@ -64,7 +66,7 @@ impl TryInto<ChatRequest> for Question {
         let template = Mustache::parse(BASE_TEMPLATE);
 
         let context = json!({
-            "used_types": self.used_types,
+            "ignore": self.ingore,
             "input": input,
             "output": output,
         });
@@ -113,7 +115,7 @@ impl InferTypeName {
         for (i, (type_name, type_)) in types_to_be_processed.into_iter().enumerate() {
             // convert type to sdl format.
             let question = Question {
-                used_types: used_type_names.clone(),
+                ingore: used_type_names.clone(),
                 fields: type_
                     .fields
                     .iter()
@@ -180,7 +182,7 @@ mod test {
     #[test]
     fn test_to_chat_request_conversion() {
         let question = Question {
-            used_types: indexset! {"Profile".to_owned(), "Person".to_owned()},
+            ingore: indexset! {"Profile".to_owned(), "Person".to_owned()},
             fields: vec![
                 ("id".to_string(), "String".to_string()),
                 ("name".to_string(), "String".to_string()),
