@@ -16,6 +16,7 @@ type Query {
 type User {
   id: ID!
   name: String!
+  accountRef: String! @expr(body: "ref-{{.value.id}}-{{.value.name}}")
 }
 ```
 
@@ -62,6 +63,7 @@ type User {
         userGroups {
           id
           name
+          accountRef
         }
       }
 
