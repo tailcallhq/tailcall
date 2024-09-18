@@ -5,7 +5,7 @@ use std::thread;
 use async_graphql_value::ConstValue;
 use rquickjs::{Context, Ctx, FromJs, Function, IntoJs, Value};
 
-use crate::core::worker::{Command, Event, WorkerRequest};
+use crate::core::worker::{Command, Event};
 use crate::core::{blueprint, worker, WorkerIO};
 
 struct LocalRuntime(Context);
@@ -141,34 +141,41 @@ fn init_rt(script: blueprint::Script) -> anyhow::Result<()> {
     })
 }
 
-fn prepare_args<'js>(ctx: &Ctx<'js>, req: WorkerRequest) -> rquickjs::Result<(Value<'js>,)> {
+fn prepare_args<'js, T: IntoJs<'js>>(
+    ctx: &Ctx<'js>,
+    label: &str,
+    req: T,
+) -> rquickjs::Result<(Value<'js>,)> {
     let object = rquickjs::Object::new(ctx.clone())?;
-    object.set("request", req.into_js(ctx)?)?;
+    object.set(label, req.into_js(ctx)?)?;
     Ok((object.into_value(),))
 }
 
 fn call(name: String, event: Event) -> Result<Option<Command>, worker::Error> {
     LOCAL_RUNTIME.with_borrow_mut(|cell| {
         let runtime = cell.get_mut().ok_or(worker::Error::RuntimeNotInitialized)?;
-        runtime.0.with(|ctx| match event {
-            Event::Request(req) => {
-                let fn_as_value = ctx
-                    .globals()
-                    .get::<&str, Function>(name.as_str())
-                    .map_err(|e| worker::Error::GlobalThisNotInitialised(e.to_string()))?;
+        runtime.0.with(|ctx| {
+            let fn_as_value = ctx
+                .globals()
+                .get::<&str, Function>(name.as_str())
+                .map_err(|e| worker::Error::GlobalThisNotInitialised(e.to_string()))?;
 
-                let function = fn_as_value
-                    .as_function()
-                    .ok_or(worker::Error::InvalidFunction(name))?;
+            let function = fn_as_value
+                .as_function()
+                .ok_or(worker::Error::InvalidFunction(name))?;
 
-                let args =
-                    prepare_args(&ctx, req).map_err(|e| worker::Error::Rquickjs(e.to_string()))?;
-                let command: Option<Value> = function.call(args).ok();
-                command
-                    .map(|output| Command::from_js(&ctx, output))
-                    .transpose()
-                    .map_err(|e| worker::Error::DeserializeFailed(e.to_string()))
-            }
+            let args = match event {
+                Event::Request(req) => prepare_args(&ctx, "request", req)
+                    .map_err(|e| worker::Error::Rquickjs(e.to_string()))?,
+                Event::Response(resp) => prepare_args(&ctx, "response", resp)
+                    .map_err(|e| worker::Error::Rquickjs(e.to_string()))?,
+            };
+
+            let command: Option<Value> = function.call(args).ok();
+            command
+                .map(|output| Command::from_js(&ctx, output))
+                .transpose()
+                .map_err(|e| worker::Error::DeserializeFailed(e.to_string()))
         })
     })
 }

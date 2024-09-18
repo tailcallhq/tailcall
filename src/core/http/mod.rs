@@ -28,11 +28,19 @@ pub static TAILCALL_HTTP_ORIGIN: HeaderValue = HeaderValue::from_static("http://
 /// User can configure the filter/interceptor
 /// for the http requests.
 pub struct HttpFilter {
-    pub on_request: String,
+    pub on_request: Option<String>,
+    pub on_response: Option<String>,
 }
 
 impl HttpFilter {
-    pub fn new(on_request: &str) -> Self {
-        HttpFilter { on_request: on_request.to_owned() }
+    pub fn new(on_request: Option<String>, on_response: Option<String>) -> Result<Self, &'static str> {
+        if on_request.is_none() && on_response.is_none() {
+            Err("At least one of on_request or on_response must be present")
+        } else {
+            Ok(HttpFilter {
+                on_request,
+                on_response,
+            })
+        }
     }
 }

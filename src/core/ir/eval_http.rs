@@ -86,9 +86,13 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         let js_request = worker::WorkerRequest::try_from(&request)?;
         let event = worker::Event::Request(js_request);
 
-        let command = worker.call(&http_filter.on_request, event).await?;
+        let command = if let Some(on_request) = http_filter.on_request.as_ref() {
+            worker.call(on_request, event).await?
+        } else {
+            None
+        };
 
-        match command {
+        let resp = match command {
             Some(command) => match command {
                 worker::Command::Request(w_request) => {
                     let response = self.execute(w_request.into()).await?;
@@ -109,6 +113,24 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
                 }
             },
             None => self.execute(request).await,
+        };
+
+        // send the final response to JS script to futher evaluation.
+        if let Ok(resp) = resp {
+            if let Some(on_response) = http_filter.on_response.as_ref() {
+                let js_response = worker::WorkerResponse::try_from(resp.clone())?;
+                let response_event = worker::Event::Response(js_response);
+                let final_command = worker.call(on_response, response_event).await?;
+
+                match final_command {
+                    Some(worker::Command::Response(w_response)) => Ok(w_response.try_into()?),
+                    _ => Ok(resp),
+                }
+            } else {
+                Ok(resp)
+            }
+        } else {
+            resp
         }
     }
 }

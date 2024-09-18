@@ -37,6 +37,7 @@ pub struct WorkerRequest(pub reqwest::Request);
 #[derive(Debug)]
 pub enum Event {
     Request(WorkerRequest),
+    Response(WorkerResponse)
 }
 
 #[derive(Debug)]

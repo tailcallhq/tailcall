@@ -61,11 +61,13 @@ pub fn compile_http(
         })
         .map(|req_template| {
             // marge http and upstream on_request
-            let http_filter = http
+            let on_request = http
                 .on_request
                 .clone()
-                .or(config_module.upstream.on_request.clone())
-                .map(|on_request| HttpFilter { on_request });
+                .or(config_module.upstream.on_request.clone());
+            let on_response = http.on_response_body.clone();
+
+            let http_filter = HttpFilter::new(on_request, on_response).ok();
 
             if !http.batch_key.is_empty() && http.method == Method::GET {
                 // Find a query parameter that contains a reference to the {{.value}} key
