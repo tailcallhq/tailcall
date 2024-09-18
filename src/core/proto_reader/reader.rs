@@ -156,8 +156,21 @@ impl ProtoReader {
                 .context("Unable to extract content of google well-known proto file")?
                 .to_string()
         } else {
-            let path = Self::resolve_path(path.as_ref(), parent_dir);
-            self.reader.read_file(path).await?.content
+            // try to read the file relative to the parent_dir
+            let parent_file = {
+                let path = Self::resolve_path(path.as_ref(), parent_dir);
+                self.reader.read_file(path).await
+            };
+
+            // if we fail then we read relative to the current working directory of the cli
+            // tool
+            if let Ok(file) = parent_file {
+                file.content
+            } else {
+                let root_dir = std::env::current_dir().unwrap();
+                let path = Self::resolve_path(path.as_ref(), Some(&root_dir));
+                self.reader.read_file(path).await?.content
+            }
         };
         Ok(protox_parse::parse(path.as_ref(), &content)?)
     }
