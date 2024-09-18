@@ -331,6 +331,14 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
                 }
             };
 
+            if req.uri().path() == "/status" {
+                let status_response = Response::builder()
+                    .status(StatusCode::OK)
+                    .header(CONTENT_TYPE, "application/json")
+                    .body(Body::from(r#"{"message": "ready"}"#))?;
+                return Ok(status_response);
+            }
+
             not_found()
         }
         _ => not_found(),
