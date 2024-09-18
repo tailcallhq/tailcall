@@ -247,15 +247,11 @@ impl<Input> Field<Flat, Input> {
 }
 
 impl<Input> Field<Nested<Input>, Input> {
-    /// iters over children fields that satisfies
-    /// passed filter_fn
-    pub fn iter_only<'a>(
-        &'a self,
-        mut filter_fn: impl FnMut(&'a Field<Nested<Input>, Input>) -> bool + 'a,
-    ) -> impl Iterator<Item = &Field<Nested<Input>, Input>> + 'a {
+    /// iters over children fields
+    pub fn iter(&self) -> impl Iterator<Item = &Field<Nested<Input>, Input>> {
         self.extensions
             .as_ref()
-            .map(move |nested| nested.0.iter().filter(move |&field| filter_fn(field)))
+            .map(move |nested| nested.0.iter())
             .into_iter()
             .flatten()
     }
@@ -487,23 +483,25 @@ impl<Input> OperationPlan<Input> {
         self.index.validate_enum_value(field.type_of.name(), value)
     }
 
-    /// Iterate over nested fields that are related to the __typename of the
-    /// value
-    pub fn field_iter_only<'a, Output>(
+    pub fn field_is_part_of_value<'a, Output>(
         &'a self,
         field: &'a Field<Nested<Input>, Input>,
         value: &'a Output,
-    ) -> impl Iterator<Item = &'a Field<Nested<Input>, Input>>
+    ) -> bool
     where
         Output: TypedValue<'a>,
     {
-        let value_type = field.value_type(value);
-
-        field.iter_only(move |field| match &field.type_condition {
-            Some(type_condition) => self.index.is_type_implements(value_type, type_condition),
+        match &field.type_condition {
+            Some(type_condition) => match value.get_type_name() {
+                Some(value_type) => self.index.is_type_implements(value_type, type_condition),
+                // if there is no __typename in value that means there is a bug in implementation
+                // such we haven't resolved the concrete type or type shouldn't be
+                // inferred here at all and we should just use the field
+                None => true,
+            },
             // if there is no type_condition restriction then use this field
             None => true,
-        })
+        }
     }
 }
 
