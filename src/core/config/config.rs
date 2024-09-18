@@ -524,6 +524,9 @@ pub struct Http {
     /// first parameter referencing a field in the current value using mustache
     /// syntax is automatically selected as the batching parameter.
     pub query: Vec<URLQuery>,
+
+    #[serde(rename = "onResponseBody", default, skip_serializing_if = "is_default")]
+    pub on_response_body: Option<String>,
 }
 
 ///
@@ -612,6 +615,9 @@ pub struct Grpc {
     /// This refers to the gRPC method you're going to call. For instance
     /// `GetAllNews`.
     pub method: String,
+
+    #[serde(rename = "onResponseBody", default, skip_serializing_if = "is_default")]
+    pub on_response_body: Option<String>,
 }
 
 #[derive(
