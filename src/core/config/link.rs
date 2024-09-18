@@ -25,6 +25,7 @@ pub enum LinkType {
     Htpasswd,
     Jwks,
     Grpc,
+    SubGraph
 }
 
 /// The @link directive allows you to import external resources, such as

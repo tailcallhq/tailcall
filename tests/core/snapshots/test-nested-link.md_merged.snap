@@ -6,7 +6,6 @@ schema
   @server
   @upstream(baseURL: "http://jsonplaceholder.typicode.com")
   @link(src: "graphql-with-link.graphql", type: Config)
-  @link(src: "link-enum.graphql", type: Config)
   @link(src: "link-enum.graphql", type: Config) {
   query: Query
 }

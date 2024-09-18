@@ -8,12 +8,15 @@ use rustls_pki_types::{
 use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType};
-use crate::core::config::{Config, ConfigReaderContext, Source};
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::{Cached, Resource, ResourceReader};
 use crate::core::rest::EndpointSet;
 use crate::core::runtime::TargetRuntime;
+use crate::core::{
+    config::{Config, ConfigReaderContext, Source},
+    federation::subgraph_reader::SubGraphReader,
+};
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all
 /// linked extensions to create a ConfigModule.
@@ -21,6 +24,7 @@ pub struct ConfigReader {
     runtime: TargetRuntime,
     resource_reader: ResourceReader<Cached>,
     proto_reader: ProtoReader,
+    subgraph_reader: SubGraphReader,
 }
 
 impl ConfigReader {
@@ -29,7 +33,8 @@ impl ConfigReader {
         Self {
             runtime: runtime.clone(),
             resource_reader: resource_reader.clone(),
-            proto_reader: ProtoReader::init(resource_reader, runtime),
+            proto_reader: ProtoReader::init(resource_reader.clone(), runtime),
+            subgraph_reader: SubGraphReader::new(resource_reader),
         }
     }
 
@@ -43,7 +48,6 @@ impl ConfigReader {
         let links: Vec<Link> = config_module
             .config()
             .links
-            .clone()
             .iter()
             .filter_map(|link| {
                 if link.src.is_empty() {
@@ -58,7 +62,6 @@ impl ConfigReader {
         }
 
         let mut extensions = config_module.extensions().clone();
-        // let mut base_config = config_module.config().clone();
 
         for link in links.iter() {
             let path = Self::resolve_path(&link.src, parent_dir);
@@ -69,14 +72,12 @@ impl ConfigReader {
                     let content = source.content;
 
                     let config = Config::from_source(Source::detect(&source.path)?, &content)?;
-                    config_module = config_module.merge_right(config.clone().into());
+                    let link_config_module = self
+                        // recursively resolve links in the linked config
+                        .ext_links(ConfigModule::from(config), Path::new(&link.src).parent())
+                        .await?;
 
-                    if !config.links.is_empty() {
-                        let cfg_module = self
-                            .ext_links(ConfigModule::from(config), Path::new(&link.src).parent())
-                            .await?;
-                        config_module = config_module.merge_right(cfg_module.clone());
-                    }
+                    config_module = config_module.merge_right(link_config_module);
                 }
                 LinkType::Protobuf => {
                     let meta = self.proto_reader.read(path).await?;
@@ -128,6 +129,10 @@ impl ConfigReader {
                     for m in meta {
                         extensions.add_proto(m);
                     }
+                }
+                LinkType::SubGraph => {
+                    let subgraph_config_module = self.subgraph_reader.fetch(link.src.as_str()).await?;
+                    config_module = config_module.merge_right(subgraph_config_module);
                 }
             }
         }

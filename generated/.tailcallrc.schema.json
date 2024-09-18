@@ -832,7 +832,8 @@
         "Operation",
         "Htpasswd",
         "Jwks",
-        "Grpc"
+        "Grpc",
+        "SubGraph"
       ]
     },
     "Method": {

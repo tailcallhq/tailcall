@@ -917,6 +917,7 @@ enum LinkType {
   Htpasswd
   Jwks
   Grpc
+  SubGraph
 }
 
 enum HttpVersion {
