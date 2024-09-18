@@ -326,7 +326,7 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
                 .status(StatusCode::OK)
                 .header(CONTENT_TYPE, "application/json")
                 .body(Body::from(r#"{"message": "ready"}"#))?;
-            return Ok(status_response);
+            Ok(status_response)
         }
         hyper::Method::GET => {
             if let Some(TelemetryExporter::Prometheus(prometheus)) =
