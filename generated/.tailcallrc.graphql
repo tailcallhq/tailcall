@@ -120,6 +120,12 @@ directive @grpc(
   This refers to the gRPC method you're going to call. For instance `GetAllNews`.
   """
   method: String!
+  """
+  Specifies a JavaScript function to be executed after receiving the response body. 
+  This function can modify or transform the response body before it's sent back to 
+  the client.
+  """
+  onResponseBody: String
 ) on FIELD_DEFINITION
 
 """
@@ -172,6 +178,12 @@ directive @http(
   handler.
   """
   onRequest: String
+  """
+  Specifies a JavaScript function to be executed after receiving the response body. 
+  This function can modify or transform the response body before it's sent back to 
+  the client.
+  """
+  onResponseBody: String
   """
   Schema of the output of the API call. It is automatically inferred in most cases.
   """
@@ -774,6 +786,12 @@ input Grpc {
   This refers to the gRPC method you're going to call. For instance `GetAllNews`.
   """
   method: String!
+  """
+  Specifies a JavaScript function to be executed after receiving the response body. 
+  This function can modify or transform the response body before it's sent back to 
+  the client.
+  """
+  onResponseBody: String
 }
 
 """
@@ -826,6 +844,12 @@ input Http {
   handler.
   """
   onRequest: String
+  """
+  Specifies a JavaScript function to be executed after receiving the response body. 
+  This function can modify or transform the response body before it's sent back to 
+  the client.
+  """
+  onResponseBody: String
   """
   Schema of the output of the API call. It is automatically inferred in most cases.
   """

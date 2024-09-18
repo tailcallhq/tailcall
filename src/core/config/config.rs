@@ -525,6 +525,9 @@ pub struct Http {
     /// syntax is automatically selected as the batching parameter.
     pub query: Vec<URLQuery>,
 
+    /// Specifies a JavaScript function to be executed after receiving the
+    /// response body. This function can modify or transform the response
+    /// body before it's sent back to the client.
     #[serde(rename = "onResponseBody", default, skip_serializing_if = "is_default")]
     pub on_response_body: Option<String>,
 }
@@ -616,6 +619,9 @@ pub struct Grpc {
     /// `GetAllNews`.
     pub method: String,
 
+    /// Specifies a JavaScript function to be executed after receiving the
+    /// response body. This function can modify or transform the response
+    /// body before it's sent back to the client.
     #[serde(rename = "onResponseBody", default, skip_serializing_if = "is_default")]
     pub on_response_body: Option<String>,
 }

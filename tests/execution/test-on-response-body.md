@@ -2,10 +2,10 @@
 
 ```js @file:test.js
 function onResponse({response}) {
-    let body = JSON.parse(response.body);
-    body.name = body.name + " - Changed by JS";
-    response.body = JSON.stringify(body);
-    return {response};
+  let body = JSON.parse(response.body)
+  body.name = body.name + " - Changed by JS"
+  response.body = JSON.stringify(body)
+  return {response}
 }
 ```
 

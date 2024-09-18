@@ -33,14 +33,14 @@ pub struct HttpFilter {
 }
 
 impl HttpFilter {
-    pub fn new(on_request: Option<String>, on_response: Option<String>) -> Result<Self, &'static str> {
+    pub fn new(
+        on_request: Option<String>,
+        on_response: Option<String>,
+    ) -> Result<Self, &'static str> {
         if on_request.is_none() && on_response.is_none() {
             Err("At least one of on_request or on_response must be present")
         } else {
-            Ok(HttpFilter {
-                on_request,
-                on_response,
-            })
+            Ok(HttpFilter { on_request, on_response })
         }
     }
 }

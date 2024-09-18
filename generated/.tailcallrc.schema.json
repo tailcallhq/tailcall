@@ -589,6 +589,13 @@
         "method": {
           "description": "This refers to the gRPC method you're going to call. For instance `GetAllNews`.",
           "type": "string"
+        },
+        "onResponseBody": {
+          "description": "Specifies a JavaScript function to be executed after receiving the response body. This function can modify or transform the response body before it's sent back to the client.",
+          "type": [
+            "string",
+            "null"
+          ]
         }
       },
       "additionalProperties": false
@@ -705,6 +712,13 @@
         },
         "onRequest": {
           "description": "onRequest field in @http directive gives the ability to specify the request interception handler.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "onResponseBody": {
+          "description": "Specifies a JavaScript function to be executed after receiving the response body. This function can modify or transform the response body before it's sent back to the client.",
           "type": [
             "string",
             "null"
