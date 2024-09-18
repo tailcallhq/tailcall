@@ -321,7 +321,13 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
 
             graphql_request::<T>(req, &Arc::new(app_ctx), req_counter).await
         }
-
+        hyper::Method::GET if req.uri().path() == "/status" => {
+            let status_response = Response::builder()
+                .status(StatusCode::OK)
+                .header(CONTENT_TYPE, "application/json")
+                .body(Body::from(r#"{"message": "ready"}"#))?;
+            return Ok(status_response);
+        }
         hyper::Method::GET => {
             if let Some(TelemetryExporter::Prometheus(prometheus)) =
                 app_ctx.blueprint.telemetry.export.as_ref()
@@ -330,15 +336,6 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
                     return prometheus_metrics(prometheus);
                 }
             };
-
-            if req.uri().path() == "/status" {
-                let status_response = Response::builder()
-                    .status(StatusCode::OK)
-                    .header(CONTENT_TYPE, "application/json")
-                    .body(Body::from(r#"{"message": "ready"}"#))?;
-                return Ok(status_response);
-            }
-
             not_found()
         }
         _ => not_found(),
