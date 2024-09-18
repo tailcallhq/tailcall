@@ -30,19 +30,6 @@ impl InputResolvable for Value {
     }
 }
 
-pub trait OutputHelpers {
-    type Output;
-
-    fn from_json(value: Option<serde_json::Value>) -> Option<Self::Output>;
-}
-
-impl OutputHelpers for ConstValue {
-    type Output = ConstValue;
-    fn from_json(value: Option<serde_json::Value>) -> Option<Self::Output> {
-        value.map(ConstValue::from_json).and_then(Result::ok)
-    }
-}
-
 /// Transforms [OperationPlan] values the way that all the input values
 /// are transformed to const variant with the help of [InputResolvable] trait
 pub struct InputResolver<Input> {
@@ -58,8 +45,9 @@ impl<Input> InputResolver<Input> {
 impl<Input, Output> InputResolver<Input>
 where
     Input: Clone,
-    Output: Clone + JsonLikeOwned + OutputHelpers<Output = Output>,
+    Output: Clone + JsonLikeOwned + TryFrom<serde_json::Value>,
     Input: InputResolvable<Output = Output>,
+    <Output as TryFrom<serde_json::Value>>::Error: std::fmt::Debug,
 {
     pub fn resolve_input(
         &self,
@@ -133,46 +121,50 @@ where
                 Ok(value)
             };
 
-        match value? {
-            Some(mut value) => match self.plan.index.get_input_type_definition(type_of.name()) {
-                Some(def) => {
-                    if let Some(obj) = value.as_object_mut() {
-                        for arg_field in &def.fields {
-                            let parent_name = format!("{}.{}", parent_name, arg_name);
-                            let field_value = obj.get_key(&arg_field.name).cloned();
-                            let field_default = arg_field.default_value.clone();
-                            let field_default = Output::from_json(field_default);
-                            let value = self.recursive_parse_arg(
-                                &parent_name,
-                                &arg_field.name,
-                                &arg_field.of_type,
-                                &field_default,
-                                field_value,
-                            )?;
-                            if let Some(value) = value {
-                                obj.insert_key(&arg_field.name, value);
-                            }
-                        }
-                    } else if let Some(arr) = value.as_array_mut() {
-                        for (index, item) in arr.iter_mut().enumerate() {
-                            let parent_name = format!("{}.{}.{}", parent_name, arg_name, index);
+        let mut value = if let Some(value) = value? {
+            value
+        } else {
+            return Ok(None);
+        };
 
-                            *item = self
-                                .recursive_parse_arg(
-                                    &parent_name,
-                                    &index.to_string(),
-                                    type_of,
-                                    default_value,
-                                    Some(item.clone()),
-                                )?
-                                .expect("Because we start with `Some`, we will end with `Some`");
-                        }
-                    }
-                    Ok(Some(value))
+        let def = if let Some(def) = self.plan.index.get_input_type_definition(type_of.name()) {
+            def
+        } else {
+            return Ok(Some(value));
+        };
+
+        if let Some(obj) = value.as_object_mut() {
+            for arg_field in &def.fields {
+                let parent_name = format!("{}.{}", parent_name, arg_name);
+                let field_value = obj.get_key(&arg_field.name).cloned();
+                let field_default = arg_field.default_value.clone().map(|value| Output::try_from(value).expect("The conversion cannot fail"));
+                let value = self.recursive_parse_arg(
+                    &parent_name,
+                    &arg_field.name,
+                    &arg_field.of_type,
+                    &field_default,
+                    field_value,
+                )?;
+                if let Some(value) = value {
+                    obj.insert_key(&arg_field.name, value);
                 }
-                None => Ok(Some(value)),
-            },
-            None => Ok(None),
+            }
+        } else if let Some(arr) = value.as_array_mut() {
+            for (index, item) in arr.iter_mut().enumerate() {
+                let parent_name = format!("{}.{}.{}", parent_name, arg_name, index);
+
+                *item = self
+                    .recursive_parse_arg(
+                        &parent_name,
+                        &index.to_string(),
+                        type_of,
+                        &None,
+                        Some(item.clone()),
+                    )?
+                    .expect("Because we start with `Some`, we will end with `Some`");
+            }
         }
+
+        Ok(Some(value))
     }
 }
