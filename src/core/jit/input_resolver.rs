@@ -137,7 +137,10 @@ where
             for arg_field in &def.fields {
                 let parent_name = format!("{}.{}", parent_name, arg_name);
                 let field_value = obj.get_key(&arg_field.name).cloned();
-                let field_default = arg_field.default_value.clone().map(|value| Output::try_from(value).expect("The conversion cannot fail"));
+                let field_default = arg_field
+                    .default_value
+                    .clone()
+                    .map(|value| Output::try_from(value).expect("The conversion cannot fail"));
                 let value = self.recursive_parse_arg(
                     &parent_name,
                     &arg_field.name,
