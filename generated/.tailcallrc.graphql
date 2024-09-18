@@ -202,6 +202,9 @@ The @link directive allows you to import external resources, such as configurati
  will be later used by `@grpc` directive –.
 """
 directive @link(
+  """
+  Custom headers for gRPC reflection server.
+  """
   headers: [KeyValue]
   """
   The id of the link. It is used to reference the link in the schema.

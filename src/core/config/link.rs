@@ -59,6 +59,7 @@ pub struct Link {
     #[serde(default, skip_serializing_if = "is_default", rename = "type")]
     pub type_of: LinkType,
     ///
+    /// Custom headers for gRPC reflection server.
     #[serde(default, skip_serializing_if = "is_default")]
     pub headers: Option<Vec<KeyValue>>,
     /// Additional metadata pertaining to the linked resource.
