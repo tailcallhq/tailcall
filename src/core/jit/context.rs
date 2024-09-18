@@ -44,6 +44,16 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
         Self { request, value: None, args: Self::build_args(field), field }
     }
 
+    pub fn with_value(&self, value: &'a Output) -> Self {
+        Self {
+            request: self.request,
+            // TODO: no need to build again?
+            args: Self::build_args(self.field),
+            value: Some(value),
+            field: self.field,
+        }
+    }
+
     pub fn with_value_and_field(
         &self,
         value: &'a Output,
