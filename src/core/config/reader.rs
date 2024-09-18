@@ -1,5 +1,4 @@
 use std::path::Path;
-use std::sync::Arc;
 
 use rustls_pemfile;
 use rustls_pki_types::{
@@ -7,7 +6,7 @@ use rustls_pki_types::{
 };
 use url::Url;
 
-use super::{ConfigModule, Content, Link, LinkType};
+use super::{ConfigModule, Content, Link, LinkType, PrivateKey};
 use crate::core::config::{Config, ConfigReaderContext, Source};
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoReader;
@@ -95,7 +94,7 @@ impl ConfigReader {
                 LinkType::Key => {
                     let source = self.resource_reader.read_file(path).await?;
                     let content = source.content;
-                    extensions.keys = Arc::new(self.load_private_key(content).await?)
+                    extensions.keys = self.load_private_key(content).await?
                 }
                 LinkType::Operation => {
                     let source = self.resource_reader.read_file(path).await?;
@@ -145,10 +144,7 @@ impl ConfigReader {
     }
 
     /// Reads a private key from a given file
-    async fn load_private_key(
-        &self,
-        content: String,
-    ) -> anyhow::Result<Vec<PrivateKeyDer<'static>>> {
+    async fn load_private_key(&self, content: String) -> anyhow::Result<Vec<PrivateKey>> {
         let keys = rustls_pemfile::read_all(&mut content.as_bytes())?;
 
         Ok(keys
@@ -165,6 +161,7 @@ impl ConfigReader {
                 }
                 _ => None,
             })
+            .map(PrivateKey::from)
             .collect())
     }
 
