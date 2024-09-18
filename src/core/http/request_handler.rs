@@ -382,6 +382,39 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
 
 #[cfg(test)]
 mod test {
+    use super::*;
+    use crate::core::async_graphql_hyper::GraphQLRequest;
+    use crate::core::blueprint::Blueprint;
+    use crate::core::config::{Config, ConfigModule};
+    use crate::core::rest::EndpointSet;
+    use crate::core::runtime::test::init;
+    use crate::core::valid::Validator;
+
+    #[tokio::test]
+    async fn test_health_endpoint() -> anyhow::Result<()> {
+        let sdl = tokio::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER).await?;
+        let config = Config::from_sdl(&sdl).to_result()?;
+        let blueprint = Blueprint::try_from(&ConfigModule::from(config))?;
+        let app_ctx = Arc::new(AppContext::new(
+            blueprint,
+            init(None),
+            EndpointSet::default(),
+        ));
+
+        let req = Request::builder()
+            .method(Method::GET)
+            .uri("http://localhost:8000/status".to_string())
+            .body(Body::empty())?;
+
+        let resp = handle_request::<GraphQLRequest>(req, app_ctx).await?;
+
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = hyper::body::to_bytes(resp.into_body()).await?;
+        assert_eq!(body, r#"{"message": "ready"}"#);
+
+        Ok(())
+    }
+
     #[test]
     fn test_create_allowed_headers() {
         use std::collections::BTreeSet;
