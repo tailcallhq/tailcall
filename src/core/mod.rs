@@ -22,6 +22,7 @@ pub mod helpers;
 pub mod http;
 pub mod ir;
 pub mod jit;
+pub mod js_hooks;
 pub mod json;
 mod lift;
 pub mod merge_right;
@@ -41,7 +42,6 @@ mod transform;
 pub mod try_fold;
 pub mod valid;
 pub mod worker;
-pub mod js_hooks;
 
 // Re-export everything from `tailcall_macros` as `macros`
 use std::borrow::Cow;

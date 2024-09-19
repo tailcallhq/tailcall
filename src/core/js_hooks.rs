@@ -1,6 +1,6 @@
 #[derive(Default, Clone, Debug)]
-/// User can configure the filter/interceptor
-/// for the http requests.
+/// User can configure the hooks on directive
+/// for the requests.
 pub struct JsHooks {
     pub on_request: Option<String>,
     pub on_response: Option<String>,
