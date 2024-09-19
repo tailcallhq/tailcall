@@ -118,7 +118,7 @@ where
             value
         };
 
-        let Some(mut value) = value? else {
+        let Some(mut value) = value else {
             return Ok(None);
         };
 
