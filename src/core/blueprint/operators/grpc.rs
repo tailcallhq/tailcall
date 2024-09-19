@@ -205,7 +205,7 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
                     req_template,
                     group_by: Some(GroupBy::new(grpc.batch_key.clone(), None)),
                     dl_id: None,
-                    filter
+                    filter,
                 })
             } else {
                 IR::IO(IO::Grpc { req_template, group_by: None, dl_id: None, filter })
