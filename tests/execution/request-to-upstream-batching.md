@@ -5,13 +5,6 @@
   "server": {
     "batchRequests": true
   },
-  "upstream": {
-    "batch": {
-      "maxSize": 100,
-      "delay": 1,
-      "headers": []
-    }
-  },
   "schema": {
     "query": "Query"
   },
@@ -31,6 +24,11 @@
             }
           },
           "http": {
+            "batch": {
+              "maxSize": 100,
+              "delay": 1,
+              "headers": []
+            },
             "path": "/users",
             "query": [
               {

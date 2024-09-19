@@ -516,10 +516,6 @@
     "GraphQL": {
       "description": "The @graphQL operator allows to specify GraphQL API server request to fetch data from.",
       "type": "object",
-      "required": [
-        "name",
-        "query"
-      ],
       "properties": {
         "allowed_headers": {
           "type": "array",
