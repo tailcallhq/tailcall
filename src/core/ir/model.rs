@@ -10,7 +10,7 @@ use super::{EvalContext, ResolverContextLike};
 use crate::core::blueprint::DynamicValue;
 use crate::core::config::group_by::GroupBy;
 use crate::core::graphql::{self};
-use crate::core::http::JsHooks;
+use crate::core::js_hooks::JsHooks;
 use crate::core::{grpc, http};
 
 #[derive(Clone, Debug, Display)]
