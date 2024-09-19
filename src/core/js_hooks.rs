@@ -1,14 +1,11 @@
 use std::sync::Arc;
 
+use super::ir::Error;
+use super::worker::{self, Command, Event, WorkerRequest, WorkerResponse};
+use super::WorkerIO;
 use crate::core::http::Response;
 
-use super::{
-    ir::Error,
-    worker::{self, Command, Event, WorkerRequest, WorkerResponse},
-    WorkerIO,
-};
-
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 /// User can configure the hooks on directive
 /// for the requests.
 pub struct JsHooks {
