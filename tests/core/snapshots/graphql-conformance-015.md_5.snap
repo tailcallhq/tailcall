@@ -12,7 +12,7 @@ expression: response
       "user": {
         "id": 4,
         "name": "User 4",
-        "featuredVideo": "video_4_1600_900_"
+        "featuredVideo": "video_4_1600_900_true"
       }
     }
   }
