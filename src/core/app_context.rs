@@ -48,7 +48,7 @@ impl AppContext {
                     field.map_expr(|expr| {
                         expr.modify(|expr| match expr {
                             IR::IO(io) => match io {
-                                IO::Http { req_template, group_by, http_filter, .. } => {
+                                IO::Http { req_template, group_by, hook, .. } => {
                                     let data_loader = HttpDataLoader::new(
                                         runtime.clone(),
                                         group_by.clone(),
@@ -60,7 +60,7 @@ impl AppContext {
                                         req_template: req_template.clone(),
                                         group_by: group_by.clone(),
                                         dl_id: Some(DataLoaderId::new(http_data_loaders.len())),
-                                        http_filter: http_filter.clone(),
+                                        hook: hook.clone(),
                                     }));
 
                                     http_data_loaders.push(data_loader);
@@ -87,7 +87,7 @@ impl AppContext {
                                     result
                                 }
 
-                                IO::Grpc { req_template, group_by, filter, .. } => {
+                                IO::Grpc { req_template, group_by, hook: filter, .. } => {
                                     let data_loader = GrpcDataLoader {
                                         runtime: runtime.clone(),
                                         operation: req_template.operation.clone(),
@@ -101,7 +101,7 @@ impl AppContext {
                                         req_template: req_template.clone(),
                                         group_by: group_by.clone(),
                                         dl_id: Some(DataLoaderId::new(grpc_data_loaders.len())),
-                                        filter: filter.clone(),
+                                        hook: filter.clone(),
                                     }));
 
                                     grpc_data_loaders.push(data_loader);

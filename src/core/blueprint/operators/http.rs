@@ -68,7 +68,7 @@ pub fn compile_http(
                 .or(config_module.upstream.on_request.clone());
             let on_response = http.on_response_body.clone();
 
-            let http_filter = JsHooks::new(on_request, on_response).ok();
+            let hook = JsHooks::new(on_request, on_response).ok();
 
             if !http.batch_key.is_empty() && http.method == Method::GET {
                 // Find a query parameter that contains a reference to the {{.value}} key
@@ -81,10 +81,10 @@ pub fn compile_http(
                     req_template,
                     group_by: Some(GroupBy::new(http.batch_key.clone(), key)),
                     dl_id: None,
-                    http_filter,
+                    hook,
                 })
             } else {
-                IR::IO(IO::Http { req_template, group_by: None, dl_id: None, http_filter })
+                IR::IO(IO::Http { req_template, group_by: None, dl_id: None, hook })
             }
         })
 }

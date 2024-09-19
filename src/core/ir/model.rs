@@ -41,7 +41,7 @@ pub enum IO {
         req_template: http::RequestTemplate,
         group_by: Option<GroupBy>,
         dl_id: Option<DataLoaderId>,
-        http_filter: Option<JsHooks>,
+        hook: Option<JsHooks>,
     },
     GraphQL {
         req_template: graphql::RequestTemplate,
@@ -53,7 +53,7 @@ pub enum IO {
         req_template: grpc::RequestTemplate,
         group_by: Option<GroupBy>,
         dl_id: Option<DataLoaderId>,
-        filter: Option<JsHooks>,
+        hook: Option<JsHooks>,
     },
     Js {
         name: String,
