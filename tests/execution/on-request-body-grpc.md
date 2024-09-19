@@ -1,4 +1,4 @@
-# Grpc datasource
+# onResponseBody hook on grpc directive.
 
 ```js @file:test.js
 function onResponse({response}) {
