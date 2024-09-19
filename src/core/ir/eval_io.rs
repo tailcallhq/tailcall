@@ -89,16 +89,8 @@ where
                 execute_raw_grpc_request(ctx, req, &req_template.operation).await?
             };
 
-            let res = match (worker, hook.as_ref().and_then(|f| f.on_response.as_ref())) {
-                (Some(worker), Some(on_response)) => {
-                    let js_response = WorkerResponse::try_from(res.clone())?;
-                    let response_event = Event::Response(js_response);
-                    let command = worker.call(on_response, response_event).await?;
-                    match command {
-                        Some(Command::Response(w_response)) => w_response.try_into()?,
-                        _ => res,
-                    }
-                }
+            let res = match (worker.as_ref(), hook.as_ref()) {
+                (Some(worker), Some(hook)) => hook.handle_on_response(worker, res).await?,
                 _ => res,
             };
             set_headers(ctx, &res);
