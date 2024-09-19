@@ -198,17 +198,17 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
                 operation_type: operation_type.clone(),
             };
             let on_response = grpc.on_response_body.clone();
-            let filter = JsHooks::new(None, on_response).ok();
+            let hook = JsHooks::new(None, on_response).ok();
 
             if !grpc.batch_key.is_empty() {
                 IR::IO(IO::Grpc {
                     req_template,
                     group_by: Some(GroupBy::new(grpc.batch_key.clone(), None)),
                     dl_id: None,
-                    hook: filter,
+                    hook,
                 })
             } else {
-                IR::IO(IO::Grpc { req_template, group_by: None, dl_id: None, hook: filter })
+                IR::IO(IO::Grpc { req_template, group_by: None, dl_id: None, hook })
             }
         })
 }
