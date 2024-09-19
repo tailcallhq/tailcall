@@ -2,8 +2,16 @@ use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use prost_reflect::prost_types::FileDescriptorProto;
 
+use super::valid::Valid;
+
 pub trait MergeRight {
     fn merge_right(self, other: Self) -> Self;
+}
+
+pub trait MergeRightNew {
+    fn merge_right(self, other: Self) -> Valid<Self, String>
+    where
+        Self: Sized;
 }
 
 impl<A: MergeRight> MergeRight for Option<A> {

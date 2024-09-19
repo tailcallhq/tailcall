@@ -81,8 +81,9 @@ pub struct Config {
     /// A list of all links in the schema.
     #[serde(default, skip_serializing_if = "is_default")]
     pub links: Vec<Link>,
-    #[serde(default, skip_serializing_if = "is_default")]
+
     /// Enable [opentelemetry](https://opentelemetry.io) support
+    #[serde(default, skip_serializing_if = "is_default")]
     pub telemetry: Telemetry,
 }
 
@@ -282,6 +283,22 @@ pub struct Field {
 impl MergeRight for Field {
     fn merge_right(self, other: Self) -> Self {
         other
+    }
+}
+
+impl crate::core::merge_right::MergeRightNew for Field {
+    fn merge_right(self, other: Self) -> Valid<Self, String> {
+        Valid::succeed(Field {
+            type_of: todo!(),
+            args: todo!(),
+            doc: todo!(),
+            modify: todo!(),
+            omit: todo!(),
+            cache: todo!(),
+            default_value: todo!(),
+            protected: todo!(),
+            resolver: todo!(),
+        })
     }
 }
 

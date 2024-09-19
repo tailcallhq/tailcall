@@ -13,6 +13,9 @@ use crate::core::rest::{EndpointSet, Unchecked};
 use crate::core::valid::{Valid, Validator};
 use crate::core::Transform;
 
+mod config_merger;
+mod type_merger;
+
 /// A wrapper on top of Config that contains all the resolved extensions and
 /// computed values.
 #[derive(Clone, Debug, Default, MergeRight)]

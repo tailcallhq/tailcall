@@ -1,0 +1,31 @@
+---
+source: src/core/config/config_module/type_merger.rs
+expression: merged.to_sdl()
+---
+schema @server @upstream {
+  query: Query
+}
+
+type Post {
+  body: String!
+  id: Int!
+  title: String!
+  user: User @http(path: "/users/{{.value.userId}}")
+  userId: Int!
+}
+
+type Query {
+  posts: [Post] @http(path: "/posts")
+  user(id: Int!): User @http(path: "/users/{{.args.id}}")
+  users: [User] @http(path: "/users")
+  version: String @expr(body: "test")
+}
+
+type User {
+  email: String!
+  id: Int!
+  name: String!
+  phone: String
+  username: String!
+  website: String
+}
