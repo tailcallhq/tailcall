@@ -2,8 +2,9 @@ use crate::core::blueprint::*;
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::{Field, Resolver};
 use crate::core::endpoint::Endpoint;
-use crate::core::http::{HttpFilter, Method, RequestTemplate};
+use crate::core::http::{Method, RequestTemplate};
 use crate::core::ir::model::{IO, IR};
+use crate::core::js_hooks::JsHooks;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
 use crate::core::{config, helpers, Mustache};
@@ -67,7 +68,7 @@ pub fn compile_http(
                 .or(config_module.upstream.on_request.clone());
             let on_response = http.on_response_body.clone();
 
-            let http_filter = HttpFilter::new(on_request, on_response).ok();
+            let hook = JsHooks::new(on_request, on_response).ok();
 
             if !http.batch_key.is_empty() && http.method == Method::GET {
                 // Find a query parameter that contains a reference to the {{.value}} key
@@ -80,10 +81,10 @@ pub fn compile_http(
                     req_template,
                     group_by: Some(GroupBy::new(http.batch_key.clone(), key)),
                     dl_id: None,
-                    http_filter,
+                    hook,
                 })
             } else {
-                IR::IO(IO::Http { req_template, group_by: None, dl_id: None, http_filter })
+                IR::IO(IO::Http { req_template, group_by: None, dl_id: None, hook })
             }
         })
 }

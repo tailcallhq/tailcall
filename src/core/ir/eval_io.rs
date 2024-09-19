@@ -43,15 +43,13 @@ where
     Ctx: ResolverContextLike + Sync,
 {
     match io {
-        IO::Http { req_template, dl_id, http_filter, .. } => {
+        IO::Http { req_template, dl_id, hook, .. } => {
             let worker = &ctx.request_ctx.runtime.cmd_worker;
             let eval_http = EvalHttp::new(ctx, req_template, dl_id);
             let request = eval_http.init_request()?;
-            let response = match (&worker, http_filter) {
-                (Some(worker), Some(http_filter)) => {
-                    eval_http
-                        .execute_with_worker(request, worker, http_filter)
-                        .await?
+            let response = match (&worker, hook) {
+                (Some(worker), Some(hook)) => {
+                    eval_http.execute_with_worker(request, worker, hook).await?
                 }
                 _ => eval_http.execute(request).await?,
             };
@@ -74,8 +72,9 @@ where
             set_headers(ctx, &res);
             parse_graphql_response(ctx, res, field_name)
         }
-        IO::Grpc { req_template, dl_id, .. } => {
+        IO::Grpc { req_template, dl_id, hook, .. } => {
             let rendered = req_template.render(ctx)?;
+            let worker = &ctx.request_ctx.runtime.cmd_worker;
 
             let res = if ctx.request_ctx.upstream.batch.is_some() &&
                     // TODO: share check for operation_type for resolvers
@@ -89,6 +88,10 @@ where
                 execute_raw_grpc_request(ctx, req, &req_template.operation).await?
             };
 
+            let res = match (worker.as_ref(), hook.as_ref()) {
+                (Some(worker), Some(hook)) => hook.on_response(worker, res).await?,
+                _ => res,
+            };
             set_headers(ctx, &res);
 
             Ok(res.body)

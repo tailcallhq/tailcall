@@ -10,9 +10,10 @@ use crate::core::grpc::protobuf::ProtobufOperation;
 use crate::core::grpc::request::execute_grpc_request;
 use crate::core::grpc::request_template::RenderedRequestTemplate;
 use crate::core::http::{
-    cache_policy, DataLoaderRequest, HttpDataLoader, HttpFilter, RequestTemplate, Response,
+    cache_policy, DataLoaderRequest, HttpDataLoader, RequestTemplate, Response,
 };
 use crate::core::ir::Error;
+use crate::core::js_hooks::JsHooks;
 use crate::core::json::JsonLike;
 use crate::core::valid::Validator;
 use crate::core::{grpc, http, worker, WorkerIO};
@@ -81,16 +82,9 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         &self,
         mut request: reqwest::Request,
         worker: &Arc<dyn WorkerIO<worker::Event, worker::Command>>,
-        http_filter: &HttpFilter,
+        hook: &JsHooks,
     ) -> Result<Response<async_graphql::Value>, Error> {
-        let js_request = worker::WorkerRequest::try_from(&request)?;
-        let event = worker::Event::Request(js_request);
-
-        let command = if let Some(on_request) = http_filter.on_request.as_ref() {
-            worker.call(on_request, event).await?
-        } else {
-            None
-        };
+        let command = hook.on_request(worker, &request).await?;
 
         let resp = match command {
             Some(command) => match command {
@@ -106,7 +100,7 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
                         request
                             .url_mut()
                             .set_path(w_response.headers()["location"].as_str());
-                        self.execute_with_worker(request, worker, http_filter).await
+                        self.execute_with_worker(request, worker, hook).await
                     } else {
                         Ok(w_response.try_into()?)
                     }
@@ -115,23 +109,7 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
             None => self.execute(request).await,
         };
 
-        // send the final response to JS script to futher evaluation.
-        if let Ok(resp) = resp {
-            if let Some(on_response) = http_filter.on_response.as_ref() {
-                let js_response = worker::WorkerResponse::try_from(resp.clone())?;
-                let response_event = worker::Event::Response(js_response);
-                let final_command = worker.call(on_response, response_event).await?;
-
-                match final_command {
-                    Some(worker::Command::Response(w_response)) => Ok(w_response.try_into()?),
-                    _ => Ok(resp),
-                }
-            } else {
-                Ok(resp)
-            }
-        } else {
-            resp
-        }
+        hook.on_response(worker, resp?).await
     }
 }
 

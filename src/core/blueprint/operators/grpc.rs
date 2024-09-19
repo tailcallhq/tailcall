@@ -9,6 +9,7 @@ use crate::core::config::{Config, ConfigModule, Field, GraphQLOperationType, Grp
 use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
 use crate::core::grpc::request_template::RequestTemplate;
 use crate::core::ir::model::{IO, IR};
+use crate::core::js_hooks::JsHooks;
 use crate::core::json::JsonSchema;
 use crate::core::mustache::Mustache;
 use crate::core::try_fold::TryFold;
@@ -196,14 +197,18 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
                 body,
                 operation_type: operation_type.clone(),
             };
+            let on_response = grpc.on_response_body.clone();
+            let hook = JsHooks::new(None, on_response).ok();
+
             if !grpc.batch_key.is_empty() {
                 IR::IO(IO::Grpc {
                     req_template,
                     group_by: Some(GroupBy::new(grpc.batch_key.clone(), None)),
                     dl_id: None,
+                    hook,
                 })
             } else {
-                IR::IO(IO::Grpc { req_template, group_by: None, dl_id: None })
+                IR::IO(IO::Grpc { req_template, group_by: None, dl_id: None, hook })
             }
         })
 }
