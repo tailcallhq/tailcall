@@ -121,9 +121,9 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
             if let Some(on_response) = http_filter.on_response.as_ref() {
                 let js_response = worker::WorkerResponse::try_from(resp.clone())?;
                 let response_event = worker::Event::Response(js_response);
-                let final_command = worker.call(on_response, response_event).await?;
+                let command = worker.call(on_response, response_event).await?;
 
-                match final_command {
+                match command {
                     Some(worker::Command::Response(w_response)) => Ok(w_response.try_into()?),
                     _ => Ok(resp),
                 }

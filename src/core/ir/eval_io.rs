@@ -95,8 +95,8 @@ where
                 (Some(worker), Some(on_response)) => {
                     let js_response = WorkerResponse::try_from(res.clone())?;
                     let response_event = Event::Response(js_response);
-                    let final_command = worker.call(on_response, response_event).await?;
-                    match final_command {
+                    let command = worker.call(on_response, response_event).await?;
+                    match command {
                         Some(Command::Response(w_response)) => w_response.try_into()?,
                         _ => res,
                     }
