@@ -88,7 +88,7 @@ impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
             .and_then(move |(head, tail)| match head.as_ref() {
                 "value" => Some(ValueString::Value(ctx.path_value(tail)?)),
                 "args" => Some(ValueString::Value(ctx.path_arg(tail)?)),
-                "headers" => Some(ValueString::String(Cow::Borrowed(
+                "headers" => Some(ValueString::String(Cow::Owned(
                     ctx.header(tail[0].as_ref())?,
                 ))),
                 "vars" => Some(ValueString::String(Cow::Borrowed(

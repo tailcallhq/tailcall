@@ -103,7 +103,7 @@ impl RequestTemplate {
             req_headers.extend(headers);
         }
 
-        req_headers.extend(ctx.headers().to_owned());
+        req_headers.extend(ctx.headers());
 
         req_headers
     }
@@ -210,8 +210,8 @@ mod tests {
     }
 
     impl crate::core::has_headers::HasHeaders for Context {
-        fn headers(&self) -> &HeaderMap {
-            &self.headers
+        fn headers(&self) -> HeaderMap {
+            self.headers.to_owned()
         }
     }
 

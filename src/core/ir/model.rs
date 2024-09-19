@@ -3,6 +3,7 @@ use std::fmt::Debug;
 use std::num::NonZeroU64;
 
 use async_graphql::Value;
+use headers::HeaderMap;
 use strum_macros::Display;
 
 use super::discriminator::Discriminator;
@@ -44,18 +45,21 @@ pub enum IO {
         dl_id: Option<DataLoaderId>,
         http_filter: Option<HttpFilter>,
         batch: Option<Batch>,
+        headers: HeaderMap,
     },
     GraphQL {
         req_template: graphql::RequestTemplate,
         field_name: String,
         batch: Option<Batch>,
         dl_id: Option<DataLoaderId>,
+        headers: HeaderMap,
     },
     Grpc {
         req_template: grpc::RequestTemplate,
         group_by: Option<GroupBy>,
         dl_id: Option<DataLoaderId>,
         batch: Option<Batch>,
+        headers: HeaderMap,
     },
     Js {
         name: String,

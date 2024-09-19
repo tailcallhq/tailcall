@@ -1,3 +1,7 @@
+use std::str::FromStr;
+
+use headers::{HeaderMap, HeaderName, HeaderValue};
+
 use crate::core::blueprint::*;
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::{Field, Resolver};
@@ -63,6 +67,14 @@ pub fn compile_http(
                 .or(config_module.upstream.on_request.clone())
                 .map(|on_request| HttpFilter { on_request });
 
+            let headers = http.headers.iter().filter_map(|kv| {
+                Some((
+                    HeaderName::from_str(kv.key.as_str()).ok()?,
+                    HeaderValue::from_str(kv.value.as_str()).ok()?,
+                ))
+            });
+            let headers = HeaderMap::from_iter(headers);
+
             if !http.batch_key.is_empty() && http.method == Method::GET {
                 // Find a query parameter that contains a reference to the {{.value}} key
                 let key = http.query.iter().find_map(|q| {
@@ -70,12 +82,14 @@ pub fn compile_http(
                         .expression_contains("value")
                         .then(|| q.key.clone())
                 });
+
                 IR::IO(IO::Http {
                     req_template,
                     group_by: Some(GroupBy::new(http.batch_key.clone(), key)),
                     dl_id: None,
                     http_filter,
                     batch: http.batch.clone(),
+                    headers,
                 })
             } else {
                 IR::IO(IO::Http {
@@ -84,6 +98,7 @@ pub fn compile_http(
                     dl_id: None,
                     http_filter,
                     batch: http.batch.clone(),
+                    headers,
                 })
             }
         })

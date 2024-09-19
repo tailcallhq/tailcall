@@ -18,6 +18,8 @@ impl Verify for BasicVerifier {
     async fn verify(&self, req_ctx: &RequestContext) -> Verification {
         let header = req_ctx
             .allowed_headers
+            .read()
+            .unwrap()
             .typed_try_get::<Authorization<Basic>>();
 
         let Ok(header) = header else {
@@ -67,6 +69,8 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
 
         req_context
             .allowed_headers
+            .read()
+            .unwrap()
             .typed_insert(Authorization::basic(username, password));
 
         req_context
@@ -119,7 +123,7 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
     async fn verify_auth_failure() {
         let provider = setup_provider();
         let mut req_ctx = RequestContext::default();
-        req_ctx.allowed_headers.insert(
+        req_ctx.allowed_headers.lock().unwrap().insert(
             "Authorization",
             HeaderValue::from_static("Basic dGVzdHVzZXIyOm15cGFzc3dvcmQ"),
         );

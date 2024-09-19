@@ -1,6 +1,6 @@
 use std::num::NonZeroU64;
 use std::str::FromStr;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 
 use async_graphql_value::ConstValue;
 use cache_control::{Cachability, CacheControl};
@@ -27,7 +27,7 @@ pub struct RequestContext {
     pub cookie_headers: Option<Arc<Mutex<HeaderMap>>>,
     // A subset of all the headers received in the GraphQL Request that will be sent to the
     // upstream.
-    pub allowed_headers: HeaderMap,
+    pub allowed_headers: Arc<RwLock<HeaderMap>>,
     pub auth_ctx: AuthContext,
     pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
     pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
@@ -54,7 +54,7 @@ impl RequestContext {
             runtime: target_runtime,
             cache: DedupeResult::new(true),
             dedupe_handler: Arc::new(DedupeResult::new(false)),
-            allowed_headers: HeaderMap::new(),
+            allowed_headers: Default::default(),
             auth_ctx: AuthContext::default(),
         }
     }
@@ -197,7 +197,7 @@ impl From<&AppContext> for RequestContext {
             upstream: app_ctx.blueprint.upstream.clone(),
             x_response_headers: Arc::new(Mutex::new(HeaderMap::new())),
             cookie_headers,
-            allowed_headers: HeaderMap::new(),
+            allowed_headers: Default::default(),
             auth_ctx: (&app_ctx.auth_ctx).into(),
             http_data_loaders: app_ctx.http_data_loaders.clone(),
             gql_data_loaders: app_ctx.gql_data_loaders.clone(),

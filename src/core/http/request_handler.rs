@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 use std::ops::Deref;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 use anyhow::Result;
 use async_graphql::ServerError;
@@ -62,7 +62,7 @@ fn create_request_context(req: &Request<Body>, app_ctx: &AppContext) -> RequestC
     let allowed_headers = create_allowed_headers(req.headers(), &allowed);
 
     let _allowed = app_ctx.blueprint.server.get_experimental_headers();
-    RequestContext::from(app_ctx).allowed_headers(allowed_headers)
+    RequestContext::from(app_ctx).allowed_headers(Arc::new(RwLock::new(allowed_headers)))
 }
 
 fn update_cache_control_header(

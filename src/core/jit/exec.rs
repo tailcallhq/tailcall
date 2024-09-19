@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex};
 
 use derive_getters::Getters;
 use futures_util::future::join_all;
+use headers::HeaderMap;
 
 use super::context::{Context, RequestContext};
 use super::{DataPath, OperationPlan, Positioned, Response, Store};
@@ -182,4 +183,5 @@ pub trait IRExecutor {
         ir: &'a IR,
         ctx: &'a Context<'a, Self::Input, Self::Output>,
     ) -> Result<Self::Output, Self::Error>;
+    fn headers<'a>(&self, ir: &'a IR) -> Option<&'a HeaderMap>;
 }

@@ -1,5 +1,7 @@
 use std::fmt::Display;
+use std::str::FromStr;
 
+use headers::{HeaderMap, HeaderName, HeaderValue};
 use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::FieldDescriptor;
 
@@ -196,12 +198,21 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
                 body,
                 operation_type: operation_type.clone(),
             };
+            let grpc_headers = grpc.headers.iter().filter_map(|kv| {
+                Some((
+                    HeaderName::from_str(kv.key.as_str()).ok()?,
+                    HeaderValue::from_str(kv.value.as_str()).ok()?,
+                ))
+            });
+            let grpc_headers = HeaderMap::from_iter(grpc_headers);
+
             if !grpc.batch_key.is_empty() {
                 IR::IO(IO::Grpc {
                     req_template,
                     group_by: Some(GroupBy::new(grpc.batch_key.clone(), None)),
                     dl_id: None,
                     batch: grpc.batch.clone(),
+                    headers: grpc_headers,
                 })
             } else {
                 IR::IO(IO::Grpc {
@@ -209,6 +220,7 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
                     group_by: None,
                     dl_id: None,
                     batch: grpc.batch.clone(),
+                    headers: grpc_headers,
                 })
             }
         })

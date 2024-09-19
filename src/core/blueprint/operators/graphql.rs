@@ -1,4 +1,7 @@
 use std::collections::{HashMap, HashSet};
+use std::str::FromStr;
+
+use headers::{HeaderMap, HeaderName, HeaderValue};
 
 use crate::core::blueprint::FieldDefinition;
 use crate::core::config::{
@@ -71,7 +74,14 @@ pub fn compile_graphql(
     .map(|req_template| {
         let field_name = graphql.name.clone();
         let batch = graphql.batch.clone();
-        IR::IO(IO::GraphQL { req_template, field_name, batch, dl_id: None })
+        let headers = graphql.headers.iter().filter_map(|kv| {
+            Some((
+                HeaderName::from_str(kv.key.as_str()).ok()?,
+                HeaderValue::from_str(kv.value.as_str()).ok()?,
+            ))
+        });
+        let headers = HeaderMap::from_iter(headers);
+        IR::IO(IO::GraphQL { req_template, field_name, batch, dl_id: None, headers })
     })
 }
 
