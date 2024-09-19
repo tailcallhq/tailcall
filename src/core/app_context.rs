@@ -87,7 +87,7 @@ impl AppContext {
                                     result
                                 }
 
-                                IO::Grpc { req_template, group_by, .. } => {
+                                IO::Grpc { req_template, group_by, filter, .. } => {
                                     let data_loader = GrpcDataLoader {
                                         runtime: runtime.clone(),
                                         operation: req_template.operation.clone(),
@@ -101,6 +101,7 @@ impl AppContext {
                                         req_template: req_template.clone(),
                                         group_by: group_by.clone(),
                                         dl_id: Some(DataLoaderId::new(grpc_data_loaders.len())),
+                                        filter: filter.clone()
                                     }));
 
                                     grpc_data_loaders.push(data_loader);

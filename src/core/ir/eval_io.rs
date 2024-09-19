@@ -13,6 +13,7 @@ use crate::core::grpc;
 use crate::core::grpc::data_loader::GrpcDataLoader;
 use crate::core::http::DataLoaderRequest;
 use crate::core::ir::Error;
+use crate::core::worker::{Command, Event, WorkerResponse};
 
 pub async fn eval_io<Ctx>(io: &IO, ctx: &mut EvalContext<'_, Ctx>) -> Result<ConstValue, Error>
 where
@@ -74,8 +75,9 @@ where
             set_headers(ctx, &res);
             parse_graphql_response(ctx, res, field_name)
         }
-        IO::Grpc { req_template, dl_id, .. } => {
+        IO::Grpc { req_template, dl_id, filter, .. } => {
             let rendered = req_template.render(ctx)?;
+            let worker = &ctx.request_ctx.runtime.cmd_worker;
 
             let res = if ctx.request_ctx.upstream.batch.is_some() &&
                     // TODO: share check for operation_type for resolvers
@@ -89,6 +91,21 @@ where
                 execute_raw_grpc_request(ctx, req, &req_template.operation).await?
             };
 
+            let res = match (&worker, filter) {
+                (Some(worker), Some(filter)) => {
+                    let js_response = WorkerResponse::try_from(res.clone())?;
+                    let response_event = Event::Response(js_response);
+                    let final_command = worker.call("onResponse", response_event).await?;
+                    let res = match final_command {
+                        Some(Command::Response(w_response)) => w_response.try_into()?,
+                        _ => res,
+                    };
+                    res
+                }
+                _ => res,
+            };
+            
+            // pass down the req to JS side.
             set_headers(ctx, &res);
 
             Ok(res.body)
