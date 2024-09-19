@@ -172,7 +172,7 @@ type oneof__Response__Var2 implements oneof__Response__Interface {
   body:
     query: >
       query {
-        oneof__OneOfService__GetOneOfVar1(request: { command: { command: "start" } }) {
+        oneof__OneOfService__GetOneOfVar3(request: { command: { command: "start" } }) {
           ... on oneof__Response__Interface {
             usual
           }

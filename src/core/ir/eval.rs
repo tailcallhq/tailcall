@@ -86,7 +86,7 @@ impl IR {
                     second.eval(ctx).await
                 }
                 IR::Discriminate(discriminator, expr) => expr.eval(ctx).await.and_then(|value| {
-                    let value = value.map(|mut value| {
+                    let value = value.map(&mut |mut value| {
                         let type_name = discriminator.resolve_type(&value)?;
 
                         value.set_type_name(type_name.to_string())?;
