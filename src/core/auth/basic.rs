@@ -65,11 +65,11 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
     }
 
     pub fn create_basic_auth_request(username: &str, password: &str) -> RequestContext {
-        let mut req_context = RequestContext::default();
+        let req_context = RequestContext::default();
 
         req_context
             .allowed_headers
-            .read()
+            .write()
             .unwrap()
             .typed_insert(Authorization::basic(username, password));
 
@@ -122,8 +122,8 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
     #[tokio::test]
     async fn verify_auth_failure() {
         let provider = setup_provider();
-        let mut req_ctx = RequestContext::default();
-        req_ctx.allowed_headers.lock().unwrap().insert(
+        let req_ctx = RequestContext::default();
+        req_ctx.allowed_headers.write().unwrap().insert(
             "Authorization",
             HeaderValue::from_static("Basic dGVzdHVzZXIyOm15cGFzc3dvcmQ"),
         );

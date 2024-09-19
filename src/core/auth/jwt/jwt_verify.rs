@@ -166,11 +166,11 @@ pub mod tests {
     }
 
     pub fn create_jwt_auth_request(token: &str) -> RequestContext {
-        let mut req_context = RequestContext::default();
+        let req_context = RequestContext::default();
 
         req_context
             .allowed_headers
-            .read()
+            .write()
             .unwrap()
             .typed_insert(Authorization::bearer(token).unwrap());
 
