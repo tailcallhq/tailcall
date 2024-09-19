@@ -10,7 +10,7 @@ use super::{EvalContext, ResolverContextLike};
 use crate::core::blueprint::DynamicValue;
 use crate::core::config::group_by::GroupBy;
 use crate::core::graphql::{self};
-use crate::core::http::HttpFilter;
+use crate::core::http::JsHooks;
 use crate::core::{grpc, http};
 
 #[derive(Clone, Debug, Display)]
@@ -41,7 +41,7 @@ pub enum IO {
         req_template: http::RequestTemplate,
         group_by: Option<GroupBy>,
         dl_id: Option<DataLoaderId>,
-        http_filter: Option<HttpFilter>,
+        http_filter: Option<JsHooks>,
     },
     GraphQL {
         req_template: graphql::RequestTemplate,
@@ -53,7 +53,7 @@ pub enum IO {
         req_template: grpc::RequestTemplate,
         group_by: Option<GroupBy>,
         dl_id: Option<DataLoaderId>,
-        filter: Option<HttpFilter>,
+        filter: Option<JsHooks>,
     },
     Js {
         name: String,

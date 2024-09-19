@@ -10,7 +10,7 @@ use crate::core::grpc::protobuf::ProtobufOperation;
 use crate::core::grpc::request::execute_grpc_request;
 use crate::core::grpc::request_template::RenderedRequestTemplate;
 use crate::core::http::{
-    cache_policy, DataLoaderRequest, HttpDataLoader, HttpFilter, RequestTemplate, Response,
+    cache_policy, DataLoaderRequest, HttpDataLoader, JsHooks, RequestTemplate, Response,
 };
 use crate::core::ir::Error;
 use crate::core::json::JsonLike;
@@ -81,7 +81,7 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         &self,
         mut request: reqwest::Request,
         worker: &Arc<dyn WorkerIO<worker::Event, worker::Command>>,
-        http_filter: &HttpFilter,
+        http_filter: &JsHooks,
     ) -> Result<Response<async_graphql::Value>, Error> {
         let js_request = worker::WorkerRequest::try_from(&request)?;
         let event = worker::Event::Request(js_request);

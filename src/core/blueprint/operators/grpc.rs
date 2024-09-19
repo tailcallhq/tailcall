@@ -8,7 +8,7 @@ use crate::core::config::group_by::GroupBy;
 use crate::core::config::{Config, ConfigModule, Field, GraphQLOperationType, Grpc, Resolver};
 use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
 use crate::core::grpc::request_template::RequestTemplate;
-use crate::core::http::HttpFilter;
+use crate::core::http::JsHooks;
 use crate::core::ir::model::{IO, IR};
 use crate::core::json::JsonSchema;
 use crate::core::mustache::Mustache;
@@ -198,7 +198,7 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
                 operation_type: operation_type.clone(),
             };
             let on_response = grpc.on_response_body.clone();
-            let filter = HttpFilter::new(None, on_response).ok();
+            let filter = JsHooks::new(None, on_response).ok();
 
             if !grpc.batch_key.is_empty() {
                 IR::IO(IO::Grpc {
