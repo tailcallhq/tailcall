@@ -38,6 +38,8 @@ pub struct Server {
     pub experimental_headers: HashSet<HeaderName>,
     pub auth: Option<Auth>,
     pub dedupe: bool,
+    pub query_complexity: Option<usize>,
+    pub query_depth: Option<usize>,
 }
 
 /// Mimic of mini_v8::Script that's wasm compatible
@@ -154,6 +156,8 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
                         cors,
                         auth,
                         dedupe: config_server.get_dedupe(),
+                        query_complexity: config_server.get_query_complexity(),
+                        query_depth: config_server.get_query_depth(),
                     }
                 },
             )

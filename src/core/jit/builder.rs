@@ -11,11 +11,13 @@ use async_graphql_value::{ConstValue, Value};
 
 use super::input_resolver::InputResolver;
 use super::model::{Directive as JitDirective, *};
+use super::rules::{ExecutionRule, QueryComplexity, QueryDepth, RuleOps, Rules};
 use super::BuildError;
 use crate::core::blueprint::{Blueprint, Index, QueryField};
 use crate::core::counter::{Count, Counter};
 use crate::core::jit::model::OperationPlan;
 use crate::core::merge_right::MergeRight;
+use crate::core::valid::Validator;
 use crate::core::Type;
 
 #[derive(PartialEq, strum_macros::Display)]
@@ -360,12 +362,26 @@ impl Builder {
             is_introspection_query,
         );
 
+        // perform the rule check.
+        Rules
+            .pipe(
+                QueryComplexity::new(self.index.query_complexity().unwrap_or_default())
+                    .when(self.index.query_complexity().is_some()),
+            )
+            .pipe(
+                QueryDepth::new(self.index.query_depth().unwrap_or_default())
+                    .when(self.index.query_depth().is_some()),
+            )
+            .validate(&plan)
+            .to_result()?;
+
         // TODO: operation from [ExecutableDocument] could contain definitions for
         // default values of arguments. That info should be passed to
         // [InputResolver] to resolve defaults properly
         let input_resolver = InputResolver::new(plan);
+        let plan = input_resolver.resolve_input(variables)?;
 
-        Ok(input_resolver.resolve_input(variables)?)
+        Ok(plan)
     }
 }
 

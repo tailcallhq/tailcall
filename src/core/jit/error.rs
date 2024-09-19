@@ -2,7 +2,9 @@ use async_graphql::parser::types::OperationType;
 use async_graphql::{ErrorExtensions, ServerError};
 use thiserror::Error;
 
-#[derive(Error, Debug, Clone, PartialEq, Eq)]
+use crate::core::valid::ValidationError as CoreValidationError;
+
+#[derive(Error, Debug, Clone, PartialEq)]
 #[error("Error while building the plan")]
 pub enum BuildError {
     #[error("Root Operation type not defined for {operation}")]
@@ -13,6 +15,8 @@ pub enum BuildError {
     OperationNotFound(String),
     #[error("Operation name required in request")]
     OperationNameRequired,
+    #[error("{0}")]
+    ValidationError(#[from] CoreValidationError<String>),
 }
 
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
