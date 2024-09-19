@@ -99,27 +99,24 @@ where
         value: Option<Output>,
     ) -> Result<Option<Output>, ResolveInputError> {
         let is_value_null = value.as_ref().map(|val| val.is_null()).unwrap_or(true);
-        let value: Result<Option<Output>, ResolveInputError> =
-            if !type_of.is_nullable() && value.is_none() {
-                let default_value = default_value.clone();
-                match default_value {
-                    Some(value) => Ok(Some(value)),
-                    None => Err(ResolveInputError::ArgumentIsRequired {
-                        arg_name: arg_name.to_string(),
-                        field_name: parent_name.to_string(),
-                    }),
-                }
-            } else if !type_of.is_nullable() && is_value_null {
-                Err(ResolveInputError::ArgumentIsRequired {
-                    arg_name: arg_name.to_string(),
-                    field_name: parent_name.to_string(),
-                })
-            } else if value.is_none() {
-                let default_value = default_value.clone();
-                Ok(default_value)
-            } else {
-                Ok(value)
-            };
+        let value = if !type_of.is_nullable() && value.is_none() {
+            let default_value = default_value.clone();
+
+            Some(default_value.ok_or(ResolveInputError::ArgumentIsRequired {
+                arg_name: arg_name.to_string(),
+                field_name: parent_name.to_string(),
+            })?)
+        } else if !type_of.is_nullable() && is_value_null {
+            return Err(ResolveInputError::ArgumentIsRequired {
+                arg_name: arg_name.to_string(),
+                field_name: parent_name.to_string(),
+            });
+        } else if value.is_none() {
+            let default_value = default_value.clone();
+            default_value
+        } else {
+            value
+        };
 
         let Some(mut value) = value? else {
             return Ok(None);
