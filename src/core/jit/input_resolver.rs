@@ -112,8 +112,7 @@ where
                 field_name: parent_name.to_string(),
             });
         } else if value.is_none() {
-            let default_value = default_value.clone();
-            default_value
+            default_value.clone()
         } else {
             value
         };
