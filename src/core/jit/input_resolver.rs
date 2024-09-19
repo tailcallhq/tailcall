@@ -121,15 +121,11 @@ where
                 Ok(value)
             };
 
-        let mut value = if let Some(value) = value? {
-            value
-        } else {
+        let Some(mut value) = value? else {
             return Ok(None);
         };
 
-        let def = if let Some(def) = self.plan.index.get_input_type_definition(type_of.name()) {
-            def
-        } else {
+        let Some(def) = self.plan.index.get_input_type_definition(type_of.name()) else {
             return Ok(Some(value));
         };
 
