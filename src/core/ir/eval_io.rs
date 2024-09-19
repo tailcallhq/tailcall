@@ -91,21 +91,18 @@ where
                 execute_raw_grpc_request(ctx, req, &req_template.operation).await?
             };
 
-            let res = match (&worker, filter) {
-                (Some(worker), Some(filter)) => {
+            let res = match (worker, filter.as_ref().and_then(|f| f.on_response.as_ref())) {
+                (Some(worker), Some(on_response)) => {
                     let js_response = WorkerResponse::try_from(res.clone())?;
                     let response_event = Event::Response(js_response);
-                    let final_command = worker.call("onResponse", response_event).await?;
-                    let res = match final_command {
+                    let final_command = worker.call(on_response, response_event).await?;
+                    match final_command {
                         Some(Command::Response(w_response)) => w_response.try_into()?,
                         _ => res,
-                    };
-                    res
+                    }
                 }
                 _ => res,
             };
-            
-            // pass down the req to JS side.
             set_headers(ctx, &res);
 
             Ok(res.body)
