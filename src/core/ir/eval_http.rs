@@ -84,7 +84,7 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         worker: &Arc<dyn WorkerIO<worker::Event, worker::Command>>,
         hook: &JsHooks,
     ) -> Result<Response<async_graphql::Value>, Error> {
-        let command = hook.handle_on_request(worker, &request).await?;
+        let command = hook.on_request(worker, &request).await?;
 
         let resp = match command {
             Some(command) => match command {
@@ -109,7 +109,7 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
             None => self.execute(request).await,
         };
 
-        hook.handle_on_response(worker, resp?).await
+        hook.on_response(worker, resp?).await
     }
 }
 

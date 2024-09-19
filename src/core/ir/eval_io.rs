@@ -90,7 +90,7 @@ where
             };
 
             let res = match (worker.as_ref(), hook.as_ref()) {
-                (Some(worker), Some(hook)) => hook.handle_on_response(worker, res).await?,
+                (Some(worker), Some(hook)) => hook.on_response(worker, res).await?,
                 _ => res,
             };
             set_headers(ctx, &res);

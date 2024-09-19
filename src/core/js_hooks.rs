@@ -28,7 +28,7 @@ impl JsHooks {
         }
     }
 
-    pub async fn handle_on_request(
+    pub async fn on_request(
         &self,
         worker: &Arc<dyn WorkerIO<worker::Event, worker::Command>>,
         request: &reqwest::Request,
@@ -43,7 +43,7 @@ impl JsHooks {
         }
     }
 
-    pub async fn handle_on_response(
+    pub async fn on_response(
         &self,
         worker: &Arc<dyn WorkerIO<worker::Event, worker::Command>>,
         response: Response<async_graphql::Value>,
