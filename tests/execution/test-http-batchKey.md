@@ -1,9 +1,7 @@
 # Http with args as body
 
 ```graphql @config
-schema
-  @server(port: 8000)
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", batch: {maxSize: 1000, delay: 10}) {
+schema @server(port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
 
@@ -28,6 +26,7 @@ type Foo {
         {key: "barId[]", value: "{{.value.barId}}"}
       ]
       batchKey: ["bars", "id"]
+      batch: {maxSize: 1000, delay: 10}
     )
 }
 

@@ -2,9 +2,7 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema
-  @server
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", batch: {delay: 10, headers: []}, httpCache: 42) {
+schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42) {
   query: Query
 }
 
@@ -17,12 +15,13 @@ type Post {
       batchKey: ["id"]
       path: "/users"
       query: [{key: "id", value: "{{.value.userId}}"}, {key: "foo", value: "bar"}]
+      batch: {delay: 10, headers: []}
     )
   userId: Int!
 }
 
 type Query {
-  posts: [Post] @http(path: "/posts?id=11&id=3&foo=1")
+  posts: [Post] @http(path: "/posts?id=11&id=3&foo=1", batch: {delay: 10, headers: []})
 }
 
 type User {

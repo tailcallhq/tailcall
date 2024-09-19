@@ -18,11 +18,7 @@ pub fn compile_http(
             Valid::<(), String>::fail(
                 "Batching capability was used without enabling it in upstream".to_string(),
             )
-            .when(|| {
-                (config_module.upstream.get_delay() < 1
-                    || config_module.upstream.get_max_size() < 1)
-                    && http.batch.is_none()
-            }),
+            .when(|| !http.batch_key.is_empty() && http.batch.is_none()),
         )
         .and(Valid::from_option(
             http.base_url

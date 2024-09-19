@@ -453,6 +453,7 @@ pub struct Alias {
     InputDefinition,
 )]
 #[directive_definition(locations = "FieldDefinition")]
+#[serde(rename_all = "camelCase")]
 #[serde(deny_unknown_fields)]
 /// The @http operator indicates that a field or node is backed by a REST API.
 ///

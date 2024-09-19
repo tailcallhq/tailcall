@@ -131,7 +131,7 @@ server will make a GET request to the API endpoint specified when the `users` fi
 is queried.
 """
 directive @http(
-  allowed_headers: [String!]
+  allowedHeaders: [String!]
   """
   This refers to the base URL of the API. If not specified, the default base URL is 
   the one specified in the `@upstream` operator.
@@ -352,12 +352,6 @@ directive @upstream(
   in a compilation error.
   """
   baseURL: String
-  """
-  An object that specifies the batch settings, including `maxSize` (the maximum size 
-  of the batch), `delay` (the delay in milliseconds between each batch), and `headers` 
-  (an array of HTTP headers to be included in the batch).
-  """
-  batch: Batch
   """
   The time in seconds that the connection will wait for a response before timing out.
   """
@@ -783,7 +777,7 @@ server will make a GET request to the API endpoint specified when the `users` fi
 is queried.
 """
 input Http {
-  allowed_headers: [String!]
+  allowedHeaders: [String!]
   """
   This refers to the base URL of the API. If not specified, the default base URL is 
   the one specified in the `@upstream` operator.

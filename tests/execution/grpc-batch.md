@@ -37,10 +37,7 @@ message NewsList {
 ```
 
 ```graphql @config
-schema
-  @server(port: 8000)
-  @upstream(httpCache: 42, batch: {delay: 10})
-  @link(id: "news", src: "news.proto", type: Protobuf) {
+schema @server(port: 8000) @upstream(httpCache: 42) @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
 }
 
@@ -52,6 +49,7 @@ type Query {
       baseURL: "http://localhost:50051"
       body: "{{.args.news}}"
       batchKey: ["news", "id"]
+      batch: {delay: 10}
     )
 }
 input NewsInput {

@@ -6,7 +6,7 @@ error: true
 
 ```graphql @config
 schema
-  @upstream(baseURL: "http://example.com", batch: {delay: 1, maxSize: 1000})
+  @upstream(baseURL: "http://example.com")
   @server(headers: {cors: {allowCredentials: true, allowOrigins: ["*"], allowMethods: [POST, OPTIONS]}}) {
   query: Query
 }

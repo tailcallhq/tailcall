@@ -4,7 +4,7 @@ schema @server(port: 8000, hostname: "0.0.0.0") @upstream(baseURL: "http://local
 }
 
 type Query {
-  queryNodeA: [NodeA] @graphQL(name: "queryNodeA", batch: false)
+  queryNodeA: [NodeA] @graphQL(name: "queryNodeA")
 }
 
 type NodeA {

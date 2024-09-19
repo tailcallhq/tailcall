@@ -687,7 +687,7 @@
         "path"
       ],
       "properties": {
-        "allowed_headers": {
+        "allowedHeaders": {
           "type": "array",
           "items": {
             "type": "string"
@@ -1459,17 +1459,6 @@
           "type": [
             "string",
             "null"
-          ]
-        },
-        "batch": {
-          "description": "An object that specifies the batch settings, including `maxSize` (the maximum size of the batch), `delay` (the delay in milliseconds between each batch), and `headers` (an array of HTTP headers to be included in the batch).",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Batch"
-            },
-            {
-              "type": "null"
-            }
           ]
         },
         "connectTimeout": {
