@@ -155,6 +155,16 @@ impl Default for Routes {
     }
 }
 
+impl Routes {
+    pub fn with_status<T: Into<String>>(self, status: T) -> Self {
+        Self { graphql: self.graphql, status: status.into() }
+    }
+
+    pub fn with_graphql<T: Into<String>>(self, graphql: T) -> Self {
+        Self { status: self.status, graphql: graphql.into() }
+    }
+}
+
 fn merge_right_vars(mut left: Vec<KeyValue>, right: Vec<KeyValue>) -> Vec<KeyValue> {
     left = merge_key_value_vecs(&left, &right);
     left
