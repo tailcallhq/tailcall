@@ -5,7 +5,7 @@ use sysinfo::System;
 use super::super::Result;
 use super::ga::GaTracker;
 use super::posthog::PostHogTracker;
-use crate::tracker::{Event, EventKind};
+use crate::{Event, EventKind};
 
 const PARAPHRASE: &str = "tc_key";
 const DEFAULT_CLIENT_ID: &str = "<anonymous>";

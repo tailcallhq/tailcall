@@ -2,7 +2,7 @@ use tailcall_version::VERSION;
 
 use super::super::Result;
 use super::collectors::EventCollector;
-use crate::tracker::Event;
+use crate::Event;
 
 const POSTHOG_API_SECRET: &str = match option_env!("POSTHOG_API_SECRET") {
     Some(val) => val,

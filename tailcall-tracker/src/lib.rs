@@ -1,6 +1,8 @@
 mod check_tracking;
 mod collect;
 mod error;
+mod event;
 mod tracker;
 use error::Result;
-pub use tracker::{Event, EventKind, Tracker};
+pub use event::{Event, EventKind};
+pub use tracker::Tracker;
