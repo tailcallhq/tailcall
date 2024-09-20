@@ -124,6 +124,12 @@ pub struct Server {
     pub workers: Option<usize>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    /// `routes` allows customization of server endpoint paths.
+    /// It provides options to change the default paths for status and GraphQL endpoints.
+    /// Default values are:
+    /// - status: "/status"
+    /// - graphQL: "/graphql"
+    /// If not specified, these default values will be used.
     pub routes: Option<Routes>,
 }
 
