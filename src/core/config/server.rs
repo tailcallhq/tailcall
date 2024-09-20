@@ -129,14 +129,26 @@ pub struct Server {
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, MergeRight, JsonSchema, Getters)]
 pub struct Routes {
+    #[serde(default = "default_status")]
     status: String,
-    #[serde(rename = "graphQL")]
+    #[serde(rename = "graphQL", default = "default_graphql")]
     graphql: String,
+}
+
+fn default_status() -> String {
+    "/status".into()
+}
+
+fn default_graphql() -> String {
+    "/graphql".into()
 }
 
 impl Default for Routes {
     fn default() -> Self {
-        Self { status: "/status".into(), graphql: "/graphql".into() }
+        Self {
+            status: "/status".into(),
+            graphql: "/graphql".into(),
+        }
     }
 }
 
