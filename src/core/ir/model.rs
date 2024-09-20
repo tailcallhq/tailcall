@@ -4,6 +4,7 @@ use std::num::NonZeroU64;
 
 use async_graphql::Value;
 use strum_macros::Display;
+use tailcall_macros::MergeRight;
 
 use super::discriminator::Discriminator;
 use super::{EvalContext, ResolverContextLike};
@@ -11,9 +12,10 @@ use crate::core::blueprint::DynamicValue;
 use crate::core::config::group_by::GroupBy;
 use crate::core::graphql::{self};
 use crate::core::http::HttpFilter;
+use crate::core::merge_right::MergeRight;
 use crate::core::{grpc, http};
 
-#[derive(Clone, Debug, Display)]
+#[derive(Clone, Debug, Display, MergeRight)]
 pub enum IR {
     Dynamic(DynamicValue<Value>),
     #[strum(to_string = "{0}")]

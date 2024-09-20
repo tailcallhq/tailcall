@@ -8,6 +8,7 @@ mod from_config;
 mod index;
 mod into_schema;
 mod links;
+mod merge;
 mod mustache;
 mod operators;
 mod schema;

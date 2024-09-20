@@ -1,0 +1,37 @@
+schema
+  @server(port: 8000)
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 100}) {
+  query: Query
+}
+
+type Query {
+  users: [User] @http(path: "/users")
+  user(id: Int!): User @http(path: "/users/{{.args.id}}")
+  addComment(postId: Int!, comment: CommentInput!): Boolean @http(path: "/add-comment")
+}
+
+type User {
+  id: Int!
+  name: String!
+  username: String!
+  email: String!
+  phone: String
+  website: String
+}
+
+interface Post {
+  userId: Int!
+  user: User @http(path: "/users/{{.value.userId}}")
+}
+
+type UserPost implements Post {
+  userId: Int!
+  title: String
+  user: User @http(path: "/users/{{.value.userId}}")
+}
+
+input CommentInput {
+  userId: Int!
+  title: String
+  body: String!
+}

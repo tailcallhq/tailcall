@@ -11,6 +11,8 @@ use super::telemetry::Telemetry;
 use super::{GlobalTimeout, Index};
 use crate::core::blueprint::{Server, Upstream};
 use crate::core::ir::model::IR;
+use crate::core::macros::MergeRight;
+use crate::core::merge_right::MergeRight;
 use crate::core::schema_extension::SchemaExtension;
 use crate::core::{scalar, Type};
 
@@ -130,7 +132,7 @@ pub struct Directive {
     pub index: usize,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, MergeRight)]
 pub struct ScalarTypeDefinition {
     pub name: String,
     pub directive: Vec<Directive>,
@@ -138,7 +140,7 @@ pub struct ScalarTypeDefinition {
     pub scalar: scalar::Scalar,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, MergeRight)]
 pub struct UnionTypeDefinition {
     pub name: String,
     pub directives: Vec<Directive>,

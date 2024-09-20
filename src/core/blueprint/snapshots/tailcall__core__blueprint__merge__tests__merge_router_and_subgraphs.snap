@@ -1,0 +1,86 @@
+---
+source: src/core/blueprint/merge.rs
+expression: sdl
+---
+scalar Bytes
+
+input CommentInput {
+	body: String!
+	userId: Int!
+}
+
+scalar Date
+
+scalar DateTime
+
+scalar Email
+
+scalar Empty
+
+
+
+
+scalar Int128
+
+scalar Int16
+
+scalar Int32
+
+scalar Int64
+
+scalar Int8
+
+scalar JSON
+
+scalar PhoneNumber
+
+interface Post {
+	body: String
+	id: Int!
+	user: User
+	userId: Int!
+}
+
+type Query {
+	addComment(postId: Int!, comment: CommentInput!): Boolean
+	posts: [UserPost]
+	user(id: Int!): User
+	users: [User]
+	version: String
+}
+
+
+scalar UInt128
+
+scalar UInt16
+
+scalar UInt32
+
+scalar UInt64
+
+scalar UInt8
+
+scalar Url
+
+type User {
+	email: String!
+	id: Int!
+	name: String!
+	phone: String
+	username: String!
+	website: String
+}
+
+type UserPost implements Post {
+	body: String
+	id: Int!
+	title: String
+	userId: Int!
+	user: User
+}
+
+directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+schema {
+	query: Query
+}

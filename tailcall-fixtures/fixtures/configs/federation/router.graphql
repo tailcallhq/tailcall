@@ -1,0 +1,9 @@
+schema {
+  #   @link(src: "http://localhost:4000", type: SubGraph, meta: {name: "Users"})
+  #   @link(src: "http://localhost:5000", type: SubGraph, meta: {name: "Posts"})
+  query: Query
+}
+
+type Query {
+  version: String @expr(body: "test")
+}

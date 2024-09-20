@@ -4,9 +4,10 @@ use std::fmt::Debug;
 use lazy_static::lazy_static;
 use schemars::schema::{InstanceType, Schema, SchemaObject};
 use strum::IntoEnumIterator;
-use tailcall_macros::{gen_doc, Doc};
+use tailcall_macros::{gen_doc, Doc, MergeRight};
 
 use crate::core::json::JsonLike;
+use crate::core::merge_right::MergeRight;
 
 const PREDEFINED_SCALARS: &[&str] = &["Boolean", "Float", "ID", "Int", "String"];
 
@@ -16,7 +17,15 @@ lazy_static! {
 }
 
 #[derive(
-    schemars::JsonSchema, Debug, Clone, strum_macros::Display, strum_macros::EnumIter, Doc,
+    schemars::JsonSchema,
+    Debug,
+    Clone,
+    strum_macros::Display,
+    strum_macros::EnumIter,
+    Doc,
+    PartialEq,
+    Eq,
+    MergeRight,
 )]
 pub enum Scalar {
     /// Empty scalar type represents an empty value.

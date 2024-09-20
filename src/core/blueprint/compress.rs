@@ -4,7 +4,7 @@ use super::{Blueprint, Definition};
 
 // compress() takes a Blueprint and returns a compressed Blueprint. So that
 // unused types are removed.
-pub fn compress(mut blueprint: Blueprint) -> Blueprint {
+pub fn compress(blueprint: Blueprint) -> Blueprint {
     let graph = build_dependency_graph(&blueprint);
 
     // Pre-defined root-types for graphql
@@ -38,7 +38,8 @@ pub fn compress(mut blueprint: Blueprint) -> Blueprint {
         }
     }
 
-    blueprint.definitions = definitions;
+    // TODO: removing unreferenced types breaks subgraph type extensions
+    // blueprint.definitions = definitions;
     blueprint
 }
 
