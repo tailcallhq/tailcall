@@ -2,7 +2,7 @@
 
 ```graphql @config
 schema 
-@server(port: 8000, routes: {graphQL: "/tailcall-gql"}) {
+@server(port: 8000, routes: {graphQL: "/tailcall-gql", status: "/health"}) {
   query: Query
 }
 
@@ -29,6 +29,11 @@ type Query {
 ```yml @test
 - method: POST
   url: http://localhost:8080/tailcall-gql
+  body:
+    query: query { users { name } }
+    
+- method: GET
+  url: http://localhost:8080/health
   body:
     query: query { users { name } }
 ```
