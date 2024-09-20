@@ -1,4 +1,6 @@
 #![allow(clippy::too_many_arguments)]
+use std::net::SocketAddr;
+use std::str::FromStr;
 use std::sync::Arc;
 
 use hyper::server::conn::AddrIncoming;
@@ -22,7 +24,7 @@ pub async fn start_http_2(
     let addr = sc.addr();
     let incoming = AddrIncoming::bind(&addr)?;
     let acceptor = TlsAcceptor::builder()
-        .with_single_cert(cert, key.clone_key())?
+        .with_single_cert(cert.clone(), key.clone_key())?
         .with_http2_alpn()
         .with_incoming(incoming);
     let make_svc_single_req = make_service_fn(|_conn| {
@@ -53,14 +55,35 @@ pub async fn start_http_2(
             .or(Err(anyhow::anyhow!("Failed to send message")))?;
     }
 
-    let server: std::prelude::v1::Result<(), hyper::Error> =
+    let proxy_server = tokio::spawn(async move {
+        let proxy_service = make_service_fn(|_conn| async {
+            Ok::<_, anyhow::Error>(service_fn(super::http_proxy::handle))
+        });
+
+        let addr = SocketAddr::from_str("127.0.0.1:8100").unwrap();
+        let incoming = AddrIncoming::bind(&addr)?;
+        let acceptor = TlsAcceptor::builder()
+            .with_single_cert(cert, key.clone_key())
+            .unwrap()
+            .with_http2_alpn()
+            .with_incoming(incoming);
+        let builder = Server::builder(acceptor);
+
+        builder.serve(proxy_service).await
+    });
+
+    let server = async {
         if sc.blueprint.server.enable_batch_requests {
             builder.serve(make_svc_batch_req).await
         } else {
             builder.serve(make_svc_single_req).await
-        };
+        }
+    };
 
-    let result = server.map_err(Errata::from);
+    let (server_result, proxy_server_result) = tokio::join!(server, proxy_server);
 
-    Ok(result?)
+    proxy_server_result?.map_err(Errata::from)?;
+    let server_result = server_result.map_err(Errata::from);
+
+    Ok(server_result?)
 }

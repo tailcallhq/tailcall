@@ -1,5 +1,6 @@
 pub mod http_1;
 pub mod http_2;
+pub mod http_proxy;
 pub mod http_server;
 pub mod playground;
 pub mod server_config;
