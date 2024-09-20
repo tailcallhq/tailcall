@@ -302,11 +302,14 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
         return handle_rest_apis(req, app_ctx, req_counter).await;
     }
 
+    let health_check_endpoint = app_ctx.blueprint.server.routes.status();
+    let graphql_endpoint = app_ctx.blueprint.server.routes.graphql();
+
     match *req.method() {
         // NOTE:
         // The first check for the route should be for `/graphql`
         // This is always going to be the most used route.
-        hyper::Method::POST if req.uri().path() == "/graphql" => {
+        hyper::Method::POST if req.uri().path() == graphql_endpoint => {
             graphql_request::<T>(req, &app_ctx, req_counter).await
         }
         hyper::Method::POST
@@ -321,7 +324,7 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
 
             graphql_request::<T>(req, &Arc::new(app_ctx), req_counter).await
         }
-        hyper::Method::GET if req.uri().path() == "/status" => {
+        hyper::Method::GET if req.uri().path() == health_check_endpoint => {
             let status_response = Response::builder()
                 .status(StatusCode::OK)
                 .header(CONTENT_TYPE, "application/json")

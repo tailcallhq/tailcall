@@ -1,5 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
+use derive_getters::Getters;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use tailcall_macros::DirectiveDefinition;
 
@@ -120,6 +122,22 @@ pub struct Server {
     /// `workers` sets the number of worker threads. @default the number of
     /// system cores.
     pub workers: Option<usize>,
+
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub routes: Option<Routes>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, MergeRight, JsonSchema, Getters)]
+pub struct Routes {
+    status: String,
+    #[serde(rename = "graphQL")]
+    graphql: String,
+}
+
+impl Default for Routes {
+    fn default() -> Self {
+        Self { status: "/status".into(), graphql: "/graphql".into() }
+    }
 }
 
 fn merge_right_vars(mut left: Vec<KeyValue>, right: Vec<KeyValue>) -> Vec<KeyValue> {
@@ -230,6 +248,10 @@ impl Server {
     }
     pub fn enable_jit(&self) -> bool {
         self.enable_jit.unwrap_or(true)
+    }
+
+    pub fn get_routes(&self) -> Routes {
+        self.routes.clone().unwrap_or_default()
     }
 }
 
