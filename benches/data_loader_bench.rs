@@ -1,19 +1,14 @@
-use std::borrow::Cow;
 use std::collections::BTreeSet;
-use std::num::NonZeroU64;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
 use async_graphql::futures_util::future::join_all;
-use async_graphql_value::ConstValue;
 use criterion::Criterion;
 use hyper::body::Bytes;
 use reqwest::Request;
 use tailcall::core::config::Batch;
 use tailcall::core::http::{DataLoaderRequest, HttpDataLoader, Response};
-use tailcall::core::ir::model::IoId;
-use tailcall::core::runtime::TargetRuntime;
-use tailcall::core::{cache, EnvIO, FileIO, HttpIO};
+use tailcall::core::HttpIO;
 
 #[derive(Clone)]
 struct MockHttpClient {
@@ -28,67 +23,13 @@ impl HttpIO for MockHttpClient {
     }
 }
 
-struct Env {}
-impl EnvIO for Env {
-    fn get(&self, _: &str) -> Option<Cow<'_, str>> {
-        unimplemented!("Not needed for this bench")
-    }
-}
-
-struct File;
-
-#[async_trait::async_trait]
-impl FileIO for File {
-    async fn write<'a>(&'a self, _: &'a str, _: &'a [u8]) -> anyhow::Result<()> {
-        unimplemented!("Not needed for this bench")
-    }
-
-    async fn read<'a>(&'a self, _: &'a str) -> anyhow::Result<String> {
-        unimplemented!("Not needed for this bench")
-    }
-}
-
-struct Cache;
-#[async_trait::async_trait]
-impl tailcall::core::Cache for Cache {
-    type Key = IoId;
-    type Value = ConstValue;
-
-    async fn set<'a>(
-        &'a self,
-        _: Self::Key,
-        _: Self::Value,
-        _: NonZeroU64,
-    ) -> Result<(), cache::Error> {
-        unimplemented!("Not needed for this bench")
-    }
-
-    async fn get<'a>(&'a self, _: &'a Self::Key) -> Result<Option<Self::Value>, cache::Error> {
-        unimplemented!("Not needed for this bench")
-    }
-
-    fn hit_rate(&self) -> Option<f64> {
-        unimplemented!("Not needed for this bench")
-    }
-}
-
 pub fn benchmark_data_loader(c: &mut Criterion) {
     c.bench_function("test_data_loader", |b| {
         b.iter(|| {
-            let client = Arc::new(MockHttpClient { request_count: Arc::new(AtomicUsize::new(0)) });
-            let client_clone = client.clone();
+            let http_client =
+                Arc::new(MockHttpClient { request_count: Arc::new(AtomicUsize::new(0)) });
             tokio::runtime::Runtime::new().unwrap().spawn(async move {
-                let rt = TargetRuntime {
-                    http: client_clone.clone(),
-                    http2_only: client_clone,
-                    env: Arc::new(Env {}),
-                    file: Arc::new(File {}),
-                    cache: Arc::new(Cache {}),
-                    extensions: Arc::new(vec![]),
-                    cmd_worker: None,
-                    worker: None,
-                };
-                let loader = HttpDataLoader::new(rt, None, false);
+                let loader = HttpDataLoader::new(None, false, http_client.clone());
                 let loader = loader.to_data_loader(Batch::default().delay(1));
 
                 let request1 = reqwest::Request::new(
@@ -109,7 +50,7 @@ pub fn benchmark_data_loader(c: &mut Criterion) {
                 let futures2 = (0..100).map(|_| loader.load_one(key2.clone()));
                 let _ = join_all(futures1.chain(futures2)).await;
                 assert_eq!(
-                    client.request_count.load(Ordering::SeqCst),
+                    http_client.request_count.load(Ordering::SeqCst),
                     2,
                     "Only one request should be made for the same key"
                 );

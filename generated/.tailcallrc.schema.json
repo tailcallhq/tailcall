@@ -589,6 +589,17 @@
         "method": {
           "description": "This refers to the gRPC method you're going to call. For instance `GetAllNews`.",
           "type": "string"
+        },
+        "proxy": {
+          "description": "The `proxy` setting defines an intermediary server through which the requests will be routed before reaching their intended endpoint. By specifying a proxy URL, you introduce an additional layer, enabling custom routing and security policies.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Proxy"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "additionalProperties": false
@@ -724,6 +735,17 @@
         "path": {
           "description": "This refers to the API endpoint you're going to call. For instance `https://jsonplaceholder.typicode.com/users`.\n\nFor dynamic segments in your API endpoint, use Mustache templates for variable substitution. For instance, to fetch a specific user, use `/users/{{args.id}}`.",
           "type": "string"
+        },
+        "proxy": {
+          "description": "The `proxy` setting defines an intermediary server through which the requests will be routed before reaching their intended endpoint. By specifying a proxy URL, you introduce an additional layer, enabling custom routing and security policies.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Proxy"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "query": {
           "description": "This represents the query parameters of your API call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added to the URL. NOTE: Query parameter order is critical for batching in Tailcall. The first parameter referencing a field in the current value using mustache syntax is automatically selected as the batching parameter.",

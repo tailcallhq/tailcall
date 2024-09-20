@@ -372,7 +372,7 @@ impl Context {
                     batch_key: vec![],
                     headers: vec![],
                     method: field_name.id(),
-                    proxy: None
+                    proxy: None,
                 }));
 
                 let method_path =

@@ -12,6 +12,7 @@ pub fn compile_http(
     config_module: &config::ConfigModule,
     http: &config::Http,
 ) -> Valid<IR, String> {
+    let proxy = http.proxy.as_ref().map(|p| Proxy { url: p.url.clone() });
     Valid::<(), String>::fail("GroupBy is only supported for GET requests".to_string())
         .when(|| !http.batch_key.is_empty() && http.method != Method::GET)
         .and(
@@ -79,9 +80,18 @@ pub fn compile_http(
                     group_by: Some(GroupBy::new(http.batch_key.clone(), key)),
                     dl_id: None,
                     http_filter,
+                    http_client_id: None,
+                    proxy,
                 })
             } else {
-                IR::IO(IO::Http { req_template, group_by: None, dl_id: None, http_filter })
+                IR::IO(IO::Http {
+                    req_template,
+                    group_by: None,
+                    dl_id: None,
+                    http_filter,
+                    http_client_id: None,
+                    proxy,
+                })
             }
         })
 }

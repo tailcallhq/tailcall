@@ -4,11 +4,10 @@ use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use tailcall_macros::{DirectiveDefinition, InputDefinition};
 
+use super::Proxy;
 use crate::core::is_default;
 use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
-
-use super::Proxy;
 
 const DEFAULT_MAX_SIZE: usize = 100;
 

@@ -18,7 +18,7 @@ use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use super::HttpIO;
 use crate::core::blueprint::telemetry::Telemetry;
-use crate::core::blueprint::Upstream;
+use crate::core::blueprint::{Proxy, Upstream};
 use crate::core::http::Response;
 
 static HTTP_CLIENT_REQUEST_COUNT: Lazy<Counter<u64>> = Lazy::new(|| {
@@ -85,7 +85,7 @@ impl Default for NativeHttp {
 }
 
 impl NativeHttp {
-    pub fn init(upstream: &Upstream, telemetry: &Telemetry) -> Self {
+    pub fn init(upstream: &Upstream, telemetry: &Telemetry, proxy: &Option<Proxy>) -> Self {
         let mut builder = Client::builder()
             .tcp_keepalive(Some(Duration::from_secs(upstream.tcp_keep_alive)))
             .timeout(Duration::from_secs(upstream.timeout))
@@ -103,7 +103,7 @@ impl NativeHttp {
         }
 
         // Add Http Proxy
-        if let Some(ref proxy) = upstream.proxy {
+        if let Some(ref proxy) = proxy {
             builder = builder.proxy(
                 reqwest::Proxy::http(proxy.url.clone())
                     .expect("Failed to set proxy in http client"),
@@ -211,7 +211,7 @@ mod tests {
             then.status(200).body("Hello");
         });
 
-        let native_http = NativeHttp::init(&Default::default(), &Default::default());
+        let native_http = NativeHttp::init(&Default::default(), &Default::default(), &None);
         let port = server.port();
         // Build a GET request to the mock server
         let request_url = format!("http://localhost:{}/test", port);
@@ -253,7 +253,7 @@ mod tests {
         });
 
         let upstream = Upstream { http_cache: 2, ..Default::default() };
-        let native_http = NativeHttp::init(&upstream, &Default::default());
+        let native_http = NativeHttp::init(&upstream, &Default::default(), &None);
         let port = server.port();
 
         let url1 = format!("http://localhost:{}/test-1", port);

@@ -120,6 +120,12 @@ directive @grpc(
   This refers to the gRPC method you're going to call. For instance `GetAllNews`.
   """
   method: String!
+  """
+  The `proxy` setting defines an intermediary server through which the requests will 
+  be routed before reaching their intended endpoint. By specifying a proxy URL, you 
+  introduce an additional layer, enabling custom routing and security policies.
+  """
+  proxy: Proxy
 ) on FIELD_DEFINITION
 
 """
@@ -182,6 +188,12 @@ directive @http(
   For instance, to fetch a specific user, use `/users/{{args.id}}`.
   """
   path: String!
+  """
+  The `proxy` setting defines an intermediary server through which the requests will 
+  be routed before reaching their intended endpoint. By specifying a proxy URL, you 
+  introduce an additional layer, enabling custom routing and security policies.
+  """
+  proxy: Proxy
   """
   This represents the query parameters of your API call. You can pass it as a static 
   object or use Mustache template for dynamic parameters. These parameters will be 
@@ -533,6 +545,10 @@ input KeyValue {
   value: String!
 }
 
+input Proxy {
+  url: String!
+}
+
 """
 The URLQuery input type represents a query parameter to be included in a URL.
 """
@@ -700,10 +716,6 @@ input Batch {
   maxSize: Int
 }
 
-input Proxy {
-  url: String!
-}
-
 """
 The @graphQL operator allows to specify GraphQL API server request to fetch data 
 from.
@@ -774,6 +786,12 @@ input Grpc {
   This refers to the gRPC method you're going to call. For instance `GetAllNews`.
   """
   method: String!
+  """
+  The `proxy` setting defines an intermediary server through which the requests will 
+  be routed before reaching their intended endpoint. By specifying a proxy URL, you 
+  introduce an additional layer, enabling custom routing and security policies.
+  """
+  proxy: Proxy
 }
 
 """
@@ -836,6 +854,12 @@ input Http {
   For instance, to fetch a specific user, use `/users/{{args.id}}`.
   """
   path: String!
+  """
+  The `proxy` setting defines an intermediary server through which the requests will 
+  be routed before reaching their intended endpoint. By specifying a proxy URL, you 
+  introduce an additional layer, enabling custom routing and security policies.
+  """
+  proxy: Proxy
   """
   This represents the query parameters of your API call. You can pass it as a static 
   object or use Mustache template for dynamic parameters. These parameters will be 

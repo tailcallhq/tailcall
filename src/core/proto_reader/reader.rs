@@ -31,8 +31,16 @@ impl ProtoReader {
     }
 
     /// Fetches proto files from a grpc server (grpc reflection)
-    pub async fn fetch<T: AsRef<str>>(&self, url: T) -> anyhow::Result<Vec<ProtoMetadata>> {
-        let grpc_reflection = Arc::new(GrpcReflection::new(url.as_ref(), self.runtime.clone()));
+    pub async fn fetch<T: AsRef<str>>(
+        &self,
+        http_client: &std::sync::Arc<dyn crate::core::HttpIO>,
+        url: T,
+    ) -> anyhow::Result<Vec<ProtoMetadata>> {
+        let grpc_reflection = Arc::new(GrpcReflection::new(
+            url.as_ref(),
+            self.runtime.clone(),
+            http_client.clone(),
+        ));
 
         let mut proto_metadata = vec![];
         let service_list = grpc_reflection.list_all_files().await?;

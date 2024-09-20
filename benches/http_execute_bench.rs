@@ -9,7 +9,7 @@ pub fn benchmark_http_execute_method(c: &mut Criterion) {
 
     let mut blueprint = Blueprint::default();
     blueprint.upstream.http_cache = 42; // allow http caching for bench test.
-    let native_http = NativeHttp::init(&blueprint.upstream, &blueprint.telemetry);
+    let native_http = NativeHttp::init(&blueprint.upstream, &blueprint.telemetry, &None);
     let request_url = String::from("http://jsonplaceholder.typicode.com/users");
 
     tokio_runtime.block_on(async {

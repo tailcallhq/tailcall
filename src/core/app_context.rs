@@ -4,6 +4,9 @@ use async_graphql::dynamic::{self, DynamicRequest};
 use async_graphql_value::ConstValue;
 use hyper::body::Bytes;
 
+use super::ir::model::HttpClientId;
+use super::HttpIO;
+use crate::cli::runtime::NativeHttp;
 use crate::core::async_graphql_hyper::OperationId;
 use crate::core::auth::context::GlobalAuthContext;
 use crate::core::blueprint::{Blueprint, Definition, SchemaModifiers};
@@ -24,6 +27,7 @@ pub struct AppContext {
     pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
     pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
     pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
+    pub http_clients: Arc<Vec<Arc<dyn HttpIO>>>,
     pub endpoints: EndpointSet<Checked>,
     pub auth_ctx: Arc<GlobalAuthContext>,
     pub dedupe_handler: Arc<DedupeResult<IoId, ConstValue, Error>>,
@@ -39,6 +43,7 @@ impl AppContext {
         let mut http_data_loaders = vec![];
         let mut gql_data_loaders = vec![];
         let mut grpc_data_loaders = vec![];
+        let mut http_clients: Vec<Arc<dyn HttpIO>> = vec![];
 
         for def in blueprint.definitions.iter_mut() {
             if let Definition::Object(def) = def {
@@ -48,29 +53,58 @@ impl AppContext {
                     field.map_expr(|expr| {
                         expr.modify(|expr| match expr {
                             IR::IO(io) => match io {
-                                IO::Http { req_template, group_by, http_filter, .. } => {
+                                IO::Http { req_template, group_by, http_filter, proxy, .. } => {
+                                    #[allow(unused_mut, unused_assignments)]
+                                    let mut http_client: Arc<
+                                        dyn HttpIO,
+                                    > = Arc::new(NativeHttp::init(
+                                        &blueprint.upstream,
+                                        &blueprint.telemetry,
+                                        proxy,
+                                    ));
+                                    #[cfg(test)]
+                                    {
+                                        http_client = runtime.http.clone();
+                                    }
+
                                     let data_loader = HttpDataLoader::new(
-                                        runtime.clone(),
                                         group_by.clone(),
                                         of_type.is_list(),
+                                        http_client.clone(),
                                     )
                                     .to_data_loader(upstream_batch.clone().unwrap_or_default());
 
                                     let result = Some(IR::IO(IO::Http {
                                         req_template: req_template.clone(),
                                         group_by: group_by.clone(),
-                                        dl_id: Some(DataLoaderId::new(http_data_loaders.len())),
                                         http_filter: http_filter.clone(),
+                                        dl_id: Some(DataLoaderId::new(http_data_loaders.len())),
+                                        http_client_id: Some(HttpClientId::new(http_clients.len())),
+                                        proxy: proxy.clone(),
                                     }));
 
                                     http_data_loaders.push(data_loader);
+                                    http_clients.push(http_client);
 
                                     result
                                 }
 
                                 IO::GraphQL { req_template, field_name, batch, .. } => {
+                                    #[allow(unused_mut, unused_assignments)]
+                                    let mut http_client: Arc<
+                                        dyn HttpIO,
+                                    > = Arc::new(NativeHttp::init(
+                                        &blueprint.upstream,
+                                        &blueprint.telemetry,
+                                        &None,
+                                    ));
+                                    #[cfg(test)]
+                                    {
+                                        http_client = runtime.http.clone();
+                                    }
+
                                     let graphql_data_loader =
-                                        GraphqlDataLoader::new(runtime.clone(), *batch)
+                                        GraphqlDataLoader::new(*batch, http_client.clone())
                                             .into_data_loader(
                                                 upstream_batch.clone().unwrap_or_default(),
                                             );
@@ -80,18 +114,33 @@ impl AppContext {
                                         field_name: field_name.clone(),
                                         batch: *batch,
                                         dl_id: Some(DataLoaderId::new(gql_data_loaders.len())),
+                                        http_client_id: Some(HttpClientId::new(http_clients.len())),
                                     }));
 
                                     gql_data_loaders.push(graphql_data_loader);
+                                    http_clients.push(http_client);
 
                                     result
                                 }
 
-                                IO::Grpc { req_template, group_by, .. } => {
+                                IO::Grpc { req_template, group_by, proxy, .. } => {
+                                    #[allow(unused_mut, unused_assignments)]
+                                    let mut http_client: Arc<
+                                        dyn HttpIO,
+                                    > = Arc::new(NativeHttp::init(
+                                        &blueprint.upstream.clone().http2_only(true),
+                                        &blueprint.telemetry,
+                                        proxy,
+                                    ));
+                                    #[cfg(test)]
+                                    {
+                                        http_client = runtime.http2_only.clone();
+                                    }
+
                                     let data_loader = GrpcDataLoader {
-                                        runtime: runtime.clone(),
                                         operation: req_template.operation.clone(),
                                         group_by: group_by.clone(),
+                                        http_client: http_client.clone(),
                                     };
                                     let data_loader = data_loader.into_data_loader(
                                         upstream_batch.clone().unwrap_or_default(),
@@ -101,9 +150,12 @@ impl AppContext {
                                         req_template: req_template.clone(),
                                         group_by: group_by.clone(),
                                         dl_id: Some(DataLoaderId::new(grpc_data_loaders.len())),
+                                        http_client_id: Some(HttpClientId::new(http_clients.len())),
+                                        proxy: proxy.clone(),
                                     }));
 
                                     grpc_data_loaders.push(data_loader);
+                                    http_clients.push(http_client);
 
                                     result
                                 }
@@ -130,6 +182,7 @@ impl AppContext {
             http_data_loaders: Arc::new(http_data_loaders),
             gql_data_loaders: Arc::new(gql_data_loaders),
             grpc_data_loaders: Arc::new(grpc_data_loaders),
+            http_clients: Arc::new(http_clients),
             endpoints,
             auth_ctx: Arc::new(auth_ctx),
             dedupe_handler: Arc::new(DedupeResult::new(false)),

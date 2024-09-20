@@ -17,7 +17,7 @@ use crate::core::http::{DataLoaderRequest, HttpDataLoader};
 use crate::core::ir::model::IoId;
 use crate::core::ir::Error;
 use crate::core::runtime::TargetRuntime;
-use crate::core::{cache, grpc};
+use crate::core::{cache, grpc, HttpIO};
 
 #[derive(Setters)]
 pub struct RequestContext {
@@ -32,6 +32,7 @@ pub struct RequestContext {
     pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
     pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
     pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
+    pub http_clients: Arc<Vec<Arc<dyn HttpIO>>>,
     pub min_max_age: Arc<Mutex<Option<i32>>>,
     pub cache_public: Arc<Mutex<Option<bool>>>,
     pub runtime: TargetRuntime,
@@ -49,6 +50,7 @@ impl RequestContext {
             http_data_loaders: Arc::new(vec![]),
             gql_data_loaders: Arc::new(vec![]),
             grpc_data_loaders: Arc::new(vec![]),
+            http_clients: Arc::new(vec![]),
             min_max_age: Arc::new(Mutex::new(None)),
             cache_public: Arc::new(Mutex::new(None)),
             runtime: target_runtime,
@@ -200,6 +202,7 @@ impl From<&AppContext> for RequestContext {
             http_data_loaders: app_ctx.http_data_loaders.clone(),
             gql_data_loaders: app_ctx.gql_data_loaders.clone(),
             grpc_data_loaders: app_ctx.grpc_data_loaders.clone(),
+            http_clients: app_ctx.http_clients.clone(),
             min_max_age: Arc::new(Mutex::new(None)),
             cache_public: Arc::new(Mutex::new(None)),
             runtime: app_ctx.runtime.clone(),

@@ -11,7 +11,6 @@ use crate::core::config::Batch;
 use crate::core::data_loader::{DataLoader, Loader};
 use crate::core::http::{DataLoaderRequest, Response};
 use crate::core::json::JsonLike;
-use crate::core::runtime::TargetRuntime;
 
 fn get_body_value_single(body_value: &HashMap<String, Vec<&ConstValue>>, id: &str) -> ConstValue {
     body_value
@@ -33,20 +32,24 @@ fn get_body_value_list(body_value: &HashMap<String, Vec<&ConstValue>>, id: &str)
 
 #[derive(Clone)]
 pub struct HttpDataLoader {
-    pub runtime: TargetRuntime,
     pub group_by: Option<GroupBy>,
     pub body: fn(&HashMap<String, Vec<&ConstValue>>, &str) -> ConstValue,
+    pub http_client: std::sync::Arc<dyn crate::core::HttpIO>,
 }
 impl HttpDataLoader {
-    pub fn new(runtime: TargetRuntime, group_by: Option<GroupBy>, is_list: bool) -> Self {
+    pub fn new(
+        group_by: Option<GroupBy>,
+        is_list: bool,
+        http_client: std::sync::Arc<dyn crate::core::HttpIO>,
+    ) -> Self {
         HttpDataLoader {
-            runtime,
             group_by,
             body: if is_list {
                 get_body_value_list
             } else {
                 get_body_value_single
             },
+            http_client,
         }
     }
 
@@ -91,8 +94,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
 
             // Dispatch request
             let res = self
-                .runtime
-                .http
+                .http_client
                 .execute(request)
                 .await?
                 .to_json::<ConstValue>()?;
@@ -126,7 +128,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
             Ok(hashmap)
         } else {
             let results = keys.iter().map(|key| async {
-                let result = self.runtime.http.execute(key.to_request()).await;
+                let result = self.http_client.execute(key.to_request()).await;
                 (key.clone(), result)
             });
 

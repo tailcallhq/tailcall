@@ -43,9 +43,9 @@ where
     Ctx: ResolverContextLike + Sync,
 {
     match io {
-        IO::Http { req_template, dl_id, http_filter, .. } => {
+        IO::Http { req_template, dl_id, http_filter, http_client_id, .. } => {
             let worker = &ctx.request_ctx.runtime.cmd_worker;
-            let eval_http = EvalHttp::new(ctx, req_template, dl_id);
+            let eval_http = EvalHttp::new(ctx, req_template, dl_id, http_client_id);
             let request = eval_http.init_request()?;
             let response = match (&worker, http_filter) {
                 (Some(worker), Some(http_filter)) => {
@@ -58,7 +58,7 @@ where
 
             Ok(response.body)
         }
-        IO::GraphQL { req_template, field_name, dl_id, .. } => {
+        IO::GraphQL { req_template, field_name, dl_id, http_client_id, .. } => {
             let req = req_template.to_request(ctx)?;
 
             let res = if ctx.request_ctx.upstream.batch.is_some()
@@ -68,13 +68,16 @@ where
                     dl_id.and_then(|dl| ctx.request_ctx.gql_data_loaders.get(dl.as_usize()));
                 execute_request_with_dl(ctx, req, data_loader).await?
             } else {
-                execute_raw_request(ctx, req).await?
+                let http_client = http_client_id
+                    .and_then(|id| ctx.request_ctx.http_clients.get(id.as_usize()))
+                    .unwrap();
+                execute_raw_request(http_client, req).await?
             };
 
             set_headers(ctx, &res);
             parse_graphql_response(ctx, res, field_name)
         }
-        IO::Grpc { req_template, dl_id, .. } => {
+        IO::Grpc { req_template, dl_id, http_client_id, .. } => {
             let rendered = req_template.render(ctx)?;
 
             let res = if ctx.request_ctx.upstream.batch.is_some() &&
@@ -86,7 +89,10 @@ where
                 execute_grpc_request_with_dl(ctx, rendered, data_loader).await?
             } else {
                 let req = rendered.to_request()?;
-                execute_raw_grpc_request(ctx, req, &req_template.operation).await?
+                let http_client = http_client_id
+                    .and_then(|id| ctx.request_ctx.http_clients.get(id.as_usize()))
+                    .unwrap();
+                execute_raw_grpc_request(http_client, req, &req_template.operation).await?
             };
 
             set_headers(ctx, &res);

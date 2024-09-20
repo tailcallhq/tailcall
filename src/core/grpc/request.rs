@@ -5,7 +5,6 @@ use url::Url;
 
 use super::protobuf::ProtobufOperation;
 use crate::core::http::Response;
-use crate::core::runtime::TargetRuntime;
 
 pub static GRPC_STATUS: &str = "grpc-status";
 
@@ -18,11 +17,11 @@ pub fn create_grpc_request(url: Url, headers: HeaderMap, body: Vec<u8>) -> Reque
 }
 
 pub async fn execute_grpc_request(
-    runtime: &TargetRuntime,
+    http_client: &std::sync::Arc<dyn crate::core::HttpIO>,
     operation: &ProtobufOperation,
     request: Request,
 ) -> Result<Response<async_graphql::Value>> {
-    let response = runtime.http2_only.execute(request).await?;
+    let response = http_client.execute(request).await?;
 
     let grpc_status = response
         .headers
@@ -57,7 +56,6 @@ mod tests {
     use crate::core::grpc::request::execute_grpc_request;
     use crate::core::http::Response;
     use crate::core::ir::Error;
-    use crate::core::runtime::TargetRuntime;
     use crate::core::HttpIO;
 
     enum TestScenario {
@@ -103,10 +101,11 @@ mod tests {
     }
     async fn prepare_args(
         test_http: TestHttp,
-    ) -> Result<(TargetRuntime, ProtobufOperation, Request)> {
-        let mut runtime = crate::core::runtime::test::init(None);
-        runtime.http2_only = Arc::new(test_http);
-
+    ) -> Result<(
+        std::sync::Arc<dyn crate::core::HttpIO>,
+        ProtobufOperation,
+        Request,
+    )> {
         let file_descriptor_set =
             protox::compile([protobuf::GREETINGS, protobuf::ERRORS], [protobuf::SELF]);
         let grpc_method = GrpcMethod::try_from("greetings.Greeter.SayHello").unwrap();
@@ -115,15 +114,15 @@ mod tests {
         let operation = service.find_operation(&grpc_method)?;
 
         let request = Request::new(Method::POST, "http://example.com".parse().unwrap());
-        Ok((runtime, operation, request))
+        Ok((Arc::new(test_http), operation, request))
     }
 
     #[tokio::test]
     async fn test_grpc_request_success_without_grpc_status() -> Result<()> {
         let test_http = TestHttp { scenario: TestScenario::SuccessWithoutGrpcStatus };
-        let (runtime, operation, request) = prepare_args(test_http).await?;
+        let (http_client, operation, request) = prepare_args(test_http).await?;
 
-        let result = execute_grpc_request(&runtime, &operation, request).await;
+        let result = execute_grpc_request(&http_client, &operation, request).await;
 
         assert!(
             result.is_ok(),

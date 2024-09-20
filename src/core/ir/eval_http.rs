@@ -3,7 +3,7 @@ use std::sync::Arc;
 use async_graphql::from_value;
 use reqwest::Request;
 
-use super::model::DataLoaderId;
+use super::model::{DataLoaderId, HttpClientId};
 use super::{EvalContext, ResolverContextLike};
 use crate::core::data_loader::{DataLoader, Loader};
 use crate::core::grpc::protobuf::ProtobufOperation;
@@ -15,7 +15,7 @@ use crate::core::http::{
 use crate::core::ir::Error;
 use crate::core::json::JsonLike;
 use crate::core::valid::Validator;
-use crate::core::{grpc, http, worker, WorkerIO};
+use crate::core::{grpc, http, worker, HttpIO, WorkerIO};
 
 ///
 /// Executing a HTTP request is a bit more complex than just sending a request
@@ -26,16 +26,18 @@ pub struct EvalHttp<'a, 'ctx, Context: ResolverContextLike + Sync> {
     evaluation_ctx: &'ctx EvalContext<'a, Context>,
     data_loader: Option<&'a DataLoader<DataLoaderRequest, HttpDataLoader>>,
     request_template: &'a http::RequestTemplate,
+    http_client: Arc<dyn HttpIO>,
 }
 
 impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> {
     pub fn new(
         evaluation_ctx: &'ctx EvalContext<'a, Context>,
         request_template: &'a RequestTemplate,
-        id: &Option<DataLoaderId>,
+        dl_id: &Option<DataLoaderId>,
+        http_client_id: &Option<HttpClientId>,
     ) -> Self {
         let data_loader = if evaluation_ctx.request_ctx.is_batching_enabled() {
-            id.and_then(|id| {
+            dl_id.and_then(|id| {
                 evaluation_ctx
                     .request_ctx
                     .http_data_loaders
@@ -45,7 +47,12 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
             None
         };
 
-        Self { evaluation_ctx, data_loader, request_template }
+        let http_client = http_client_id
+            .and_then(|id| evaluation_ctx.request_ctx.http_clients.get(id.as_usize()))
+            .unwrap()
+            .clone();
+
+        Self { evaluation_ctx, data_loader, request_template, http_client }
     }
 
     pub fn init_request(&self) -> Result<Request, Error> {
@@ -59,7 +66,7 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         let response = if is_get && dl.is_some() {
             execute_request_with_dl(ctx, req, self.data_loader).await?
         } else {
-            execute_raw_request(ctx, req).await?
+            execute_raw_request(&self.http_client, req).await?
         };
 
         if ctx.request_ctx.server.get_enable_http_validation() {
@@ -175,14 +182,11 @@ fn set_cookie_headers<Ctx: ResolverContextLike>(
     }
 }
 
-pub async fn execute_raw_request<Ctx: ResolverContextLike>(
-    ctx: &EvalContext<'_, Ctx>,
+pub async fn execute_raw_request(
+    http_client: &std::sync::Arc<dyn crate::core::HttpIO>,
     req: Request,
 ) -> Result<Response<async_graphql::Value>, Error> {
-    let response = ctx
-        .request_ctx
-        .runtime
-        .http
+    let response = http_client
         .execute(req)
         .await
         .map_err(Error::from)?
@@ -191,12 +195,12 @@ pub async fn execute_raw_request<Ctx: ResolverContextLike>(
     Ok(response)
 }
 
-pub async fn execute_raw_grpc_request<Ctx: ResolverContextLike>(
-    ctx: &EvalContext<'_, Ctx>,
+pub async fn execute_raw_grpc_request(
+    http_client: &std::sync::Arc<dyn crate::core::HttpIO>,
     req: Request,
     operation: &ProtobufOperation,
 ) -> Result<Response<async_graphql::Value>, Error> {
-    execute_grpc_request(&ctx.request_ctx.runtime, operation, req)
+    execute_grpc_request(http_client, operation, req)
         .await
         .map_err(Error::from)
 }

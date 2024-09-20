@@ -73,10 +73,15 @@ pub struct GrpcReflection {
     server_reflection_method: GrpcMethod,
     url: String,
     target_runtime: TargetRuntime,
+    http_client: std::sync::Arc<dyn crate::core::HttpIO>,
 }
 
 impl GrpcReflection {
-    pub fn new<T: AsRef<str>>(url: T, target_runtime: TargetRuntime) -> Self {
+    pub fn new<T: AsRef<str>>(
+        url: T,
+        target_runtime: TargetRuntime,
+        http_client: std::sync::Arc<dyn crate::core::HttpIO>,
+    ) -> Self {
         let server_reflection_method = GrpcMethod {
             package: "grpc.reflection.v1alpha".to_string(),
             service: "ServerReflection".to_string(),
@@ -86,6 +91,7 @@ impl GrpcReflection {
             server_reflection_method,
             url: url.as_ref().to_string(),
             target_runtime,
+            http_client,
         }
     }
     /// Makes `ListService` request to the grpc reflection server
@@ -156,7 +162,7 @@ impl GrpcReflection {
         };
 
         let req = req_template.render(&ctx)?.to_request()?;
-        let resp = self.target_runtime.http2_only.execute(req).await?;
+        let resp = self.http_client.execute(req).await?;
         let body = resp.body.as_bytes();
 
         let response: ReflectionResponse = operation.convert_output(body)?;
@@ -220,6 +226,7 @@ mod grpc_fetch {
     #[tokio::test]
     async fn test_resp_service() -> Result<()> {
         let server = start_mock_server();
+        let runtime = crate::core::runtime::test::init(None);
 
         let http_reflection_file_mock = server.mock(|when, then| {
             when.method(httpmock::Method::POST)
@@ -231,9 +238,9 @@ mod grpc_fetch {
         let grpc_reflection = GrpcReflection::new(
             format!("http://localhost:{}", server.port()),
             crate::core::runtime::test::init(None),
+            runtime.http2_only.clone(),
         );
 
-        let runtime = crate::core::runtime::test::init(None);
         let resp = grpc_reflection.get_by_service("news.NewsService").await?;
 
         let content = runtime.file.read(tailcall_fixtures::protobuf::NEWS).await?;
@@ -248,6 +255,7 @@ mod grpc_fetch {
     #[tokio::test]
     async fn test_dto_file() -> Result<()> {
         let server = start_mock_server();
+        let runtime = crate::core::runtime::test::init(None);
 
         let http_reflection_file_mock = server.mock(|when, then| {
             when.method(httpmock::Method::POST)
@@ -259,9 +267,9 @@ mod grpc_fetch {
         let grpc_reflection = GrpcReflection::new(
             format!("http://localhost:{}", server.port()),
             crate::core::runtime::test::init(None),
+            runtime.http2_only.clone(),
         );
 
-        let runtime = crate::core::runtime::test::init(None);
         let resp = grpc_reflection.get_file("news_dto.proto").await?;
 
         let content = runtime
@@ -289,8 +297,11 @@ mod grpc_fetch {
 
         let runtime = crate::core::runtime::test::init(None);
 
-        let grpc_reflection =
-            GrpcReflection::new(format!("http://localhost:{}", server.port()), runtime);
+        let grpc_reflection = GrpcReflection::new(
+            format!("http://localhost:{}", server.port()),
+            runtime.clone(),
+            runtime.http2_only.clone(),
+        );
 
         let resp = grpc_reflection.list_all_files().await?;
 
@@ -321,8 +332,11 @@ mod grpc_fetch {
 
         let runtime = crate::core::runtime::test::init(None);
 
-        let grpc_reflection =
-            GrpcReflection::new(format!("http://localhost:{}", server.port()), runtime);
+        let grpc_reflection = GrpcReflection::new(
+            format!("http://localhost:{}", server.port()),
+            runtime.clone(),
+            runtime.http2_only.clone(),
+        );
 
         let resp = grpc_reflection.list_all_files().await;
 
@@ -347,9 +361,13 @@ mod grpc_fetch {
         });
 
         let runtime = crate::core::runtime::test::init(None);
+        let http_client = runtime.http2_only.clone();
 
-        let grpc_reflection =
-            GrpcReflection::new(format!("http://localhost:{}", server.port()), runtime);
+        let grpc_reflection = GrpcReflection::new(
+            format!("http://localhost:{}", server.port()),
+            runtime,
+            http_client,
+        );
 
         let result = grpc_reflection.get_by_service("nonexistent.Service").await;
         assert!(result.is_err());

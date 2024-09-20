@@ -3,7 +3,7 @@ use std::fmt::Display;
 use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::FieldDescriptor;
 
-use crate::core::blueprint::FieldDefinition;
+use crate::core::blueprint::{FieldDefinition, Proxy};
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::{Config, ConfigModule, Field, GraphQLOperationType, Grpc, Resolver};
 use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
@@ -159,6 +159,7 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
     let operation_type = inputs.operation_type;
     let field = inputs.field;
     let grpc = inputs.grpc;
+    let proxy = grpc.proxy.as_ref().map(|p| Proxy { url: p.url.clone() });
     let validate_with_schema = inputs.validate_with_schema;
 
     Valid::from(GrpcMethod::try_from(grpc.method.as_str()))
@@ -201,9 +202,17 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
                     req_template,
                     group_by: Some(GroupBy::new(grpc.batch_key.clone(), None)),
                     dl_id: None,
+                    http_client_id: None,
+                    proxy,
                 })
             } else {
-                IR::IO(IO::Grpc { req_template, group_by: None, dl_id: None })
+                IR::IO(IO::Grpc {
+                    req_template,
+                    group_by: None,
+                    dl_id: None,
+                    http_client_id: None,
+                    proxy,
+                })
             }
         })
 }

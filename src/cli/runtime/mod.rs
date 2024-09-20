@@ -54,6 +54,7 @@ fn init_http(blueprint: &Blueprint) -> Arc<dyn HttpIO> {
     Arc::new(http::NativeHttp::init(
         &blueprint.upstream,
         &blueprint.telemetry,
+        &None,
     ))
 }
 
@@ -62,6 +63,7 @@ fn init_http2_only(blueprint: &Blueprint) -> Arc<dyn HttpIO> {
     Arc::new(http::NativeHttp::init(
         &blueprint.upstream.clone().http2_only(true),
         &blueprint.telemetry,
+        &None,
     ))
 }
 

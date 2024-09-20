@@ -7,7 +7,7 @@ use strum_macros::Display;
 
 use super::discriminator::Discriminator;
 use super::{EvalContext, ResolverContextLike};
-use crate::core::blueprint::DynamicValue;
+use crate::core::blueprint::{DynamicValue, Proxy};
 use crate::core::config::group_by::GroupBy;
 use crate::core::graphql::{self};
 use crate::core::http::HttpFilter;
@@ -40,19 +40,24 @@ pub enum IO {
     Http {
         req_template: http::RequestTemplate,
         group_by: Option<GroupBy>,
-        dl_id: Option<DataLoaderId>,
         http_filter: Option<HttpFilter>,
+        dl_id: Option<DataLoaderId>,
+        http_client_id: Option<HttpClientId>,
+        proxy: Option<Proxy>,
     },
     GraphQL {
         req_template: graphql::RequestTemplate,
         field_name: String,
         batch: bool,
         dl_id: Option<DataLoaderId>,
+        http_client_id: Option<HttpClientId>,
     },
     Grpc {
         req_template: grpc::RequestTemplate,
         group_by: Option<GroupBy>,
         dl_id: Option<DataLoaderId>,
+        http_client_id: Option<HttpClientId>,
+        proxy: Option<Proxy>,
     },
     Js {
         name: String,
@@ -63,6 +68,19 @@ pub enum IO {
 pub struct DataLoaderId(usize);
 
 impl DataLoaderId {
+    pub fn new(id: usize) -> Self {
+        Self(id)
+    }
+
+    pub fn as_usize(&self) -> usize {
+        self.0
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct HttpClientId(usize);
+
+impl HttpClientId {
     pub fn new(id: usize) -> Self {
         Self(id)
     }
