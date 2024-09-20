@@ -4,9 +4,8 @@ use super::mergeable_types::MergeableTypes;
 use super::similarity::Similarity;
 use crate::core::config::{Config, Type};
 use crate::core::merge_right::MergeRight;
-use crate::core::scalar::Scalar;
 use crate::core::transform::Transform;
-use crate::core::valid::{Valid, Validator};
+use crate::core::valid::{Valid, ValidationError, Validator};
 
 pub struct TypeMerger {
     /// threshold required for the merging process.
@@ -30,7 +29,7 @@ impl Default for TypeMerger {
 }
 
 impl TypeMerger {
-    fn merger(&self, mut merge_counter: u32, mut config: Config) -> Config {
+    fn merger(&self, mut merge_counter: u32, mut config: Config) -> anyhow::Result<Config> {
         let mut type_to_merge_type_mapping = BTreeMap::new();
         let mut similar_type_group_list: Vec<BTreeSet<String>> = vec![];
         let mut visited_types = HashSet::new();
@@ -83,7 +82,7 @@ impl TypeMerger {
         }
 
         if similar_type_group_list.is_empty() {
-            return config;
+            return Ok(config);
         }
 
         // step 2: merge similar types into single merged type.
@@ -94,7 +93,7 @@ impl TypeMerger {
             for type_name in same_types {
                 if let Some(type_) = config.types.get(type_name.as_str()) {
                     type_to_merge_type_mapping.insert(type_name.clone(), merged_type_name.clone());
-                    merged_into = merge_type(type_, merged_into);
+                    merged_into = merge_type(type_, merged_into).to_result()?;
                     did_we_merge = true;
                 }
             }
@@ -106,7 +105,7 @@ impl TypeMerger {
         }
 
         if type_to_merge_type_mapping.is_empty() {
-            return config;
+            return Ok(config);
         }
 
         // step 3: replace typeof of fields with newly merged types.
@@ -190,46 +189,50 @@ impl TypeMerger {
         if repeat_merging {
             return self.merger(merge_counter, config);
         }
-        config
+        Ok(config)
     }
 }
 
-fn merge_type(type_: &Type, mut merge_into: Type) -> Type {
-    // Merge the simple fields using `merge_right`.
-    merge_into.added_fields = merge_into
-        .added_fields
-        .merge_right(type_.added_fields.clone());
-    merge_into.implements = merge_into.implements.merge_right(type_.implements.clone());
-    merge_into.cache = merge_into.cache.merge_right(type_.cache.clone());
-    merge_into.protected = merge_into.protected.merge_right(type_.protected.clone());
-    merge_into.doc = merge_into.doc.merge_right(type_.doc.clone());
+fn merge_type(type_: &Type, mut merge_into: Type) -> Valid<Type, String> {
+    let merge_fields = Valid::from_iter(type_.fields.iter(), |(key, field)| {
+        match merge_into.fields.remove(key) {
+            Some(self_field) => self_field.merge_right(field.clone()),
+            None => Valid::succeed(field.clone()),
+        }
+        .map(|field| (key.clone(), field))
+    })
+    .map(BTreeMap::from_iter);
 
-    // Handle field output type merging correctly.
-    type_.fields.iter().for_each(|(key, new_field)| {
-        merge_into
-            .fields
-            .entry(key.to_owned())
-            .and_modify(|existing_field| {
-                let mut merged_field = existing_field.clone().merge_right(new_field.clone());
-                if existing_field.type_of.name() == &Scalar::JSON.to_string()
-                    || new_field.type_of.name() == &Scalar::JSON.to_string()
-                {
-                    merged_field.type_of = Scalar::JSON.to_string().into();
-                }
-                *existing_field = merged_field;
-            })
-            .or_insert_with(|| new_field.to_owned());
-    });
-
-    merge_into
+    merge_fields
+        .fuse(
+            merge_into
+                .added_fields
+                .merge_right(type_.added_fields.clone()),
+        )
+        .fuse(merge_into.implements.merge_right(type_.implements.clone()))
+        .fuse(merge_into.cache.merge_right(type_.cache.clone()))
+        .fuse(merge_into.protected.merge_right(type_.protected.clone()))
+        .fuse(merge_into.doc.merge_right(type_.doc.clone()))
+        .map(
+            |(fields, added_fields, implements, cache, protected, doc)| Type {
+                fields,
+                added_fields,
+                doc,
+                implements,
+                cache,
+                protected,
+            },
+        )
 }
 
 impl Transform for TypeMerger {
     type Value = Config;
     type Error = String;
     fn transform(&self, config: Config) -> Valid<Self::Value, Self::Error> {
-        let config = self.merger(1, config);
-        Valid::succeed(config)
+        Valid::from(
+            self.merger(1, config)
+                .map_err(|err| ValidationError::new(err.to_string())),
+        )
     }
 }
 

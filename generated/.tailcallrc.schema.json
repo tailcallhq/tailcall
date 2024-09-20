@@ -916,7 +916,7 @@
       ]
     },
     "Protected": {
-      "type": "object"
+      "type": "null"
     },
     "Proxy": {
       "type": "object",

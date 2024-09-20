@@ -1,7 +1,7 @@
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
-use quote::quote;
+use quote::{format_ident, quote, ToTokens};
 use syn::spanned::Spanned;
 use syn::{parse_macro_input, Data, DeriveInput, Fields};
 
@@ -59,31 +59,57 @@ pub fn expand_merge_right_derive(input: TokenStream) -> TokenStream {
     let gen = match input.data {
         // Implement for structs
         Data::Struct(data) => {
-            let fields = if let Fields::Named(fields) = data.fields {
-                fields.named
-            } else {
-                // Adjust this match arm to handle other kinds of struct fields (unnamed/tuple
-                // structs, unit structs)
-                unimplemented!()
+            let fields = match &data.fields {
+                Fields::Named(fields) => &fields.named,
+                Fields::Unnamed(fields) => &fields.unnamed,
+                Fields::Unit => {
+                    return quote! {
+                        impl crate::core::merge_right::MergeRight for #name {
+                            fn merge_right(self, other: Self) -> crate::core::valid::Valid<Self, String> {
+                                crate::core::valid::Valid::succeed(other)
+                            }
+                        }
+                    }
+                    .into()
+                }
             };
 
-            let merge_logic = fields.iter().map(|f| {
-                let attrs = get_attrs(&f.attrs);
-                if let Err(err) = attrs {
-                    panic!("{}", err);
-                }
-                let attrs = attrs.unwrap();
+            let merge_logic = fields.iter().enumerate().map(|(i, f)| {
+                let attrs = get_attrs(&f.attrs).unwrap();
                 let name = &f.ident;
-                if let Some(merge_right_fn) = attrs.merge_right_fn {
-                    quote! {
-                        #name: #merge_right_fn(self.#name, other.#name),
+
+                match &data.fields {
+                    Fields::Named(_) | Fields::Unnamed(_) => {
+                        let merge = if let Some(merge_right_fn) = attrs.merge_right_fn {
+                            quote! {
+                                #merge_right_fn(self.#name, other.#name)
+                            }
+                        } else {
+                            quote! {
+                                self.#name.merge_right(other.#name)
+                            }
+                        };
+
+                        if i == 0 {
+                            merge
+                        } else {
+                            quote! {
+                                .fuse(#merge)
+                            }
+                        }
                     }
-                } else {
-                    quote! {
-                        #name: self.#name.merge_right(other.#name),
-                    }
+                    Fields::Unit => unreachable!(),
                 }
             });
+
+            let fields = fields.iter().enumerate().map(|(i, f)| match &f.ident {
+                Some(name) => name.clone().to_token_stream(),
+                None => {
+                    let name = format_ident!("x{i}");
+                    name.to_token_stream()
+                }
+            });
+            let fields_initializer = fields.clone();
 
             let generics_lt = generics.lt_token;
             let generics_gt = generics.gt_token;
@@ -93,21 +119,36 @@ pub fn expand_merge_right_derive(input: TokenStream) -> TokenStream {
                 #generics_lt #generics_params #generics_gt
             };
 
+            let initializer = match data.fields {
+                Fields::Named(_) => quote! {
+                    Self {
+                        #(#fields),*
+                    }
+                },
+                Fields::Unnamed(_) => quote! {
+                    Self(#(#fields),*)
+                },
+                Fields::Unit => unreachable!(),
+            };
+
             quote! {
-                impl #generics_del MergeRight for #name #generics_del {
-                    fn merge_right(self, other: Self) -> Self {
-                        Self {
-                            #(#merge_logic)*
-                        }
+                impl #generics_del crate::core::merge_right::MergeRight for #name #generics_del {
+                    fn merge_right(self, other: Self) -> crate::core::valid::Valid<Self, String> {
+                        use crate::core::valid::Validator;
+
+                        #(#merge_logic)*
+                        .map(|(#(#fields_initializer),*)| {
+                            #initializer
+                        })
                     }
                 }
             }
         }
         // Implement for enums
         Data::Enum(_) => quote! {
-            impl MergeRight for #name {
-                fn merge_right(self, other: Self) -> Self {
-                    other
+            impl crate::core::merge_right::MergeRight for #name {
+                fn merge_right(self, other: Self) -> crate::core::valid::Valid<Self, String> {
+                    crate::core::valid::Valid::succeed(other)
                 }
             }
         },

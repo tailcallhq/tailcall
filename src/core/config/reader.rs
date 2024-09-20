@@ -14,6 +14,7 @@ use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::{Cached, Resource, ResourceReader};
 use crate::core::rest::EndpointSet;
 use crate::core::runtime::TargetRuntime;
+use crate::core::valid::Validator;
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all
 /// linked extensions to create a ConfigModule.
@@ -69,13 +70,16 @@ impl ConfigReader {
                     let content = source.content;
 
                     let config = Config::from_source(Source::detect(&source.path)?, &content)?;
-                    config_module = config_module.merge_right(config.clone().into());
+                    config_module = config_module
+                        .merge_right(config.clone().into())
+                        .to_result()?;
 
                     if !config.links.is_empty() {
                         let cfg_module = self
                             .ext_links(ConfigModule::from(config), Path::new(&link.src).parent())
                             .await?;
-                        config_module = config_module.merge_right(cfg_module.clone());
+                        config_module =
+                            config_module.merge_right(cfg_module.clone()).to_result()?;
                     }
                 }
                 LinkType::Protobuf => {
@@ -197,7 +201,7 @@ impl ConfigReader {
                 .await?;
 
             // Merge it with the original config set
-            config_module = config_module.merge_right(new_config_module);
+            config_module = config_module.merge_right(new_config_module).to_result()?;
         }
 
         Ok(config_module)

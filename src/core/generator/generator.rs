@@ -103,7 +103,9 @@ impl Generator {
         for input in self.inputs.iter() {
             match input {
                 Input::Config { source, schema } => {
-                    config = config.merge_right(Config::from_source(source.clone(), schema)?);
+                    config = config
+                        .merge_right(Config::from_source(source.clone(), schema)?)
+                        .to_result()?;
                 }
                 Input::Json {
                     url,
@@ -125,11 +127,13 @@ impl Generator {
                     .with_req_body(req_body.to_owned());
 
                     config = config
-                        .merge_right(self.generate_from_json(&type_name_generator, &[req_sample])?);
+                        .merge_right(self.generate_from_json(&type_name_generator, &[req_sample])?)
+                        .to_result()?;
                 }
                 Input::Proto(proto_input) => {
-                    config =
-                        config.merge_right(self.generate_from_proto(proto_input, &self.query)?);
+                    config = config
+                        .merge_right(self.generate_from_proto(proto_input, &self.query)?)
+                        .to_result()?;
                 }
             }
         }

@@ -8,6 +8,7 @@ use crate::cli::runtime::{confirm_and_write, create_directory, select_prompt};
 use crate::core::config::{Config, Expr, Field, Resolver, RootSchema, Source};
 use crate::core::merge_right::MergeRight;
 use crate::core::runtime::TargetRuntime;
+use crate::core::valid::Validator;
 use crate::core::{config, Type};
 
 pub(super) async fn init_command(runtime: TargetRuntime, folder_path: &str) -> Result<()> {
@@ -61,7 +62,7 @@ async fn confirm_and_write_yml(
     match runtime.file.read(yml_file_path.as_ref()).await {
         Ok(yml_content) => {
             let graphqlrc: serde_yaml::Value = serde_yaml::from_str(&yml_content)?;
-            final_graphqlrc = graphqlrc.merge_right(final_graphqlrc);
+            final_graphqlrc = graphqlrc.merge_right(final_graphqlrc).to_result()?;
             let content = serde_yaml::to_string(&final_graphqlrc)?;
             confirm_and_write(runtime.clone(), &yml_file_path, content.as_bytes()).await
         }

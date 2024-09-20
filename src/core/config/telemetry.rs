@@ -7,7 +7,6 @@ use crate::core::config::{Apollo, ConfigReaderContext};
 use crate::core::helpers::headers::to_mustache_headers;
 use crate::core::is_default;
 use crate::core::macros::MergeRight;
-use crate::core::merge_right::MergeRight;
 use crate::core::mustache::Mustache;
 use crate::core::valid::Validator;
 
@@ -79,6 +78,7 @@ pub enum TelemetryExporter {
     schemars::JsonSchema,
     DirectiveDefinition,
     InputDefinition,
+    MergeRight,
 )]
 #[directive_definition(locations = "Schema")]
 #[serde(deny_unknown_fields)]
@@ -98,18 +98,6 @@ pub struct Telemetry {
 }
 
 impl Telemetry {
-    pub fn merge_right(mut self, other: Self) -> Self {
-        self.export = match (&self.export, other.export) {
-            (None, None) => None,
-            (None, Some(export)) => Some(export),
-            (Some(export), None) => Some(export.clone()),
-            (Some(left), Some(right)) => Some(left.clone().merge_right(right.clone())),
-        };
-        self.request_headers.extend(other.request_headers);
-
-        self
-    }
-
     pub fn render_mustache(&mut self, reader_ctx: &ConfigReaderContext) -> Result<()> {
         match &mut self.export {
             Some(TelemetryExporter::Otlp(otlp)) => {
@@ -134,6 +122,8 @@ impl Telemetry {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::core::merge_right::MergeRight;
+    use crate::core::valid::Valid;
 
     #[test]
     fn merge_right() {
@@ -173,45 +163,45 @@ mod tests {
 
         assert_eq!(
             exporter_none.clone().merge_right(exporter_none.clone()),
-            exporter_none
+            Valid::succeed(exporter_none.clone())
         );
 
         assert_eq!(
             exporter_stdout.clone().merge_right(exporter_none.clone()),
-            exporter_stdout
+            Valid::succeed(exporter_stdout.clone())
         );
 
         assert_eq!(
             exporter_none.clone().merge_right(exporter_otlp_1.clone()),
-            exporter_otlp_1
+            Valid::succeed(exporter_otlp_1.clone())
         );
 
         assert_eq!(
             exporter_stdout.clone().merge_right(exporter_otlp_1.clone()),
-            exporter_otlp_1
+            Valid::succeed(exporter_otlp_1.clone())
         );
 
         assert_eq!(
             exporter_stdout.clone().merge_right(exporter_stdout.clone()),
-            exporter_stdout
+            Valid::succeed(exporter_stdout.clone())
         );
 
         assert_eq!(
             exporter_otlp_1.clone().merge_right(exporter_otlp_2.clone()),
-            Telemetry {
+            Valid::succeed(Telemetry {
                 export: Some(TelemetryExporter::Otlp(OtlpExporter {
                     url: "test-url-2".to_owned(),
                     headers: vec![KeyValue { key: "header_b".to_owned(), value: "b".to_owned() }]
                 })),
                 request_headers: vec!["Api-Key-A".to_string(), "Api-Key-B".to_string(),]
-            }
+            })
         );
 
         assert_eq!(
             exporter_prometheus_1
                 .clone()
                 .merge_right(exporter_prometheus_2.clone()),
-            exporter_prometheus_2
+            Valid::succeed(exporter_prometheus_2.clone())
         );
     }
 }

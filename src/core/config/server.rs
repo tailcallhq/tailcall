@@ -8,7 +8,7 @@ use crate::core::config::headers::Headers;
 use crate::core::config::KeyValue;
 use crate::core::is_default;
 use crate::core::macros::MergeRight;
-use crate::core::merge_right::MergeRight;
+use crate::core::valid::Valid;
 
 #[derive(
     Serialize,
@@ -122,9 +122,9 @@ pub struct Server {
     pub workers: Option<usize>,
 }
 
-fn merge_right_vars(mut left: Vec<KeyValue>, right: Vec<KeyValue>) -> Vec<KeyValue> {
+fn merge_right_vars(mut left: Vec<KeyValue>, right: Vec<KeyValue>) -> Valid<Vec<KeyValue>, String> {
     left = merge_key_value_vecs(&left, &right);
-    left
+    Valid::succeed(left)
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
@@ -237,6 +237,8 @@ impl Server {
 mod tests {
     use super::*;
     use crate::core::config::ScriptOptions;
+    use crate::core::merge_right::MergeRight;
+    use crate::core::valid::Validator;
 
     fn server_with_script_options(so: ScriptOptions) -> Server {
         Server { script: Some(so), ..Default::default() }
@@ -246,7 +248,7 @@ mod tests {
     fn script_options_merge_both() {
         let a = server_with_script_options(ScriptOptions { timeout: Some(100) });
         let b = server_with_script_options(ScriptOptions { timeout: Some(200) });
-        let merged = a.merge_right(b);
+        let merged = a.merge_right(b).to_result().unwrap();
         let expected = ScriptOptions { timeout: Some(200) };
         assert_eq!(merged.script, Some(expected));
     }
@@ -255,7 +257,7 @@ mod tests {
     fn script_options_merge_first() {
         let a = server_with_script_options(ScriptOptions { timeout: Some(100) });
         let b = server_with_script_options(ScriptOptions { timeout: None });
-        let merged = a.merge_right(b);
+        let merged = a.merge_right(b).to_result().unwrap();
         let expected = ScriptOptions { timeout: Some(100) };
         assert_eq!(merged.script, Some(expected));
     }
@@ -264,7 +266,7 @@ mod tests {
     fn script_options_merge_second() {
         let a = server_with_script_options(ScriptOptions { timeout: None });
         let b = server_with_script_options(ScriptOptions { timeout: Some(100) });
-        let merged = a.merge_right(b);
+        let merged = a.merge_right(b).to_result().unwrap();
         let expected = ScriptOptions { timeout: Some(100) };
         assert_eq!(merged.script, Some(expected));
     }
@@ -273,7 +275,7 @@ mod tests {
     fn script_options_merge_second_default() {
         let a = server_with_script_options(ScriptOptions { timeout: Some(100) });
         let b = Server::default();
-        let merged = a.merge_right(b);
+        let merged = a.merge_right(b).to_result().unwrap();
         let expected = ScriptOptions { timeout: Some(100) };
         assert_eq!(merged.script, Some(expected));
     }
@@ -282,7 +284,7 @@ mod tests {
     fn script_options_merge_first_default() {
         let a = Server::default();
         let b = server_with_script_options(ScriptOptions { timeout: Some(100) });
-        let merged = a.merge_right(b);
+        let merged = a.merge_right(b).to_result().unwrap();
         let expected = ScriptOptions { timeout: Some(100) };
         assert_eq!(merged.script, Some(expected));
     }
@@ -335,7 +337,7 @@ mod tests {
         let right_vec = get_default_right_vec();
         let expected_vec = get_sorted_expected_merge_value();
 
-        let mut merge_vec = merge_right_vars(left_vec, right_vec);
+        let mut merge_vec = merge_right_vars(left_vec, right_vec).to_result().unwrap();
 
         merge_vec.sort_by(|a, b| a.key.cmp(&b.key));
 

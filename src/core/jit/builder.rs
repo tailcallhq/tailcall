@@ -15,7 +15,6 @@ use super::BuildError;
 use crate::core::blueprint::{Blueprint, Index, QueryField};
 use crate::core::counter::{Count, Counter};
 use crate::core::jit::model::OperationPlan;
-use crate::core::merge_right::MergeRight;
 use crate::core::Type;
 
 #[derive(PartialEq, strum_macros::Display)]
@@ -231,7 +230,7 @@ impl Builder {
                         };
 
                         fields.push(flat_field);
-                        fields = fields.merge_right(child_fields);
+                        fields.extend(child_fields);
                     } else if field_name == "__typename" {
                         let flat_field = Field {
                             id: FieldId::new(self.field_id.next()),

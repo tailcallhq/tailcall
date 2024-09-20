@@ -132,10 +132,10 @@ impl Transform for FromJsonGenerator<'_> {
                 .pipe(RenameTypes::new(rename_types.into_iter()))
                 .transform(config.clone())
         })
-        .map(|configs| {
-            configs
-                .iter()
-                .fold(config, |acc, c| acc.merge_right(c.clone()))
+        .and_then(|configs| {
+            configs.into_iter().fold(Valid::succeed(config), |acc, c| {
+                acc.and_then(|acc| acc.merge_right(c))
+            })
         })
     }
 }

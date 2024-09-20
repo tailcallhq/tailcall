@@ -111,7 +111,7 @@ async fn check_server_config(spec: ExecutionSpec) -> Vec<Config> {
             )
         });
 
-        let config = Config::default().merge_right(config);
+        let config = Config::default().merge_right(config).to_result().unwrap();
 
         // TODO: we should probably figure out a way to do this for every test
         // but GraphQL identity checking is very hard, since a lot depends on the code
@@ -250,7 +250,9 @@ async fn test_spec(spec: ExecutionSpec) {
     // merged: Run merged specs
     let merged = server
         .iter()
-        .fold(ConfigModule::default(), |acc, c| acc.merge_right(c.clone()))
+        .fold(ConfigModule::default(), |acc, c| {
+            acc.merge_right(c.clone()).to_result().unwrap()
+        })
         // Apply required transformers to the configuration
         .transform(Required)
         .to_result()

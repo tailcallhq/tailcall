@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::future::Future;
 use std::sync::Arc;
 
-use async_graphql::{Data, Executor, Response, Value};
+use async_graphql::{Data, Executor, Response, ServerError, Value};
 use async_graphql_value::Extensions;
 use futures_util::stream::BoxStream;
 
@@ -11,6 +11,7 @@ use crate::core::http::RequestContext;
 use crate::core::jit;
 use crate::core::jit::ConstValueExecutor;
 use crate::core::merge_right::MergeRight;
+use crate::core::valid::Validator;
 
 #[derive(Clone)]
 pub struct JITExecutor {
@@ -61,7 +62,13 @@ impl Executor for JITExecutor {
                         let async_req =
                             async_graphql::Request::from(jit_request).only_introspection();
                         let async_resp = self.app_ctx.execute(async_req).await;
-                        jit_resp.merge_right(async_resp)
+                        match jit_resp.merge_right(async_resp).to_result() {
+                            Ok(resp) => resp,
+                            Err(error) => Response::from_errors(vec![ServerError::new(
+                                error.to_string(),
+                                None,
+                            )]),
+                        }
                     } else {
                         jit_resp
                     }

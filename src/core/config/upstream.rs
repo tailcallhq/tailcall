@@ -6,12 +6,11 @@ use tailcall_macros::{DirectiveDefinition, InputDefinition};
 
 use crate::core::is_default;
 use crate::core::macros::MergeRight;
-use crate::core::merge_right::MergeRight;
 
 const DEFAULT_MAX_SIZE: usize = 100;
 
 #[derive(
-    Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters, schemars::JsonSchema, MergeRight,
+    Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters, MergeRight, schemars::JsonSchema,
 )]
 #[serde(rename_all = "camelCase", default)]
 pub struct Batch {
@@ -30,7 +29,7 @@ impl Default for Batch {
     }
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, schemars::JsonSchema, MergeRight)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, MergeRight, schemars::JsonSchema)]
 pub struct Proxy {
     pub url: String,
 }
@@ -204,6 +203,8 @@ impl Upstream {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::core::merge_right::MergeRight;
+    use crate::core::valid::Validator;
 
     fn setup_upstream_with_headers(headers: &[&str]) -> Upstream {
         Upstream {
@@ -216,7 +217,7 @@ mod tests {
     fn allowed_headers_merge_both() {
         let a = setup_upstream_with_headers(&["a", "b", "c"]);
         let b = setup_upstream_with_headers(&["d", "e", "f"]);
-        let merged = a.merge_right(b);
+        let merged = a.merge_right(b).to_result().unwrap();
         assert_eq!(
             merged.allowed_headers,
             Some(
@@ -232,7 +233,7 @@ mod tests {
     fn allowed_headers_merge_first() {
         let a = setup_upstream_with_headers(&["a", "b", "c"]);
         let b = Upstream::default();
-        let merged = a.merge_right(b);
+        let merged = a.merge_right(b).to_result().unwrap();
 
         assert_eq!(
             merged.allowed_headers,
@@ -244,7 +245,7 @@ mod tests {
     fn allowed_headers_merge_second() {
         let a = Upstream::default();
         let b = setup_upstream_with_headers(&["a", "b", "c"]);
-        let merged = a.merge_right(b);
+        let merged = a.merge_right(b).to_result().unwrap();
 
         assert_eq!(
             merged.allowed_headers,
