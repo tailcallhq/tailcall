@@ -8,6 +8,8 @@ use crate::core::is_default;
 use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
 
+use super::Proxy;
+
 const DEFAULT_MAX_SIZE: usize = 100;
 
 #[derive(
@@ -28,11 +30,6 @@ impl Default for Batch {
             headers: BTreeSet::new(),
         }
     }
-}
-
-#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, schemars::JsonSchema, MergeRight)]
-pub struct Proxy {
-    pub url: String,
 }
 
 #[derive(
