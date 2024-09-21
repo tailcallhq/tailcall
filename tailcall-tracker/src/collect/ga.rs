@@ -1,9 +1,9 @@
 use reqwest::header::{HeaderName, HeaderValue};
+use serde::{Deserialize, Serialize};
 
 use super::super::Result;
-use super::collectors::EventCollector;
+use super::Collect;
 use crate::Event;
-use serde::{Deserialize, Serialize};
 
 const GA_TRACKER_URL: &str = "https://www.google-analytics.com";
 
@@ -36,7 +36,6 @@ impl Tracker {
     }
     fn create_request(&self, event: Event) -> Result<reqwest::Request> {
         let event = GaEvent::new(event);
-        tracing::debug!("Sending event: {:?}", event);
         let mut url = reqwest::Url::parse(self.base_url.as_str())?;
         url.set_path("/mp/collect");
         url.query_pairs_mut()
@@ -56,14 +55,12 @@ impl Tracker {
 }
 
 #[async_trait::async_trait]
-impl EventCollector for Tracker {
-    async fn dispatch(&self, event: Event) -> Result<()> {
+impl Collect for Tracker {
+    async fn collect(&self, event: Event) -> Result<()> {
         let request = self.create_request(event)?;
         let client = reqwest::Client::new();
-        let response = client.execute(request).await?;
-        let status = response.status();
-        let text = response.text().await?;
-        tracing::debug!("Collector: {}, message: {:?}", status.as_str(), text);
+        client.execute(request).await?;
+
         Ok(())
     }
 }

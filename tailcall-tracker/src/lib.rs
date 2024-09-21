@@ -1,4 +1,4 @@
-mod check_tracking;
+mod can_track;
 mod collect;
 mod error;
 mod event;

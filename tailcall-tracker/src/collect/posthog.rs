@@ -1,10 +1,8 @@
-use tailcall_version::VERSION;
+use serde::de::Error;
 
 use super::super::Result;
-use super::collectors::EventCollector;
+use super::Collect;
 use crate::Event;
-
-
 
 pub struct Tracker {
     api_secret: String,
@@ -17,30 +15,29 @@ impl Tracker {
 }
 
 #[async_trait::async_trait]
-impl EventCollector for Tracker {
-    async fn dispatch(&self, event: Event) -> Result<()> {
+impl Collect for Tracker {
+    async fn collect(&self, event: Event) -> Result<()> {
         let api_secret = self.api_secret.clone();
 
         let handle_posthog = tokio::task::spawn_blocking(move || -> Result<()> {
             let client = posthog_rs::client(api_secret.as_str());
+            let json = serde_json::to_value(&event)?;
             let mut posthog_event =
                 posthog_rs::Event::new(event.event_name.clone(), event.client_id);
-            posthog_event.insert_prop("cpu_cores", event.cores)?;
-            posthog_event.insert_prop("os_name", event.os_name)?;
-            posthog_event.insert_prop("app_version", VERSION.as_str())?;
-            posthog_event.insert_prop("start_time", event.start_time)?;
-            if let Some(args) = event.args {
-                posthog_event.insert_prop("args", args.join(", "))?;
+
+            match json {
+                serde_json::Value::Object(map) => {
+                    for (key, value) in map {
+                        posthog_event.insert_prop(key, value)?;
+                    }
+                }
+                _ => {
+                    return Err(
+                        serde_json::Error::custom("Failed to serialize event for posthog").into(),
+                    );
+                }
             }
-            if let Some(uptime) = event.up_time {
-                posthog_event.insert_prop("uptime", uptime)?;
-            }
-            if let Some(path) = event.path {
-                posthog_event.insert_prop("path", path)?;
-            }
-            if let Some(user) = event.user {
-                posthog_event.insert_prop("user", user)?;
-            }
+
             client.capture(posthog_event)?;
             Ok(())
         })

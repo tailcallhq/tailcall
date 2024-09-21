@@ -10,8 +10,10 @@ pub struct Event {
     pub os_name: String,
     pub up_time: Option<String>,
     pub path: Option<String>,
-    pub user: Option<String>,
-    pub args: Option<Vec<String>>,
+    pub cwd: Option<String>,
+    pub user: String,
+    pub args: Vec<String>,
+    pub version: String,
 }
 
 #[derive(Clone)]
@@ -24,7 +26,7 @@ impl EventKind {
     pub fn name(&self) -> String {
         match self {
             EventKind::Ping => "ping".to_string(),
-            EventKind::Run { command, .. } => format!("{}", command.to_lowercase()),
+            EventKind::Run { command, .. } => command.to_lowercase().to_string(),
         }
     }
 }
