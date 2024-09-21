@@ -1,8 +1,8 @@
 #![allow(dead_code)]
-use std::ops::Deref;
+use std::{ops::Deref, str::FromStr};
 
 use hyper::header::{HeaderName, HeaderValue};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 ///
 /// Just an empty wrapper around a value used to implement foreign traits for
@@ -86,5 +86,59 @@ impl<T: AsStr> Serialize for Lift<T> {
     {
         let s = self.0.as_str_value().map_err(serde::ser::Error::custom)?;
         serializer.serialize_str(s)
+    }
+}
+
+impl<'de, T> Deserialize<'de> for Lift<T>
+where
+    T: FromStr,
+    T::Err: std::fmt::Display,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        T::from_str(&s)
+            .map(Lift)
+            .map_err(|e| serde::de::Error::custom(e.to_string()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use hyper::header::{HeaderName, HeaderValue};
+    use reqwest::Method;
+    use serde_json;
+
+    #[test]
+    fn test_request_method() {
+        let method = Lift(Method::POST);
+        let serialized = serde_json::to_string(&method).unwrap();
+        assert_eq!(serialized, "\"POST\"");
+
+        let deserialized: Lift<Method> = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(deserialized, method);
+    }
+
+    #[test]
+    fn test_header_name() {
+        let header_name = Lift(HeaderName::from_static("content-type"));
+        let serialized = serde_json::to_string(&header_name).unwrap();
+        assert_eq!(serialized, "\"content-type\"");
+
+        let deserialized: Lift<HeaderName> = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(deserialized, header_name);
+    }
+
+    #[test]
+    fn test_header_value() {
+        let header_value = Lift(HeaderValue::from_static("application/json"));
+        let serialized = serde_json::to_string(&header_value).unwrap();
+        assert_eq!(serialized, "\"application/json\"");
+
+        let deserialized: Lift<HeaderValue> = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(deserialized, header_value);
     }
 }
