@@ -15,6 +15,7 @@ mdast
 multispace
 opentelemetry
 peekable
+posthog
 schemars
 tailcall
 tailcallrc

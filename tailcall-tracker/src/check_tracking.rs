@@ -15,8 +15,8 @@ pub fn check_tracking() -> bool {
     check_tracking_inner(is_prod, usage_enabled)
 }
 
-fn check_tracking_inner(is_prod_build: bool, tracking_enabled: Option<bool>) -> bool {
-    if let Some(usage_enabled) = tracking_enabled {
+fn check_tracking_inner(is_prod_build: bool, usage_enabled: Option<bool>) -> bool {
+    if let Some(usage_enabled) = usage_enabled {
         usage_enabled
     } else {
         is_prod_build

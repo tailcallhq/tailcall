@@ -2,8 +2,8 @@ use reqwest::header::{HeaderName, HeaderValue};
 
 use super::super::Result;
 use super::collectors::EventCollector;
-use crate::collect::ga_event::GaEvent;
 use crate::Event;
+use serde::{Deserialize, Serialize};
 
 const GA_TRACKER_URL: &str = "https://www.google-analytics.com";
 const GA_TRACKER_API_SECRET: &str = match option_env!("GA_API_SECRET") {
@@ -14,6 +14,19 @@ const GA_TRACKER_MEASUREMENT_ID: &str = match option_env!("GA_MEASUREMENT_ID") {
     Some(val) => val,
     None => "dev",
 };
+
+/// Event structure to be sent to GA
+#[derive(Debug, Serialize, Deserialize)]
+struct GaEvent {
+    client_id: String,
+    events: Vec<Event>,
+}
+
+impl GaEvent {
+    pub fn new(event: Event) -> Self {
+        Self { client_id: event.clone().client_id, events: vec![event] }
+    }
+}
 
 pub struct GaTracker {
     base_url: String,

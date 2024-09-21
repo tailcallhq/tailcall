@@ -1,6 +1,5 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::fmt::Display;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Event {
@@ -21,11 +20,11 @@ pub enum EventKind {
     Run { command: String, args: Vec<String> },
 }
 
-impl Display for EventKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl EventKind {
+    pub fn name(&self) -> String {
         match self {
-            EventKind::Ping => write!(f, "ping"),
-            EventKind::Run { command, .. } => write!(f, "{}", command),
+            EventKind::Ping => "ping".to_string(),
+            EventKind::Run { command, .. } => format!("{}", command.to_lowercase()),
         }
     }
 }
