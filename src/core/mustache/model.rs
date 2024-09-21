@@ -1,11 +1,11 @@
 use std::fmt::Display;
 
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Clone, PartialEq, Hash, Default, Serialize)]
+#[derive(Debug, Clone, PartialEq, Hash, Default, Serialize, Deserialize)]
 pub struct Mustache(Vec<Segment>);
 
-#[derive(Debug, Clone, PartialEq, Hash, Serialize)]
+#[derive(Debug, Clone, PartialEq, Hash, Serialize, Deserialize)]
 pub enum Segment {
     Literal(String),
     Expression(Vec<String>),

@@ -1,7 +1,8 @@
+use std::collections::HashMap;
 use std::ops::Deref;
 
 use hyper::header::HeaderName;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::core::config::KeyValue;
 use crate::core::mustache::Mustache;
@@ -51,6 +52,24 @@ impl Serialize for MustacheHeaders {
         S: serde::Serializer,
     {
         serialize_headers(self, serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for MustacheHeaders {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let map: HashMap<String, String> = HashMap::deserialize(deserializer)?;
+        let headers = map
+            .into_iter()
+            .filter_map(|(k, v)| {
+                HeaderName::from_bytes(k.as_bytes())
+                    .ok()
+                    .map(|name| (name, Mustache::parse(&v)))
+            })
+            .collect();
+        Ok(MustacheHeaders(headers))
     }
 }
 

@@ -4,13 +4,13 @@ use derive_setters::Setters;
 use hyper::header;
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::http::request::Parts;
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 
 use crate::core::config;
 use crate::core::lift::{CanLift, Lift};
 use crate::core::valid::ValidationError;
 
-#[derive(Clone, Debug, Setters, Default, Serialize)]
+#[derive(Clone, Debug, Setters, Default, Serialize, Deserialize)]
 pub struct Cors {
     pub allow_credentials: bool,
     pub vary: Vec<Lift<HeaderValue>>,

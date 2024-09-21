@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 use url::Url;
 
 use super::TryFoldConfig;
@@ -13,14 +13,14 @@ use crate::core::directive::DirectiveCodec;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OtlpExporter {
     pub url: Url,
-    #[serde(serialize_with = "hyper_serde::serialize")]
+    #[serde(serialize_with = "hyper_serde::serialize", deserialize_with = "hyper_serde::deserialize")]
     pub headers: HeaderMap,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum TelemetryExporter {
     Stdout(StdoutExporter),
     Otlp(OtlpExporter),
@@ -28,7 +28,7 @@ pub enum TelemetryExporter {
     Apollo(Apollo),
 }
 
-#[derive(Debug, Default, Clone, Serialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Telemetry {
     pub export: Option<TelemetryExporter>,
     pub request_headers: Vec<String>,

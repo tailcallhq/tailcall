@@ -146,7 +146,7 @@ impl GrpcReflection {
                 mustache: Some(Mustache::parse(body.to_string().as_str())),
                 value: Default::default(),
             }),
-            operation: operation.clone(),
+            operation: Some(operation.clone()),
             operation_type: Default::default(),
         };
 

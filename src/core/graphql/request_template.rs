@@ -6,7 +6,7 @@ use std::hash::{Hash, Hasher};
 use derive_setters::Setters;
 use hyper::HeaderMap;
 use reqwest::header::HeaderValue;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tailcall_hasher::TailcallHasher;
 
 use crate::core::config::{GraphQLOperationType, KeyValue};
@@ -19,7 +19,7 @@ use crate::core::mustache::Mustache;
 use crate::core::path::PathGraphql;
 
 /// RequestTemplate for GraphQL requests (See RequestTemplate documentation)
-#[derive(Setters, Debug, Clone, Serialize)]
+#[derive(Setters, Debug, Clone, Serialize, Deserialize)]
 pub struct RequestTemplate {
     // TODO: should be Mustache as for other templates
     pub url: String,

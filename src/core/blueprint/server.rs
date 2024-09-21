@@ -11,7 +11,7 @@ use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 use serde::ser::{Serialize, Serializer};
-use serde::Serialize as SerdeSerialize;
+use serde::{Deserialize as SerdeDeserialize, Deserializer, Serialize as SerdeSerialize};
 
 use super::Auth;
 use crate::core::blueprint::Cors;
@@ -19,7 +19,7 @@ use crate::core::config::{self, ConfigModule, HttpVersion};
 use crate::core::lift::{CanLift, Lift};
 use crate::core::valid::{Valid, ValidationError, Validator};
 
-#[derive(Clone, Debug, Setters, SerdeSerialize)]
+#[derive(Clone, Debug, Setters, SerdeSerialize, SerdeDeserialize)]
 pub struct Server {
     pub enable_jit: bool,
     pub enable_apollo_tracing: bool,
@@ -35,7 +35,10 @@ pub struct Server {
     pub port: u16,
     pub hostname: IpAddr,
     pub vars: BTreeMap<String, String>,
-    #[serde(serialize_with = "hyper_serde::serialize")]
+    #[serde(
+        serialize_with = "hyper_serde::serialize",
+        deserialize_with = "hyper_serde::deserialize"
+    )]
     pub response_headers: HeaderMap,
     pub http: Http,
     pub pipeline_flush: bool,
@@ -47,19 +50,25 @@ pub struct Server {
 }
 
 /// Mimic of mini_v8::Script that's wasm compatible
-#[derive(Clone, Debug, SerdeSerialize)]
+#[derive(Clone, Debug, SerdeSerialize, SerdeDeserialize)]
 pub struct Script {
     pub source: String,
     pub timeout: Option<Duration>,
 }
 
-#[derive(Clone, Debug, SerdeSerialize)]
+#[derive(Clone, Debug, SerdeSerialize, SerdeDeserialize)]
 pub enum Http {
     HTTP1,
     HTTP2 {
-        #[serde(serialize_with = "serialize_cert_vec")]
+        #[serde(
+            serialize_with = "serialize_cert_vec",
+            deserialize_with = "deserialize_cert_vec"
+        )]
         cert: Vec<CertificateDer<'static>>,
-        #[serde(serialize_with = "serialize_private_key")]
+        #[serde(
+            serialize_with = "serialize_private_key",
+            deserialize_with = "deserialize_private_key"
+        )]
         key: Arc<PrivateKeyDer<'static>>,
     },
 }
@@ -84,6 +93,34 @@ where
     S: Serializer,
 {
     STANDARD.encode(key.secret_der()).serialize(serializer)
+}
+
+// Add these deserialization functions
+fn deserialize_cert_vec<'de, D>(deserializer: D) -> Result<Vec<CertificateDer<'static>>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let encoded: Vec<String> = Vec::deserialize(deserializer)?;
+    encoded
+        .into_iter()
+        .map(|s| {
+            let val = STANDARD
+                .decode(s)
+                .map_err(serde::de::Error::custom)
+                .map(|bytes| CertificateDer::from_slice(&bytes).into_owned());
+            val
+        })
+        .collect()
+}
+
+fn deserialize_private_key<'de, D>(deserializer: D) -> Result<Arc<PrivateKeyDer<'static>>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let encoded: String = String::deserialize(deserializer)?;
+    let bytes = STANDARD.decode(encoded).map_err(serde::de::Error::custom)?;
+    let key = PrivateKeyDer::try_from(bytes).map_err(serde::de::Error::custom)?;
+    Ok(Arc::new(key))
 }
 
 impl Default for Server {

@@ -86,7 +86,7 @@ where
                 execute_grpc_request_with_dl(ctx, rendered, data_loader).await?
             } else {
                 let req = rendered.to_request()?;
-                execute_raw_grpc_request(ctx, req, &req_template.operation).await?
+                execute_raw_grpc_request(ctx, req, &req_template.operation.as_ref().unwrap()).await?
             };
 
             set_headers(ctx, &res);

@@ -5,7 +5,7 @@ use derive_setters::Setters;
 use hyper::header::CONTENT_TYPE;
 use hyper::HeaderMap;
 use reqwest::header::HeaderValue;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tailcall_hasher::TailcallHasher;
 use url::Url;
 
@@ -20,17 +20,17 @@ use crate::core::path::PathString;
 
 static GRPC_MIME_TYPE: HeaderValue = HeaderValue::from_static("application/grpc");
 
-#[derive(Setters, Debug, Clone, Serialize)]
+#[derive(Setters, Debug, Clone, Serialize, Deserialize)]
 pub struct RequestTemplate {
     pub url: Mustache,
     pub headers: MustacheHeaders,
     pub body: Option<RequestBody>,
-    #[serde(skip)]
-    pub operation: ProtobufOperation,
+    #[serde(skip_serializing, skip_deserializing)]
+    pub operation: Option<ProtobufOperation>,
     pub operation_type: GraphQLOperationType,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Setters, Serialize)]
+#[derive(Default, Debug, Clone, PartialEq, Setters, Serialize, Deserialize)]
 pub struct RequestBody {
     pub mustache: Option<Mustache>,
     pub value: String,
@@ -86,7 +86,12 @@ impl RequestTemplate {
         let url = self.create_url(ctx)?;
         let headers = self.render_headers(ctx);
         let body = self.render_body(ctx);
-        Ok(RenderedRequestTemplate { url, headers, body, operation: self.operation.clone() })
+        Ok(RenderedRequestTemplate {
+            url,
+            headers,
+            body,
+            operation: self.operation.clone().unwrap(),
+        })
     }
 
     fn render_body<C: PathString + HasHeaders>(&self, ctx: &C) -> String {
@@ -227,7 +232,7 @@ mod tests {
                 Mustache::parse("value"),
             )]
             .into(),
-            operation: get_protobuf_op().await,
+            operation: Some(get_protobuf_op().await),
             body: None,
             operation_type: GraphQLOperationType::Query,
         };
@@ -261,7 +266,7 @@ mod tests {
         let tmpl = RequestTemplate {
             url: Mustache::parse("http://localhost:3000/"),
             headers: vec![].into(),
-            operation: get_protobuf_op().await,
+            operation: Some(get_protobuf_op().await),
             body: Some(RequestBody {
                 mustache: Some(Mustache::parse(r#"{ "name": "test" }"#)),
                 value: Default::default(),
@@ -281,7 +286,7 @@ mod tests {
         RequestTemplate {
             url: Mustache::parse("http://localhost:3000/"),
             headers: vec![].into(),
-            operation: get_protobuf_op().await,
+            operation: Some(get_protobuf_op().await),
             body: Some(RequestBody {
                 mustache: Some(Mustache::parse(body_str)),
                 value: Default::default(),

@@ -192,7 +192,7 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
             let req_template = RequestTemplate {
                 url,
                 headers,
-                operation,
+                operation: Some(operation),
                 body,
                 operation_type: operation_type.clone(),
             };

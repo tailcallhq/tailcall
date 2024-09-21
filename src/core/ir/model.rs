@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use std::num::NonZeroU64;
 
 use async_graphql::Value;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use strum_macros::Display;
 
 use super::discriminator::Discriminator;
@@ -14,7 +14,7 @@ use crate::core::graphql::{self};
 use crate::core::http::HttpFilter;
 use crate::core::{grpc, http};
 
-#[derive(Clone, Debug, Display, Serialize)]
+#[derive(Clone, Debug, Display, Serialize, Deserialize)]
 pub enum IR {
     Dynamic(DynamicValue<Value>),
     #[strum(to_string = "{0}")]
@@ -29,14 +29,14 @@ pub enum IR {
     Discriminate(Discriminator, Box<IR>),
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Map {
     pub input: Box<IR>,
     // accept key return value instead of
     pub map: HashMap<String, String>,
 }
 
-#[derive(Clone, Debug, strum_macros::Display, Serialize)]
+#[derive(Clone, Debug, strum_macros::Display, Serialize, Deserialize)]
 pub enum IO {
     Http {
         req_template: http::RequestTemplate,
@@ -60,7 +60,7 @@ pub enum IO {
     },
 }
 
-#[derive(Clone, Copy, Debug, Serialize)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct DataLoaderId(usize);
 
 impl DataLoaderId {
@@ -90,7 +90,7 @@ pub trait CacheKey<Ctx> {
     fn cache_key(&self, ctx: &Ctx) -> Option<IoId>;
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Cache {
     pub max_age: NonZeroU64,
     pub io: Box<IO>,

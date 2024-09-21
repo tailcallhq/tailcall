@@ -1,17 +1,17 @@
 use std::collections::BTreeSet;
 
 use derive_setters::Setters;
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 
 use crate::core::config::{self, Batch, ConfigModule};
 use crate::core::valid::{Valid, ValidationError, Validator};
 
-#[derive(PartialEq, Eq, Clone, Debug, schemars::JsonSchema, Serialize)]
+#[derive(PartialEq, Eq, Clone, Debug, schemars::JsonSchema, Serialize, Deserialize)]
 pub struct Proxy {
     pub url: String,
 }
 
-#[derive(PartialEq, Eq, Clone, Debug, Setters, schemars::JsonSchema, Serialize)]
+#[derive(PartialEq, Eq, Clone, Debug, Setters, schemars::JsonSchema, Serialize, Deserialize)]
 pub struct Upstream {
     pub pool_idle_timeout: u64,
     pub pool_max_idle_per_host: usize,

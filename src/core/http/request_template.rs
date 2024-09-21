@@ -4,7 +4,7 @@ use std::hash::{Hash, Hasher};
 use derive_setters::Setters;
 use hyper::HeaderMap;
 use reqwest::header::HeaderValue;
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 use tailcall_hasher::TailcallHasher;
 use url::Url;
 
@@ -22,7 +22,7 @@ use crate::core::path::{PathString, PathValue, ValueString};
 /// Various parts of the template can be written as a mustache template.
 /// When `to_request` is called, all mustache templates are evaluated.
 /// To call `to_request` we need to provide a context.
-#[derive(Setters, Debug, Clone, Serialize)]
+#[derive(Setters, Debug, Clone, Serialize, Deserialize)]
 pub struct RequestTemplate {
     pub root_url: Mustache,
     pub query: Vec<Query>,
@@ -34,7 +34,7 @@ pub struct RequestTemplate {
     pub query_encoder: QueryEncoder,
 }
 
-#[derive(Setters, Debug, Clone, Serialize)]
+#[derive(Setters, Debug, Clone, Serialize, Deserialize)]
 pub struct Query {
     pub key: String,
     pub value: Mustache,
