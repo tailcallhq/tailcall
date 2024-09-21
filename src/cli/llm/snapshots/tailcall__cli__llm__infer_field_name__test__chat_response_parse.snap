@@ -1,0 +1,13 @@
+---
+source: src/cli/llm/infer_field_name.rs
+expression: answer
+---
+Answer {
+    suggestions: [
+        "posts",
+        "postList",
+        "articles",
+        "articlesList",
+        "entries",
+    ],
+}

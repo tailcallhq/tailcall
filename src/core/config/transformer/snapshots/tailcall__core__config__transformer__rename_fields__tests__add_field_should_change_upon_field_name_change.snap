@@ -1,0 +1,22 @@
+---
+source: src/core/config/transformer/rename_fields.rs
+expression: actual.to_sdl()
+---
+type Address {
+  code: String
+  id: ID!
+}
+
+type Foo {
+  zipcode: String
+}
+
+type Test @addField(name: "zipcode", path: ["foo", "zipcode"]) {
+  foo: Foo @omit
+  name: String
+}
+
+type User @addField(name: "code", path: ["address", "code"]) {
+  address: Address @omit
+  name: String
+}

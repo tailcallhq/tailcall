@@ -349,4 +349,30 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(result.err().unwrap(), expected_err);
     }
+
+    #[test]
+    fn test_grpc_rename_args() {
+        let sdl = r#"
+        type Query {
+            newsById(article: NewsInput!): News! @grpc(method: "news.NewsService.GetNews", body: "{{.args.news}}")
+        }
+    "#;
+        let config = Config::from_sdl(sdl).to_result().unwrap();
+
+        let rename_args = vec![(
+            "article".into(),
+            Location {
+                field_name: "newsById".into(),
+                new_argument_name: "news".into(),
+                type_name: "Query".into(),
+            },
+        )];
+
+        let transformed_config = RenameArgs::new(rename_args)
+            .transform(config)
+            .to_result()
+            .unwrap();
+
+        insta::assert_snapshot!(transformed_config.to_sdl());
+    }
 }
