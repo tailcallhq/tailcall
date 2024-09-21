@@ -8,11 +8,11 @@ use crate::can_track::can_track;
 use crate::collect::{ga, posthog, Collect};
 use crate::{Event, EventKind};
 
-const GA_TRACKER_API_SECRET: &str = match option_env!("GA_API_SECRET") {
+const GA_API_SECRET: &str = match option_env!("GA_API_SECRET") {
     Some(val) => val,
     None => "dev",
 };
-const GA_TRACKER_MEASUREMENT_ID: &str = match option_env!("GA_MEASUREMENT_ID") {
+const GA_MEASUREMENT_ID: &str = match option_env!("GA_MEASUREMENT_ID") {
     Some(val) => val,
     None => "dev",
 };
@@ -34,10 +34,10 @@ pub struct Tracker {
 impl Default for Tracker {
     fn default() -> Self {
         let ga_tracker = Box::new(ga::Tracker::new(
-            GA_TRACKER_API_SECRET.to_string(),
-            GA_TRACKER_MEASUREMENT_ID.to_string(),
+            GA_API_SECRET.to_string(),
+            GA_MEASUREMENT_ID.to_string(),
         ));
-        let posthog_tracker = Box::new(posthog::Tracker::new(POSTHOG_API_SECRET.to_string()));
+        let posthog_tracker = Box::new(posthog::Tracker::new(POSTHOG_API_SECRET, "client_id"));
         let start_time = Utc::now();
         Self {
             collectors: vec![ga_tracker, posthog_tracker],

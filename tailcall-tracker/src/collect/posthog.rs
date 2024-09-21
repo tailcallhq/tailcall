@@ -5,12 +5,13 @@ use super::Collect;
 use crate::Event;
 
 pub struct Tracker {
-    api_secret: String,
+    api_secret: &'static str,
+    client_id_key: &'static str,
 }
 
 impl Tracker {
-    pub fn new(api_secret: String) -> Self {
-        Self { api_secret }
+    pub fn new(api_secret: &'static str, client_id_key: &'static str) -> Self {
+        Self { api_secret, client_id_key }
     }
 }
 
@@ -18,7 +19,7 @@ impl Tracker {
 impl Collect for Tracker {
     async fn collect(&self, event: Event) -> Result<()> {
         let api_secret = self.api_secret.clone();
-
+        let client_id_key = self.client_id_key;
         let handle_posthog = tokio::task::spawn_blocking(move || -> Result<()> {
             let client = posthog_rs::client(api_secret.as_str());
             let json = serde_json::to_value(&event)?;
@@ -27,7 +28,10 @@ impl Collect for Tracker {
 
             match json {
                 serde_json::Value::Object(map) => {
-                    for (key, value) in map {
+                    for (mut key, value) in map {
+                        if key == client_id_key {
+                            key = "distinct_id".to_string();
+                        }
                         posthog_event.insert_prop(key, value)?;
                     }
                 }
