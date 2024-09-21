@@ -1,3 +1,3 @@
 pub mod collectors;
-mod ga;
-mod posthog;
+pub mod ga;
+pub mod posthog;

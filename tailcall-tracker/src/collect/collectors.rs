@@ -3,8 +3,6 @@ use machineid_rs::{Encryption, HWIDComponent, IdBuilder};
 use sysinfo::System;
 
 use super::super::Result;
-use super::ga::GaTracker;
-use super::posthog::PostHogTracker;
 use crate::{Event, EventKind};
 
 const PARAPHRASE: &str = "tc_key";
@@ -20,35 +18,26 @@ pub trait EventCollector: Send + Sync {
 
 pub struct Collectors {
     collectors: Vec<Box<dyn EventCollector>>,
+    start_time: DateTime<Utc>,
 }
 
-// FIXME: implement a `new` method for `Collectors` to initialize the collectors
-impl Default for Collectors {
-    fn default() -> Self {
-        let ga_tracker = GaTracker::default();
-        let posthog_tracker = PostHogTracker::default();
-        Self {
-            collectors: vec![Box::new(ga_tracker), Box::new(posthog_tracker)],
-        }
+impl Collectors {
+    pub fn new(start_time: DateTime<Utc>, collectors: Vec<Box<dyn EventCollector>>) -> Self {
+        Self { start_time, collectors }
     }
 }
 
 impl Collectors {
     /// Dispatches an event to all collectors.
-    pub async fn dispatch(
-        &'static self,
-        event_kind: EventKind,
-        // FIXME: can be initialized within Self
-        start_time: DateTime<Utc>,
-    ) -> Result<()> {
+    pub async fn dispatch(&self, event_kind: EventKind) -> Result<()> {
         let event = Event {
             event_name: event_kind.name(),
-            start_time,
+            start_time: self.start_time,
             cores: Self::get_cpu_cores(),
             client_id: Self::get_client_id(),
             os_name: Self::get_os_name(),
             up_time: match event_kind {
-                EventKind::Ping => Some(Self::get_uptime(start_time)),
+                EventKind::Ping => Some(Self::get_uptime(self.start_time)),
                 _ => None,
             },
             args: match event_kind {

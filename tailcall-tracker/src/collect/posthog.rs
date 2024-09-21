@@ -4,23 +4,20 @@ use super::super::Result;
 use super::collectors::EventCollector;
 use crate::Event;
 
-const POSTHOG_API_SECRET: &str = match option_env!("POSTHOG_API_SECRET") {
-    Some(val) => val,
-    None => "dev",
-};
 
-pub struct PostHogTracker {
+
+pub struct Tracker {
     api_secret: String,
 }
 
-impl PostHogTracker {
-    pub fn default() -> Self {
-        Self { api_secret: POSTHOG_API_SECRET.to_string() }
+impl Tracker {
+    pub fn new(api_secret: String) -> Self {
+        Self { api_secret }
     }
 }
 
 #[async_trait::async_trait]
-impl EventCollector for PostHogTracker {
+impl EventCollector for Tracker {
     async fn dispatch(&self, event: Event) -> Result<()> {
         let api_secret = self.api_secret.clone();
 

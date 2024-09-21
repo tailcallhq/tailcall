@@ -6,14 +6,6 @@ use crate::Event;
 use serde::{Deserialize, Serialize};
 
 const GA_TRACKER_URL: &str = "https://www.google-analytics.com";
-const GA_TRACKER_API_SECRET: &str = match option_env!("GA_API_SECRET") {
-    Some(val) => val,
-    None => "dev",
-};
-const GA_TRACKER_MEASUREMENT_ID: &str = match option_env!("GA_MEASUREMENT_ID") {
-    Some(val) => val,
-    None => "dev",
-};
 
 /// Event structure to be sent to GA
 #[derive(Debug, Serialize, Deserialize)]
@@ -28,18 +20,18 @@ impl GaEvent {
     }
 }
 
-pub struct GaTracker {
+pub struct Tracker {
     base_url: String,
     api_secret: String,
     measurement_id: String,
 }
 
-impl GaTracker {
-    pub fn default() -> Self {
+impl Tracker {
+    pub fn new(api_secret: String, measurement_id: String) -> Self {
         Self {
             base_url: GA_TRACKER_URL.to_string(),
-            api_secret: GA_TRACKER_API_SECRET.to_string(),
-            measurement_id: GA_TRACKER_MEASUREMENT_ID.to_string(),
+            api_secret,
+            measurement_id,
         }
     }
     fn create_request(&self, event: Event) -> Result<reqwest::Request> {
@@ -64,7 +56,7 @@ impl GaTracker {
 }
 
 #[async_trait::async_trait]
-impl EventCollector for GaTracker {
+impl EventCollector for Tracker {
     async fn dispatch(&self, event: Event) -> Result<()> {
         let request = self.create_request(event)?;
         let client = reqwest::Client::new();
