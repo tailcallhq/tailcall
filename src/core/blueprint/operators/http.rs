@@ -65,11 +65,11 @@ pub fn compile_http(
                 .on_request
                 .clone()
                 .or(config_module.upstream.on_request.clone());
-            let on_response = http.on_response_body.clone();
+            let on_response_body = http.on_response_body.clone();
 
             let http_filter = HttpFilter::default()
                 .on_request(on_request)
-                .on_response(on_response)
+                .on_response_body(on_response_body)
                 .none_if_empty();
 
             if !http.batch_key.is_empty() && http.method == Method::GET {
