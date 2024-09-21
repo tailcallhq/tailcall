@@ -4,6 +4,8 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 
+use base64::engine::general_purpose::STANDARD;
+use base64::Engine as _;
 use derive_setters::Setters;
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
@@ -16,8 +18,6 @@ use crate::core::blueprint::Cors;
 use crate::core::config::{self, ConfigModule, HttpVersion};
 use crate::core::lift::{CanLift, Lift};
 use crate::core::valid::{Valid, ValidationError, Validator};
-
-use base64::{Engine as _, engine::general_purpose::STANDARD};
 
 #[derive(Clone, Debug, Setters, SerdeSerialize)]
 pub struct Server {
@@ -65,7 +65,10 @@ pub enum Http {
 }
 
 // Add these functions at the end of the file
-fn serialize_cert_vec<S>(certs: &Vec<CertificateDer<'static>>, serializer: S) -> Result<S::Ok, S::Error>
+fn serialize_cert_vec<S>(
+    certs: &Vec<CertificateDer<'static>>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
@@ -73,7 +76,10 @@ where
     encoded.serialize(serializer)
 }
 
-fn serialize_private_key<S>(key: &Arc<PrivateKeyDer<'static>>, serializer: S) -> Result<S::Ok, S::Error>
+fn serialize_private_key<S>(
+    key: &Arc<PrivateKeyDer<'static>>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {

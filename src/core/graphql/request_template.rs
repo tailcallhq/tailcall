@@ -216,7 +216,7 @@ mod tests {
             &GraphQLOperationType::Query,
             "myQuery",
             None,
-            vec![],
+            vec![].into(),
             RelatedFields::default(),
         )
         .unwrap();
@@ -253,7 +253,7 @@ mod tests {
                 .unwrap(),
             )
             .as_ref(),
-            vec![],
+            vec![].into(),
             RelatedFields::default(),
         )
         .unwrap();
@@ -291,7 +291,7 @@ mod tests {
                     .unwrap(),
             )
                 .as_ref(),
-            vec![],
+            vec![].into(),
             RelatedFields::default(),
         )
             .unwrap();

@@ -319,7 +319,7 @@ mod tests {
     use super::{Query, RequestTemplate};
     use crate::core::has_headers::HasHeaders;
     use crate::core::json::JsonLike;
-    use crate::core::lift::{CanLift, Lift};
+    use crate::core::lift::CanLift;
     use crate::core::mustache::Mustache;
     use crate::core::path::{PathString, PathValue, ValueString};
 

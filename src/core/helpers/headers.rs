@@ -100,6 +100,7 @@ mod tests {
                 (HeaderName::from_bytes(b"a")?, Mustache::parse("str")),
                 (HeaderName::from_bytes(b"b")?, Mustache::parse("123"))
             ]
+            .into()
         );
 
         Ok(())

@@ -11,7 +11,6 @@ use serde::Serialize;
 pub struct Lift<A>(A);
 
 impl<A: Clone> Lift<A> {
-
     pub fn clone_inner(&self) -> A {
         self.0.clone()
     }

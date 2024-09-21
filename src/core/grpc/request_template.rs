@@ -224,7 +224,8 @@ mod tests {
             headers: vec![(
                 HeaderName::from_static("test-header"),
                 Mustache::parse("value"),
-            )],
+            )]
+            .into(),
             operation: get_protobuf_op().await,
             body: None,
             operation_type: GraphQLOperationType::Query,
@@ -258,7 +259,7 @@ mod tests {
     async fn request_with_body() {
         let tmpl = RequestTemplate {
             url: Mustache::parse("http://localhost:3000/"),
-            headers: vec![],
+            headers: vec![].into(),
             operation: get_protobuf_op().await,
             body: Some(RequestBody {
                 mustache: Some(Mustache::parse(r#"{ "name": "test" }"#)),
@@ -278,7 +279,7 @@ mod tests {
     async fn request_template_with_body(body_str: &str) -> RequestTemplate {
         RequestTemplate {
             url: Mustache::parse("http://localhost:3000/"),
-            headers: vec![],
+            headers: vec![].into(),
             operation: get_protobuf_op().await,
             body: Some(RequestBody {
                 mustache: Some(Mustache::parse(body_str)),
