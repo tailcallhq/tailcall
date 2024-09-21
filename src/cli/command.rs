@@ -62,13 +62,3 @@ pub enum Command {
         file_path: String,
     },
 }
-impl Command {
-    pub fn args(&self) -> Vec<String> {
-        match self {
-            Command::Start { file_paths } => file_paths.clone(),
-            Command::Check { file_paths, .. } => file_paths.clone(),
-            Command::Init { .. } => vec![],
-            Command::Gen { file_path } => vec![file_path.clone()],
-        }
-    }
-}

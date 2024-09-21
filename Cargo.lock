@@ -5763,6 +5763,7 @@ dependencies = [
  "reqwest 0.11.27",
  "serde",
  "serde_json",
+ "strum",
  "sysinfo 0.31.3",
  "tailcall-version",
  "tokio",

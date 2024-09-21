@@ -64,7 +64,7 @@ impl Tracker {
         if self.is_tracking {
             // Create a new event
             let event = Event {
-                event_name: event_kind.name(),
+                event_name: event_kind.as_str().to_string(),
                 start_time: self.start_time,
                 cores: cores(),
                 client_id: client_id(),
@@ -162,13 +162,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_tracker() {
-        if let Err(e) = TRACKER
-            .dispatch(EventKind::Run {
-                command: "test".to_string(),
-                args: vec!["test_user".to_string(), "/test_path".to_string()],
-            })
-            .await
-        {
+        if let Err(e) = TRACKER.dispatch(EventKind::Run).await {
             panic!("Tracker dispatch error: {:?}", e);
         }
     }

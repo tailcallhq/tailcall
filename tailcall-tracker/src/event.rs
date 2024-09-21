@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use strum::IntoStaticStr;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Event {
@@ -16,17 +17,14 @@ pub struct Event {
     pub version: String,
 }
 
-#[derive(Clone)]
+#[derive(Clone, IntoStaticStr)]
 pub enum EventKind {
     Ping,
-    Run { command: String, args: Vec<String> },
+    Run,
 }
 
 impl EventKind {
-    pub fn name(&self) -> String {
-        match self {
-            EventKind::Ping => "ping".to_string(),
-            EventKind::Run { command, .. } => command.to_lowercase().to_string(),
-        }
+    pub fn as_str(&self) -> &'static str {
+        self.into()
     }
 }
