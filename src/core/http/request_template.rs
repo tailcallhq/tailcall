@@ -14,7 +14,7 @@ use crate::core::endpoint::Endpoint;
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
 use crate::core::ir::model::{CacheKey, IoId};
-use crate::core::lift::Lift;
+use crate::core::lift::{CanLift, Lift};
 use crate::core::mustache::{Eval, Mustache, Segment};
 use crate::core::path::{PathString, PathValue, ValueString};
 
@@ -189,7 +189,7 @@ impl RequestTemplate {
         Ok(Self {
             root_url: Mustache::parse(root_url),
             query: Default::default(),
-            method: Lift::from(reqwest::Method::GET),
+            method: reqwest::Method::GET.lift(),
             headers: Default::default(),
             body_path: Default::default(),
             endpoint: Endpoint::new(root_url.to_string()),
@@ -240,7 +240,7 @@ impl TryFrom<Endpoint> for RequestTemplate {
         Ok(Self {
             root_url: path,
             query,
-            method: Lift::from(method),
+            method: method.lift(),
             headers: headers.into(),
             body_path: body,
             endpoint,
@@ -319,7 +319,7 @@ mod tests {
     use super::{Query, RequestTemplate};
     use crate::core::has_headers::HasHeaders;
     use crate::core::json::JsonLike;
-    use crate::core::lift::Lift;
+    use crate::core::lift::{CanLift, Lift};
     use crate::core::mustache::Mustache;
     use crate::core::path::{PathString, PathValue, ValueString};
 
@@ -577,7 +577,7 @@ mod tests {
     fn test_header_encoding_application_json() {
         let tmpl = RequestTemplate::new("http://localhost:3000")
             .unwrap()
-            .method(Lift::from(reqwest::Method::POST))
+            .method(reqwest::Method::POST.lift())
             .encoding(crate::core::config::Encoding::ApplicationJson);
         let ctx = Context::default();
         let req = tmpl.to_request(&ctx).unwrap();
@@ -591,7 +591,7 @@ mod tests {
     fn test_header_encoding_application_x_www_form_urlencoded() {
         let tmpl = RequestTemplate::new("http://localhost:3000")
             .unwrap()
-            .method(Lift::from(reqwest::Method::POST))
+            .method(reqwest::Method::POST.lift())
             .encoding(crate::core::config::Encoding::ApplicationXWwwFormUrlencoded);
         let ctx = Context::default();
         let req = tmpl.to_request(&ctx).unwrap();
@@ -605,7 +605,7 @@ mod tests {
     fn test_method() {
         let tmpl = RequestTemplate::new("http://localhost:3000")
             .unwrap()
-            .method(Lift::from(reqwest::Method::POST));
+            .method(reqwest::Method::POST.lift());
         let ctx = Context::default();
         let req = tmpl.to_request(&ctx).unwrap();
         assert_eq!(req.method(), reqwest::Method::POST);

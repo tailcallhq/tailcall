@@ -7,7 +7,7 @@ use hyper::http::request::Parts;
 use serde::Serialize;
 
 use crate::core::config;
-use crate::core::lift::Lift;
+use crate::core::lift::{CanLift, Lift};
 use crate::core::valid::ValidationError;
 
 #[derive(Clone, Debug, Setters, Default, Serialize)]
@@ -178,7 +178,7 @@ impl TryFrom<config::cors::Cors> for Cors {
             allow_headers: {
                 let value: Option<HeaderValue> = (!value.allow_headers.is_empty())
                     .then_some(value.allow_headers.join(", ").parse()?);
-                value.map(|val| Lift::from(val))
+                value.map(|val| val.lift())
             },
             allow_methods: {
                 let value: Option<HeaderValue> = Some(if value.allow_methods.is_empty() {
@@ -193,7 +193,7 @@ impl TryFrom<config::cors::Cors> for Cors {
                         .parse()?
                 });
 
-                value.map(|val| Lift::from(val))
+                value.map(|val| val.lift())
             },
             allow_origins: {
                 let value: Vec<HeaderValue> = value
@@ -202,16 +202,16 @@ impl TryFrom<config::cors::Cors> for Cors {
                     .map(|val| Ok(val.parse()?))
                     .collect::<Result<_, ValidationError<String>>>()?;
 
-                value.into_iter().map(|val| Lift::from(val)).collect()
+                value.into_iter().map(|val| val.lift()).collect()
             },
             allow_private_network: value.allow_private_network.unwrap_or_default(),
             expose_headers: {
                 let value: Option<HeaderValue> = Some(value.expose_headers.join(", ").parse()?);
-                value.map(|val| Lift::from(val))
+                value.map(|val| val.lift())
             },
             max_age: {
                 let value: Option<HeaderValue> = value.max_age.map(|val| val.into());
-                value.map(|val| Lift::from(val))
+                value.map(|val| val.lift())
             },
             vary: {
                 let value: Vec<HeaderValue> = value
@@ -219,7 +219,7 @@ impl TryFrom<config::cors::Cors> for Cors {
                     .iter()
                     .map(|val| Ok(val.parse()?))
                     .collect::<Result<_, ValidationError<String>>>()?;
-                value.into_iter().map(|val| Lift::from(val)).collect()
+                value.into_iter().map(|val| val.lift()).collect()
             },
         };
         ensure_usable_cors_rules(&cors)?;
@@ -244,7 +244,7 @@ mod tests {
     #[test]
     fn test_allow_origin_to_header() {
         let cors = Cors {
-            allow_origins: vec![Lift::from(HeaderValue::from_static("https://example.com"))],
+            allow_origins: vec![HeaderValue::from_static("https://example.com").lift()],
             ..std::default::Default::default()
         };
         let origin = Some(HeaderValue::from_static("https://example.com"));

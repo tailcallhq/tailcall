@@ -14,7 +14,7 @@ use serde::Serialize as SerdeSerialize;
 use super::Auth;
 use crate::core::blueprint::Cors;
 use crate::core::config::{self, ConfigModule, HttpVersion};
-use crate::core::lift::Lift;
+use crate::core::lift::{CanLift, Lift};
 use crate::core::valid::{Valid, ValidationError, Validator};
 
 use base64::{Engine as _, engine::general_purpose::STANDARD};
@@ -171,7 +171,7 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
                         enable_showcase: (config_server).enable_showcase(),
                         experimental_headers: experimental_headers
                             .into_iter()
-                            .map(|h| Lift::from(h))
+                            .map(|h| h.lift())
                             .collect(),
                         global_response_timeout: (config_server).get_global_response_timeout(),
                         http,
