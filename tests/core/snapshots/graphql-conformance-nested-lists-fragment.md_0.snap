@@ -1,0 +1,43 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "users": [
+        [
+          {
+            "id": 1,
+            "name": "user-1",
+            "accountRef": "ref-1-user-1"
+          },
+          {
+            "id": 2,
+            "name": "user-2",
+            "accountRef": "ref-2-user-2"
+          },
+          {
+            "id": 3,
+            "name": "user-3",
+            "accountRef": "ref-3-user-3"
+          }
+        ],
+        [
+          {
+            "name": "admin-1",
+            "region": "eu"
+          },
+          {
+            "name": "admin-2",
+            "region": "us"
+          }
+        ]
+      ]
+    }
+  }
+}

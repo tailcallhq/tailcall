@@ -33,6 +33,13 @@ impl<'json> JsonLike<'json> for ConstValue {
         }
     }
 
+    fn as_array_mut(&mut self) -> Option<&mut Vec<Self>> {
+        match self {
+            ConstValue::List(seq) => Some(seq),
+            _ => None,
+        }
+    }
+
     fn into_array(self) -> Option<Vec<Self>> {
         match self {
             ConstValue::List(seq) => Some(seq),
