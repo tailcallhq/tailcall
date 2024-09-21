@@ -30,12 +30,12 @@ pub static TAILCALL_HTTP_ORIGIN: HeaderValue = HeaderValue::from_static("http://
 /// for the http requests.
 pub struct HttpFilter {
     pub on_request: Option<String>,
-    pub on_response: Option<String>,
+    pub on_response_body: Option<String>,
 }
 
 impl HttpFilter {
     pub fn none_if_empty(self) -> Option<Self> {
-        if self.on_request.is_none() && self.on_response.is_none() {
+        if self.on_request.is_none() && self.on_response_body.is_none() {
             None
         } else {
             Some(self)

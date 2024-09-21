@@ -117,7 +117,7 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
 
         // send the final response to JS script to futher evaluation.
         if let Ok(resp) = resp {
-            if let Some(on_response) = http_filter.on_response.as_ref() {
+            if let Some(on_response) = http_filter.on_response_body.as_ref() {
                 let js_response = worker::WorkerResponse::try_from(resp.clone())?;
                 let response_event = worker::Event::Response(js_response);
                 let final_command = worker.call(on_response, response_event).await?;
