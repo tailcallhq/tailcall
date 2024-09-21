@@ -1,0 +1,20 @@
+---
+source: src/core/config/transformer/rename_types.rs
+expression: result.to_sdl()
+---
+schema @server @upstream {
+  query: Query
+}
+
+interface NodeTest {
+  id: ID
+}
+
+type Post implements NodeTest {
+  id: ID
+  title: String
+}
+
+type Query {
+  posts: [Post] @http(path: "/posts")
+}
