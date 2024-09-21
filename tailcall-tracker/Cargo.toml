@@ -9,11 +9,17 @@ edition = "2021"
 reqwest = { workspace = true }
 derive_more = { workspace = true }
 url = { workspace = true }
-lazy_static = { workspace = true }
+lazy_static.workspace = true
 serde = { workspace = true }
 serde_json = { workspace = true }
 machineid-rs = "1.2.4"
-tokio = { workspace = true }
+tokio = { workspace = true, features = ["rt", "macros"] }
 tracing = { workspace = true }
 sysinfo = "0.31.0"
 tailcall-version = { path = "../tailcall-version" }
+posthog-rs = "0.2.2"
+async-trait = "0.1.81"
+chrono = "0.4.38"
+openssl = { version = "0.10", features = ["vendored"] }
+whoami = "1.5.2"
+strum = "0.26.3"
