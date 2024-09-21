@@ -8,7 +8,7 @@ ChatRequest {
         ChatMessage {
             role: System,
             content: Text(
-                "Given the sample schema of a GraphQL type, suggest 5 meaningful names for it.\nThe name should be concise, preferably a single word and must not be in the `ignore` list.\n\nExample Input:\n{\n  \"ingore\": [\n    \"User\"\n  ],\n  \"fields\": [\n    [\n      \"id\",\n      \"String\"\n    ],\n    [\n      \"name\",\n      \"String\"\n    ],\n    [\n      \"age\",\n      \"Int\"\n    ]\n  ]\n}\n\nExample Output:\n{\n  \"suggestions\": [\n    \"Person\",\n    \"Profile\",\n    \"Member\",\n    \"Individual\",\n    \"Contact\"\n  ]\n}\n\nEnsure the output is in valid JSON format.\n",
+                "Given the sample schema of a GraphQL type, suggest 5 meaningful names for it.\nThe name should be concise, preferably a single word and must not be in the `ignore` list.\n\nExample Input:\n{\"ignore\":[\"User\"],\"fields\":[[\"id\",\"String\"],[\"name\",\"String\"],[\"age\",\"Int\"]]}\n\nExample Output:\n{\"suggestions\":[\"Person\",\"Profile\",\"Member\",\"Individual\",\"Contact\"]}\n\nEnsure the output is in valid JSON format.\n",
             ),
             extra: None,
         },

@@ -34,24 +34,30 @@ impl TryFrom<ChatResponse> for Answer {
 #[derive(Clone, Serialize)]
 struct Question {
     #[serde(skip_serializing_if = "IndexSet::is_empty")]
-    ingore: IndexSet<String>,
+    ignore: IndexSet<String>,
     fields: Vec<(String, String)>,
+}
+
+#[derive(Serialize)]
+struct Context {
+    input: Question,
+    output: Answer,
 }
 
 impl TryInto<ChatRequest> for Question {
     type Error = Error;
 
     fn try_into(self) -> Result<ChatRequest> {
-        let input = serde_json::to_string_pretty(&Question {
-            ingore: indexset! { "User".into()},
+        let input = Question {
+            ignore: indexset! { "User".into()},
             fields: vec![
                 ("id".to_string(), "String".to_string()),
                 ("name".to_string(), "String".to_string()),
                 ("age".to_string(), "Int".to_string()),
             ],
-        })?;
+        };
 
-        let output = serde_json::to_string_pretty(&Answer {
+        let output = Answer {
             suggestions: vec![
                 "Person".into(),
                 "Profile".into(),
@@ -59,17 +65,13 @@ impl TryInto<ChatRequest> for Question {
                 "Individual".into(),
                 "Contact".into(),
             ],
-        })?;
+        };
 
         let template = Mustache::parse(BASE_TEMPLATE);
 
-        let context = json!({
-            "ignore": self.ingore,
-            "input": input,
-            "output": output,
-        });
+        let context = Context { input, output };
 
-        let rendered_prompt = template.render(&context);
+        let rendered_prompt = template.render(&serde_json::to_value(&context)?);
 
         Ok(ChatRequest::new(vec![
             ChatMessage::system(rendered_prompt),
@@ -113,7 +115,7 @@ impl InferTypeName {
         for (i, (type_name, type_)) in types_to_be_processed.into_iter().enumerate() {
             // convert type to sdl format.
             let question = Question {
-                ingore: used_type_names.clone(),
+                ignore: used_type_names.clone(),
                 fields: type_
                     .fields
                     .iter()
@@ -180,7 +182,7 @@ mod test {
     #[test]
     fn test_to_chat_request_conversion() {
         let question = Question {
-            ingore: indexset! {"Profile".to_owned(), "Person".to_owned()},
+            ignore: indexset! {"Profile".to_owned(), "Person".to_owned()},
             fields: vec![
                 ("id".to_string(), "String".to_string()),
                 ("name".to_string(), "String".to_string()),
