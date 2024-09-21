@@ -21,12 +21,17 @@ type User {
   featuredVideoPreview(video: VideoSize! = {}): String!
     @expr(body: "video_{{.value.id}}_{{.args.video.width}}_{{.args.video.height}}_{{.args.video.hdr}}")
   searchComments(query: [[String!]!]! = [["today"]]): String! @expr(body: "video_{{.value.id}}_{{.args.query}}")
+  spam(foo: [Foo!]!): String! @expr(body: "FIZZ: {{.args.foo}}")
 }
 
 input VideoSize {
   width: Int!
   height: Int!
-  hdr: Boolean
+  hdr: Boolean = true
+}
+
+input Foo {
+  bar: String! = "BUZZ"
 }
 ```
 
@@ -34,7 +39,7 @@ input VideoSize {
 - request:
     method: GET
     url: http://upstream/user?id=4
-  expectedHits: 9
+  expectedHits: 10
   response:
     status: 200
     body:
@@ -153,30 +158,41 @@ input VideoSize {
       }
 
 # # Positve: defaults from input
-# TODO: tailcall should use defaults provided from Input Object and hdr should be true
-# - method: POST
-#   url: http://localhost:8080/graphql
-#   body:
-#     query: |
-#       query {
-#         user(id: 4) {
-#           id
-#           name
-#           featuredVideoPreview
-#         }
-#       }
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: |
+      query {
+        user(id: 4) {
+          id
+          name
+          featuredVideoPreview
+        }
+      }
 
 # Negative: invalid size
-# TODO: tailcall should return error that size cannot be null
-# - method: POST
-#   url: http://localhost:8080/graphql
-#   body:
-#     query: |
-#       query {
-#         user(id: 4) {
-#           id
-#           name
-#           profilePic(size: null)
-#         }
-#       }
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: |
+      query {
+        user(id: 4) {
+          id
+          name
+          profilePic(size: null)
+        }
+      }
+
+# Positve: array fields
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: |
+      query {
+        user(id: 4) {
+          id
+          name
+          spam(foo: [{}, { bar: "test"}])
+        }
+      }
 ```

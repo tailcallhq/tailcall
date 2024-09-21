@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, HashSet};
 
 use convert_case::{Case, Casing};
 
+use super::RenameTypes;
 use crate::core::config::Config;
 use crate::core::generator::PREFIX;
 use crate::core::transform::Transform;
@@ -116,42 +117,12 @@ impl<'a> CandidateGeneration<'a> {
 #[derive(Default)]
 pub struct ImproveTypeNames;
 
-impl ImproveTypeNames {
-    /// Generates type names based on inferred candidates from the provided
-    /// configuration.
-    fn generate_type_names(&self, mut config: Config) -> Config {
-        let finalized_candidates = CandidateGeneration::new(&config).generate().converge();
-
-        for (old_type_name, new_type_name) in finalized_candidates {
-            if let Some(type_) = config.types.remove(old_type_name.as_str()) {
-                // Add newly generated type.
-                config.types.insert(new_type_name.to_owned(), type_);
-
-                // Replace all the instances of old name in config.
-                for actual_type in config.types.values_mut() {
-                    for actual_field in actual_type.fields.values_mut() {
-                        if actual_field.type_of.name() == &old_type_name {
-                            // Update the field's type with the new name
-                            actual_field.type_of = actual_field
-                                .type_of
-                                .clone()
-                                .with_name(new_type_name.to_owned());
-                        }
-                    }
-                }
-            }
-        }
-        config
-    }
-}
-
 impl Transform for ImproveTypeNames {
     type Value = Config;
     type Error = String;
     fn transform(&self, config: Config) -> Valid<Self::Value, Self::Error> {
-        let config = self.generate_type_names(config);
-
-        Valid::succeed(config)
+        let finalized_candidates = CandidateGeneration::new(&config).generate().converge();
+        RenameTypes::new(finalized_candidates.iter()).transform(config)
     }
 }
 

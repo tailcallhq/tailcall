@@ -207,6 +207,10 @@ directive @link(
   """
   id: String
   """
+  Additional metadata pertaining to the linked resource.
+  """
+  meta: JSON
+  """
   The source of the link. It can be a URL or a path to a file. If a path is provided, 
   it is relative to the file that imports the link.
   """
@@ -291,6 +295,12 @@ directive @server(
   using inferred schema. @default `false`.
   """
   responseValidation: Boolean
+  """
+  `routes` allows customization of server endpoint paths. It provides options to change 
+  the default paths for status and GraphQL endpoints. Default values are: - status: 
+  "/status" - graphQL: "/graphql" If not specified, these default values will be used.
+  """
+  routes: Routes
   """
   A link to an external JS file that listens on every HTTP request response event.
   """
@@ -628,6 +638,11 @@ input Headers {
   sent with the headers.
   """
   setCookies: Boolean
+}
+
+input Routes {
+  graphQL: String!
+  status: String!
 }
 
 input ScriptOptions {
