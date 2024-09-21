@@ -20,6 +20,11 @@ pub enum BuildError {
 pub enum ResolveInputError {
     #[error("Variable `{0}` is not defined")]
     VariableIsNotFound(String),
+    #[error("Argument `{arg_name}` for field `{field_name}` is required")]
+    ArgumentIsRequired {
+        arg_name: String,
+        field_name: String,
+    },
 }
 
 #[derive(Error, Debug, Clone)]

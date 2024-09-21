@@ -7,7 +7,7 @@ use serde_json::Value;
 use url::Url;
 
 use super::from_proto::from_proto;
-use super::{FromJsonGenerator, NameGenerator, RequestSample};
+use super::{FromJsonGenerator, NameGenerator, RequestSample, PREFIX};
 use crate::core::config::{self, Config, ConfigModule, Link, LinkType};
 use crate::core::http::Method;
 use crate::core::merge_right::MergeRight;
@@ -57,7 +57,7 @@ impl Generator {
             query: "Query".into(),
             mutation: None,
             inputs: Vec::new(),
-            type_name_prefix: "T".into(),
+            type_name_prefix: PREFIX.into(),
             transformers: Default::default(),
         }
     }
@@ -90,6 +90,7 @@ impl Generator {
             id: None,
             src: metadata.path.to_owned(),
             type_of: LinkType::Protobuf,
+            meta: None,
         });
         Ok(config)
     }
