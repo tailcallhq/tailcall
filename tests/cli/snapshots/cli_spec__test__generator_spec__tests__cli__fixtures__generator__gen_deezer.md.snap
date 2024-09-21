@@ -383,14 +383,14 @@ type Podcast {
 }
 
 type Query {
-  album(p1: Int!): GEN__39 @http(path: "/album/{{.args.p1}}")
-  artist(p1: Int!): GEN__40 @http(path: "/artist/{{.args.p1}}")
+  album(GEN__1: Int!): GEN__39 @http(path: "/album/{{.args.GEN__1}}")
+  artist(GEN__1: Int!): GEN__40 @http(path: "/artist/{{.args.GEN__1}}")
   chart: Chart @http(path: "/chart")
   editorial: Editorial @http(path: "/editorial")
-  playlist(p1: Int!): Playlist @http(path: "/playlist/{{.args.p1}}")
+  playlist(GEN__1: Int!): Playlist @http(path: "/playlist/{{.args.GEN__1}}")
   search(q: String): Search @http(path: "/search", query: [{key: "q", value: "{{.args.q}}"}])
-  track(p1: Int!): GEN__4 @http(path: "/track/{{.args.p1}}")
-  user(p1: Int!): User @http(path: "/user/{{.args.p1}}")
+  track(GEN__1: Int!): GEN__4 @http(path: "/track/{{.args.GEN__1}}")
+  user(GEN__1: Int!): User @http(path: "/user/{{.args.GEN__1}}")
 }
 
 type Search {
