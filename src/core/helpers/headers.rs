@@ -7,8 +7,14 @@ use crate::core::config::KeyValue;
 use crate::core::mustache::Mustache;
 use crate::core::valid::{Valid, ValidationError, Validator};
 
-#[derive(Debug, PartialEq, Clone, Default)]
+#[derive(PartialEq, Clone, Default)]
 pub struct MustacheHeaders(Vec<(HeaderName, Mustache)>);
+
+impl std::fmt::Debug for MustacheHeaders {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
 
 impl From<Vec<(HeaderName, Mustache)>> for MustacheHeaders {
     fn from(value: Vec<(HeaderName, Mustache)>) -> Self {

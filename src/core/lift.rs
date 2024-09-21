@@ -7,8 +7,14 @@ use serde::Serialize;
 ///
 /// Just an empty wrapper around a value used to implement foreign traits for
 /// foreign types.
-#[derive(Clone, Debug, PartialEq, Eq, std::hash::Hash)]
+#[derive(Clone, PartialEq, Eq, std::hash::Hash)]
 pub struct Lift<A>(A);
+
+impl<A: std::fmt::Debug> std::fmt::Debug for Lift<A> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
 
 impl<A: Clone> Lift<A> {
     pub fn clone_inner(&self) -> A {
