@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::fmt::Debug;
 
 use jsonwebtoken::jwk::JwkSet;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::core::config::ConfigModule;
 use crate::core::valid::Valid;

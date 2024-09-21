@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
 use derive_setters::Setters;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::core::config::{self, Batch, ConfigModule};
 use crate::core::valid::{Valid, ValidationError, Validator};

@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use url::Url;
 
 use super::TryFoldConfig;
@@ -16,7 +16,10 @@ use crate::core::valid::{Valid, ValidationError, Validator};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OtlpExporter {
     pub url: Url,
-    #[serde(serialize_with = "hyper_serde::serialize", deserialize_with = "hyper_serde::deserialize")]
+    #[serde(
+        serialize_with = "hyper_serde::serialize",
+        deserialize_with = "hyper_serde::deserialize"
+    )]
     pub headers: HeaderMap,
 }
 

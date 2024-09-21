@@ -8,7 +8,7 @@ pub use request_context::RequestContext;
 pub use request_handler::{handle_request, API_URL_PREFIX};
 pub use request_template::RequestTemplate;
 pub use response::*;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 mod cache;
 mod data_loader;

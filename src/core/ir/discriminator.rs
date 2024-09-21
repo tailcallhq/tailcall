@@ -291,7 +291,7 @@ impl Discriminator {
     BitXorAssign,
     Not,
     Serialize,
-    Deserialize
+    Deserialize,
 )]
 struct Repr(usize);
 

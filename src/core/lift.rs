@@ -1,5 +1,6 @@
 #![allow(dead_code)]
-use std::{ops::Deref, str::FromStr};
+use std::ops::Deref;
+use std::str::FromStr;
 
 use hyper::header::{HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
@@ -107,10 +108,11 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use hyper::header::{HeaderName, HeaderValue};
     use reqwest::Method;
     use serde_json;
+
+    use super::*;
 
     #[test]
     fn test_request_method() {

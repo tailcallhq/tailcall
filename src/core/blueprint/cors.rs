@@ -4,7 +4,7 @@ use derive_setters::Setters;
 use hyper::header;
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::http::request::Parts;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::core::config;
 use crate::core::lift::{CanLift, Lift};

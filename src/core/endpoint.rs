@@ -1,6 +1,6 @@
 use derive_setters::Setters;
 use hyper::HeaderMap;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::core::config::Encoding;
 use crate::core::http::Method;
@@ -13,7 +13,10 @@ pub struct Endpoint {
     pub method: Method,
     pub input: JsonSchema,
     pub output: JsonSchema,
-    #[serde(serialize_with = "hyper_serde::serialize", deserialize_with = "hyper_serde::deserialize")]
+    #[serde(
+        serialize_with = "hyper_serde::serialize",
+        deserialize_with = "hyper_serde::deserialize"
+    )]
     pub headers: HeaderMap,
     pub body: Option<String>,
     pub description: Option<String>,

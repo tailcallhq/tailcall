@@ -4,7 +4,7 @@ use std::hash::{Hash, Hasher};
 use derive_setters::Setters;
 use hyper::HeaderMap;
 use reqwest::header::HeaderValue;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use tailcall_hasher::TailcallHasher;
 use url::Url;
 

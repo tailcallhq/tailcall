@@ -24,7 +24,7 @@ lazy_static! {
     strum_macros::EnumIter,
     Doc,
     Serialize,
-    Deserialize
+    Deserialize,
 )]
 pub enum Scalar {
     /// Empty scalar type represents an empty value.

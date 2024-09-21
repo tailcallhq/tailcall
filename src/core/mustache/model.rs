@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Hash, Default, Serialize, Deserialize)]
 pub struct Mustache(Vec<Segment>);

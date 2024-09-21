@@ -5,7 +5,7 @@ use serde_json::Value;
 
 use crate::core::mustache::Mustache;
 
-#[derive(Debug, Clone, Serialize,Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum DynamicValue<A> {
     Value(A),
     Mustache(Mustache),
