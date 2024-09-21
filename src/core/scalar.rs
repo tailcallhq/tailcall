@@ -3,6 +3,7 @@ use std::fmt::Debug;
 
 use lazy_static::lazy_static;
 use schemars::schema::{InstanceType, Schema, SchemaObject};
+use serde::Serialize;
 use strum::IntoEnumIterator;
 use tailcall_macros::{gen_doc, Doc};
 
@@ -16,7 +17,7 @@ lazy_static! {
 }
 
 #[derive(
-    schemars::JsonSchema, Debug, Clone, strum_macros::Display, strum_macros::EnumIter, Doc,
+    schemars::JsonSchema, Debug, Clone, strum_macros::Display, strum_macros::EnumIter, Doc, Serialize
 )]
 pub enum Scalar {
     /// Empty scalar type represents an empty value.

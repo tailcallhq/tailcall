@@ -5,6 +5,7 @@ use async_graphql::dynamic::{Schema, SchemaBuilder};
 use async_graphql::extensions::ApolloTracing;
 use async_graphql::ValidationMode;
 use derive_setters::Setters;
+use serde::Serialize;
 use serde_json::Value;
 
 use super::telemetry::Telemetry;
@@ -18,7 +19,7 @@ use crate::core::{scalar, Type};
 /// graphQL APIs. It can only be generated from a valid Config.
 /// It allows us to choose a different GraphQL Backend, without re-writing all
 /// orchestration logic. It's not optimized for REST APIs (yet).
-#[derive(Clone, Debug, Default, Setters)]
+#[derive(Clone, Debug, Default, Setters, Serialize)]
 pub struct Blueprint {
     pub definitions: Vec<Definition>,
     pub schema: SchemaDefinition,
@@ -27,7 +28,7 @@ pub struct Blueprint {
     pub telemetry: Telemetry,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum Definition {
     Interface(InterfaceTypeDefinition),
     Object(ObjectTypeDefinition),
@@ -50,14 +51,14 @@ impl Definition {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct InterfaceTypeDefinition {
     pub name: String,
     pub fields: Vec<FieldDefinition>,
     pub description: Option<String>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct ObjectTypeDefinition {
     pub name: String,
     pub fields: Vec<FieldDefinition>,
@@ -65,14 +66,14 @@ pub struct ObjectTypeDefinition {
     pub implements: BTreeSet<String>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct InputObjectTypeDefinition {
     pub name: String,
     pub fields: Vec<InputFieldDefinition>,
     pub description: Option<String>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct EnumTypeDefinition {
     pub name: String,
     pub directives: Vec<Directive>,
@@ -80,21 +81,21 @@ pub struct EnumTypeDefinition {
     pub enum_values: Vec<EnumValueDefinition>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct EnumValueDefinition {
     pub description: Option<String>,
     pub name: String,
     pub directives: Vec<Directive>,
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize)]
 pub struct SchemaDefinition {
     pub query: String,
     pub mutation: Option<String>,
     pub directives: Vec<Directive>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct InputFieldDefinition {
     pub name: String,
     pub of_type: Type,
@@ -102,7 +103,7 @@ pub struct InputFieldDefinition {
     pub description: Option<String>,
 }
 
-#[derive(Clone, Debug, Setters, Default)]
+#[derive(Clone, Debug, Setters, Default, Serialize)]
 pub struct FieldDefinition {
     pub name: String,
     pub args: Vec<InputFieldDefinition>,
@@ -123,14 +124,14 @@ impl FieldDefinition {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Directive {
     pub name: String,
     pub arguments: HashMap<String, Value>,
     pub index: usize,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct ScalarTypeDefinition {
     pub name: String,
     pub directive: Vec<Directive>,
@@ -138,7 +139,7 @@ pub struct ScalarTypeDefinition {
     pub scalar: scalar::Scalar,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct UnionTypeDefinition {
     pub name: String,
     pub directives: Vec<Directive>,

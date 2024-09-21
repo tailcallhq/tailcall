@@ -3,6 +3,7 @@ use std::fmt::Debug;
 use std::num::NonZeroU64;
 
 use async_graphql::Value;
+use serde::Serialize;
 use strum_macros::Display;
 
 use super::discriminator::Discriminator;
@@ -13,7 +14,7 @@ use crate::core::graphql::{self};
 use crate::core::http::HttpFilter;
 use crate::core::{grpc, http};
 
-#[derive(Clone, Debug, Display)]
+#[derive(Clone, Debug, Display, Serialize)]
 pub enum IR {
     Dynamic(DynamicValue<Value>),
     #[strum(to_string = "{0}")]

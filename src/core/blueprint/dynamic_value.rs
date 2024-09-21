@@ -1,10 +1,11 @@
 use async_graphql_value::{ConstValue, Name};
 use indexmap::IndexMap;
+use serde::Serialize;
 use serde_json::Value;
 
 use crate::core::mustache::Mustache;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub enum DynamicValue<A> {
     Value(A),
     Mustache(Mustache),

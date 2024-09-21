@@ -8,13 +8,14 @@ use derive_setters::Setters;
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
+use serde::Serialize;
 
 use super::Auth;
 use crate::core::blueprint::Cors;
 use crate::core::config::{self, ConfigModule, HttpVersion};
 use crate::core::valid::{Valid, ValidationError, Validator};
 
-#[derive(Clone, Debug, Setters)]
+#[derive(Clone, Debug, Setters, Serialize)]
 pub struct Server {
     pub enable_jit: bool,
     pub enable_apollo_tracing: bool,
@@ -41,13 +42,13 @@ pub struct Server {
 }
 
 /// Mimic of mini_v8::Script that's wasm compatible
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Script {
     pub source: String,
     pub timeout: Option<Duration>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum Http {
     HTTP1,
     HTTP2 {

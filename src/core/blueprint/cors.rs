@@ -2,11 +2,12 @@ use derive_setters::Setters;
 use hyper::header;
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::http::request::Parts;
+use serde::Serialize;
 
 use crate::core::config;
 use crate::core::valid::ValidationError;
 
-#[derive(Clone, Debug, Setters, Default)]
+#[derive(Clone, Debug, Setters, Default, Serialize)]
 pub struct Cors {
     pub allow_credentials: bool,
     pub allow_headers: Option<HeaderValue>,

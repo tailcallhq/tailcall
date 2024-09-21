@@ -2,16 +2,17 @@ use std::collections::HashSet;
 use std::fmt::Debug;
 
 use jsonwebtoken::jwk::JwkSet;
+use serde::Serialize;
 
 use crate::core::config::ConfigModule;
 use crate::core::valid::Valid;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct Basic {
     pub htpasswd: String,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct Jwt {
     pub issuer: Option<String>,
     pub audiences: HashSet<String>,
@@ -19,13 +20,13 @@ pub struct Jwt {
     pub jwks: JwkSet,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub enum Provider {
     Basic(Basic),
     Jwt(Jwt),
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub enum Auth {
     Provider(Provider),
     And(Box<Auth>, Box<Auth>),
