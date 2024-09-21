@@ -1,6 +1,7 @@
 pub use cache::*;
 pub use data_loader::*;
 pub use data_loader_request::*;
+use derive_setters::Setters;
 use headers::HeaderValue;
 pub use method::Method;
 pub use query_encoder::QueryEncoder;
@@ -24,7 +25,7 @@ mod telemetry;
 pub static TAILCALL_HTTPS_ORIGIN: HeaderValue = HeaderValue::from_static("https://tailcall.run");
 pub static TAILCALL_HTTP_ORIGIN: HeaderValue = HeaderValue::from_static("http://tailcall.run");
 
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone, Debug, Setters)]
 /// User can configure the filter/interceptor
 /// for the http requests.
 pub struct HttpFilter {
@@ -33,14 +34,11 @@ pub struct HttpFilter {
 }
 
 impl HttpFilter {
-    pub fn new(
-        on_request: Option<String>,
-        on_response: Option<String>,
-    ) -> Result<Self, &'static str> {
-        if on_request.is_none() && on_response.is_none() {
-            Err("At least one of on_request or on_response must be present")
+    pub fn none_if_empty(self) -> Option<Self> {
+        if self.on_request.is_none() && self.on_response.is_none() {
+            None
         } else {
-            Ok(HttpFilter { on_request, on_response })
+            Some(self)
         }
     }
 }

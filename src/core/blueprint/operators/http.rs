@@ -67,7 +67,10 @@ pub fn compile_http(
                 .or(config_module.upstream.on_request.clone());
             let on_response = http.on_response_body.clone();
 
-            let http_filter = HttpFilter::new(on_request, on_response).ok();
+            let http_filter = HttpFilter::default()
+                .on_request(on_request)
+                .on_response(on_response)
+                .none_if_empty();
 
             if !http.batch_key.is_empty() && http.method == Method::GET {
                 // Find a query parameter that contains a reference to the {{.value}} key
