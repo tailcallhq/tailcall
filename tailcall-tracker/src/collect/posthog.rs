@@ -18,10 +18,10 @@ impl Tracker {
 #[async_trait::async_trait]
 impl Collect for Tracker {
     async fn collect(&self, event: Event) -> Result<()> {
-        let api_secret = self.api_secret.clone();
+        let api_secret = self.api_secret;
         let client_id_key = self.client_id_key;
         let handle_posthog = tokio::task::spawn_blocking(move || -> Result<()> {
-            let client = posthog_rs::client(api_secret.as_str());
+            let client = posthog_rs::client(api_secret);
             let json = serde_json::to_value(&event)?;
             let mut posthog_event =
                 posthog_rs::Event::new(event.event_name.clone(), event.client_id);
