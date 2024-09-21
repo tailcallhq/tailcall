@@ -17,7 +17,7 @@ input T4 {
 }
 
 type Mutation {
-  addCart(code: String, addCartInput: T4): T2 @http(baseURL: "https://dummyjson.com", body: "{{.args.addCartInput}}", method: "POST", path: "/carts/add", query: [{key: "code", value: "{{.args.code}}"}])
+  addCart(code: String, input1: T4): T2 @http(baseURL: "https://dummyjson.com", body: "{{.args.input1}}", method: "POST", path: "/carts/add", query: [{key: "code", value: "{{.args.code}}"}])
 }
 
 type T1 {

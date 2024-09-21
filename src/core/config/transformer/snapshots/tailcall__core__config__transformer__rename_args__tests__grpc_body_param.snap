@@ -1,0 +1,7 @@
+---
+source: src/core/config/transformer/rename_args.rs
+expression: result.to_sdl()
+---
+type Query {
+  newsByIdBatch(newsInput: JSON!): JSON! @grpc(body: "{{args.newsInput}}", method: "news.NewsService.GetMultipleNews")
+}

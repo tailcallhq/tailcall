@@ -1,0 +1,16 @@
+---
+source: src/core/config/transformer/rename_args.rs
+expression: result.to_sdl()
+---
+schema @server @upstream {
+  query: Query
+  mutation: Mutation
+}
+
+type Mutation {
+  createPost(createPostInput: JSON): JSON! @http(body: "{{.args.createPostInput}}", method: "POST", path: "/posts")
+}
+
+type Query {
+  hello: String! @expr(body: "test")
+}

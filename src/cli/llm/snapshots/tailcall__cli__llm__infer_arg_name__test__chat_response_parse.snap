@@ -1,0 +1,13 @@
+---
+source: src/cli/llm/infer_arg_name.rs
+expression: answer
+---
+Answer {
+    suggestions: [
+        "createPostInput",
+        "postInput",
+        "articleInput",
+        "noteInput",
+        "messageInput",
+    ],
+}

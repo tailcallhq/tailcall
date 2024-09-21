@@ -15,7 +15,7 @@ input T2 {
 }
 
 type Mutation {
-  createPost(createPostInput: T2): T1 @http(baseURL: "https://jsonplaceholder.typicode.com", body: "{{.args.createPostInput}}", method: "POST", path: "/posts")
+  createPost(input1: T2): T1 @http(baseURL: "https://jsonplaceholder.typicode.com", body: "{{.args.input1}}", method: "POST", path: "/posts")
 }
 
 type T1 {
