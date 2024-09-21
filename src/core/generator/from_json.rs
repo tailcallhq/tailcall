@@ -18,13 +18,13 @@ pub struct RequestSample {
     pub method: Method,
     pub req_body: Value,
     pub res_body: Value,
-    pub field_name: String,
+    pub field_name: Option<String>,
     pub operation_type: GraphQLOperationType,
     pub headers: Option<BTreeMap<String, String>>,
 }
 
 impl RequestSample {
-    pub fn new(url: Url, response_body: Value, field_name: String) -> Self {
+    pub fn new(url: Url, response_body: Value, field_name: Option<String>) -> Self {
         Self {
             url,
             field_name,
@@ -161,7 +161,7 @@ mod tests {
         for fixture in fixtures {
             let JsonFixture { request, response, is_mutation, field_name } =
                 JsonFixture::read(fixture).await?;
-            let req_sample = RequestSample::new(request.url, response, field_name)
+            let req_sample = RequestSample::new(request.url, response, Some(field_name))
                 .with_method(request.method)
                 .with_headers(request.headers)
                 .with_is_mutation(is_mutation)

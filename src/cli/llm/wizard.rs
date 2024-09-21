@@ -9,7 +9,7 @@ use super::Result;
 #[derive(Setters, Clone)]
 pub struct Wizard<Q, A> {
     client: Client,
-    model: String,
+    pub model: String,
     _q: std::marker::PhantomData<Q>,
     _a: std::marker::PhantomData<A>,
 }

@@ -34,7 +34,7 @@ pub enum Input {
         method: Method,
         req_body: Value,
         res_body: Value,
-        field_name: String,
+        field_name: Option<String>,
         is_mutation: bool,
         headers: Option<BTreeMap<String, String>>,
     },
@@ -287,7 +287,7 @@ pub mod test {
                 method: request.method,
                 req_body: request.body.unwrap_or_default(),
                 res_body: response,
-                field_name,
+                field_name: Some(field_name),
                 is_mutation,
                 headers: request.headers,
             }])
@@ -323,7 +323,7 @@ pub mod test {
             method: request.method,
             req_body: request.body.unwrap_or_default(),
             res_body: response,
-            field_name,
+            field_name: Some(field_name),
             is_mutation,
             headers: request.headers,
         };
@@ -355,7 +355,7 @@ pub mod test {
                 method: request.method,
                 req_body: request.body.unwrap_or_default(),
                 res_body: response,
-                field_name,
+                field_name: Some(field_name),
                 is_mutation,
                 headers: request.headers,
             });
