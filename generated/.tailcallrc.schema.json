@@ -952,6 +952,19 @@
         }
       }
     },
+    "Routes": {
+      "type": "object",
+      "properties": {
+        "graphQL": {
+          "default": "/graphql",
+          "type": "string"
+        },
+        "status": {
+          "default": "/status",
+          "type": "string"
+        }
+      }
+    },
     "ScriptOptions": {
       "type": "object",
       "properties": {
@@ -1057,6 +1070,17 @@
           "type": [
             "boolean",
             "null"
+          ]
+        },
+        "routes": {
+          "description": "`routes` allows customization of server endpoint paths. It provides options to change the default paths for status and GraphQL endpoints. Default values are: - status: \"/status\" - graphQL: \"/graphql\" If not specified, these default values will be used.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Routes"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "script": {
