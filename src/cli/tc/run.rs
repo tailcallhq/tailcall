@@ -1,6 +1,5 @@
 use anyhow::Result;
 use clap::Parser;
-use convert_case::{Case, Casing};
 use dotenvy::dotenv;
 
 use super::helpers::TRACKER;
@@ -26,9 +25,7 @@ pub async fn run() -> Result<()> {
         .await;
 
     // Dispatch the command as an event
-    let _ = TRACKER
-        .dispatch(cli.command.to_string().to_case(Case::Snake).as_str())
-        .await;
+    let _ = TRACKER.dispatch(tailcall_tracker::EventKind::Run).await;
 
     run_command(cli, config_reader, runtime).await
 }
