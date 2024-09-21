@@ -10,12 +10,15 @@ inlines
 insta
 jsonplaceholder
 Jwks
+machineid
 maplit
 mdast
 multispace
 opentelemetry
 peekable
+posthog
 schemars
+sysinfo
 tailcall
 tailcallrc
 thiserror

@@ -1,0 +1,26 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema
+  @server(hostname: "0.0.0.0", port: 8001, queryValidation: false)
+  @upstream(baseURL: "http://upstream/", httpCache: 42) {
+  query: Query
+}
+
+union Role = Admin | User
+
+type Admin {
+  name: String!
+  region: String!
+}
+
+type Query {
+  users: [[Role!]!]! @http(path: "/users")
+}
+
+type User {
+  accountRef: String! @http(path: "/refs/{{.value.id}}")
+  id: ID!
+  name: String!
+}

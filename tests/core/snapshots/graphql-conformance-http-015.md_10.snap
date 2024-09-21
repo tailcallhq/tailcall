@@ -8,13 +8,11 @@ expression: response
     "content-type": "application/json"
   },
   "body": {
-    "data": {
-      "oneof__OneOfService__GetOneOfVar3": {
-        "usual": 5,
-        "command": {
-          "command": "end"
-        }
+    "data": null,
+    "errors": [
+      {
+        "message": "Build error: ResolveInputError: Argument `size` for field `profilePic` is required"
       }
-    }
+    ]
   }
 }
