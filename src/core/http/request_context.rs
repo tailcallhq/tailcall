@@ -165,8 +165,8 @@ impl RequestContext {
         if self.has_experimental_headers() {
             let mut x_response_headers = self.x_response_headers.lock().unwrap();
             for name in &self.server.experimental_headers {
-                if let Some(value) = headers.get(name) {
-                    x_response_headers.insert(name, value.clone());
+                if let Some(value) = headers.get(name.as_ref()) {
+                    x_response_headers.insert(name.clone_inner(), value.clone());
                 }
             }
         }

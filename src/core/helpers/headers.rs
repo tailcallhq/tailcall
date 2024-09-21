@@ -1,10 +1,64 @@
+use std::ops::Deref;
+
 use hyper::header::HeaderName;
+use serde::Serialize;
 
 use crate::core::config::KeyValue;
 use crate::core::mustache::Mustache;
 use crate::core::valid::{Valid, ValidationError, Validator};
 
-pub type MustacheHeaders = Vec<(HeaderName, Mustache)>;
+#[derive(Debug, PartialEq, Clone, Default)]
+pub struct MustacheHeaders(Vec<(HeaderName, Mustache)>);
+
+impl From<Vec<(HeaderName, Mustache)>> for MustacheHeaders {
+    fn from(value: Vec<(HeaderName, Mustache)>) -> Self {
+        Self(value)
+    }
+}
+
+impl IntoIterator for MustacheHeaders {
+    type Item = (HeaderName, Mustache);
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
+impl Deref for MustacheHeaders {
+    type Target = Vec<(HeaderName, Mustache)>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl MustacheHeaders {
+    pub fn new(headers: Vec<(HeaderName, Mustache)>) -> Self {
+        MustacheHeaders(headers)
+    }
+}
+
+impl Serialize for MustacheHeaders {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serialize_headers(self, serializer)
+    }
+}
+
+fn serialize_headers<S>(headers: &MustacheHeaders, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    use serde::ser::SerializeMap;
+    let mut map = serializer.serialize_map(Some(headers.0.len()))?;
+    for (k, v) in &headers.0 {
+        map.serialize_entry(&k.to_string(), v)?;
+    }
+    map.end()
+}
 
 pub fn to_mustache_headers(headers: &[KeyValue]) -> Valid<MustacheHeaders, String> {
     Valid::from_iter(headers.iter(), |key_value| {
@@ -19,6 +73,7 @@ pub fn to_mustache_headers(headers: &[KeyValue]) -> Valid<MustacheHeaders, Strin
 
         name.zip(value).map(|(name, value)| (name, value))
     })
+    .map(MustacheHeaders::new)
 }
 
 #[cfg(test)]

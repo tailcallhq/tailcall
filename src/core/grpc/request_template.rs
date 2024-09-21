@@ -5,6 +5,7 @@ use derive_setters::Setters;
 use hyper::header::CONTENT_TYPE;
 use hyper::HeaderMap;
 use reqwest::header::HeaderValue;
+use serde::Serialize;
 use tailcall_hasher::TailcallHasher;
 use url::Url;
 
@@ -19,7 +20,7 @@ use crate::core::path::PathString;
 
 static GRPC_MIME_TYPE: HeaderValue = HeaderValue::from_static("application/grpc");
 
-#[derive(Setters, Debug, Clone)]
+#[derive(Setters, Debug, Clone, Serialize)]
 pub struct RequestTemplate {
     pub url: Mustache,
     pub headers: MustacheHeaders,
@@ -28,7 +29,7 @@ pub struct RequestTemplate {
     pub operation_type: GraphQLOperationType,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Setters)]
+#[derive(Default, Debug, Clone, PartialEq, Setters, Serialize)]
 pub struct RequestBody {
     pub mustache: Option<Mustache>,
     pub value: String,
@@ -71,7 +72,7 @@ impl RequestTemplate {
 
         header_map.insert(CONTENT_TYPE, GRPC_MIME_TYPE.to_owned());
 
-        for (k, v) in &self.headers {
+        for (k, v) in self.headers.iter() {
             if let Ok(header_value) = HeaderValue::from_str(&v.render(ctx)) {
                 header_map.insert(k, header_value);
             }

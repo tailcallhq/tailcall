@@ -16,6 +16,7 @@ use crate::core::valid::{Valid, ValidationError, Validator};
 #[derive(Debug, Clone, Serialize)]
 pub struct OtlpExporter {
     pub url: Url,
+    #[serde(serialize_with = "hyper_serde::serialize")]
     pub headers: HeaderMap,
 }
 

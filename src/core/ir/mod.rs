@@ -16,11 +16,12 @@ pub use eval_context::EvalContext;
 pub use resolver_context_like::{
     EmptyResolverContext, ResolverContext, ResolverContextLike, SelectionField,
 };
+use serde::Serialize;
 
 /// Contains all the nested fields that are resolved with current parent
 /// resolver i.e. fields that don't have their own resolver and are resolved by
 /// the ancestor
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Serialize)]
 pub struct RelatedFields(pub HashMap<String, RelatedFields>);
 
 impl Deref for RelatedFields {

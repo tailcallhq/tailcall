@@ -9,6 +9,7 @@ use prost_reflect::{
     DescriptorPool, DynamicMessage, MessageDescriptor, MethodDescriptor, SerializeOptions,
     ServiceDescriptor,
 };
+use serde::Serialize;
 use serde_json::Deserializer;
 
 use crate::core::blueprint::GrpcMethod;
@@ -125,7 +126,7 @@ impl ProtobufService {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ProtobufOperation {
     pub method: MethodDescriptor,
     pub input_type: MessageDescriptor,

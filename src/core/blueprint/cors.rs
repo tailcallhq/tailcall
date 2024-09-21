@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use derive_setters::Setters;
 use hyper::header;
 use hyper::header::{HeaderName, HeaderValue};
@@ -5,18 +7,19 @@ use hyper::http::request::Parts;
 use serde::Serialize;
 
 use crate::core::config;
+use crate::core::lift::Lift;
 use crate::core::valid::ValidationError;
 
 #[derive(Clone, Debug, Setters, Default, Serialize)]
 pub struct Cors {
     pub allow_credentials: bool,
-    pub allow_headers: Option<HeaderValue>,
-    pub allow_methods: Option<HeaderValue>,
-    pub allow_origins: Vec<HeaderValue>,
+    pub vary: Vec<Lift<HeaderValue>>,
+    pub allow_methods: Option<Lift<HeaderValue>>,
+    pub allow_origins: Vec<Lift<HeaderValue>>,
     pub allow_private_network: bool,
-    pub expose_headers: Option<HeaderValue>,
-    pub max_age: Option<HeaderValue>,
-    pub vary: Vec<HeaderValue>,
+    pub expose_headers: Option<Lift<HeaderValue>>,
+    pub max_age: Option<Lift<HeaderValue>>,
+    pub allow_headers: Option<Lift<HeaderValue>>,
 }
 
 impl Cors {
@@ -24,10 +27,17 @@ impl Cors {
         &self,
         origin: Option<&HeaderValue>,
     ) -> Option<(HeaderName, HeaderValue)> {
-        if self.allow_origins.iter().any(is_wildcard) {
+        if self.allow_origins.iter().any(|origin| is_wildcard(&origin)) {
             Some((header::ACCESS_CONTROL_ALLOW_ORIGIN, origin.cloned()?))
         } else {
-            let allow_origin = origin.filter(|o| self.allow_origins.contains(o))?.clone();
+            let allow_origin = origin
+                .filter(|o| {
+                    self.allow_origins.iter().any(|x| {
+                        let p = x.deref();
+                        p == o
+                    })
+                })?
+                .clone();
             Some((header::ACCESS_CONTROL_ALLOW_ORIGIN, allow_origin))
         }
     }
@@ -74,28 +84,28 @@ impl Cors {
     pub fn allow_methods_to_header(&self) -> Option<(HeaderName, HeaderValue)> {
         Some((
             header::ACCESS_CONTROL_ALLOW_METHODS,
-            self.allow_methods.clone()?,
+            self.allow_methods.clone()?.take(),
         ))
     }
 
     pub fn allow_headers_to_header(&self) -> Option<(HeaderName, HeaderValue)> {
         Some((
             header::ACCESS_CONTROL_ALLOW_HEADERS,
-            self.allow_headers.clone()?,
+            self.allow_headers.clone()?.take(),
         ))
     }
 
     pub fn max_age_to_header(&self) -> Option<(HeaderName, HeaderValue)> {
         Some((
             header::ACCESS_CONTROL_MAX_AGE,
-            self.max_age.as_ref()?.clone(),
+            self.max_age.as_ref()?.clone().take(),
         ))
     }
 
     pub fn expose_headers_to_header(&self) -> Option<(HeaderName, HeaderValue)> {
         Some((
             header::ACCESS_CONTROL_EXPOSE_HEADERS,
-            self.expose_headers.as_ref()?.clone(),
+            self.expose_headers.as_ref()?.clone().take(),
         ))
     }
 
@@ -113,7 +123,7 @@ impl Cors {
 
     #[allow(clippy::borrow_interior_mutable_const)]
     pub fn expose_headers_is_wildcard(&self) -> bool {
-        matches!(&self.expose_headers, Some(v) if v == WILDCARD)
+        matches!(&self.expose_headers, Some(v) if **v == WILDCARD)
     }
 }
 
@@ -141,7 +151,10 @@ fn ensure_usable_cors_rules(layer: &Cors) -> Result<(), ValidationError<String>>
                 with `Access-Control-Allow-Methods: *`".into()))?
         }
 
-        let allowing_all_origins = layer.allow_origins.iter().any(is_wildcard);
+        let allowing_all_origins = layer
+            .allow_origins
+            .iter()
+            .any(|origin| is_wildcard(&origin));
 
         if allowing_all_origins {
             Err(ValidationError::new("Invalid CORS configuration: Cannot combine `Access-Control-Allow-Credentials: true` \
@@ -162,10 +175,13 @@ impl TryFrom<config::cors::Cors> for Cors {
     fn try_from(value: config::cors::Cors) -> Result<Self, ValidationError<String>> {
         let cors = Cors {
             allow_credentials: value.allow_credentials.unwrap_or_default(),
-            allow_headers: (!value.allow_headers.is_empty())
-                .then_some(value.allow_headers.join(", ").parse()?),
+            allow_headers: {
+                let value: Option<HeaderValue> = (!value.allow_headers.is_empty())
+                    .then_some(value.allow_headers.join(", ").parse()?);
+                value.map(|val| Lift::from(val))
+            },
             allow_methods: {
-                Some(if value.allow_methods.is_empty() {
+                let value: Option<HeaderValue> = Some(if value.allow_methods.is_empty() {
                     "*".parse()?
                 } else {
                     value
@@ -175,21 +191,36 @@ impl TryFrom<config::cors::Cors> for Cors {
                         .collect::<Vec<String>>()
                         .join(", ")
                         .parse()?
-                })
+                });
+
+                value.map(|val| Lift::from(val))
             },
-            allow_origins: value
-                .allow_origins
-                .into_iter()
-                .map(|val| Ok(val.parse()?))
-                .collect::<Result<_, ValidationError<String>>>()?,
+            allow_origins: {
+                let value: Vec<HeaderValue> = value
+                    .allow_origins
+                    .into_iter()
+                    .map(|val| Ok(val.parse()?))
+                    .collect::<Result<_, ValidationError<String>>>()?;
+
+                value.into_iter().map(|val| Lift::from(val)).collect()
+            },
             allow_private_network: value.allow_private_network.unwrap_or_default(),
-            expose_headers: Some(value.expose_headers.join(", ").parse()?),
-            max_age: value.max_age.map(|val| val.into()),
-            vary: value
-                .vary
-                .iter()
-                .map(|val| Ok(val.parse()?))
-                .collect::<Result<_, ValidationError<String>>>()?,
+            expose_headers: {
+                let value: Option<HeaderValue> = Some(value.expose_headers.join(", ").parse()?);
+                value.map(|val| Lift::from(val))
+            },
+            max_age: {
+                let value: Option<HeaderValue> = value.max_age.map(|val| val.into());
+                value.map(|val| Lift::from(val))
+            },
+            vary: {
+                let value: Vec<HeaderValue> = value
+                    .vary
+                    .iter()
+                    .map(|val| Ok(val.parse()?))
+                    .collect::<Result<_, ValidationError<String>>>()?;
+                value.into_iter().map(|val| Lift::from(val)).collect()
+            },
         };
         ensure_usable_cors_rules(&cors)?;
         Ok(cors)
@@ -213,7 +244,7 @@ mod tests {
     #[test]
     fn test_allow_origin_to_header() {
         let cors = Cors {
-            allow_origins: vec![HeaderValue::from_static("https://example.com")],
+            allow_origins: vec![Lift::from(HeaderValue::from_static("https://example.com"))],
             ..std::default::Default::default()
         };
         let origin = Some(HeaderValue::from_static("https://example.com"));

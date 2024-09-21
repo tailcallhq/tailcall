@@ -140,7 +140,8 @@ impl GrpcReflection {
             headers: vec![(
                 HeaderName::from_static("content-type"),
                 Mustache::parse("application/grpc+proto"),
-            )],
+            )]
+            .into(),
             body: Some(RequestBody {
                 mustache: Some(Mustache::parse(body.to_string().as_str())),
                 value: Default::default(),

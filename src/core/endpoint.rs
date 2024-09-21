@@ -1,17 +1,19 @@
 use derive_setters::Setters;
 use hyper::HeaderMap;
+use serde::Serialize;
 
 use crate::core::config::Encoding;
 use crate::core::http::Method;
 use crate::core::json::JsonSchema;
 
-#[derive(Clone, Debug, Setters)]
+#[derive(Clone, Debug, Setters, Serialize)]
 pub struct Endpoint {
     pub path: String,
     pub query: Vec<(String, String, bool)>,
     pub method: Method,
     pub input: JsonSchema,
     pub output: JsonSchema,
+    #[serde(serialize_with = "hyper_serde::serialize")]
     pub headers: HeaderMap,
     pub body: Option<String>,
     pub description: Option<String>,

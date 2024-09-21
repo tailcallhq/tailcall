@@ -8,14 +8,18 @@ use derive_setters::Setters;
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
-use serde::Serialize;
+use serde::ser::{Serialize, Serializer};
+use serde::Serialize as SerdeSerialize;
 
 use super::Auth;
 use crate::core::blueprint::Cors;
 use crate::core::config::{self, ConfigModule, HttpVersion};
+use crate::core::lift::Lift;
 use crate::core::valid::{Valid, ValidationError, Validator};
 
-#[derive(Clone, Debug, Setters, Serialize)]
+use base64::{Engine as _, engine::general_purpose::STANDARD};
+
+#[derive(Clone, Debug, Setters, SerdeSerialize)]
 pub struct Server {
     pub enable_jit: bool,
     pub enable_apollo_tracing: bool,
@@ -31,30 +35,49 @@ pub struct Server {
     pub port: u16,
     pub hostname: IpAddr,
     pub vars: BTreeMap<String, String>,
+    #[serde(serialize_with = "hyper_serde::serialize")]
     pub response_headers: HeaderMap,
     pub http: Http,
     pub pipeline_flush: bool,
     pub script: Option<Script>,
     pub cors: Option<Cors>,
-    pub experimental_headers: HashSet<HeaderName>,
+    pub experimental_headers: HashSet<Lift<HeaderName>>,
     pub auth: Option<Auth>,
     pub dedupe: bool,
 }
 
 /// Mimic of mini_v8::Script that's wasm compatible
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, SerdeSerialize)]
 pub struct Script {
     pub source: String,
     pub timeout: Option<Duration>,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, SerdeSerialize)]
 pub enum Http {
     HTTP1,
     HTTP2 {
+        #[serde(serialize_with = "serialize_cert_vec")]
         cert: Vec<CertificateDer<'static>>,
+        #[serde(serialize_with = "serialize_private_key")]
         key: Arc<PrivateKeyDer<'static>>,
     },
+}
+
+// Add these functions at the end of the file
+fn serialize_cert_vec<S>(certs: &Vec<CertificateDer<'static>>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let encoded: Vec<String> = certs.iter().map(|c| STANDARD.encode(c.as_ref())).collect();
+    encoded.serialize(serializer)
+}
+
+fn serialize_private_key<S>(key: &Arc<PrivateKeyDer<'static>>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    STANDARD.encode(key.secret_der()).serialize(serializer)
 }
 
 impl Default for Server {
@@ -81,7 +104,11 @@ impl Server {
     }
 
     pub fn get_experimental_headers(&self) -> HashSet<HeaderName> {
-        self.experimental_headers.clone()
+        self.experimental_headers
+            .clone()
+            .into_iter()
+            .map(|h| h.take())
+            .collect()
     }
 }
 
@@ -142,7 +169,10 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
                         enable_response_validation: (config_server).enable_http_validation(),
                         enable_batch_requests: (config_server).enable_batch_requests(),
                         enable_showcase: (config_server).enable_showcase(),
-                        experimental_headers,
+                        experimental_headers: experimental_headers
+                            .into_iter()
+                            .map(|h| Lift::from(h))
+                            .collect(),
                         global_response_timeout: (config_server).get_global_response_timeout(),
                         http,
                         worker: (config_server).get_workers(),

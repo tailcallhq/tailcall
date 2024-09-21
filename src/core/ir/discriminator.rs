@@ -6,6 +6,7 @@ use async_graphql::Value;
 use derive_more::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not};
 use indenter::indented;
 use indexmap::IndexMap;
+use serde::Serialize;
 
 use crate::core::config::Type;
 use crate::core::json::{JsonLike, JsonObjectLike};
@@ -63,7 +64,7 @@ where
 ///   will end up with a smaller set of possible types and, more likely, with
 ///   only a single possible type.
 
-#[derive(Clone)]
+#[derive(Clone, Serialize)]
 pub struct Discriminator {
     /// List of all types that are members of the Union.
     types: Vec<String>,
@@ -97,7 +98,7 @@ impl std::fmt::Debug for Discriminator {
 /// - `presented_in` - the field is part of the type definition, regardless of
 ///   nullability.
 /// - `required_in` - the field is part of the type and is non-nullable.
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, Serialize)]
 struct FieldInfo {
     presented_in: Repr,
     required_in: Repr,
@@ -289,6 +290,7 @@ impl Discriminator {
     BitOrAssign,
     BitXorAssign,
     Not,
+    Serialize,
 )]
 struct Repr(usize);
 

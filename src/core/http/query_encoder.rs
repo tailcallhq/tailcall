@@ -1,7 +1,9 @@
+use serde::Serialize;
+
 use crate::core::path::ValueString;
 
 /// Defines different strategies for encoding query parameters.
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, Serialize)]
 pub enum QueryEncoder {
     /// Encodes the query list as key=value1,value2,value3,...
     CommaSeparated,

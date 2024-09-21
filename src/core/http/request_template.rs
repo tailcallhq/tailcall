@@ -4,6 +4,7 @@ use std::hash::{Hash, Hasher};
 use derive_setters::Setters;
 use hyper::HeaderMap;
 use reqwest::header::HeaderValue;
+use serde::Serialize;
 use tailcall_hasher::TailcallHasher;
 use url::Url;
 
@@ -13,6 +14,7 @@ use crate::core::endpoint::Endpoint;
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
 use crate::core::ir::model::{CacheKey, IoId};
+use crate::core::lift::Lift;
 use crate::core::mustache::{Eval, Mustache, Segment};
 use crate::core::path::{PathString, PathValue, ValueString};
 
@@ -20,11 +22,11 @@ use crate::core::path::{PathString, PathValue, ValueString};
 /// Various parts of the template can be written as a mustache template.
 /// When `to_request` is called, all mustache templates are evaluated.
 /// To call `to_request` we need to provide a context.
-#[derive(Setters, Debug, Clone)]
+#[derive(Setters, Debug, Clone, Serialize)]
 pub struct RequestTemplate {
     pub root_url: Mustache,
     pub query: Vec<Query>,
-    pub method: reqwest::Method,
+    pub method: Lift<reqwest::Method>,
     pub headers: MustacheHeaders,
     pub body_path: Option<Mustache>,
     pub endpoint: Endpoint,
@@ -32,7 +34,7 @@ pub struct RequestTemplate {
     pub query_encoder: QueryEncoder,
 }
 
-#[derive(Setters, Debug, Clone)]
+#[derive(Setters, Debug, Clone, Serialize)]
 pub struct Query {
     pub key: String,
     pub value: Mustache,
@@ -101,7 +103,7 @@ impl RequestTemplate {
     fn create_headers<C: PathString>(&self, ctx: &C) -> HeaderMap {
         let mut header_map = HeaderMap::new();
 
-        for (k, v) in &self.headers {
+        for (k, v) in self.headers.iter() {
             if let Ok(header_value) = HeaderValue::from_str(&v.render(ctx)) {
                 header_map.insert(k, header_value);
             }
@@ -117,7 +119,7 @@ impl RequestTemplate {
     ) -> anyhow::Result<reqwest::Request> {
         // Create url
         let url = self.create_url(ctx)?;
-        let method = self.method.clone();
+        let method = self.method.clone().take();
         let mut req = reqwest::Request::new(method, url);
         req = self.set_headers(req, ctx);
         req = self.set_body(req, ctx)?;
@@ -167,7 +169,7 @@ impl RequestTemplate {
         // We want to set the header value based on encoding
         // TODO: potential of optimizations.
         // Can set content-type headers while creating the request template
-        if self.method != reqwest::Method::GET {
+        if self.method.as_ref() != reqwest::Method::GET {
             headers.insert(
                 reqwest::header::CONTENT_TYPE,
                 match self.encoding {
@@ -187,7 +189,7 @@ impl RequestTemplate {
         Ok(Self {
             root_url: Mustache::parse(root_url),
             query: Default::default(),
-            method: reqwest::Method::GET,
+            method: Lift::from(reqwest::Method::GET),
             headers: Default::default(),
             body_path: Default::default(),
             endpoint: Endpoint::new(root_url.to_string()),
@@ -238,8 +240,8 @@ impl TryFrom<Endpoint> for RequestTemplate {
         Ok(Self {
             root_url: path,
             query,
-            method,
-            headers,
+            method: Lift::from(method),
+            headers: headers.into(),
             body_path: body,
             endpoint,
             encoding,
@@ -317,6 +319,7 @@ mod tests {
     use super::{Query, RequestTemplate};
     use crate::core::has_headers::HasHeaders;
     use crate::core::json::JsonLike;
+    use crate::core::lift::Lift;
     use crate::core::mustache::Mustache;
     use crate::core::path::{PathString, PathValue, ValueString};
 
@@ -532,7 +535,7 @@ mod tests {
         ];
         let tmpl = RequestTemplate::new("http://localhost:3000")
             .unwrap()
-            .headers(headers);
+            .headers(headers.into());
         let ctx = Context::default();
         let req = tmpl.to_request(&ctx).unwrap();
         assert_eq!(req.headers().get("foo").unwrap(), "foo");
@@ -555,7 +558,7 @@ mod tests {
         ];
         let tmpl = RequestTemplate::new("http://localhost:3000")
             .unwrap()
-            .headers(headers);
+            .headers(headers.into());
         let ctx = Context::default().value(json!({
           "bar": {
             "id": 1
@@ -574,7 +577,7 @@ mod tests {
     fn test_header_encoding_application_json() {
         let tmpl = RequestTemplate::new("http://localhost:3000")
             .unwrap()
-            .method(reqwest::Method::POST)
+            .method(Lift::from(reqwest::Method::POST))
             .encoding(crate::core::config::Encoding::ApplicationJson);
         let ctx = Context::default();
         let req = tmpl.to_request(&ctx).unwrap();
@@ -588,7 +591,7 @@ mod tests {
     fn test_header_encoding_application_x_www_form_urlencoded() {
         let tmpl = RequestTemplate::new("http://localhost:3000")
             .unwrap()
-            .method(reqwest::Method::POST)
+            .method(Lift::from(reqwest::Method::POST))
             .encoding(crate::core::config::Encoding::ApplicationXWwwFormUrlencoded);
         let ctx = Context::default();
         let req = tmpl.to_request(&ctx).unwrap();
@@ -602,7 +605,7 @@ mod tests {
     fn test_method() {
         let tmpl = RequestTemplate::new("http://localhost:3000")
             .unwrap()
-            .method(reqwest::Method::POST);
+            .method(Lift::from(reqwest::Method::POST));
         let ctx = Context::default();
         let req = tmpl.to_request(&ctx).unwrap();
         assert_eq!(req.method(), reqwest::Method::POST);

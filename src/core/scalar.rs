@@ -17,7 +17,13 @@ lazy_static! {
 }
 
 #[derive(
-    schemars::JsonSchema, Debug, Clone, strum_macros::Display, strum_macros::EnumIter, Doc, Serialize
+    schemars::JsonSchema,
+    Debug,
+    Clone,
+    strum_macros::Display,
+    strum_macros::EnumIter,
+    Doc,
+    Serialize,
 )]
 pub enum Scalar {
     /// Empty scalar type represents an empty value.

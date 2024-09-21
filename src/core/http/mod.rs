@@ -8,6 +8,7 @@ pub use request_context::RequestContext;
 pub use request_handler::{handle_request, API_URL_PREFIX};
 pub use request_template::RequestTemplate;
 pub use response::*;
+use serde::Serialize;
 
 mod cache;
 mod data_loader;
@@ -24,7 +25,7 @@ mod telemetry;
 pub static TAILCALL_HTTPS_ORIGIN: HeaderValue = HeaderValue::from_static("https://tailcall.run");
 pub static TAILCALL_HTTP_ORIGIN: HeaderValue = HeaderValue::from_static("http://tailcall.run");
 
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone, Debug, Serialize)]
 /// User can configure the filter/interceptor
 /// for the http requests.
 pub struct HttpFilter {

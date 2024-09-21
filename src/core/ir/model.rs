@@ -29,14 +29,14 @@ pub enum IR {
     Discriminate(Discriminator, Box<IR>),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Map {
     pub input: Box<IR>,
     // accept key return value instead of
     pub map: HashMap<String, String>,
 }
 
-#[derive(Clone, Debug, strum_macros::Display)]
+#[derive(Clone, Debug, strum_macros::Display, Serialize)]
 pub enum IO {
     Http {
         req_template: http::RequestTemplate,
@@ -60,7 +60,7 @@ pub enum IO {
     },
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize)]
 pub struct DataLoaderId(usize);
 
 impl DataLoaderId {
@@ -90,7 +90,7 @@ pub trait CacheKey<Ctx> {
     fn cache_key(&self, ctx: &Ctx) -> Option<IoId>;
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Cache {
     pub max_age: NonZeroU64,
     pub io: Box<IO>,

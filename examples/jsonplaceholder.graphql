@@ -1,5 +1,5 @@
 schema
-  @server(port: 8000)
+  @server(port: 8000, routes: {status: "/health"})
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 100}) {
   query: Query
 }
