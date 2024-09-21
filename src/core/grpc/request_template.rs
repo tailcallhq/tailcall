@@ -25,6 +25,7 @@ pub struct RequestTemplate {
     pub url: Mustache,
     pub headers: MustacheHeaders,
     pub body: Option<RequestBody>,
+    #[serde(skip)]
     pub operation: ProtobufOperation,
     pub operation_type: GraphQLOperationType,
 }

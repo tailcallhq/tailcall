@@ -66,7 +66,7 @@ pub enum Http {
 
 // Add these functions at the end of the file
 fn serialize_cert_vec<S>(
-    certs: &Vec<CertificateDer<'static>>,
+    certs: &[CertificateDer<'static>],
     serializer: S,
 ) -> Result<S::Ok, S::Error>
 where

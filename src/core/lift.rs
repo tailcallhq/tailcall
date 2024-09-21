@@ -51,31 +51,34 @@ impl<A> CanLift for A {
     }
 }
 
-impl Serialize for Lift<reqwest::Method> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serializer.serialize_str(self.0.as_str())
+pub trait AsStr {
+    fn as_str_value(&self) -> anyhow::Result<&str>;
+}
+
+impl AsStr for HeaderName {
+    fn as_str_value(&self) -> anyhow::Result<&str> {
+        Ok(self.as_str())
     }
 }
 
-// Serialize impl for HeaderValue.
-impl Serialize for Lift<HeaderValue> {
+impl AsStr for reqwest::Method {
+    fn as_str_value(&self) -> anyhow::Result<&str> {
+        Ok(self.as_str())
+    }
+}
+
+impl AsStr for HeaderValue {
+    fn as_str_value(&self) -> anyhow::Result<&str> {
+        Ok(self.to_str()?)
+    }
+}
+
+impl<T: AsStr> Serialize for Lift<T> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
-        let s = self.0.to_str().map_err(serde::ser::Error::custom)?;
+        let s = self.0.as_str_value().map_err(serde::ser::Error::custom)?;
         serializer.serialize_str(s)
-    }
-}
-
-impl Serialize for Lift<HeaderName> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serializer.serialize_str(self.0.as_str())
     }
 }

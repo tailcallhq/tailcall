@@ -27,7 +27,7 @@ impl Cors {
         &self,
         origin: Option<&HeaderValue>,
     ) -> Option<(HeaderName, HeaderValue)> {
-        if self.allow_origins.iter().any(|origin| is_wildcard(&origin)) {
+        if self.allow_origins.iter().any(|origin| is_wildcard(origin)) {
             Some((header::ACCESS_CONTROL_ALLOW_ORIGIN, origin.cloned()?))
         } else {
             let allow_origin = origin
@@ -151,10 +151,7 @@ fn ensure_usable_cors_rules(layer: &Cors) -> Result<(), ValidationError<String>>
                 with `Access-Control-Allow-Methods: *`".into()))?
         }
 
-        let allowing_all_origins = layer
-            .allow_origins
-            .iter()
-            .any(|origin| is_wildcard(&origin));
+        let allowing_all_origins = layer.allow_origins.iter().any(|origin| is_wildcard(origin));
 
         if allowing_all_origins {
             Err(ValidationError::new("Invalid CORS configuration: Cannot combine `Access-Control-Allow-Credentials: true` \
