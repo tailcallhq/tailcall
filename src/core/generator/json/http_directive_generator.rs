@@ -211,7 +211,7 @@ mod test {
         ]
         .into_iter()
         .collect::<HashMap<_, _>>();
-        assert_eq!("/foo/{{.args.p2}}/bar/{{.args.p1}}", http.path);
+        assert_eq!("/foo/{{.args.GEN__2}}/bar/{{.args.GEN__1}}", http.path);
         assert_eq!(test_args, args);
     }
 }
