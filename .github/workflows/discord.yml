@@ -1,13 +1,17 @@
 name: Notify on Workflow Failure and Fix
 
 on:
+  push:
+    branches:
+      - main
   workflow_run:
-    workflows: ["*"] # This listens to all workflows
+    workflows: ["*"]
     types:
       - completed
 
 jobs:
   notify:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
     runs-on: ubuntu-latest
     steps:
       - name: Check Previous Run Status
@@ -23,24 +27,24 @@ jobs:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
           curl -H "Content-Type: application/json" \
-            -X POST \
-            -d '{
+          -X POST \
+          -d '{
               "content": "**Workflow Failure Detected on Main Branch** :x:",
               "embeds": [
-                {
+              {
                   "author": {
-                    "name": "GitHub Actions Bot",
-                    "icon_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
-                    "url": "https://github.com/${{ github.repository }}"
+                  "name": "GitHub Actions Bot",
+                  "icon_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+                  "url": "https://github.com/${{ github.repository }}"
                   },
                   "title": "Workflow: '${{ github.event.workflow_run.name }}'",
                   "description": "The workflow **${{ github.event.workflow_run.name }}** has failed on the main branch.",
                   "url": "${{ github.event.workflow_run.html_url }}",
                   "color": 15158332
-                }
+              }
               ]
-            }' \
-            $DISCORD_WEBHOOK_URL
+          }' \
+          $DISCORD_WEBHOOK_URL
 
       - name: Send Discord Notification on Fix
         if: ${{ github.event.workflow_run.conclusion == 'success' && env.previous_status == 'failure' }}
@@ -48,21 +52,21 @@ jobs:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
           curl -H "Content-Type: application/json" \
-            -X POST \
-            -d '{
+          -X POST \
+          -d '{
               "content": "**Workflow Fixed on Main Branch** :white_check_mark:",
               "embeds": [
-                {
+              {
                   "author": {
-                    "name": "GitHub Actions Bot",
-                    "icon_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
-                    "url": "https://github.com/${{ github.repository }}"
+                  "name": "GitHub Actions Bot",
+                  "icon_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+                  "url": "https://github.com/${{ github.repository }}"
                   },
                   "title": "Workflow: '${{ github.event.workflow_run.name }}' Fixed",
                   "description": "The workflow **${{ github.event.workflow_run.name }}** has been fixed on the main branch.",
                   "url": "${{ github.event.workflow_run.html_url }}",
                   "color": 3066993
-                }
+              }
               ]
-            }' \
-            $DISCORD_WEBHOOK_URL
+          }' \
+          $DISCORD_WEBHOOK_URL
