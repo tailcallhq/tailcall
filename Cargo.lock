@@ -3980,12 +3980,12 @@ dependencies = [
 
 [[package]]
 name = "prost"
-version = "0.13.2"
+version = "0.13.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b2ecbe40f08db5c006b5764a2645f7f3f141ce756412ac9e1dd6087e6d32995"
+checksum = "7b0487d90e047de87f984913713b85c601c05609aad5b0df4b4573fbf69aa13f"
 dependencies = [
  "bytes",
- "prost-derive 0.13.2",
+ "prost-derive 0.13.3",
 ]
 
 [[package]]
@@ -4024,9 +4024,9 @@ dependencies = [
 
 [[package]]
 name = "prost-derive"
-version = "0.13.2"
+version = "0.13.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "acf0c195eebb4af52c752bec4f52f645da98b6e92077a04110c7f349477ae5ac"
+checksum = "e9552f850d5f0964a4e4d0bf306459ac29323ddfbae05e35a7c0d35cb0803cc5"
 dependencies = [
  "anyhow",
  "itertools 0.13.0",
@@ -4058,8 +4058,8 @@ dependencies = [
  "logos",
  "miette 7.2.0",
  "once_cell",
- "prost 0.13.2",
- "prost-types 0.13.2",
+ "prost 0.13.3",
+ "prost-types 0.13.3",
  "serde",
  "serde-value",
 ]
@@ -4075,11 +4075,11 @@ dependencies = [
 
 [[package]]
 name = "prost-types"
-version = "0.13.2"
+version = "0.13.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60caa6738c7369b940c3d49246a8d1749323674c65cb13010134f5c9bad5b519"
+checksum = "4759aa0d3a6232fb8dbdb97b61de2c20047c68aca932c7ed76da9d788508d670"
 dependencies = [
- "prost 0.13.2",
+ "prost 0.13.3",
 ]
 
 [[package]]
@@ -4212,9 +4212,9 @@ checksum = "873f359bdecdfe6e353752f97cb9ee69368df55b16363ed2216da85e03232a58"
 dependencies = [
  "bytes",
  "miette 7.2.0",
- "prost 0.13.2",
+ "prost 0.13.3",
  "prost-reflect 0.14.2",
- "prost-types 0.13.2",
+ "prost-types 0.13.3",
  "protox-parse 0.7.0",
  "thiserror",
 ]
@@ -4239,7 +4239,7 @@ checksum = "a3a462d115462c080ae000c29a47f0b3985737e5d3a995fcdbcaa5c782068dde"
 dependencies = [
  "logos",
  "miette 7.2.0",
- "prost-types 0.13.2",
+ "prost-types 0.13.3",
  "thiserror",
 ]
 
@@ -5502,7 +5502,7 @@ dependencies = [
  "pluralizer",
  "pretty_assertions",
  "prometheus",
- "prost 0.13.2",
+ "prost 0.13.3",
  "prost-reflect 0.14.2",
  "protox 0.7.1",
  "protox-parse 0.7.0",
@@ -6173,8 +6173,8 @@ version = "0.12.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9d967793411bc1a5392accf4731114295f0fd122865d22cde46a8584b03402b2"
 dependencies = [
- "prost 0.13.2",
- "prost-types 0.13.2",
+ "prost 0.13.3",
+ "prost-types 0.13.3",
  "tonic 0.12.2",
 ]
 

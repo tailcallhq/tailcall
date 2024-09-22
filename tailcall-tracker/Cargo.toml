@@ -6,14 +6,17 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-reqwest = { workspace = true }
+reqwest = { workspace = true, features = [
+    "json",
+    "rustls-tls",
+], default-features = false }
 derive_more = { workspace = true }
 url = { workspace = true }
 lazy_static.workspace = true
 serde = { workspace = true }
 serde_json = { workspace = true }
 machineid-rs = "1.2.4"
-tokio = { workspace = true }
+tokio = { workspace = true, features = ["rt", "time"] }
 tracing = { workspace = true }
 sysinfo = "0.31.0"
 tailcall-version = { path = "../tailcall-version" }
