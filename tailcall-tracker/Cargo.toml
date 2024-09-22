@@ -13,7 +13,7 @@ lazy_static.workspace = true
 serde = { workspace = true }
 serde_json = { workspace = true }
 machineid-rs = "1.2.4"
-tokio = { workspace = true, features = ["rt", "macros"] }
+tokio = { workspace = true }
 tracing = { workspace = true }
 sysinfo = "0.31.0"
 tailcall-version = { path = "../tailcall-version" }
