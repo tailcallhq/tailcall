@@ -1,0 +1,24 @@
+name: Notify on CI Failure
+
+on:
+  push:
+    branches:
+      - main
+  workflow_run:
+    workflows: ["*"]
+    types:
+      - completed
+
+jobs:
+  notify:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Discord Notification
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          curl -H "Content-Type: application/json" \
+            -X POST \
+            -d '{"content": "CI Failure Detected on Main Branch :x:"}' \
+            $DISCORD_WEBHOOK_URL
