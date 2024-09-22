@@ -25,7 +25,11 @@ pub async fn run() -> Result<()> {
         .await;
 
     // Dispatch the command as an event
-    let _ = TRACKER.dispatch(tailcall_tracker::EventKind::Run).await;
+    let _ = TRACKER
+        .dispatch(tailcall_tracker::EventKind::Command(
+            cli.command.to_string(),
+        ))
+        .await;
 
     run_command(cli, config_reader, runtime).await
 }

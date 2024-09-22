@@ -9,7 +9,7 @@ pub struct Event {
     pub cores: usize,
     pub client_id: String,
     pub os_name: String,
-    pub up_time: Option<String>,
+    pub up_time: i64,
     pub path: Option<String>,
     pub cwd: Option<String>,
     pub user: String,
@@ -20,11 +20,14 @@ pub struct Event {
 #[derive(Clone, IntoStaticStr)]
 pub enum EventKind {
     Ping,
-    Run,
+    Command(String),
 }
 
 impl EventKind {
-    pub fn as_str(&self) -> &'static str {
-        self.into()
+    pub fn to_string(&self) -> String {
+        match self {
+            Self::Ping => "ping".to_string(),
+            Self::Command(name) => name.clone(),
+        }
     }
 }

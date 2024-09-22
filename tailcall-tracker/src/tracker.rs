@@ -64,12 +64,12 @@ impl Tracker {
         if self.is_tracking {
             // Create a new event
             let event = Event {
-                event_name: event_kind.as_str().to_string(),
+                event_name: event_kind.to_string().to_string(),
                 start_time: self.start_time,
                 cores: cores(),
                 client_id: client_id(),
                 os_name: os_name(),
-                up_time: self.up_time(event_kind),
+                up_time: up_time(self.start_time),
                 args: args(),
                 path: path(),
                 cwd: cwd(),
@@ -86,13 +86,6 @@ impl Tracker {
         }
 
         Ok(())
-    }
-
-    fn up_time(&self, event_kind: EventKind) -> Option<String> {
-        match event_kind {
-            EventKind::Ping => Some(get_uptime(self.start_time)),
-            _ => None,
-        }
     }
 }
 
@@ -114,12 +107,9 @@ fn cores() -> usize {
 }
 
 // Get the uptime in minutes
-fn get_uptime(start_time: DateTime<Utc>) -> String {
+fn up_time(start_time: DateTime<Utc>) -> i64 {
     let current_time = Utc::now();
-    format!(
-        "{} minutes",
-        current_time.signed_duration_since(start_time).num_minutes()
-    )
+    current_time.signed_duration_since(start_time).num_minutes()
 }
 
 fn version() -> String {
@@ -162,7 +152,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_tracker() {
-        if let Err(e) = TRACKER.dispatch(EventKind::Run).await {
+        if let Err(e) = TRACKER.dispatch(EventKind::Command("ping".to_string())).await {
             panic!("Tracker dispatch error: {:?}", e);
         }
     }
