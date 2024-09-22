@@ -1,6 +1,5 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use strum::IntoStaticStr;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Event {
@@ -17,7 +16,7 @@ pub struct Event {
     pub version: String,
 }
 
-#[derive(Clone, IntoStaticStr)]
+#[derive(Clone)]
 pub enum EventKind {
     Ping,
     Command(String),
