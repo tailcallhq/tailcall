@@ -54,18 +54,15 @@ impl AppContext {
                         expr.modify(|expr| match expr {
                             IR::IO(io) => match io {
                                 IO::Http { req_template, group_by, http_filter, proxy, .. } => {
-                                    #[allow(unused_mut, unused_assignments)]
-                                    let mut http_client: Arc<
-                                        dyn HttpIO,
-                                    > = Arc::new(NativeHttp::init(
-                                        &blueprint.upstream,
-                                        &blueprint.telemetry,
-                                        proxy,
-                                    ));
-                                    #[cfg(test)]
-                                    {
-                                        http_client = runtime.http.clone();
-                                    }
+                                    let http_client: Arc<dyn HttpIO> = if let Some(proxy) = proxy {
+                                        Arc::new(NativeHttp::init(
+                                            &blueprint.upstream,
+                                            &blueprint.telemetry,
+                                            &Some(proxy.clone()),
+                                        ))
+                                    } else {
+                                        runtime.http.clone()
+                                    };
 
                                     let data_loader = HttpDataLoader::new(
                                         group_by.clone(),
@@ -90,18 +87,7 @@ impl AppContext {
                                 }
 
                                 IO::GraphQL { req_template, field_name, batch, .. } => {
-                                    #[allow(unused_mut, unused_assignments)]
-                                    let mut http_client: Arc<
-                                        dyn HttpIO,
-                                    > = Arc::new(NativeHttp::init(
-                                        &blueprint.upstream,
-                                        &blueprint.telemetry,
-                                        &None,
-                                    ));
-                                    #[cfg(test)]
-                                    {
-                                        http_client = runtime.http.clone();
-                                    }
+                                    let http_client = runtime.http.clone();
 
                                     let graphql_data_loader =
                                         GraphqlDataLoader::new(*batch, http_client.clone())
@@ -124,18 +110,15 @@ impl AppContext {
                                 }
 
                                 IO::Grpc { req_template, group_by, proxy, .. } => {
-                                    #[allow(unused_mut, unused_assignments)]
-                                    let mut http_client: Arc<
-                                        dyn HttpIO,
-                                    > = Arc::new(NativeHttp::init(
-                                        &blueprint.upstream.clone().http2_only(true),
-                                        &blueprint.telemetry,
-                                        proxy,
-                                    ));
-                                    #[cfg(test)]
-                                    {
-                                        http_client = runtime.http2_only.clone();
-                                    }
+                                    let http_client: Arc<dyn HttpIO> = if let Some(proxy) = proxy {
+                                        Arc::new(NativeHttp::init(
+                                            &blueprint.upstream,
+                                            &blueprint.telemetry,
+                                            &Some(proxy.clone()),
+                                        ))
+                                    } else {
+                                        runtime.http.clone()
+                                    };
 
                                     let data_loader = GrpcDataLoader {
                                         operation: req_template.operation.clone(),
