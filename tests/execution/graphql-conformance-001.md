@@ -114,16 +114,15 @@ type User {
         }
 
 # Negative: missing input
-# TODO: expect error that user.id input is missing
-# - method: POST
-#   url: http://localhost:8080/graphql
-#   body:
-#     query: |
-#       query {
-#         user {
-#           id
-#           name
-#           city
-#         }
-#       }
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: |
+      query {
+        user {
+          id
+          name
+          city
+        }
+      }
 ```

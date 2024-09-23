@@ -6,31 +6,31 @@ schema @server @upstream {
   query: Query
 }
 
-input nested__types__Result__Nested__VeryNestedInput {
+input GEN__nested__types__Result__Nested__VeryNestedInput {
   description: String
 }
 
-enum nested__types__Result__NestedEnum {
+enum GEN__nested__types__Result__NestedEnum {
   VALUE_0
   VALUE_1
   VALUE_2
 }
 
-type Query {
-  nested__types__Example__Get(veryNested: nested__types__Result__Nested__VeryNestedInput!): nested__types__Result @grpc(body: "{{.args.veryNested}}", method: "nested.types.Example.Get")
-}
-
-type nested__types__Result {
-  nestedEnum: nested__types__Result__NestedEnum
-  nestedUsage: nested__types__Result__Nested
+type GEN__nested__types__Result {
+  nestedEnum: GEN__nested__types__Result__NestedEnum
+  nestedUsage: GEN__nested__types__Result__Nested
   value: String
 }
 
-type nested__types__Result__Nested {
-  info: nested__types__Result__Nested__VeryNested
+type GEN__nested__types__Result__Nested {
+  info: GEN__nested__types__Result__Nested__VeryNested
   movie: String
 }
 
-type nested__types__Result__Nested__VeryNested {
+type GEN__nested__types__Result__Nested__VeryNested {
   description: String
+}
+
+type Query {
+  GEN__nested__types__Example__Get(veryNested: GEN__nested__types__Result__Nested__VeryNestedInput!): GEN__nested__types__Result @grpc(body: "{{.args.veryNested}}", method: "nested.types.Example.Get")
 }

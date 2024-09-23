@@ -296,6 +296,12 @@ directive @server(
   """
   responseValidation: Boolean
   """
+  `routes` allows customization of server endpoint paths. It provides options to change 
+  the default paths for status and GraphQL endpoints. Default values are: - status: 
+  "/status" - graphQL: "/graphql" If not specified, these default values will be used.
+  """
+  routes: Routes
+  """
   A link to an external JS file that listens on every HTTP request response event.
   """
   script: ScriptOptions
@@ -632,6 +638,11 @@ input Headers {
   sent with the headers.
   """
   setCookies: Boolean
+}
+
+input Routes {
+  graphQL: String!
+  status: String!
 }
 
 input ScriptOptions {

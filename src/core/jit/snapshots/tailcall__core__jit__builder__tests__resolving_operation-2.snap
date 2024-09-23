@@ -35,6 +35,11 @@ expression: plan.into_nested()
                             ): String(
                                 "test-12",
                             ),
+                            Name(
+                                "id",
+                            ): Number(
+                                Number(101),
+                            ),
                         },
                     ),
                 ),
