@@ -1,8 +1,8 @@
 mod can_track;
 mod collect;
+mod dispatch;
 mod error;
 mod event;
-mod dispatch;
+pub use dispatch::Tracker;
 use error::Result;
 pub use event::{Event, EventKind};
-pub use dispatch::Tracker;

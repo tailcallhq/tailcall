@@ -34,20 +34,17 @@ impl Payload {
         let distinct_id = input.client_id.to_string();
         let event = input.event_name.to_string();
 
-        match serde_json::to_value(input) {
-            Ok(Value::Object(map)) => {
-                for (key, value) in map {
-                    properties.insert(key, value);
-                }
+        if let Ok(Value::Object(map)) = serde_json::to_value(input) {
+            for (key, value) in map {
+                properties.insert(key, value);
             }
-            _ => {}
         }
 
         Self {
             api_key,
             event,
             distinct_id,
-            properties: properties,
+            properties,
             timestamp: Some(chrono::Utc::now().naive_utc()),
         }
     }

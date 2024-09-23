@@ -6,7 +6,6 @@ use tokio::time::Duration;
 use super::Result;
 use crate::can_track::can_track;
 use crate::collect::{ga, posthog, Collect};
-use crate::event::Name;
 use crate::{Event, EventKind};
 
 const GA_API_SECRET: &str = match option_env!("GA_API_SECRET") {
@@ -64,7 +63,7 @@ impl Tracker {
         if self.can_track {
             // Create a new event
             let event = Event {
-                event_name: Name::from(event_kind.name()),
+                event_name: event_kind.name(),
                 start_time: self.start_time,
                 cores: cores(),
                 client_id: client_id(),
