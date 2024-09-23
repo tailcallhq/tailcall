@@ -6,6 +6,7 @@ use tokio::time::Duration;
 use super::Result;
 use crate::can_track::can_track;
 use crate::collect::{ga, posthog, Collect};
+use crate::event::Name;
 use crate::{Event, EventKind};
 
 const GA_API_SECRET: &str = match option_env!("GA_API_SECRET") {
@@ -27,7 +28,7 @@ const DEFAULT_CLIENT_ID: &str = "<anonymous>";
 
 pub struct Tracker {
     collectors: Vec<Box<dyn Collect>>,
-    is_tracking: bool,
+    can_track: bool,
     start_time: DateTime<Utc>,
 }
 
@@ -39,9 +40,13 @@ impl Default for Tracker {
         ));
         let posthog_tracker = Box::new(posthog::Tracker::new(POSTHOG_API_SECRET, "client_id"));
         let start_time = Utc::now();
+        let can_track = can_track();
+
+        tracing::debug!("Tracking Status: {}", can_track);
+
         Self {
             collectors: vec![ga_tracker, posthog_tracker],
-            is_tracking: can_track(),
+            can_track,
             start_time,
         }
     }
@@ -49,7 +54,7 @@ impl Default for Tracker {
 
 impl Tracker {
     pub async fn init_ping(&'static self, duration: Duration) {
-        if self.is_tracking {
+        if self.can_track {
             let mut interval = tokio::time::interval(duration);
             tokio::task::spawn(async move {
                 loop {
@@ -61,10 +66,10 @@ impl Tracker {
     }
 
     pub async fn dispatch(&'static self, event_kind: EventKind) -> Result<()> {
-        if self.is_tracking {
+        if self.can_track {
             // Create a new event
             let event = Event {
-                event_name: event_kind.to_string().to_string(),
+                event_name: Name::from(event_kind.name()),
                 start_time: self.start_time,
                 cores: cores(),
                 client_id: client_id(),

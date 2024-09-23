@@ -5554,6 +5554,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "chrono",
+ "convert_case 0.6.0",
  "derive_more 0.99.18",
  "lazy_static",
  "machineid-rs",

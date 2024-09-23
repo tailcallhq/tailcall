@@ -24,7 +24,7 @@ impl Collect for Tracker {
             let client = posthog_rs::client(api_secret);
             let json = serde_json::to_value(&event)?;
             let mut posthog_event =
-                posthog_rs::Event::new(event.event_name.clone(), event.client_id);
+                posthog_rs::Event::new(event.event_name.into(), event.client_id);
 
             match json {
                 serde_json::Value::Object(map) => {
