@@ -6,8 +6,8 @@ use async_graphql::{ServerError, Value};
 use reqwest::header::HeaderMap;
 
 use super::{GraphQLOperationContext, RelatedFields, ResolverContextLike, SelectionField};
-use crate::core::document::print_directives;
 use crate::core::http::RequestContext;
+use crate::core::sdl::print_directives;
 
 // TODO: rename to ResolverContext
 #[derive(Clone)]

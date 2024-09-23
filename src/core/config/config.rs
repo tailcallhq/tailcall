@@ -25,6 +25,7 @@ use crate::core::is_default;
 use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
 use crate::core::scalar::Scalar;
+use crate::core::sdl::SdlPrinter;
 use crate::core::valid::{Valid, Validator};
 
 #[derive(
@@ -534,7 +535,8 @@ impl Config {
 
     /// Renders current config to graphQL string
     pub fn to_sdl(&self) -> String {
-        crate::core::document::print(self.into())
+        let sdl_printer = SdlPrinter::default();
+        sdl_printer.print(self.into())
     }
 
     pub fn query(mut self, query: &str) -> Self {

@@ -12,6 +12,7 @@ use serde_json::{json, Value};
 use strum::IntoEnumIterator;
 use tailcall::cli;
 use tailcall::core::config::Config;
+use tailcall::core::sdl::SdlPrinter;
 use tailcall::core::tracing::default_tracing_for_name;
 use tailcall::core::{scalar, FileIO};
 
@@ -85,7 +86,7 @@ async fn update_gql(file_io: Arc<dyn FileIO>) -> Result<()> {
     file_io
         .write(
             path.to_str().ok_or(anyhow!("Unable to determine path"))?,
-            tailcall::core::document::print(doc).as_bytes(),
+            SdlPrinter::default().print(doc).as_bytes(),
         )
         .await?;
     Ok(())

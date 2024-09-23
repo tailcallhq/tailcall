@@ -78,30 +78,6 @@ fn print_pos_directives(directives: &[Positioned<ConstDirective>]) -> String {
     output
 }
 
-fn print_schema(schema: &SchemaDefinition) -> String {
-    let directives = print_pos_directives(&schema.directives);
-
-    let query = schema
-        .query
-        .as_ref()
-        .map_or(String::new(), |q| format!("  query: {}\n", q.node));
-    let mutation = schema
-        .mutation
-        .as_ref()
-        .map_or(String::new(), |m| format!("  mutation: {}\n", m.node));
-    let subscription = schema
-        .subscription
-        .as_ref()
-        .map_or(String::new(), |s| format!("  subscription: {}\n", s.node));
-    if mutation.is_empty() && query.is_empty() {
-        return String::new();
-    }
-    format!(
-        "schema {}{{\n{}{}{}}}\n",
-        directives, query, mutation, subscription
-    )
-}
-
 fn const_directive_to_sdl(directive: &ConstDirective) -> DirectiveDefinition {
     DirectiveDefinition {
         description: None,
@@ -363,48 +339,97 @@ fn print_directive_type_def(directive: &DirectiveDefinition) -> String {
     }
 }
 
-pub fn print(sd: ServiceDocument) -> String {
-    // Separate the definitions by type
-    let definitions_len = sd.definitions.len();
-    let mut schemas = Vec::with_capacity(definitions_len);
-    let mut scalars = Vec::with_capacity(definitions_len);
-    let mut interfaces = Vec::with_capacity(definitions_len);
-    let mut objects = Vec::with_capacity(definitions_len);
-    let mut enums = Vec::with_capacity(definitions_len);
-    let mut unions = Vec::with_capacity(definitions_len);
-    let mut inputs = Vec::with_capacity(definitions_len);
-    let mut directives = Vec::with_capacity(definitions_len);
+#[derive(Default)]
+pub struct SdlPrinter {
+    pub federation_compatibility: bool,
+}
 
-    for def in sd.definitions.iter() {
-        match def {
-            TypeSystemDefinition::Schema(schema) => schemas.push(print_schema(&schema.node)),
-            TypeSystemDefinition::Type(type_def) => match &type_def.node.kind {
-                TypeKind::Scalar => scalars.push(print_type_def(&type_def.node)),
-                TypeKind::Interface(_) => interfaces.push(print_type_def(&type_def.node)),
-                TypeKind::Enum(_) => enums.push(print_type_def(&type_def.node)),
-                TypeKind::Object(_) => objects.push(print_type_def(&type_def.node)),
-                TypeKind::Union(_) => unions.push(print_type_def(&type_def.node)),
-                TypeKind::InputObject(_) => inputs.push(print_type_def(&type_def.node)),
-            },
-            TypeSystemDefinition::Directive(type_def) => {
-                directives.push(print_directive_type_def(&type_def.node))
-            }
+impl SdlPrinter {
+    fn should_print_directive(&self, directive_name: &str) -> bool {
+        if self.federation_compatibility {
+            return directive_name != "link";
         }
+
+        true
     }
 
-    // Concatenate the definitions in the desired order
-    let sdl_string = schemas
-        .into_iter()
-        .chain(directives)
-        .chain(scalars)
-        .chain(inputs)
-        .chain(interfaces)
-        .chain(unions)
-        .chain(enums)
-        .chain(objects)
-        // Chain other types as needed...
-        .collect::<Vec<String>>()
-        .join("\n");
+    fn print_schema(&self, schema: &SchemaDefinition) -> String {
+        let directives = print_directives(
+            schema
+                .directives
+                .iter()
+                .map(|d| &d.node)
+                .filter(|&d| self.should_print_directive(&d.name.node)),
+        );
 
-    sdl_string.trim_end_matches('\n').to_string()
+        let query = schema
+            .query
+            .as_ref()
+            .map_or(String::new(), |q| format!("  query: {}\n", q.node));
+        let mutation = schema
+            .mutation
+            .as_ref()
+            .map_or(String::new(), |m| format!("  mutation: {}\n", m.node));
+        let subscription = schema
+            .subscription
+            .as_ref()
+            .map_or(String::new(), |s| format!("  subscription: {}\n", s.node));
+        if mutation.is_empty() && query.is_empty() {
+            return String::new();
+        }
+        format!(
+            "schema {} {{\n{}{}{}}}\n",
+            directives, query, mutation, subscription
+        )
+    }
+
+    pub fn print(&self, sd: ServiceDocument) -> String {
+        // Separate the definitions by type
+        let definitions_len = sd.definitions.len();
+        let mut schemas = Vec::with_capacity(definitions_len);
+        let mut scalars = Vec::with_capacity(definitions_len);
+        let mut interfaces = Vec::with_capacity(definitions_len);
+        let mut objects = Vec::with_capacity(definitions_len);
+        let mut enums = Vec::with_capacity(definitions_len);
+        let mut unions = Vec::with_capacity(definitions_len);
+        let mut inputs = Vec::with_capacity(definitions_len);
+        let mut directives = Vec::with_capacity(definitions_len);
+
+        for def in sd.definitions.iter() {
+            match def {
+                TypeSystemDefinition::Schema(schema) => {
+                    schemas.push(self.print_schema(&schema.node))
+                }
+                TypeSystemDefinition::Type(type_def) => match &type_def.node.kind {
+                    TypeKind::Scalar => scalars.push(print_type_def(&type_def.node)),
+                    TypeKind::Interface(_) => interfaces.push(print_type_def(&type_def.node)),
+                    TypeKind::Enum(_) => enums.push(print_type_def(&type_def.node)),
+                    TypeKind::Object(_) => objects.push(print_type_def(&type_def.node)),
+                    TypeKind::Union(_) => unions.push(print_type_def(&type_def.node)),
+                    TypeKind::InputObject(_) => inputs.push(print_type_def(&type_def.node)),
+                },
+                TypeSystemDefinition::Directive(type_def) => {
+                    if self.should_print_directive(&type_def.node.name.node) {
+                        directives.push(print_directive_type_def(&type_def.node))
+                    }
+                }
+            }
+        }
+
+        // Concatenate the definitions in the desired order
+        let sdl_string = schemas
+            .into_iter()
+            .chain(directives)
+            .chain(scalars)
+            .chain(inputs)
+            .chain(interfaces)
+            .chain(unions)
+            .chain(enums)
+            .chain(objects)
+            // Chain other types as needed...
+            .collect::<Vec<String>>()
+            .join("\n");
+
+        sdl_string.trim_end_matches('\n').to_string()
+    }
 }
