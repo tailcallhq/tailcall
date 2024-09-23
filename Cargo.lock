@@ -2280,16 +2280,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "http-serde-ext"
-version = "1.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "665c24b8e7e21688dc74edb228f07c1815bbc7ff3b48a3ee72fa20937fbde095"
-dependencies = [
- "http 1.1.0",
- "serde",
-]
-
-[[package]]
 name = "httparse"
 version = "1.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5523,8 +5513,6 @@ dependencies = [
  "htpasswd-verify",
  "http-cache-reqwest",
  "http-cache-semantics",
- "http-serde 2.1.1",
- "http-serde-ext",
  "httpmock",
  "hyper 0.14.30",
  "hyper-rustls 0.25.0",
