@@ -38,12 +38,9 @@ impl Default for Tracker {
             GA_API_SECRET.to_string(),
             GA_MEASUREMENT_ID.to_string(),
         ));
-        let posthog_tracker = Box::new(posthog::Tracker::new(POSTHOG_API_SECRET, "client_id"));
+        let posthog_tracker = Box::new(posthog::Tracker::new(POSTHOG_API_SECRET));
         let start_time = Utc::now();
         let can_track = can_track();
-
-        tracing::debug!("Tracking Status: {}", can_track);
-
         Self {
             collectors: vec![ga_tracker, posthog_tracker],
             can_track,
@@ -54,15 +51,13 @@ impl Default for Tracker {
 
 impl Tracker {
     pub async fn init_ping(&'static self, duration: Duration) {
-        if self.can_track {
-            let mut interval = tokio::time::interval(duration);
-            tokio::task::spawn(async move {
-                loop {
-                    interval.tick().await;
-                    let _ = self.dispatch(EventKind::Ping).await;
-                }
-            });
-        }
+        let mut interval = tokio::time::interval(duration);
+        tokio::task::spawn(async move {
+            loop {
+                interval.tick().await;
+                let _ = self.dispatch(EventKind::Ping).await;
+            }
+        });
     }
 
     pub async fn dispatch(&'static self, event_kind: EventKind) -> Result<()> {

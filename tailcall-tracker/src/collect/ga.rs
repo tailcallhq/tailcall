@@ -9,12 +9,12 @@ const GA_TRACKER_URL: &str = "https://www.google-analytics.com";
 
 /// Event structure to be sent to GA
 #[derive(Debug, Serialize, Deserialize)]
-struct GaEvent {
+struct Payload {
     client_id: String,
     events: Vec<Event>,
 }
 
-impl GaEvent {
+impl Payload {
     pub fn new(event: Event) -> Self {
         Self { client_id: event.clone().client_id, events: vec![event] }
     }
@@ -35,7 +35,7 @@ impl Tracker {
         }
     }
     fn create_request(&self, event: Event) -> Result<reqwest::Request> {
-        let event = GaEvent::new(event);
+        let event = Payload::new(event);
         let mut url = reqwest::Url::parse(self.base_url.as_str())?;
         url.set_path("/mp/collect");
         url.query_pairs_mut()
