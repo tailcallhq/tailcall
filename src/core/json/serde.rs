@@ -26,6 +26,10 @@ impl<'json> JsonLike<'json> for serde_json::Value {
         self.as_array()
     }
 
+    fn as_array_mut(&mut self) -> Option<&mut Vec<Self>> {
+        self.as_array_mut()
+    }
+
     fn into_array(self) -> Option<Vec<Self>> {
         if let Self::Array(vec) = self {
             Some(vec)

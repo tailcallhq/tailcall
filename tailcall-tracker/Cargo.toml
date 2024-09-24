@@ -6,14 +6,23 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-reqwest = { workspace = true }
+reqwest = { workspace = true, features = [
+    "json",
+    "rustls-tls",
+], default-features = false }
 derive_more = { workspace = true }
 url = { workspace = true }
-lazy_static = { workspace = true }
+lazy_static.workspace = true
 serde = { workspace = true }
 serde_json = { workspace = true }
 machineid-rs = "1.2.4"
-tokio = { workspace = true }
+tokio = { workspace = true, features = ["rt", "time"] }
 tracing = { workspace = true }
 sysinfo = "0.31.0"
 tailcall-version = { path = "../tailcall-version" }
+posthog-rs = { git = "https://github.com/PostHog/posthog-rs.git", rev = "a006a81419031e4889d9c3882d7458d2efa588a8" }
+async-trait = "0.1.81"
+chrono = "0.4.38"
+whoami = "1.5.2"
+strum = "0.26.3"
+convert_case = { workspace = true }

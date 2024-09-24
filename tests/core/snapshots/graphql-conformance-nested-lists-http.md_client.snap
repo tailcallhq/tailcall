@@ -44,6 +44,7 @@ scalar UInt8
 scalar Url
 
 type User {
+  accountRef: String!
   id: ID!
   name: String!
 }
