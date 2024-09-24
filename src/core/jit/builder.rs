@@ -354,6 +354,7 @@ impl Builder {
         });
 
         let plan = OperationPlan::new(
+            name,
             fields,
             operation.ty,
             self.index.clone(),

@@ -345,6 +345,7 @@ pub struct Nested<Input>(Vec<Field<Nested<Input>, Input>>);
 
 #[derive(Clone)]
 pub struct OperationPlan<Input> {
+    root_name: String,
     flat: Vec<Field<Flat, Input>>,
     operation_type: OperationType,
     nested: Vec<Field<Nested<Input>, Input>>,
@@ -379,6 +380,7 @@ impl<Input> OperationPlan<Input> {
         }
 
         Ok(OperationPlan {
+            root_name: self.root_name,
             flat,
             operation_type: self.operation_type,
             nested,
@@ -389,7 +391,9 @@ impl<Input> OperationPlan<Input> {
 }
 
 impl<Input> OperationPlan<Input> {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
+        root_name: &str,
         fields: Vec<Field<Flat, Input>>,
         operation_type: OperationType,
         index: Arc<Index>,
@@ -406,12 +410,18 @@ impl<Input> OperationPlan<Input> {
             .collect::<Vec<_>>();
 
         Self {
+            root_name: root_name.to_string(),
             flat: fields,
             nested,
             operation_type,
             index,
             is_introspection_query,
         }
+    }
+
+    /// Returns the name of the root type
+    pub fn root_name(&self) -> &str {
+        &self.root_name
     }
 
     /// Returns a graphQL operation type
