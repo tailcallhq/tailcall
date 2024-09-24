@@ -33,7 +33,7 @@ pub enum Error {
     Cache(cache::Error),
 
     #[from(ignore)]
-    EntityResolver(String),
+    Entity(String),
 }
 
 impl Display for Error {
@@ -66,7 +66,7 @@ impl From<Error> for Errata {
             }
             Error::Worker(err) => Errata::new("Worker Error").description(err.to_string()),
             Error::Cache(err) => Errata::new("Cache Error").description(err.to_string()),
-            Error::EntityResolver(message) => Errata::new("Entity Resolver Error").description(message)
+            Error::Entity(message) => Errata::new("Entity Resolver Error").description(message)
         }
     }
 }

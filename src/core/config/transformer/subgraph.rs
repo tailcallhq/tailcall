@@ -26,9 +26,9 @@ const ENTITIES_TYPE_NAME: &str = "_Any";
 /// Adds compatibility layer for Apollo Federation v2
 /// so tailcall may act as a Federation Subgraph.
 /// Followed by [spec](https://www.apollographql.com/docs/federation/subgraph-spec/)
-pub struct ApolloFederationSubgraph;
+pub struct Subgraph;
 
-impl Transform for ApolloFederationSubgraph {
+impl Transform for Subgraph {
     type Value = Config;
 
     type Error = String;

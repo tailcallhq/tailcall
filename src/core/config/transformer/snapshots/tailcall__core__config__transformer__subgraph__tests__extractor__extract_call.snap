@@ -1,5 +1,5 @@
 ---
-source: src/core/config/transformer/apollo_federation_subgraph.rs
+source: src/core/config/transformer/subgraph.rs
 expression: keys
 ---
 Valid(

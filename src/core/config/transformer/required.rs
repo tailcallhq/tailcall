@@ -15,7 +15,7 @@ impl Transform for Required {
         config: Self::Value,
     ) -> crate::core::valid::Valid<Self::Value, Self::Error> {
         transform::default()
-            .pipe(super::ApolloFederationSubgraph)
+            .pipe(super::Subgraph)
             .pipe(super::NestedUnions)
             .pipe(super::UnionInputType)
             .pipe(super::AmbiguousType::default())
