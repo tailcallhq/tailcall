@@ -1,6 +1,7 @@
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
+use syn::{parse_macro_input, DeriveInput};
 
 mod document_definition;
 mod gen;
@@ -48,7 +49,10 @@ pub fn input_definition_derive(input: TokenStream) -> TokenStream {
     expand_input_definition(input)
 }
 
-#[proc_macro_derive(CustomResolver)]
+#[proc_macro_derive(CustomResolver, attributes(resolver))]
 pub fn resolver_derive(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
     expand_resolver_derive(input)
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
 }

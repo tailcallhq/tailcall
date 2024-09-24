@@ -777,6 +777,18 @@
       "title": "JSON",
       "description": "Field whose value conforms to the standard JSON format as specified in RFC 8259 (https://datatracker.ietf.org/doc/html/rfc8259)."
     },
+    "Key": {
+      "description": "Directive `@key` for Apollo Federation",
+      "type": "object",
+      "required": [
+        "fields"
+      ],
+      "properties": {
+        "fields": {
+          "type": "string"
+        }
+      }
+    },
     "KeyValue": {
       "type": "object",
       "required": [
@@ -1245,6 +1257,80 @@
     "Type": {
       "description": "Represents a GraphQL type. A type can be an object, interface, enum or scalar.",
       "type": "object",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "http"
+          ],
+          "properties": {
+            "http": {
+              "$ref": "#/definitions/Http"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "grpc"
+          ],
+          "properties": {
+            "grpc": {
+              "$ref": "#/definitions/Grpc"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "graphql"
+          ],
+          "properties": {
+            "graphql": {
+              "$ref": "#/definitions/GraphQL"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "call"
+          ],
+          "properties": {
+            "call": {
+              "$ref": "#/definitions/Call"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "js"
+          ],
+          "properties": {
+            "js": {
+              "$ref": "#/definitions/JS"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "expr"
+          ],
+          "properties": {
+            "expr": {
+              "$ref": "#/definitions/Expr"
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
       "required": [
         "fields"
       ],
@@ -1288,6 +1374,18 @@
             "type": "string"
           },
           "uniqueItems": true
+        },
+        "key": {
+          "description": "Apollo federation key directive. skip since it's set automatically by config transformer",
+          "writeOnly": true,
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Key"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "protected": {
           "description": "Marks field as protected by auth providers",
