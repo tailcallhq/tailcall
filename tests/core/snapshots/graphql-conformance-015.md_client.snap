@@ -12,6 +12,10 @@ scalar Email
 
 scalar Empty
 
+input Foo {
+  bar: String! = "BUZZ"
+}
+
 scalar Int128
 
 scalar Int16
@@ -49,6 +53,7 @@ type User {
   name: String!
   profilePic(size: Int! = 100, width: Int, height: Int = 100): String!
   searchComments(query: [[String!]!]! = [["today"]]): String!
+  spam(foo: [Foo!]!): String!
 }
 
 input VideoSize {

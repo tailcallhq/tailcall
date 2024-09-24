@@ -1,5 +1,6 @@
 use indexmap::IndexMap;
 
+use super::InputObjectTypeDefinition;
 use crate::core::blueprint::{
     Blueprint, Definition, FieldDefinition, InputFieldDefinition, SchemaDefinition,
 };
@@ -76,6 +77,13 @@ impl Index {
             obj.implements.contains(type_or_interface)
         } else {
             false
+        }
+    }
+
+    pub fn get_input_type_definition(&self, type_name: &str) -> Option<&InputObjectTypeDefinition> {
+        match self.map.get(type_name) {
+            Some((Definition::InputObject(input), _)) => Some(input),
+            _ => None,
         }
     }
 }

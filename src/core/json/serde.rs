@@ -10,7 +10,7 @@ impl<'obj> JsonObjectLike<'obj> for serde_json::Map<String, serde_json::Value> {
         serde_json::Map::new()
     }
 
-    fn get_key(&'obj self, key: &str) -> Option<&serde_json::Value> {
+    fn get_key(&self, key: &str) -> Option<&serde_json::Value> {
         self.get(key)
     }
 
@@ -20,10 +20,14 @@ impl<'obj> JsonObjectLike<'obj> for serde_json::Map<String, serde_json::Value> {
 }
 
 impl<'json> JsonLike<'json> for serde_json::Value {
-    type JsonObject<'obj> = serde_json::Map<String, serde_json::Value>;
+    type JsonObject = serde_json::Map<String, serde_json::Value>;
 
     fn as_array(&self) -> Option<&Vec<Self>> {
         self.as_array()
+    }
+
+    fn as_array_mut(&mut self) -> Option<&mut Vec<Self>> {
+        self.as_array_mut()
     }
 
     fn into_array(self) -> Option<Vec<Self>> {
@@ -89,15 +93,15 @@ impl<'json> JsonLike<'json> for serde_json::Value {
         Self::Null
     }
 
-    fn as_object(&self) -> Option<&Self::JsonObject<'_>> {
+    fn as_object(&self) -> Option<&Self::JsonObject> {
         self.as_object()
     }
 
-    fn as_object_mut(&mut self) -> Option<&mut Self::JsonObject<'_>> {
+    fn as_object_mut(&mut self) -> Option<&mut Self::JsonObject> {
         self.as_object_mut()
     }
 
-    fn into_object(self) -> Option<Self::JsonObject<'json>> {
+    fn into_object(self) -> Option<Self::JsonObject> {
         if let Self::Object(obj) = self {
             Some(obj)
         } else {
@@ -105,7 +109,7 @@ impl<'json> JsonLike<'json> for serde_json::Value {
         }
     }
 
-    fn object(obj: Self::JsonObject<'json>) -> Self {
+    fn object(obj: Self::JsonObject) -> Self {
         serde_json::Value::Object(obj)
     }
 

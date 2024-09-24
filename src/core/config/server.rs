@@ -1,5 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
+use derive_getters::Getters;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use tailcall_macros::DirectiveDefinition;
 
@@ -120,6 +122,47 @@ pub struct Server {
     /// `workers` sets the number of worker threads. @default the number of
     /// system cores.
     pub workers: Option<usize>,
+
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// `routes` allows customization of server endpoint paths.
+    /// It provides options to change the default paths for status and GraphQL
+    /// endpoints. Default values are:
+    /// - status: "/status"
+    /// - graphQL: "/graphql" If not specified, these default values will be
+    ///   used.
+    pub routes: Option<Routes>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, MergeRight, JsonSchema, Getters)]
+pub struct Routes {
+    #[serde(default = "default_status")]
+    status: String,
+    #[serde(rename = "graphQL", default = "default_graphql")]
+    graphql: String,
+}
+
+fn default_status() -> String {
+    "/status".into()
+}
+
+fn default_graphql() -> String {
+    "/graphql".into()
+}
+
+impl Default for Routes {
+    fn default() -> Self {
+        Self { status: "/status".into(), graphql: "/graphql".into() }
+    }
+}
+
+impl Routes {
+    pub fn with_status<T: Into<String>>(self, status: T) -> Self {
+        Self { graphql: self.graphql, status: status.into() }
+    }
+
+    pub fn with_graphql<T: Into<String>>(self, graphql: T) -> Self {
+        Self { status: self.status, graphql: graphql.into() }
+    }
 }
 
 fn merge_right_vars(mut left: Vec<KeyValue>, right: Vec<KeyValue>) -> Vec<KeyValue> {
@@ -230,6 +273,10 @@ impl Server {
     }
     pub fn enable_jit(&self) -> bool {
         self.enable_jit.unwrap_or(true)
+    }
+
+    pub fn get_routes(&self) -> Routes {
+        self.routes.clone().unwrap_or_default()
     }
 }
 

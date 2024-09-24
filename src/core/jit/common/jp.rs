@@ -5,9 +5,9 @@ use serde::Deserialize;
 use crate::core::blueprint::Blueprint;
 use crate::core::config::{Config, ConfigModule};
 use crate::core::jit::builder::Builder;
-use crate::core::jit::store::{Data, Store};
+use crate::core::jit::store::Store;
 use crate::core::jit::synth::Synth;
-use crate::core::jit::{self, OperationPlan, Positioned, Variables};
+use crate::core::jit::{OperationPlan, Variables};
 use crate::core::json::{JsonLike, JsonObjectLike};
 use crate::core::valid::Validator;
 
@@ -25,11 +25,9 @@ struct TestData<Value> {
     users: Vec<Value>,
 }
 
-type Entry<Value> = Data<Result<Value, Positioned<jit::Error>>>;
-
 struct ProcessedTestData<Value> {
     posts: Value,
-    users: HashMap<usize, Entry<Value>>,
+    users: Value,
 }
 
 impl<'a, Value: JsonLike<'a> + Deserialize<'a> + Clone + 'a> TestData<Value> {
@@ -56,7 +54,7 @@ impl<'a, Value: JsonLike<'a> + Deserialize<'a> + Clone + 'a> TestData<Value> {
             map
         });
 
-        let users: HashMap<_, _> = posts
+        let users: Vec<_> = posts
             .iter()
             .map(|post| {
                 let user_id = post
@@ -74,23 +72,16 @@ impl<'a, Value: JsonLike<'a> + Deserialize<'a> + Clone + 'a> TestData<Value> {
                     Value::null()
                 }
             })
-            .map(Ok)
-            .map(Data::Single)
-            .enumerate()
             .collect();
 
-        ProcessedTestData { posts: Value::array(posts.clone()), users }
+        ProcessedTestData {
+            posts: Value::array(posts.clone()),
+            users: Value::array(users),
+        }
     }
 }
 
-impl<
-        'a,
-        Value: Deserialize<'a>
-            + Clone
-            + 'a
-            + JsonLike<'a, JsonObject<'a>: JsonObjectLike<'a, Value = Value>>,
-    > JP<Value>
-{
+impl<'a, Value: Deserialize<'a> + Clone + 'a + JsonLike<'a>> JP<Value> {
     const CONFIG: &'static str = include_str!("../fixtures/jsonplaceholder-mutation.graphql");
 
     fn plan(query: &str, variables: &Variables<async_graphql::Value>) -> OperationPlan<Value> {
@@ -127,15 +118,12 @@ impl<
             .id
             .to_owned();
 
-        let store = [
-            (posts_id, Data::Single(Ok(posts))),
-            (users_id, Data::Multiple(users)),
-        ]
-        .into_iter()
-        .fold(Store::new(), |mut store, (id, data)| {
-            store.set_data(id, data);
-            store
-        });
+        let store = [(posts_id, Ok(posts)), (users_id, Ok(users))]
+            .into_iter()
+            .fold(Store::new(), |mut store, (id, data)| {
+                store.set_data(id, data);
+                store
+            });
 
         Synth::new(plan, store, vars)
     }

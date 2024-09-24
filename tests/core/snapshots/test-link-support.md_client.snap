@@ -24,11 +24,18 @@ scalar Int8
 
 scalar JSON
 
+type News {
+  id: Int
+}
+
+input NewsInput {
+  id: Int
+}
+
 scalar PhoneNumber
 
 type Query {
-  addUsers(userNames: [[String!]!]!): Boolean
-  userGroups: [[User!]!]!
+  newsById(news: NewsInput!): News!
 }
 
 scalar UInt128
@@ -42,11 +49,6 @@ scalar UInt64
 scalar UInt8
 
 scalar Url
-
-type User {
-  id: ID!
-  name: String!
-}
 
 schema {
   query: Query

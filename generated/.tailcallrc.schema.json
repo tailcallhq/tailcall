@@ -777,6 +777,18 @@
       "title": "JSON",
       "description": "Field whose value conforms to the standard JSON format as specified in RFC 8259 (https://datatracker.ietf.org/doc/html/rfc8259)."
     },
+    "Key": {
+      "description": "Directive `@key` for Apollo Federation",
+      "type": "object",
+      "required": [
+        "fields"
+      ],
+      "properties": {
+        "fields": {
+          "type": "string"
+        }
+      }
+    },
     "KeyValue": {
       "type": "object",
       "required": [
@@ -802,6 +814,9 @@
             "string",
             "null"
           ]
+        },
+        "meta": {
+          "description": "Additional metadata pertaining to the linked resource."
         },
         "src": {
           "description": "The source of the link. It can be a URL or a path to a file. If a path is provided, it is relative to the file that imports the link.",
@@ -949,6 +964,19 @@
         }
       }
     },
+    "Routes": {
+      "type": "object",
+      "properties": {
+        "graphQL": {
+          "default": "/graphql",
+          "type": "string"
+        },
+        "status": {
+          "default": "/status",
+          "type": "string"
+        }
+      }
+    },
     "ScriptOptions": {
       "type": "object",
       "properties": {
@@ -1054,6 +1082,17 @@
           "type": [
             "boolean",
             "null"
+          ]
+        },
+        "routes": {
+          "description": "`routes` allows customization of server endpoint paths. It provides options to change the default paths for status and GraphQL endpoints. Default values are: - status: \"/status\" - graphQL: \"/graphql\" If not specified, these default values will be used.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Routes"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "script": {
@@ -1218,6 +1257,80 @@
     "Type": {
       "description": "Represents a GraphQL type. A type can be an object, interface, enum or scalar.",
       "type": "object",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "http"
+          ],
+          "properties": {
+            "http": {
+              "$ref": "#/definitions/Http"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "grpc"
+          ],
+          "properties": {
+            "grpc": {
+              "$ref": "#/definitions/Grpc"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "graphql"
+          ],
+          "properties": {
+            "graphql": {
+              "$ref": "#/definitions/GraphQL"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "call"
+          ],
+          "properties": {
+            "call": {
+              "$ref": "#/definitions/Call"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "js"
+          ],
+          "properties": {
+            "js": {
+              "$ref": "#/definitions/JS"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "expr"
+          ],
+          "properties": {
+            "expr": {
+              "$ref": "#/definitions/Expr"
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
       "required": [
         "fields"
       ],
@@ -1261,6 +1374,18 @@
             "type": "string"
           },
           "uniqueItems": true
+        },
+        "key": {
+          "description": "Apollo federation key directive. skip since it's set automatically by config transformer",
+          "writeOnly": true,
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Key"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "protected": {
           "description": "Marks field as protected by auth providers",

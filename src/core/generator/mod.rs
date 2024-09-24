@@ -10,6 +10,9 @@ pub use generator::{Generator, Input};
 
 use crate::core::counter::{Count, Counter};
 
+// it's used as prefix to all the names which are auto generated.
+pub const PREFIX: &str = "GEN__";
+
 pub struct NameGenerator {
     counter: Counter<u64>,
     prefix: String,
