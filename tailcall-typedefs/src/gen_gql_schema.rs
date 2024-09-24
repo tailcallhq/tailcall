@@ -12,7 +12,6 @@ mod tests {
 
     use schemars::schema::Schema;
     use schemars::JsonSchema;
-    use tailcall::core::sdl::SdlPrinter;
     use tailcall_typedefs_common::directive_definition::{
         into_directive_definition, Attrs, DirectiveDefinition,
     };
@@ -84,7 +83,7 @@ mod tests {
     fn it_works_for_into_scalar() {
         let builder = ServiceDocumentBuilder::new();
         let doc = builder.add_scalar(FooScalar::scalar_definition()).build();
-        let actual = SdlPrinter::default().print(doc);
+        let actual = tailcall::core::document::print(doc);
         let expected = "scalar FooScalar".to_string();
         assert_eq!(actual, expected);
     }
@@ -95,7 +94,7 @@ mod tests {
         let doc = builder
             .add_directive(ComplexDirective::directive_definition(&mut HashSet::new()))
             .build();
-        let actual = SdlPrinter::default().print(doc);
+        let actual = tailcall::core::document::print(doc);
         let expected = "directive @complexDirective(\n  custom_type: FooType\n  enum_field: FooEnum\n  field1: Int!\n) repeatable on SCHEMA\n\ninput BarType {\n  field2: BazType\n}\n\ninput BazType {\n  field: Int!\n}\n\ninput FooType {\n  field1: Int!\n  field2: Int\n  field3: [String!]\n  inner_type: BarType\n}\n\nenum FooEnum {\n  Variant\n  Variant2\n  Variat3\n}".to_string();
 
         assert_eq!(actual, expected);
