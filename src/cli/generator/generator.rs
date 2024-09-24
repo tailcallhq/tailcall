@@ -182,8 +182,6 @@ impl Generator {
 
         let mut config = config_gen.mutation(mutation_type_name).generate(true)?;
 
-        // TODO: link check the generated config
-
         if infer_type_names {
             if let Some(LLMConfig { model: Some(model), secret }) = llm {
                 let mut llm_gen = InferTypeName::new(model, secret.map(|s| s.to_string()));

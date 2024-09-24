@@ -20,7 +20,7 @@ mod headers;
 mod into_document;
 mod key_values;
 mod link;
-pub mod lint;
+pub mod linter;
 mod npo;
 pub mod reader;
 pub mod reader_context;
