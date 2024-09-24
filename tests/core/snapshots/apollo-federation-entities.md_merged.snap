@@ -15,7 +15,7 @@ union _Entity = Post | User
 
 type Post @expr(body: {id: "{{.value.id}}", title: "post-title-{{.value.id}}"}) @key(fields: "id") {
   id: Int!
-  title: String!
+  title: String! @override(from: "name")
 }
 
 type Query {
@@ -30,7 +30,7 @@ type Query {
   user(id: Int!): User @http(path: "/users/{{.args.id}}")
 }
 
-type User @call(steps: [{query: "user", args: {id: "{{.value.user.id}}"}}]) @key(fields: "user { id }") {
+type User @call(steps: [{query: "user", args: {id: "{{.value.user.id}}"}}]) @key(fields: "user { id }") @shareable {
   id: Int!
   name: String!
 }

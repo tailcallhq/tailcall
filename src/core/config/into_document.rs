@@ -3,7 +3,9 @@ use async_graphql::{Pos, Positioned};
 use async_graphql_value::{ConstValue, Name};
 
 use super::Config;
-use crate::core::directive::DirectiveCodec;
+use crate::core::blueprint;
+use crate::core::directive::{to_const_directive, DirectiveCodec};
+use crate::core::valid::Validator;
 
 fn pos<A>(a: A) -> Positioned<A> {
     Positioned::new(a, Pos::default())
@@ -73,7 +75,7 @@ fn config_document(config: &Config) -> ServiceDocument {
                     .iter()
                     .map(|(name, field)| {
                         let type_of = &field.type_of;
-                        let directives = get_directives(field);
+                        let directives = field_directives(field);
                         pos(FieldDefinition {
                             description: field.doc.clone().map(pos),
                             name: pos(Name::new(name.clone())),
@@ -92,7 +94,7 @@ fn config_document(config: &Config) -> ServiceDocument {
                     .iter()
                     .map(|(name, field)| {
                         let type_of = &field.type_of;
-                        let directives = get_directives(field);
+                        let directives = field_directives(field);
 
                         pos(async_graphql::parser::types::InputValueDefinition {
                             description: field.doc.clone().map(pos),
@@ -119,7 +121,7 @@ fn config_document(config: &Config) -> ServiceDocument {
                     .iter()
                     .map(|(name, field)| {
                         let type_of = &field.type_of;
-                        let directives = get_directives(field);
+                        let directives = field_directives(field);
 
                         let args_map = field.args.clone();
                         let args = args_map
@@ -151,31 +153,7 @@ fn config_document(config: &Config) -> ServiceDocument {
             })
         };
 
-        let directives = type_def
-            .added_fields
-            .iter()
-            .map(|added_field: &super::AddField| pos(added_field.to_directive()))
-            .chain(
-                type_def
-                    .cache
-                    .as_ref()
-                    .map(|cache| pos(cache.to_directive())),
-            )
-            .chain(
-                type_def
-                    .protected
-                    .as_ref()
-                    .map(|protected| pos(protected.to_directive())),
-            )
-            .chain(
-                type_def
-                    .resolver
-                    .as_ref()
-                    .and_then(|resolver| resolver.to_directive())
-                    .map(pos),
-            )
-            .chain(type_def.key.as_ref().map(|key| pos(key.to_directive())))
-            .collect::<Vec<_>>();
+        let directives = type_directives(type_def);
 
         definitions.push(TypeSystemDefinition::Type(pos(TypeDefinition {
             extend: false,
@@ -229,7 +207,16 @@ fn config_document(config: &Config) -> ServiceDocument {
     ServiceDocument { definitions }
 }
 
-fn get_directives(field: &crate::core::config::Field) -> Vec<Positioned<ConstDirective>> {
+fn into_directives(
+    directives: &[blueprint::Directive],
+) -> impl Iterator<Item = Positioned<ConstDirective>> + '_ {
+    directives
+        .iter()
+        .filter_map(|d| to_const_directive(d).to_result().ok())
+        .map(pos)
+}
+
+fn field_directives(field: &crate::core::config::Field) -> Vec<Positioned<ConstDirective>> {
     let directives = vec![
         field
             .resolver
@@ -242,7 +229,40 @@ fn get_directives(field: &crate::core::config::Field) -> Vec<Positioned<ConstDir
         field.protected.as_ref().map(|d| pos(d.to_directive())),
     ];
 
-    directives.into_iter().flatten().collect()
+    directives
+        .into_iter()
+        .flatten()
+        .chain(into_directives(&field.directives))
+        .collect()
+}
+
+fn type_directives(type_def: &crate::core::config::Type) -> Vec<Positioned<ConstDirective>> {
+    type_def
+        .added_fields
+        .iter()
+        .map(|added_field: &super::AddField| pos(added_field.to_directive()))
+        .chain(
+            type_def
+                .cache
+                .as_ref()
+                .map(|cache| pos(cache.to_directive())),
+        )
+        .chain(
+            type_def
+                .protected
+                .as_ref()
+                .map(|protected| pos(protected.to_directive())),
+        )
+        .chain(
+            type_def
+                .resolver
+                .as_ref()
+                .and_then(|resolver| resolver.to_directive())
+                .map(pos),
+        )
+        .chain(type_def.key.as_ref().map(|key| pos(key.to_directive())))
+        .chain(into_directives(&type_def.directives))
+        .collect::<Vec<_>>()
 }
 
 impl From<&Config> for ServiceDocument {

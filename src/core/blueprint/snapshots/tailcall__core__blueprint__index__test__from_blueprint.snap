@@ -1204,7 +1204,6 @@ Index {
                 arguments: {
                     "port": Number(8000),
                 },
-                index: 0,
             },
         ],
     },

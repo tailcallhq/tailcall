@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, HashSet};
 
 use async_graphql::parser::types::ConstDirective;
 
@@ -71,18 +71,12 @@ pub fn to_directive(const_directive: ConstDirective) -> Valid<Directive, String>
         .into_iter()
         .map(|(k, v)| {
             let value = v.node.into_json();
-            if let Ok(value) = value {
-                return Ok((k.node.to_string(), value));
-            }
-            Err(value.unwrap_err())
+
+            value.map(|value| (k.node.to_string(), value))
         })
-        .collect::<Result<HashMap<String, serde_json::Value>, _>>()
+        .collect::<Result<_, _>>()
         .map_err(|e| ValidationError::new(e.to_string()))
-        .map(|arguments| Directive {
-            name: const_directive.name.node.clone().to_string(),
-            arguments,
-            index: 0,
-        })
+        .map(|arguments| Directive { name: const_directive.name.node.to_string(), arguments })
         .into()
 }
 

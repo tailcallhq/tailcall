@@ -315,6 +315,22 @@
       "title": "DateTime",
       "description": "Field whose value conforms to the standard datetime format as specified in RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339\")."
     },
+    "Directive": {
+      "type": "object",
+      "required": [
+        "arguments",
+        "name"
+      ],
+      "properties": {
+        "arguments": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
     "Email": {
       "title": "Email",
       "description": "Field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address."
@@ -461,6 +477,13 @@
         },
         "default_value": {
           "description": "Stores the default value for the field"
+        },
+        "directives": {
+          "description": "Any additional directives",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Directive"
+          }
         },
         "doc": {
           "description": "Publicly visible documentation for the field.",
@@ -1352,6 +1375,13 @@
               "type": "null"
             }
           ]
+        },
+        "directives": {
+          "description": "Any additional directives",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Directive"
+          }
         },
         "doc": {
           "description": "Documentation for the type that is publicly visible.",

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use tailcall_macros::DirectiveDefinition;
 
-use super::super::is_default;
+use crate::core::is_default;
 
 #[derive(
     Default,

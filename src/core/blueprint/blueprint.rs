@@ -5,6 +5,7 @@ use async_graphql::dynamic::{Schema, SchemaBuilder};
 use async_graphql::extensions::ApolloTracing;
 use async_graphql::ValidationMode;
 use derive_setters::Setters;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::telemetry::Telemetry;
@@ -123,11 +124,10 @@ impl FieldDefinition {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
 pub struct Directive {
     pub name: String,
     pub arguments: HashMap<String, Value>,
-    pub index: usize,
 }
 
 #[derive(Clone, Debug)]

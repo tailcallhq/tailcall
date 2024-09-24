@@ -5,9 +5,8 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use tailcall_macros::DirectiveDefinition;
 
-use super::merge_key_value_vecs;
 use crate::core::config::headers::Headers;
-use crate::core::config::KeyValue;
+use crate::core::config::{merge_key_value_vecs, KeyValue};
 use crate::core::is_default;
 use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;

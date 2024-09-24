@@ -11,8 +11,7 @@ fn pos<A>(a: A) -> Positioned<A> {
     Positioned::new(a, Pos::default())
 }
 
-#[allow(dead_code)]
-fn to_const_directive(directive: &blueprint::Directive) -> Valid<ConstDirective, String> {
+pub fn to_const_directive(directive: &blueprint::Directive) -> Valid<ConstDirective, String> {
     Valid::from_iter(directive.arguments.iter(), |(k, v)| {
         let name = pos(Name::new(k.clone()));
         Valid::from(serde_json::from_value(v.clone()).map(pos).map_err(|e| {
@@ -119,7 +118,6 @@ mod tests {
             arguments: vec![("a".to_string(), serde_json::json!(1.0))]
                 .into_iter()
                 .collect(),
-            index: 0,
         };
 
         let const_directive: ConstDirective = to_const_directive(&directive).to_result().unwrap();
