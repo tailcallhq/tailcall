@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::fmt::Write;
 
+use async_graphql::parser::types::{SchemaDefinition, ServiceDocument, TypeSystemDefinition};
+
 use super::{compile_call, compile_expr, compile_graphql, compile_grpc, compile_http, compile_js};
 use crate::core::blueprint::FieldDefinition;
 use crate::core::config::{
@@ -78,14 +80,15 @@ pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, S
 }
 
 pub fn compile_service(config: &ConfigModule) -> Valid<IR, String> {
-    let mut sdl = config.to_sdl();
+    let mut sdl =
+        crate::core::document::print(filter_conflicting_directives(config.config().into()));
 
     writeln!(sdl).ok();
     // Add tailcall specific definitions to the sdl output
     writeln!(
         sdl,
         "{}",
-        crate::core::document::print(Config::graphql_schema())
+        crate::core::document::print(filter_conflicting_directives(Config::graphql_schema()))
     )
     .ok();
     writeln!(sdl).ok();
@@ -97,6 +100,41 @@ pub fn compile_service(config: &ConfigModule) -> Valid<IR, String> {
     writeln!(sdl, ")").ok();
 
     Valid::succeed(IR::Service(sdl))
+}
+
+fn filter_conflicting_directives(sd: ServiceDocument) -> ServiceDocument {
+    fn filter_directive(directive_name: &str) -> bool {
+        directive_name != "link"
+    }
+
+    fn filter_map(def: TypeSystemDefinition) -> Option<TypeSystemDefinition> {
+        match def {
+            TypeSystemDefinition::Schema(schema) => {
+                Some(TypeSystemDefinition::Schema(schema.map(|schema| {
+                    SchemaDefinition {
+                        directives: schema
+                            .directives
+                            .into_iter()
+                            .filter(|d| filter_directive(d.node.name.node.as_str()))
+                            .collect(),
+                        ..schema
+                    }
+                })))
+            }
+            TypeSystemDefinition::Directive(directive) => {
+                if filter_directive(directive.node.name.node.as_str()) {
+                    Some(TypeSystemDefinition::Directive(directive))
+                } else {
+                    None
+                }
+            }
+            ty => Some(ty),
+        }
+    }
+
+    ServiceDocument {
+        definitions: sd.definitions.into_iter().filter_map(filter_map).collect(),
+    }
 }
 
 pub fn update_apollo_federation<'a>(

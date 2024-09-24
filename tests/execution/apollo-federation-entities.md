@@ -3,7 +3,8 @@
 ```graphql @config
 schema
   @server(port: 8000)
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 100}) {
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 100})
+  @link(src: "./posts.graphql") {
   query: Query
 }
 
@@ -15,7 +16,9 @@ type User @call(steps: [{query: "user", args: {id: "{{.value.user.id}}"}}]) {
   id: Int!
   name: String!
 }
+```
 
+```graphql @file:posts.graphql
 type Post @expr(body: {id: "{{.value.id}}", title: "post-title-{{.value.id}}"}) {
   id: Int!
   title: String!

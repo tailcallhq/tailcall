@@ -4,7 +4,8 @@ expression: formatter
 ---
 schema
   @server(port: 8000)
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", batch: {delay: 100, headers: []}, httpCache: 42) {
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", batch: {delay: 100, headers: []}, httpCache: 42)
+  @link(src: "./posts.graphql", type: Config) {
   query: Query
 }
 
