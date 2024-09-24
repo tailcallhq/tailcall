@@ -90,12 +90,14 @@ impl AppContext {
                                     result
                                 }
 
-                                IO::Grpc { req_template, group_by, .. } => {
-                                    let data_loader = GrpcDataLoader {
-                                        runtime: runtime.clone(),
-                                        operation: req_template.operation.clone(),
-                                        group_by: group_by.clone(),
-                                    };
+                                IO::Grpc { req_template, group_by, is_list, .. } => {
+                                    let data_loader = GrpcDataLoader::new(
+                                        runtime.clone(),
+                                        req_template.operation.clone(),
+                                        group_by.clone(),
+                                        *is_list,
+                                    );
+
                                     let data_loader = data_loader.into_data_loader(
                                         upstream_batch.clone().unwrap_or_default(),
                                     );
@@ -104,6 +106,7 @@ impl AppContext {
                                         req_template: req_template.clone(),
                                         group_by: group_by.clone(),
                                         dl_id: Some(DataLoaderId::new(grpc_data_loaders.len())),
+                                        is_list: *is_list,
                                     }));
 
                                     grpc_data_loaders.push(data_loader);
