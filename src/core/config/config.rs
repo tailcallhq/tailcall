@@ -3,24 +3,22 @@ use std::fmt::{self, Display};
 use std::num::NonZeroU64;
 
 use anyhow::Result;
-use async_graphql::parser::types::{ConstDirective, ServiceDocument};
-use async_graphql::Positioned;
+use async_graphql::parser::types::ServiceDocument;
 use derive_setters::Setters;
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tailcall_macros::{CustomResolver, DirectiveDefinition, InputDefinition};
+use tailcall_macros::{DirectiveDefinition, InputDefinition};
 use tailcall_typedefs_common::directive_definition::DirectiveDefinition;
 use tailcall_typedefs_common::input_definition::InputDefinition;
 use tailcall_typedefs_common::ServiceDocumentBuilder;
 
-use super::directives::{Call, EntityResolver, Expr, GraphQL, Grpc, Http, Key, JS};
+use super::directives::{Call, Expr, GraphQL, Grpc, Http, Key, JS};
 use super::from_document::from_document;
 use super::telemetry::Telemetry;
-use super::{Link, Server, Upstream};
+use super::{Link, Resolver, Server, Upstream};
 use crate::core::config::npo::QueryPath;
 use crate::core::config::source::Source;
-use crate::core::directive::DirectiveCodec;
 use crate::core::is_default;
 use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
@@ -219,53 +217,6 @@ pub struct RootSchema {
 #[serde(deny_unknown_fields)]
 /// Used to omit a field from public consumption.
 pub struct Omit {}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum ApolloFederation {
-    EntityResolver(EntityResolver),
-    Service,
-}
-
-#[derive(
-    Serialize,
-    Deserialize,
-    Clone,
-    Debug,
-    PartialEq,
-    Eq,
-    schemars::JsonSchema,
-    MergeRight,
-    CustomResolver,
-)]
-#[serde(rename_all = "camelCase")]
-pub enum Resolver {
-    Http(Http),
-    Grpc(Grpc),
-    Graphql(GraphQL),
-    Call(Call),
-    Js(JS),
-    Expr(Expr),
-    #[serde(skip)]
-    #[resolver(skip_directive)]
-    ApolloFederation(ApolloFederation),
-}
-
-impl Resolver {
-    pub fn is_batched(&self) -> bool {
-        match self {
-            Resolver::Http(http) => !http.batch_key.is_empty(),
-            Resolver::Grpc(grpc) => !grpc.batch_key.is_empty(),
-            Resolver::Graphql(graphql) => graphql.batch,
-            Resolver::ApolloFederation(ApolloFederation::EntityResolver(entity_resolver)) => {
-                entity_resolver
-                    .resolver_by_type
-                    .values()
-                    .any(Resolver::is_batched)
-            }
-            _ => false,
-        }
-    }
-}
 
 ///
 /// A field definition containing all the metadata information about resolving a
@@ -795,6 +746,7 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     use super::*;
+    use crate::core::directive::DirectiveCodec;
 
     #[test]
     fn test_field_has_or_not_batch_resolver() {

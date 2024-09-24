@@ -74,7 +74,7 @@ pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, S
             })
         },
     )
-    .map_to(IR::EntityResolver(resolver_by_type))
+    .map_to(IR::Entity(resolver_by_type))
 }
 
 pub fn compile_service(config: &ConfigModule) -> Valid<IR, String> {

@@ -27,7 +27,7 @@ pub enum IR {
     Pipe(Box<IR>, Box<IR>),
     Discriminate(Discriminator, Box<IR>),
     /// Apollo Federation _entities resolver
-    EntityResolver(HashMap<String, IR>),
+    Entity(HashMap<String, IR>),
     /// Apollo Federation _service resolver
     Service(String),
 }
@@ -154,7 +154,7 @@ impl IR {
                     IR::Discriminate(discriminator, expr) => {
                         IR::Discriminate(discriminator, expr.modify_box(modifier))
                     }
-                    IR::EntityResolver(map) => IR::EntityResolver(
+                    IR::Entity(map) => IR::Entity(
                         map.into_iter()
                             .map(|(k, v)| (k, v.modify(modifier)))
                             .collect(),

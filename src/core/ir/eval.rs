@@ -104,13 +104,13 @@ impl IR {
 
                     Ok(value)
                 }),
-                IR::EntityResolver(map) => {
+                IR::Entity(map) => {
                     let representations = ctx.path_arg(&["representations"]);
 
                     let representations = representations
                         .as_ref()
                         .and_then(|repr| repr.as_array())
-                        .ok_or(Error::EntityResolver(
+                        .ok_or(Error::Entity(
                             "expected `representations` arg as an array of _Any".to_string(),
                         ))?;
 
@@ -118,11 +118,11 @@ impl IR {
 
                     for repr in representations {
                         // TODO: combine errors, instead of fail fast?
-                        let type_name = repr.get_type_name().ok_or(Error::EntityResolver(
+                        let type_name = repr.get_type_name().ok_or(Error::Entity(
                             "expected __typename to be the part of the representation".to_string(),
                         ))?;
 
-                        let ir = map.get(type_name).ok_or(Error::EntityResolver(format!(
+                        let ir = map.get(type_name).ok_or(Error::Entity(format!(
                             "Cannot find a resolver for type: `{type_name}`"
                         )))?;
 
