@@ -206,12 +206,12 @@ mod test {
             .map(|(name, arg)| (name.to_string(), arg.type_of.name().to_owned()))
             .collect::<HashMap<_, _>>();
         let test_args = vec![
-            ("p1".to_string(), "Int".to_string()),
-            ("p2".to_string(), "String".to_string()),
+            ("GEN__1".to_string(), "Int".to_string()),
+            ("GEN__2".to_string(), "String".to_string()),
         ]
         .into_iter()
         .collect::<HashMap<_, _>>();
-        assert_eq!("/foo/{{.args.p2}}/bar/{{.args.p1}}", http.path);
+        assert_eq!("/foo/{{.args.GEN__2}}/bar/{{.args.GEN__1}}", http.path);
         assert_eq!(test_args, args);
     }
 }

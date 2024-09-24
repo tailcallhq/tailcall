@@ -1,4 +1,9 @@
-use serde::de::Error;
+use std::collections::HashMap;
+
+use chrono::NaiveDateTime;
+use reqwest::header::{HeaderName, HeaderValue};
+use serde::Serialize;
+use serde_json::Value;
 
 use super::super::Result;
 use super::Collect;
@@ -6,47 +11,72 @@ use crate::Event;
 
 pub struct Tracker {
     api_secret: &'static str,
-    client_id_key: &'static str,
 }
 
 impl Tracker {
-    pub fn new(api_secret: &'static str, client_id_key: &'static str) -> Self {
-        Self { api_secret, client_id_key }
+    pub fn new(api_secret: &'static str) -> Self {
+        Self { api_secret }
+    }
+}
+
+#[derive(Debug, Serialize)]
+struct Payload {
+    api_key: String,
+    event: String,
+    distinct_id: String,
+    properties: HashMap<String, serde_json::Value>,
+    timestamp: Option<NaiveDateTime>,
+}
+
+impl Payload {
+    fn new(api_key: String, input: Event) -> Self {
+        let mut properties = HashMap::new();
+        let distinct_id = input.client_id.to_string();
+        let event = input.event_name.to_string();
+
+        if let Ok(Value::Object(map)) = serde_json::to_value(input) {
+            for (key, value) in map {
+                properties.insert(key, value);
+            }
+        }
+
+        Self {
+            api_key,
+            event,
+            distinct_id,
+            properties,
+            timestamp: Some(chrono::Utc::now().naive_utc()),
+        }
+    }
+}
+
+impl Tracker {
+    fn create_request(&self, event: Event) -> Result<reqwest::Request> {
+        let url = reqwest::Url::parse("https://us.i.posthog.com/capture/")?;
+        let mut request = reqwest::Request::new(reqwest::Method::POST, url);
+        request.headers_mut().insert(
+            HeaderName::from_static("content-type"),
+            HeaderValue::from_static("application/json"),
+        );
+
+        let event = Payload::new(self.api_secret.to_string(), event);
+
+        let _ = request
+            .body_mut()
+            .insert(reqwest::Body::from(serde_json::to_string(&event)?));
+
+        Ok(request)
     }
 }
 
 #[async_trait::async_trait]
 impl Collect for Tracker {
+    // TODO: move http request to a dispatch
     async fn collect(&self, event: Event) -> Result<()> {
-        let api_secret = self.api_secret;
-        let client_id_key = self.client_id_key;
-        let handle_posthog = tokio::task::spawn_blocking(move || -> Result<()> {
-            let client = posthog_rs::client(api_secret);
-            let json = serde_json::to_value(&event)?;
-            let mut posthog_event =
-                posthog_rs::Event::new(event.event_name.clone(), event.client_id);
+        let request = self.create_request(event)?;
+        let client = reqwest::Client::new();
+        client.execute(request).await?;
 
-            match json {
-                serde_json::Value::Object(map) => {
-                    for (mut key, value) in map {
-                        if key == client_id_key {
-                            key = "distinct_id".to_string();
-                        }
-                        posthog_event.insert_prop(key, value)?;
-                    }
-                }
-                _ => {
-                    return Err(
-                        serde_json::Error::custom("Failed to serialize event for posthog").into(),
-                    );
-                }
-            }
-
-            client.capture(posthog_event)?;
-            Ok(())
-        })
-        .await;
-        handle_posthog??;
         Ok(())
     }
 }
