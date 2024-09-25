@@ -1,9 +1,36 @@
-use proc_macro::TokenStream;
+use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput, Fields};
+use syn::{Attribute, Data, DeriveInput, Fields};
 
-pub fn expand_resolver_derive(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as DeriveInput);
+const ATTR_NAMESPACE: &str = "resolver";
+const ATTR_SKIP_DIRECTIVE: &str = "skip_directive";
+
+#[derive(Default)]
+struct Attrs {
+    skip_directive: bool,
+}
+
+fn parse_attrs(attributes: &Vec<Attribute>) -> syn::Result<Attrs> {
+    let mut result = Attrs::default();
+
+    for attr in attributes {
+        if attr.path().is_ident(ATTR_NAMESPACE) {
+            attr.parse_nested_meta(|meta| {
+                if meta.path.is_ident(ATTR_SKIP_DIRECTIVE) {
+                    result.skip_directive = true;
+
+                    return Ok(());
+                }
+
+                Err(meta.error("unrecognized resolver attribute"))
+            })?;
+        }
+    }
+
+    Ok(result)
+}
+
+pub fn expand_resolver_derive(input: DeriveInput) -> syn::Result<TokenStream> {
     let name = &input.ident;
 
     let variants = if let Data::Enum(data_enum) = &input.data {
@@ -12,20 +39,27 @@ pub fn expand_resolver_derive(input: TokenStream) -> TokenStream {
             .iter()
             .map(|variant| {
                 let variant_name = &variant.ident;
+                let attrs = &variant.attrs;
                 let ty = match &variant.fields {
                     Fields::Unnamed(fields) if fields.unnamed.len() == 1 => &fields.unnamed[0].ty,
                     _ => panic!("Resolver variants must have exactly one unnamed field"),
                 };
 
-                (variant_name, ty)
+                let attrs = parse_attrs(attrs)?;
+
+                Ok((variant_name, ty, attrs))
             })
-            .collect::<Vec<_>>()
+            .collect::<syn::Result<Vec<_>>>()?
     } else {
         panic!("Resolver can only be derived for enums");
     };
 
-    let variant_parsers = variants.iter().map(|(variant_name, ty)| {
-        quote! {
+    let variant_parsers = variants.iter().filter_map(|(variant_name, ty, attrs)| {
+        if attrs.skip_directive {
+            return None;
+        }
+
+        Some(quote! {
             valid = valid.and(<#ty>::from_directives(directives.iter()).map(|resolver| {
                 if let Some(resolver) = resolver {
                     let directive_name = <#ty>::trace_name();
@@ -35,18 +69,30 @@ pub fn expand_resolver_derive(input: TokenStream) -> TokenStream {
                     result = Some(Self::#variant_name(resolver));
                 }
             }));
+        })
+    });
+
+    let match_arms_to_directive = variants.iter().map(|(variant_name, _ty, attrs)| {
+        if attrs.skip_directive {
+            quote! {
+                Self::#variant_name(d) => None,
+            }
+        } else {
+            quote! {
+                Self::#variant_name(d) => Some(d.to_directive()),
+            }
         }
     });
 
-    let match_arms_to_directive = variants.iter().map(|(variant_name, _ty)| {
-        quote! {
-            Self::#variant_name(d) => d.to_directive(),
-        }
-    });
-
-    let match_arms_directive_name = variants.iter().map(|(variant_name, ty)| {
-        quote! {
-            Self::#variant_name(_) => <#ty>::directive_name(),
+    let match_arms_directive_name = variants.iter().map(|(variant_name, ty, attrs)| {
+        if attrs.skip_directive {
+            quote! {
+                Self::#variant_name(_) => String::new(),
+            }
+        } else {
+            quote! {
+                Self::#variant_name(_) => <#ty>::directive_name(),
+            }
         }
     });
 
@@ -73,7 +119,7 @@ pub fn expand_resolver_derive(input: TokenStream) -> TokenStream {
                 })
             }
 
-            pub fn to_directive(&self) -> ConstDirective {
+            pub fn to_directive(&self) -> Option<ConstDirective> {
                 match self {
                     #(#match_arms_to_directive)*
                 }
@@ -87,5 +133,5 @@ pub fn expand_resolver_derive(input: TokenStream) -> TokenStream {
         }
     };
 
-    TokenStream::from(expanded)
+    Ok(expanded)
 }

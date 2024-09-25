@@ -31,7 +31,7 @@ with 0 nanoseconds should be  encoded in JSON format as "3s", while 3 seconds an
 1 nanosecond should  be expressed in JSON format as "3.000000001s", and 3 seconds 
 and 1  microsecond should be expressed in JSON format as "3.000001s".
 """
-input google__protobuf__DurationInput {
+input GEN__google__protobuf__DurationInput {
   """
   Signed fractions of a second at nanosecond resolution of the span  of time. Durations 
   less than one second are represented with a 0  `seconds` field and a positive or 
@@ -51,7 +51,7 @@ input google__protobuf__DurationInput {
 """
 Wrapper message for `int32`.  The JSON representation for `Int32Value` is JSON number.
 """
-input google__protobuf__Int32ValueInput {
+input GEN__google__protobuf__Int32ValueInput {
   """
   The int32 value.
   """
@@ -62,7 +62,7 @@ input google__protobuf__Int32ValueInput {
 Wrapper message for `string`.  The JSON representation for `StringValue` is JSON 
 string.
 """
-input google__protobuf__StringValue {
+input GEN__google__protobuf__StringValue {
   """
   The string value.
   """
@@ -111,7 +111,7 @@ with  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can u
  the Joda Time's [`ISODateTimeFormat.dateTime()`](  http://www.joda.org/joda-time/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime%2D%2D 
  ) to obtain a formatter capable of generating timestamps in this format.
 """
-input google__protobuf__TimestampInput {
+input GEN__google__protobuf__TimestampInput {
   """
   Non-negative fractions of a second at nanosecond resolution. Negative  second values 
   with fractions must still have non-negative nanos values  that count forward in time. 
@@ -128,49 +128,49 @@ input google__protobuf__TimestampInput {
 """
 movie message payload
 """
-input movies__MovieInput {
+input GEN__movies__MovieInput {
   """
   list of cast
   """
   cast: [String]
-  duration: google__protobuf__DurationInput
-  genre: movies__Genre
+  duration: GEN__google__protobuf__DurationInput
+  genre: GEN__movies__Genre
   name: String
   rating: Float
   """
   SubMovie reference
   """
-  subMovie: movies__Movie__SubMovieInput
-  time: google__protobuf__TimestampInput
-  year: google__protobuf__Int32ValueInput
+  subMovie: GEN__movies__Movie__SubMovieInput
+  time: GEN__google__protobuf__TimestampInput
+  year: GEN__google__protobuf__Int32ValueInput
 }
 
-input movies__MovieRequest {
-  movie: movies__MovieInput
+input GEN__movies__MovieRequest {
+  movie: GEN__movies__MovieInput
 }
 
 """
 This is a comment for submovie
 """
-input movies__Movie__SubMovieInput {
+input GEN__movies__Movie__SubMovieInput {
   """
   This is a comment for movie format in submovie
   """
-  format: movies__Movie__MovieFormat
+  format: GEN__movies__Movie__MovieFormat
   """
   This is a comment for sub_rating
   """
   subRating: Float
 }
 
-input movies__SearchByCastRequest {
-  castName: google__protobuf__StringValue
+input GEN__movies__SearchByCastRequest {
+  castName: GEN__google__protobuf__StringValue
 }
 
 """
 This is a comment for Genre enum
 """
-enum movies__Genre {
+enum GEN__movies__Genre {
   ""
   This is a comment for DRAMA variant
   ""
@@ -185,30 +185,11 @@ enum movies__Genre {
 """
 Represents the format in which a movie can be released
 """
-enum movies__Movie__MovieFormat {
+enum GEN__movies__Movie__MovieFormat {
   ""
   The movie is released in IMAX format
   ""
   IMAX
-}
-
-type Query {
-  """
-  get all movies
-  """
-  movies__AnotherExample__GetMovies(movieRequest: movies__MovieRequest!): movies__MoviesResult @grpc(body: "{{.args.movieRequest}}", method: "movies.AnotherExample.GetMovies")
-  """
-  search movies by the name of the cast
-  """
-  movies__AnotherExample__SearchMoviesByCast(searchByCastRequest: movies__SearchByCastRequest!): movies__Movie @grpc(body: "{{.args.searchByCastRequest}}", method: "movies.AnotherExample.SearchMoviesByCast")
-  """
-  get all movies
-  """
-  movies__Example__GetMovies(movieRequest: movies__MovieRequest!): movies__MoviesResult @grpc(body: "{{.args.movieRequest}}", method: "movies.Example.GetMovies")
-  """
-  search movies by the name of the cast
-  """
-  movies__Example__SearchMoviesByCast(searchByCastRequest: movies__SearchByCastRequest!): movies__Movie @grpc(body: "{{.args.searchByCastRequest}}", method: "movies.Example.SearchMoviesByCast")
 }
 
   """
@@ -258,7 +239,7 @@ type Query {
   be expressed in JSON format as "3.000000001s", and 3 seconds and 1
   microsecond should be expressed in JSON format as "3.000001s".
   """
-type google__protobuf__Duration {
+type GEN__google__protobuf__Duration {
   """
   Signed fractions of a second at nanosecond resolution of the span
   of time. Durations less than one second are represented with a 0
@@ -280,7 +261,7 @@ type google__protobuf__Duration {
   Wrapper message for `int32`.
   The JSON representation for `Int32Value` is JSON number.
   """
-type google__protobuf__Int32Value {
+type GEN__google__protobuf__Int32Value {
   """
   The int32 value.
   """
@@ -355,7 +336,7 @@ type google__protobuf__Int32Value {
   http://www.joda.org/joda-time/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime%2D%2D
   ) to obtain a formatter capable of generating timestamps in this format.
   """
-type google__protobuf__Timestamp {
+type GEN__google__protobuf__Timestamp {
   """
   Non-negative fractions of a second at nanosecond resolution. Negative
   second values with fractions must still have non-negative nanos values
@@ -374,31 +355,31 @@ type google__protobuf__Timestamp {
   """
   movie message payload
   """
-type movies__Movie {
+type GEN__movies__Movie {
   """
   list of cast
   """
   cast: [String]
-  duration: google__protobuf__Duration
-  genre: movies__Genre
+  duration: GEN__google__protobuf__Duration
+  genre: GEN__movies__Genre
   name: String
   rating: Float
   """
   SubMovie reference
   """
-  subMovie: movies__Movie__SubMovie
-  time: google__protobuf__Timestamp
-  year: google__protobuf__Int32Value
+  subMovie: GEN__movies__Movie__SubMovie
+  time: GEN__google__protobuf__Timestamp
+  year: GEN__google__protobuf__Int32Value
 }
 
   """
   This is a comment for submovie
   """
-type movies__Movie__SubMovie {
+type GEN__movies__Movie__SubMovie {
   """
   This is a comment for movie format in submovie
   """
-  format: movies__Movie__MovieFormat
+  format: GEN__movies__Movie__MovieFormat
   """
   This is a comment for sub_rating
   """
@@ -408,9 +389,28 @@ type movies__Movie__SubMovie {
   """
   movie result message, contains list of movies
   """
-type movies__MoviesResult {
+type GEN__movies__MoviesResult {
   """
   list of movies
   """
-  result: [movies__Movie]
+  result: [GEN__movies__Movie]
+}
+
+type Query {
+  """
+  get all movies
+  """
+  GEN__movies__AnotherExample__GetMovies(movieRequest: GEN__movies__MovieRequest!): GEN__movies__MoviesResult @grpc(body: "{{.args.movieRequest}}", method: "movies.AnotherExample.GetMovies")
+  """
+  search movies by the name of the cast
+  """
+  GEN__movies__AnotherExample__SearchMoviesByCast(searchByCastRequest: GEN__movies__SearchByCastRequest!): GEN__movies__Movie @grpc(body: "{{.args.searchByCastRequest}}", method: "movies.AnotherExample.SearchMoviesByCast")
+  """
+  get all movies
+  """
+  GEN__movies__Example__GetMovies(movieRequest: GEN__movies__MovieRequest!): GEN__movies__MoviesResult @grpc(body: "{{.args.movieRequest}}", method: "movies.Example.GetMovies")
+  """
+  search movies by the name of the cast
+  """
+  GEN__movies__Example__SearchMoviesByCast(searchByCastRequest: GEN__movies__SearchByCastRequest!): GEN__movies__Movie @grpc(body: "{{.args.searchByCastRequest}}", method: "movies.Example.SearchMoviesByCast")
 }

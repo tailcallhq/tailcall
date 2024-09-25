@@ -302,11 +302,14 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
         return handle_rest_apis(req, app_ctx, req_counter).await;
     }
 
+    let health_check_endpoint = app_ctx.blueprint.server.routes.status();
+    let graphql_endpoint = app_ctx.blueprint.server.routes.graphql();
+
     match *req.method() {
         // NOTE:
         // The first check for the route should be for `/graphql`
         // This is always going to be the most used route.
-        hyper::Method::POST if req.uri().path() == "/graphql" => {
+        hyper::Method::POST if req.uri().path() == graphql_endpoint => {
             graphql_request::<T>(req, &app_ctx, req_counter).await
         }
         hyper::Method::POST
@@ -321,7 +324,13 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
 
             graphql_request::<T>(req, &Arc::new(app_ctx), req_counter).await
         }
-
+        hyper::Method::GET if req.uri().path() == health_check_endpoint => {
+            let status_response = Response::builder()
+                .status(StatusCode::OK)
+                .header(CONTENT_TYPE, "application/json")
+                .body(Body::from(r#"{"message": "ready"}"#))?;
+            Ok(status_response)
+        }
         hyper::Method::GET => {
             if let Some(TelemetryExporter::Prometheus(prometheus)) =
                 app_ctx.blueprint.telemetry.export.as_ref()
@@ -330,7 +339,6 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
                     return prometheus_metrics(prometheus);
                 }
             };
-
             not_found()
         }
         _ => not_found(),
@@ -377,6 +385,70 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
 
 #[cfg(test)]
 mod test {
+    use super::*;
+    use crate::core::async_graphql_hyper::GraphQLRequest;
+    use crate::core::blueprint::Blueprint;
+    use crate::core::config::{Config, ConfigModule, Routes};
+    use crate::core::rest::EndpointSet;
+    use crate::core::runtime::test::init;
+    use crate::core::valid::Validator;
+
+    #[tokio::test]
+    async fn test_health_endpoint() -> anyhow::Result<()> {
+        let sdl = tokio::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER).await?;
+        let config = Config::from_sdl(&sdl).to_result()?;
+        let mut blueprint = Blueprint::try_from(&ConfigModule::from(config))?;
+        blueprint.server.routes = Routes::default().with_status("/health");
+        let app_ctx = Arc::new(AppContext::new(
+            blueprint,
+            init(None),
+            EndpointSet::default(),
+        ));
+
+        let req = Request::builder()
+            .method(Method::GET)
+            .uri("http://localhost:8000/health".to_string())
+            .body(Body::empty())?;
+
+        let resp = handle_request::<GraphQLRequest>(req, app_ctx).await?;
+
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = hyper::body::to_bytes(resp.into_body()).await?;
+        assert_eq!(body, r#"{"message": "ready"}"#);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_graphql_endpoint() -> anyhow::Result<()> {
+        let sdl = tokio::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER).await?;
+        let config = Config::from_sdl(&sdl).to_result()?;
+        let mut blueprint = Blueprint::try_from(&ConfigModule::from(config))?;
+        blueprint.server.routes = Routes::default().with_graphql("/gql");
+        let app_ctx = Arc::new(AppContext::new(
+            blueprint,
+            init(None),
+            EndpointSet::default(),
+        ));
+
+        let query = r#"{"query": "{ __schema { queryType { name } } }"}"#;
+        let req = Request::builder()
+            .method(Method::POST)
+            .uri("http://localhost:8000/gql".to_string())
+            .header("Content-Type", "application/json")
+            .body(Body::from(query))?;
+
+        let resp = handle_request::<GraphQLRequest>(req, app_ctx).await?;
+
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = hyper::body::to_bytes(resp.into_body()).await?;
+        let body_str = String::from_utf8(body.to_vec())?;
+        assert!(body_str.contains("queryType"));
+        assert!(body_str.contains("name"));
+
+        Ok(())
+    }
+
     #[test]
     fn test_create_allowed_headers() {
         use std::collections::BTreeSet;

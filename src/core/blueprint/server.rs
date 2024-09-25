@@ -11,7 +11,7 @@ use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
 use super::Auth;
 use crate::core::blueprint::Cors;
-use crate::core::config::{self, ConfigModule, HttpVersion};
+use crate::core::config::{self, ConfigModule, HttpVersion, Routes};
 use crate::core::valid::{Valid, ValidationError, Validator};
 
 #[derive(Clone, Debug, Setters)]
@@ -38,6 +38,7 @@ pub struct Server {
     pub experimental_headers: HashSet<HeaderName>,
     pub auth: Option<Auth>,
     pub dedupe: bool,
+    pub routes: Routes,
 }
 
 /// Mimic of mini_v8::Script that's wasm compatible
@@ -154,6 +155,7 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
                         cors,
                         auth,
                         dedupe: config_server.get_dedupe(),
+                        routes: config_server.get_routes(),
                     }
                 },
             )
