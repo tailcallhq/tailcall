@@ -186,9 +186,12 @@ mod test {
     use super::Index;
     use crate::core::blueprint::Blueprint;
     use crate::core::config::ConfigModule;
-    use crate::include_config;
+    use crate::core::valid::Valid;
+    use crate::core::ir::model::IR;
+    use crate::core::blueprint::operators::federation::compile_service;
     use insta::assert_snapshot;
-    use crate::federation::compile_service;
+    use crate::include_config;
+
 
     fn setup() -> Index {
         let config = include_config!("./fixture/all-constructs.graphql").unwrap();

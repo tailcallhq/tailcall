@@ -80,24 +80,24 @@ pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, S
 }
 
 pub fn compile_service(config: &ConfigModule) -> Valid<IR, String> {
-    let mut service_doc = crate::core::document::print(filter_conflicting_directives(
-        config.config().into(),
-    ));
+    let mut sdl = crate::core::document::print(filter_conflicting_directives(config.config().into()));
 
-    let additional_schema = crate::core::document::print(filter_conflicting_directives(
-        Config::graphql_schema(),
-    ));
-    
-    let federation_v2_extension = r#"
+    let additional_defs = crate::core::document::print(filter_conflicting_directives(Config::graphql_schema()));
+
+    let federation_v2_directives = r#"
         extend schema @link(
             url: "https://specs.apollo.dev/federation/v2.3",
-            import: ["@key", "@tag", "@shareable", "@inaccessible", "@override", "@external", "@provides", "@requires", "@composeDirective", "@interfaceObject"]
+            import: [
+                "@key", "@tag", "@shareable", "@inaccessible", 
+                "@override", "@external", "@provides", "@requires", 
+                "@composeDirective", "@interfaceObject"
+            ]
         )
     "#;
 
-    writeln!(service_doc, "{}\n{}", additional_schema, federation_v2_extension).ok();
+    writeln!(sdl, "{}{}", additional_defs, federation_v2_directives).ok();
 
-    Valid::succeed(IR::Service(service_doc))
+    Valid::succeed(IR::Service(sdl))
 }
 
 fn filter_conflicting_directives(sd: ServiceDocument) -> ServiceDocument {
