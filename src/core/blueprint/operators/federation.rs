@@ -80,26 +80,24 @@ pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, S
 }
 
 pub fn compile_service(config: &ConfigModule) -> Valid<IR, String> {
-    let mut sdl =
-        crate::core::document::print(filter_conflicting_directives(config.config().into()));
+    let mut service_doc = crate::core::document::print(filter_conflicting_directives(
+        config.config().into(),
+    ));
 
-    writeln!(sdl).ok();
-    // Add tailcall specific definitions to the sdl output
-    writeln!(
-        sdl,
-        "{}",
-        crate::core::document::print(filter_conflicting_directives(Config::graphql_schema()))
-    )
-    .ok();
-    writeln!(sdl).ok();
-    // Mark subgraph as Apollo federation v2 compatible according to [docs](https://www.apollographql.com/docs/apollo-server/using-federation/apollo-subgraph-setup/#2-opt-in-to-federation-2)
-    // (borrowed from async_graphql)
-    writeln!(sdl, "extend schema @link(").ok();
-    writeln!(sdl, "\turl: \"https://specs.apollo.dev/federation/v2.3\",").ok();
-    writeln!(sdl, "\timport: [\"@key\", \"@tag\", \"@shareable\", \"@inaccessible\", \"@override\", \"@external\", \"@provides\", \"@requires\", \"@composeDirective\", \"@interfaceObject\"]").ok();
-    writeln!(sdl, ")").ok();
+    let additional_schema = crate::core::document::print(filter_conflicting_directives(
+        Config::graphql_schema(),
+    ));
+    
+    let federation_v2_extension = r#"
+        extend schema @link(
+            url: "https://specs.apollo.dev/federation/v2.3",
+            import: ["@key", "@tag", "@shareable", "@inaccessible", "@override", "@external", "@provides", "@requires", "@composeDirective", "@interfaceObject"]
+        )
+    "#;
 
-    Valid::succeed(IR::Service(sdl))
+    writeln!(service_doc, "{}\n{}", additional_schema, federation_v2_extension).ok();
+
+    Valid::succeed(IR::Service(service_doc))
 }
 
 fn filter_conflicting_directives(sd: ServiceDocument) -> ServiceDocument {

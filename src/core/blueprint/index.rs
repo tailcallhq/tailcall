@@ -187,6 +187,8 @@ mod test {
     use crate::core::blueprint::Blueprint;
     use crate::core::config::ConfigModule;
     use crate::include_config;
+    use insta::assert_snapshot;
+    use crate::federation::compile_service;
 
     fn setup() -> Index {
         let config = include_config!("./fixture/all-constructs.graphql").unwrap();
@@ -260,5 +262,19 @@ mod test {
         assert!(index.is_type_implements("User", "Node"));
         assert!(index.is_type_implements("Post", "Post"));
         assert!(!index.is_type_implements("Node", "User"));
+    }
+
+    #[test]
+    fn test_compile_service_snapshot() {
+        let config = include_config!("./fixture/all-constructs.graphql").unwrap();
+        let cfg_module = ConfigModule::from(config);
+
+        let result = compile_service(&cfg_module);
+
+        if let Valid::Success(IR::Service(output)) = result {
+            assert_snapshot!(output);
+        } else {
+            panic!("Expected Valid::Success");
+        }
     }
 }
