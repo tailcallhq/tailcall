@@ -29,8 +29,7 @@
   "dependencies": {
     "ts-command-line-args": "^2.5.1",
     "type-fest": "^4.7.1",
-    "yaml": "^2.3.3",
-    "yml": "^1.0.0"
+    "yaml": "^2.3.3"
   },
   "devDependencies": {
     "tsx": "^4.1.0"
