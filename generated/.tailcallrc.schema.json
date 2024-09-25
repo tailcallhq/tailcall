@@ -808,6 +808,16 @@
       "description": "The @link directive allows you to import external resources, such as configuration – which will be merged into the config importing it –, or a .proto file – which will be later used by `@grpc` directive –.",
       "type": "object",
       "properties": {
+        "headers": {
+          "description": "Custom headers for gRPC reflection server.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/KeyValue"
+          }
+        },
         "id": {
           "description": "The id of the link. It is used to reference the link in the schema.",
           "type": [

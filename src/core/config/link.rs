@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use tailcall_macros::DirectiveDefinition;
 
 use super::super::is_default;
+use super::KeyValue;
 
 #[derive(
     Default,
@@ -57,6 +58,10 @@ pub struct Link {
     /// The type of the link. It can be `Config`, or `Protobuf`.
     #[serde(default, skip_serializing_if = "is_default", rename = "type")]
     pub type_of: LinkType,
+    ///
+    /// Custom headers for gRPC reflection server.
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub headers: Option<Vec<KeyValue>>,
     /// Additional metadata pertaining to the linked resource.
     #[serde(default, skip_serializing_if = "is_default")]
     pub meta: Option<serde_json::Value>,

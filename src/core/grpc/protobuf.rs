@@ -266,6 +266,7 @@ pub mod tests {
             id: Some(id.clone()),
             src: path.to_string(),
             type_of: LinkType::Protobuf,
+            headers: None,
             meta: None,
         }]);
 
