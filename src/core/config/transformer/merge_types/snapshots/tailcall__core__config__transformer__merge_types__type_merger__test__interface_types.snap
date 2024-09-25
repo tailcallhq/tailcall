@@ -2,10 +2,10 @@
 source: src/core/config/transformer/merge_types/type_merger.rs
 expression: config.to_sdl()
 ---
-interface M1 {
+interface GEN__M1 {
   a: Int
 }
 
-type C implements M1 {
+type C implements GEN__M1 {
   a: Int
 }

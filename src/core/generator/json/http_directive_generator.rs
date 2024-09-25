@@ -5,6 +5,7 @@ use regex::Regex;
 use url::Url;
 
 use crate::core::config::{Arg, Field, Http, URLQuery};
+use crate::core::generator::PREFIX;
 use crate::core::helpers::gql_type::detect_gql_data_type;
 use crate::core::Type;
 
@@ -76,7 +77,7 @@ impl<'a> HttpDirectiveGenerator<'a> {
                 .fold(path_url.to_string(), |acc, (regex, type_of)| {
                     regex
                         .replace_all(&acc.to_string(), |_: &regex::Captures| {
-                            let arg_key = format!("p{}", arg_index);
+                            let arg_key = format!("{}{}", PREFIX, arg_index);
                             let placeholder = format!("/{{{{.args.{}}}}}", arg_key);
 
                             let arg = Arg {
@@ -205,12 +206,12 @@ mod test {
             .map(|(name, arg)| (name.to_string(), arg.type_of.name().to_owned()))
             .collect::<HashMap<_, _>>();
         let test_args = vec![
-            ("p1".to_string(), "Int".to_string()),
-            ("p2".to_string(), "String".to_string()),
+            ("GEN__1".to_string(), "Int".to_string()),
+            ("GEN__2".to_string(), "String".to_string()),
         ]
         .into_iter()
         .collect::<HashMap<_, _>>();
-        assert_eq!("/foo/{{.args.p2}}/bar/{{.args.p1}}", http.path);
+        assert_eq!("/foo/{{.args.GEN__2}}/bar/{{.args.GEN__1}}", http.path);
         assert_eq!(test_args, args);
     }
 }

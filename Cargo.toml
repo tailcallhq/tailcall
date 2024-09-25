@@ -25,6 +25,7 @@ serde = { version = "1.0.200", features = ["derive"] }
 derive_more = "0.99.18"
 thiserror = "1.0.59"
 url = { version = "2.5.0", features = ["serde"] }
+convert_case = "0.6.0"
 
 [dependencies]
 # dependencies specific to CLI must have optional = true and the dep should be added to default feature.
@@ -149,7 +150,7 @@ async-graphql = { workspace = true, features = [
     "opentelemetry",
 ] }
 dotenvy = "0.15.7"
-convert_case = "0.6.0"
+convert_case = { workspace = true }
 rand = "0.8.5"
 tailcall-macros = { path = "tailcall-macros" }
 tailcall-tracker = { path = "tailcall-tracker", optional = true }
