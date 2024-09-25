@@ -305,7 +305,9 @@ mod tests {
         store: Store<Result<Value, Positioned<Error>>>,
         vars: Variables<Value>,
     }
-    impl<'a, Value: Deserialize<'a> + JsonLike<'a> + Serialize + Clone + std::fmt::Debug> StoreInfo<Value> {
+    impl<'a, Value: Deserialize<'a> + JsonLike<'a> + Serialize + Clone + std::fmt::Debug>
+        StoreInfo<Value>
+    {
         fn make_store(query: &str, store: Vec<(FieldId, TestData)>) -> Self {
             let store = store
                 .into_iter()
