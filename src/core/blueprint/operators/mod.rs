@@ -1,4 +1,4 @@
-mod federation;
+pub mod federation;
 mod call;
 mod enum_alias;
 mod expr;

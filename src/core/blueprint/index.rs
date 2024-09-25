@@ -274,7 +274,7 @@ mod test {
 
         let result = compile_service(&cfg_module);
 
-        if let Valid::Success(IR::Service(output)) = result {
+        if let Ok(IR::Service(output)) = result {
             assert_snapshot!(output);
         } else {
             panic!("Expected Valid::Success");

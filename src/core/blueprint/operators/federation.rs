@@ -79,25 +79,40 @@ pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, S
     .map_to(IR::Entity(resolver_by_type))
 }
 
-pub fn compile_service(config: &ConfigModule) -> Valid<IR, String> {
-    let mut sdl = crate::core::document::print(filter_conflicting_directives(config.config().into()));
+pub fn compile_service(config: &ConfigModule) -> Result<Valid<IR>, String> {
+    let mut service_doc = ServiceDocument::from(config.config().into());
 
-    let additional_defs = crate::core::document::print(filter_conflicting_directives(Config::graphql_schema()));
+    let federation_directive = DirectiveDefinition {
+        name: "link".to_string(),
+        arguments: vec![
+            Argument {
+                name: "url".to_string(),
+                value: Value::String("https://specs.apollo.dev/federation/v2.3".to_string()),
+            },
+            Argument {
+                name: "import".to_string(),
+                value: Value::List(vec![
+                    Value::String("@key".to_string()),
+                    Value::String("@tag".to_string()),
+                    Value::String("@shareable".to_string()),
+                    Value::String("@inaccessible".to_string()),
+                    Value::String("@override".to_string()),
+                    Value::String("@external".to_string()),
+                    Value::String("@provides".to_string()),
+                    Value::String("@requires".to_string()),
+                    Value::String("@composeDirective".to_string()),
+                    Value::String("@interfaceObject".to_string()),
+                ]),
+            },
+        ],
+    };
 
-    let federation_v2_directives = r#"
-        extend schema @link(
-            url: "https://specs.apollo.dev/federation/v2.3",
-            import: [
-                "@key", "@tag", "@shareable", "@inaccessible", 
-                "@override", "@external", "@provides", "@requires", 
-                "@composeDirective", "@interfaceObject"
-            ]
-        )
-    "#;
+    service_doc.add_directive(federation_directive);
 
-    writeln!(sdl, "{}{}", additional_defs, federation_v2_directives).ok();
+    let mut complete_sdl = String::new();
+    writeln!(complete_sdl, "{}", crate::core::document::print(service_doc))?;
 
-    Valid::succeed(IR::Service(sdl))
+    Ok(Valid::succeed(IR::Service(complete_sdl)))
 }
 
 fn filter_conflicting_directives(sd: ServiceDocument) -> ServiceDocument {
