@@ -11,7 +11,7 @@ use async_graphql_value::ConstValue;
 use indexmap::IndexMap;
 
 use super::telemetry::Telemetry;
-use super::Alias;
+use super::{Alias, Resolver};
 use crate::core::config::{
     self, Cache, Config, Enum, Link, Modify, Omit, Protected, RootSchema, Server, Union, Upstream,
     Variant,
@@ -242,14 +242,24 @@ where
     let fields = object.fields();
     let implements = object.implements();
 
-    Cache::from_directives(directives.iter())
+    Resolver::from_directives(directives)
+        .fuse(Cache::from_directives(directives.iter()))
         .fuse(to_fields(fields))
         .fuse(Protected::from_directives(directives.iter()))
-        .map(|(cache, fields, protected)| {
+        .fuse(to_add_fields_from_directives(directives))
+        .map(|(resolver, cache, fields, protected, added_fields)| {
             let doc = description.to_owned().map(|pos| pos.node);
             let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
-            let added_fields = to_add_fields_from_directives(directives);
-            config::Type { fields, added_fields, doc, implements, cache, protected }
+            config::Type {
+                fields,
+                added_fields,
+                doc,
+                implements,
+                cache,
+                protected,
+                resolver,
+                key: None,
+            }
         })
 }
 fn to_input_object(
@@ -400,19 +410,16 @@ fn to_enum(enum_type: EnumType, doc: Option<String>) -> Valid<Enum, String> {
 
 fn to_add_fields_from_directives(
     directives: &[Positioned<ConstDirective>],
-) -> Vec<config::AddField> {
-    directives
-        .iter()
-        .filter_map(|directive| {
-            if directive.node.name.node == config::AddField::directive_name() {
-                config::AddField::from_directive(&directive.node)
-                    .to_result()
-                    .ok()
-            } else {
-                None
-            }
-        })
-        .collect::<Vec<_>>()
+) -> Valid<Vec<config::AddField>, String> {
+    Valid::from_iter(
+        directives
+            .iter()
+            .filter(|v| v.node.name.node == config::AddField::directive_name()),
+        |directive| {
+            let val = config::AddField::from_directive(&directive.node).to_result();
+            Valid::from(val)
+        },
+    )
 }
 
 trait HasName {

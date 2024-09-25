@@ -26,6 +26,10 @@ pub enum IR {
     Map(Map),
     Pipe(Box<IR>, Box<IR>),
     Discriminate(Discriminator, Box<IR>),
+    /// Apollo Federation _entities resolver
+    Entity(HashMap<String, IR>),
+    /// Apollo Federation _service resolver
+    Service(String),
 }
 
 #[derive(Clone, Debug)]
@@ -42,6 +46,7 @@ pub enum IO {
         group_by: Option<GroupBy>,
         dl_id: Option<DataLoaderId>,
         http_filter: Option<HttpFilter>,
+        is_list: bool,
     },
     GraphQL {
         req_template: graphql::RequestTemplate,
@@ -101,7 +106,7 @@ impl Cache {
     /// Performance DFS on the cache on the expression and identifies all the IO
     /// nodes. Then wraps each IO node with the cache primitive.
     pub fn wrap(max_age: NonZeroU64, expr: IR) -> IR {
-        expr.modify(move |expr| match expr {
+        expr.modify(&mut move |expr| match expr {
             IR::IO(io) => Some(IR::Cache(Cache { max_age, io: Box::new(io.to_owned()) })),
             _ => None,
         })
@@ -113,8 +118,8 @@ impl IR {
         IR::Pipe(Box::new(self), Box::new(next))
     }
 
-    pub fn modify(self, mut f: impl FnMut(&IR) -> Option<IR>) -> IR {
-        self.modify_inner(&mut f)
+    pub fn modify<F: FnMut(&IR) -> Option<IR>>(self, modifier: &mut F) -> IR {
+        self.modify_inner(modifier)
     }
 
     fn modify_box<F: FnMut(&IR) -> Option<IR>>(self, modifier: &mut F) -> Box<IR> {
@@ -149,6 +154,12 @@ impl IR {
                     IR::Discriminate(discriminator, expr) => {
                         IR::Discriminate(discriminator, expr.modify_box(modifier))
                     }
+                    IR::Entity(map) => IR::Entity(
+                        map.into_iter()
+                            .map(|(k, v)| (k, v.modify(modifier)))
+                            .collect(),
+                    ),
+                    IR::Service(sdl) => IR::Service(sdl),
                 }
             }
         }

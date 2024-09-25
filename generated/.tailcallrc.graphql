@@ -40,7 +40,7 @@ directive @call(
   of the previous step is passed as input to the next step.
   """
   steps: [Step]
-) on FIELD_DEFINITION
+) on FIELD_DEFINITION | OBJECT
 
 """
 The `@expr` operators allows you to specify an expression that can evaluate to a 
@@ -48,7 +48,7 @@ value. The expression can be a static value or built form a Mustache template. s
 """
 directive @expr(
   body: JSON
-) on FIELD_DEFINITION
+) on FIELD_DEFINITION | OBJECT
 
 """
 The @graphQL operator allows to specify GraphQL API server request to fetch data 
@@ -82,7 +82,7 @@ directive @graphQL(
   field, Tailcall requests data from the corresponding upstream field.
   """
   name: String!
-) on FIELD_DEFINITION
+) on FIELD_DEFINITION | OBJECT
 
 """
 The @grpc operator indicates that a field or node is backed by a gRPC API.For instance, 
@@ -120,7 +120,7 @@ directive @grpc(
   This refers to the gRPC method you're going to call. For instance `GetAllNews`.
   """
   method: String!
-) on FIELD_DEFINITION
+) on FIELD_DEFINITION | OBJECT
 
 """
 The @http operator indicates that a field or node is backed by a REST API.For instance, 
@@ -190,11 +190,11 @@ directive @http(
   is automatically selected as the batching parameter.
   """
   query: [URLQuery]
-) on FIELD_DEFINITION
+) on FIELD_DEFINITION | OBJECT
 
 directive @js(
   name: String!
-) on FIELD_DEFINITION
+) on FIELD_DEFINITION | OBJECT
 
 """
 The @link directive allows you to import external resources, such as configuration 
@@ -203,9 +203,17 @@ The @link directive allows you to import external resources, such as configurati
 """
 directive @link(
   """
+  Custom headers for gRPC reflection server.
+  """
+  headers: [KeyValue]
+  """
   The id of the link. It is used to reference the link in the schema.
   """
   id: String
+  """
+  Additional metadata pertaining to the linked resource.
+  """
+  meta: JSON
   """
   The source of the link. It can be a URL or a path to a file. If a path is provided, 
   it is relative to the file that imports the link.
@@ -291,6 +299,12 @@ directive @server(
   using inferred schema. @default `false`.
   """
   responseValidation: Boolean
+  """
+  `routes` allows customization of server endpoint paths. It provides options to change 
+  the default paths for status and GraphQL endpoints. Default values are: - status: 
+  "/status" - graphQL: "/graphql" If not specified, these default values will be used.
+  """
+  routes: Routes
   """
   A link to an external JS file that listens on every HTTP request response event.
   """
@@ -628,6 +642,11 @@ input Headers {
   sent with the headers.
   """
   setCookies: Boolean
+}
+
+input Routes {
+  graphQL: String!
+  status: String!
 }
 
 input ScriptOptions {

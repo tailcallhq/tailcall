@@ -1,6 +1,9 @@
 use std::fmt::Display;
 
 use convert_case::{Case, Casing};
+
+use super::PREFIX;
+use crate::core::scalar::Scalar;
 pub(super) static DEFAULT_SEPARATOR: &str = "__";
 static PACKAGE_SEPARATOR: &str = ".";
 
@@ -144,12 +147,15 @@ enum Entity {
 }
 
 impl Display for GraphQLType<Parsed> {
+    // The PREFIX is used to identify auto-generated type names in the
+    // LLM-based name correction process.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let parsed = &self.0;
         match parsed.entity {
             Entity::EnumVariant => f.write_str(parsed.name.as_str())?,
             Entity::Field => f.write_str(parsed.name.to_case(Case::Camel).as_str())?,
             Entity::Method => {
+                f.write_str(PREFIX)?;
                 if !parsed.namespace.is_empty() {
                     f.write_str(parsed.namespace.to_string().as_str())?;
                     f.write_str(DEFAULT_SEPARATOR)?;
@@ -157,6 +163,10 @@ impl Display for GraphQLType<Parsed> {
                 f.write_str(parsed.name.as_str())?
             }
             Entity::Enum | Entity::ObjectType => {
+                // if output type is scalar, then skip the prefix.
+                if !Scalar::is_predefined(&parsed.name) {
+                    f.write_str(PREFIX)?;
+                }
                 if !parsed.namespace.is_empty() {
                     f.write_str(parsed.namespace.to_string().as_str())?;
                     f.write_str(DEFAULT_SEPARATOR)?;
@@ -300,13 +310,18 @@ mod tests {
 
     fn assert_type_names(input: Vec<TestParams>) {
         for ((entity, namespaces, name), expected) in input {
+            let prefix = match entity {
+                Entity::Enum | Entity::ObjectType | Entity::Method => PREFIX,
+                _ => "",
+            };
+
             let mut g = GraphQLType::new(name);
             for namespace in namespaces {
                 g = g.push(namespace);
             }
 
             let actual = g.parse(entity).to_string();
-            assert_eq!(actual, expected);
+            assert_eq!(actual, format!("{prefix}{expected}"));
         }
     }
 }

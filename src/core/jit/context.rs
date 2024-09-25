@@ -44,6 +44,16 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
         Self { request, value: None, args: Self::build_args(field), field }
     }
 
+    pub fn with_value(&self, value: &'a Output) -> Self {
+        Self {
+            request: self.request,
+            // TODO: no need to build again?
+            args: Self::build_args(self.field),
+            value: Some(value),
+            field: self.field,
+        }
+    }
+
     pub fn with_value_and_field(
         &self,
         value: &'a Output,
@@ -70,16 +80,9 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
 
         for arg in field.args.iter() {
             let name = arg.name.as_str();
-            let value = arg
-                .value
-                .clone()
-                // TODO: default value resolution should happen in the InputResolver
-                .or_else(|| arg.default_value.clone());
+            let value = arg.value.clone();
             if let Some(value) = value {
                 arg_map.insert(Name::new(name), value);
-            } else if !arg.type_of.is_nullable() {
-                // TODO: throw error here
-                todo!()
             }
         }
         Some(arg_map)

@@ -247,15 +247,11 @@ impl<Input> Field<Flat, Input> {
 }
 
 impl<Input> Field<Nested<Input>, Input> {
-    /// iters over children fields that satisfies
-    /// passed filter_fn
-    pub fn iter_only<'a>(
-        &'a self,
-        mut filter_fn: impl FnMut(&'a Field<Nested<Input>, Input>) -> bool + 'a,
-    ) -> impl Iterator<Item = &Field<Nested<Input>, Input>> + 'a {
+    /// iters over children fields
+    pub fn iter(&self) -> impl Iterator<Item = &Field<Nested<Input>, Input>> {
         self.extensions
             .as_ref()
-            .map(move |nested| nested.0.iter().filter(move |&field| filter_fn(field)))
+            .map(move |nested| nested.0.iter())
             .into_iter()
             .flatten()
     }
@@ -349,6 +345,7 @@ pub struct Nested<Input>(Vec<Field<Nested<Input>, Input>>);
 
 #[derive(Clone)]
 pub struct OperationPlan<Input> {
+    root_name: String,
     flat: Vec<Field<Flat, Input>>,
     operation_type: OperationType,
     nested: Vec<Field<Nested<Input>, Input>>,
@@ -383,6 +380,7 @@ impl<Input> OperationPlan<Input> {
         }
 
         Ok(OperationPlan {
+            root_name: self.root_name,
             flat,
             operation_type: self.operation_type,
             nested,
@@ -393,7 +391,9 @@ impl<Input> OperationPlan<Input> {
 }
 
 impl<Input> OperationPlan<Input> {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
+        root_name: &str,
         fields: Vec<Field<Flat, Input>>,
         operation_type: OperationType,
         index: Arc<Index>,
@@ -410,12 +410,18 @@ impl<Input> OperationPlan<Input> {
             .collect::<Vec<_>>();
 
         Self {
+            root_name: root_name.to_string(),
             flat: fields,
             nested,
             operation_type,
             index,
             is_introspection_query,
         }
+    }
+
+    /// Returns the name of the root type
+    pub fn root_name(&self) -> &str {
+        &self.root_name
     }
 
     /// Returns a graphQL operation type
@@ -487,23 +493,25 @@ impl<Input> OperationPlan<Input> {
         self.index.validate_enum_value(field.type_of.name(), value)
     }
 
-    /// Iterate over nested fields that are related to the __typename of the
-    /// value
-    pub fn field_iter_only<'a, Output>(
+    pub fn field_is_part_of_value<'a, Output>(
         &'a self,
         field: &'a Field<Nested<Input>, Input>,
         value: &'a Output,
-    ) -> impl Iterator<Item = &'a Field<Nested<Input>, Input>>
+    ) -> bool
     where
         Output: TypedValue<'a>,
     {
-        let value_type = field.value_type(value);
-
-        field.iter_only(move |field| match &field.type_condition {
-            Some(type_condition) => self.index.is_type_implements(value_type, type_condition),
+        match &field.type_condition {
+            Some(type_condition) => match value.get_type_name() {
+                Some(value_type) => self.index.is_type_implements(value_type, type_condition),
+                // if there is no __typename in value that means there is a bug in implementation
+                // such we haven't resolved the concrete type or type shouldn't be
+                // inferred here at all and we should just use the field
+                None => true,
+            },
             // if there is no type_condition restriction then use this field
             None => true,
-        })
+        }
     }
 }
 

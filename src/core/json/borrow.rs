@@ -47,6 +47,13 @@ impl<'ctx> JsonLike<'ctx> for Value<'ctx> {
         }
     }
 
+    fn as_array_mut(&mut self) -> Option<&mut Vec<Self>> {
+        match self {
+            Value::Array(arr) => Some(arr),
+            _ => None,
+        }
+    }
+
     fn into_array(self) -> Option<Vec<Self>> {
         match self {
             Value::Array(array) => Some(array),

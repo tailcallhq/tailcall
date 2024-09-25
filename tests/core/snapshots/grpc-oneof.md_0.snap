@@ -9,7 +9,7 @@ expression: response
   },
   "body": {
     "data": {
-      "oneof__OneOfService__GetOneOfVar1": {
+      "oneof__OneOfService__GetOneOfVar3": {
         "usual": 5,
         "command": {
           "command": "end"
