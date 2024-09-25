@@ -231,9 +231,9 @@ dependencies = [
 
 [[package]]
 name = "async-graphql"
-version = "7.0.9"
+version = "7.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9d37c3e9ba322eb00e9e5e997d58f08e8b6de037325b9367ac59bca8e3cd46af"
+checksum = "a19415d9541f1758f39bdf0c732848beb7e2e39df9b32f90c6635882c3f9173a"
 dependencies = [
  "async-graphql-derive",
  "async-graphql-parser",
@@ -256,7 +256,7 @@ dependencies = [
  "multer",
  "num-traits",
  "once_cell",
- "opentelemetry",
+ "opentelemetry 0.25.0",
  "pin-project-lite",
  "regex",
  "serde",
@@ -269,9 +269,9 @@ dependencies = [
 
 [[package]]
 name = "async-graphql-derive"
-version = "7.0.9"
+version = "7.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f1141703c11c6ad4fa9b3b0e1e476dea01dbd18a44db00f949b804afaab2f344"
+checksum = "73a85254454f63ae1e5a475afff931465f11bf76d19fb5bb1b1d0d6a2f2b8db0"
 dependencies = [
  "Inflector",
  "async-graphql-parser",
@@ -319,9 +319,9 @@ dependencies = [
 
 [[package]]
 name = "async-graphql-parser"
-version = "7.0.9"
+version = "7.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f66edcce4c38c18f7eb181fdf561c3d3aa2d644ce7358fc7a928c00a4ffef17"
+checksum = "2e94b202e404d18429c8482d61f64cb0a8639fd1e7c2caf2b258f035e0b7caff"
 dependencies = [
  "async-graphql-value",
  "pest",
@@ -331,9 +331,9 @@ dependencies = [
 
 [[package]]
 name = "async-graphql-value"
-version = "7.0.9"
+version = "7.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b0206011cad065420c27988f17dd7fe201a0e056b20c262209b7bffcd6fa176"
+checksum = "a43a7bbb0ddea47c6f51913eba6e17a093b34e000588a93bb80a978ad129f3e9"
 dependencies = [
  "bytes",
  "indexmap 2.5.0",
@@ -486,9 +486,9 @@ checksum = "8b75356056920673b02621b35afd0f7dda9306d03c79a30f5c56c44cf256e3de"
 
 [[package]]
 name = "async-trait"
-version = "0.1.82"
+version = "0.1.83"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a27b8a3a6e1a44fa4c8baf1f653e4172e81486d4941f2237e20dc2d0cf4ddff1"
+checksum = "721cae7de5c34fbb2acd27e21e6d2cf7b886dce0c27388d46c4e6c47ea4318dd"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2400,9 +2400,9 @@ dependencies = [
 
 [[package]]
 name = "hyper-util"
-version = "0.1.8"
+version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da62f120a8a37763efb0cf8fdf264b884c7b8b9ac8660b900c8661030c00e6ba"
+checksum = "41296eb09f183ac68eec06e03cdbea2e759633d4067b2f6552fc2e009bcad08b"
 dependencies = [
  "bytes",
  "futures-channel",
@@ -2413,7 +2413,6 @@ dependencies = [
  "pin-project-lite",
  "socket2",
  "tokio",
- "tower",
  "tower-service",
  "tracing",
 ]
@@ -3357,13 +3356,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "opentelemetry"
+version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "803801d3d3b71cd026851a53f974ea03df3d179cb758b260136a6c9e22e196af"
+dependencies = [
+ "futures-core",
+ "futures-sink",
+ "js-sys",
+ "once_cell",
+ "pin-project-lite",
+ "thiserror",
+]
+
+[[package]]
 name = "opentelemetry-appender-tracing"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be314095f27dde46fca7038b023457d2b3459e1c39033dacc2ec1b31df11a61c"
 dependencies = [
  "once_cell",
- "opentelemetry",
+ "opentelemetry 0.23.0",
  "tracing",
  "tracing-core",
  "tracing-subscriber",
@@ -3378,7 +3391,7 @@ dependencies = [
  "async-trait",
  "bytes",
  "http 0.2.12",
- "opentelemetry",
+ "opentelemetry 0.23.0",
 ]
 
 [[package]]
@@ -3390,7 +3403,7 @@ dependencies = [
  "async-trait",
  "futures-core",
  "http 0.2.12",
- "opentelemetry",
+ "opentelemetry 0.23.0",
  "opentelemetry-proto",
  "opentelemetry_sdk",
  "prost 0.12.6",
@@ -3406,7 +3419,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5e1a24eafe47b693cb938f8505f240dc26c71db60df9aca376b4f857e9653ec7"
 dependencies = [
  "once_cell",
- "opentelemetry",
+ "opentelemetry 0.23.0",
  "opentelemetry_sdk",
  "prometheus",
  "protobuf 2.28.0",
@@ -3418,7 +3431,7 @@ version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "984806e6cf27f2b49282e2a05e288f30594f3dbc74eb7a6e99422bc48ed78162"
 dependencies = [
- "opentelemetry",
+ "opentelemetry 0.23.0",
  "opentelemetry_sdk",
  "prost 0.12.6",
  "tonic 0.11.0",
@@ -3439,7 +3452,7 @@ dependencies = [
  "async-trait",
  "chrono",
  "futures-util",
- "opentelemetry",
+ "opentelemetry 0.23.0",
  "opentelemetry_sdk",
  "ordered-float 4.2.2",
  "serde",
@@ -3456,7 +3469,7 @@ dependencies = [
  "eyre",
  "indexmap 1.9.3",
  "nvml-wrapper",
- "opentelemetry",
+ "opentelemetry 0.23.0",
  "sysinfo 0.29.11",
  "tracing",
 ]
@@ -3475,7 +3488,7 @@ dependencies = [
  "glob",
  "lazy_static",
  "once_cell",
- "opentelemetry",
+ "opentelemetry 0.23.0",
  "ordered-float 4.2.2",
  "percent-encoding",
  "rand",
@@ -5394,7 +5407,7 @@ dependencies = [
  "num",
  "num_cpus",
  "once_cell",
- "opentelemetry",
+ "opentelemetry 0.23.0",
  "opentelemetry-appender-tracing",
  "opentelemetry-http",
  "opentelemetry-otlp",
@@ -5605,7 +5618,7 @@ dependencies = [
  "hyper 0.14.30",
  "hyper-util",
  "once_cell",
- "opentelemetry",
+ "opentelemetry 0.23.0",
  "opentelemetry-http",
  "opentelemetry-otlp",
  "opentelemetry-semantic-conventions",
@@ -6057,7 +6070,7 @@ dependencies = [
  "http 0.2.12",
  "http-body 0.4.6",
  "hyper 0.14.30",
- "opentelemetry",
+ "opentelemetry 0.23.0",
  "pin-project-lite",
  "tonic 0.11.0",
  "tower",
@@ -6160,7 +6173,7 @@ checksum = "f68803492bf28ab40aeccaecc7021096bd256baf7ca77c3d425d89b35a7be4e4"
 dependencies = [
  "js-sys",
  "once_cell",
- "opentelemetry",
+ "opentelemetry 0.23.0",
  "opentelemetry_sdk",
  "smallvec",
  "tracing",
@@ -6608,7 +6621,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
