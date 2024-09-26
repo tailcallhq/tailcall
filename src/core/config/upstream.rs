@@ -4,6 +4,7 @@ use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use tailcall_macros::{DirectiveDefinition, InputDefinition};
 
+use crate::core::default_verify_ssl;
 use crate::core::is_default;
 use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
@@ -144,6 +145,17 @@ pub struct Upstream {
     /// The User-Agent header value to be used in HTTP requests. @default
     /// `Tailcall/1.0`
     pub user_agent: Option<String>,
+
+    #[serde(
+        default = "default_verify_ssl",
+        rename = "verifySSL",
+        skip_serializing_if = "is_default"
+    )]
+    /// A boolean value that determines whether to verify certificates.
+    /// Setting this as `false` will make tailcall accept self-signed certificates.
+    /// NOTE: use this *only* during development or testing. It is highly
+    /// recommended to keep this enabled (`true`) in production.
+    pub verify_ssl: Option<bool>,
 }
 
 impl Upstream {
@@ -191,13 +203,15 @@ impl Upstream {
             .as_ref()
             .map_or(DEFAULT_MAX_SIZE, |b| b.max_size.unwrap_or(DEFAULT_MAX_SIZE))
     }
-
     pub fn get_http_2_only(&self) -> bool {
         self.http2_only.unwrap_or(false)
     }
 
     pub fn get_on_request(&self) -> Option<String> {
         self.on_request.clone()
+    }
+    pub fn get_verify_ssl(&self) -> bool {
+        self.verify_ssl.unwrap_or(true)
     }
 }
 
