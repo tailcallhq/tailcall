@@ -78,6 +78,11 @@ pub struct Server {
     /// and operations. @default `true`.
     pub introspection: Option<bool>,
 
+    /// `enableFederation` enables functionality to Tailcall server to act
+    /// as a federation subgraph.
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub enable_federation: Option<bool>,
+
     #[serde(default, skip_serializing_if = "is_default")]
     /// `pipelineFlush` allows to control flushing behavior of the server
     /// pipeline.

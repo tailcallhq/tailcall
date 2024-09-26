@@ -34,6 +34,13 @@ impl Transform for Subgraph {
     type Error = String;
 
     fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
+        let enable_federation = config.server.enable_federation;
+
+        if matches!(enable_federation, Some(false)) {
+            // if federation is disabled explicitly don't process the config
+            return Valid::succeed(config);
+        }
+
         let mut resolver_by_type = BTreeMap::new();
 
         let valid = Valid::from_iter(config.types.iter_mut(), |(type_name, ty)| {
@@ -55,25 +62,11 @@ impl Transform for Subgraph {
             return valid.map_to(config);
         }
 
-        if resolver_by_type.is_empty() {
+        if resolver_by_type.is_empty() && enable_federation.is_none() {
+            // if federation is not explicitly enabled and there is no entity
+            // resolvers return config as is
             return Valid::succeed(config);
         }
-
-        let entity_union = Union {
-            types: resolver_by_type.keys().cloned().collect(),
-            ..Default::default()
-        };
-
-        let entity_resolver = config::EntityResolver { resolver_by_type };
-
-        // union that wraps any possible types for entities
-        config
-            .unions
-            .insert(UNION_ENTITIES_NAME.to_owned(), entity_union);
-        // any scalar for argument `representations`
-        config
-            .types
-            .insert(ENTITIES_TYPE_NAME.to_owned(), config::Type::default());
 
         let service_field = Field { type_of: "String".to_string().into(), ..Default::default() };
 
@@ -87,7 +80,7 @@ impl Transform for Subgraph {
             .types
             .insert(SERVICE_TYPE_NAME.to_owned(), service_type);
 
-        let query_type = match config.schema.query.as_ref() {
+        let query_type_name = match config.schema.query.as_ref() {
             Some(name) => name,
             None => {
                 config.schema.query = Some("Query".to_string());
@@ -95,30 +88,7 @@ impl Transform for Subgraph {
             }
         };
 
-        let query_type = config.types.entry(query_type.to_owned()).or_default();
-
-        let arg = Arg {
-            type_of: Type::from(ENTITIES_TYPE_NAME.to_string())
-                .into_required()
-                .into_list()
-                .into_required(),
-            ..Default::default()
-        };
-
-        query_type.fields.insert(
-            ENTITIES_FIELD_NAME.to_string(),
-            Field {
-                type_of: Type::from(UNION_ENTITIES_NAME.to_owned())
-                    .into_list()
-                    .into_required(),
-                args: [(ENTITIES_ARG_NAME.to_owned(), arg)].into_iter().collect(),
-                doc: Some("Apollo federation Query._entities resolver".to_string()),
-                resolver: Some(Resolver::ApolloFederation(
-                    ApolloFederation::EntityResolver(entity_resolver),
-                )),
-                ..Default::default()
-            },
-        );
+        let query_type = config.types.entry(query_type_name.to_owned()).or_default();
 
         query_type.fields.insert(
             SERVICE_FIELD_NAME.to_string(),
@@ -129,6 +99,49 @@ impl Transform for Subgraph {
                 ..Default::default()
             },
         );
+
+        if !resolver_by_type.is_empty() {
+            let entity_union = Union {
+                types: resolver_by_type.keys().cloned().collect(),
+                ..Default::default()
+            };
+
+            let entity_resolver = config::EntityResolver { resolver_by_type };
+
+            // union that wraps any possible types for entities
+            config
+                .unions
+                .insert(UNION_ENTITIES_NAME.to_owned(), entity_union);
+            // any scalar for argument `representations`
+            config
+                .types
+                .insert(ENTITIES_TYPE_NAME.to_owned(), config::Type::default());
+
+            let query_type = config.types.entry(query_type_name.to_owned()).or_default();
+
+            let arg = Arg {
+                type_of: Type::from(ENTITIES_TYPE_NAME.to_string())
+                    .into_required()
+                    .into_list()
+                    .into_required(),
+                ..Default::default()
+            };
+
+            query_type.fields.insert(
+                ENTITIES_FIELD_NAME.to_string(),
+                Field {
+                    type_of: Type::from(UNION_ENTITIES_NAME.to_owned())
+                        .into_list()
+                        .into_required(),
+                    args: [(ENTITIES_ARG_NAME.to_owned(), arg)].into_iter().collect(),
+                    doc: Some("Apollo federation Query._entities resolver".to_string()),
+                    resolver: Some(Resolver::ApolloFederation(
+                        ApolloFederation::EntityResolver(entity_resolver),
+                    )),
+                    ..Default::default()
+                },
+            );
+        }
 
         Valid::succeed(config)
     }
