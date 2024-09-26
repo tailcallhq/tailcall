@@ -6,7 +6,6 @@ use tailcall_macros::{DirectiveDefinition, InputDefinition};
 
 use crate::core::is_default;
 use crate::core::macros::MergeRight;
-use crate::core::merge_right::MergeRight;
 
 const DEFAULT_MAX_SIZE: usize = 100;
 
@@ -204,6 +203,7 @@ impl Upstream {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::core::merge_right::MergeRight;
 
     fn setup_upstream_with_headers(headers: &[&str]) -> Upstream {
         Upstream {

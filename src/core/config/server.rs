@@ -10,7 +10,6 @@ use crate::core::config::headers::Headers;
 use crate::core::config::KeyValue;
 use crate::core::is_default;
 use crate::core::macros::MergeRight;
-use crate::core::merge_right::MergeRight;
 
 #[derive(
     Serialize,
@@ -284,6 +283,7 @@ impl Server {
 mod tests {
     use super::*;
     use crate::core::config::ScriptOptions;
+    use crate::core::merge_right::MergeRight;
 
     fn server_with_script_options(so: ScriptOptions) -> Server {
         Server { script: Some(so), ..Default::default() }
