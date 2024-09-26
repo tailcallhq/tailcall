@@ -9,14 +9,57 @@ use crate::core::config::{
     ApolloFederation, Config, ConfigModule, EntityResolver, Field, GraphQLOperationType, Resolver,
 };
 use crate::core::ir::model::IR;
+use crate::core::mustache::Segment;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, Validator};
-use crate::core::{config, Type};
+use crate::core::{config, Mustache, Type};
 
 pub struct CompileEntityResolver<'a> {
     config_module: &'a ConfigModule,
     entity_resolver: &'a EntityResolver,
     operation_type: &'a GraphQLOperationType,
+}
+
+fn validate_expressions<'a>(
+    type_name: &str,
+    config_module: &ConfigModule,
+    expr_iter: impl Iterator<Item = &'a Segment>,
+) -> Valid<(), String> {
+    Valid::from_iter(expr_iter, |segment| {
+        if let Segment::Expression(expr) = segment {
+            if expr.len() > 1 && expr[0].as_str() == "value" {
+                return validate_iter(config_module, type_name, expr.iter().skip(1));
+            } else {
+                Valid::succeed(())
+            }
+        } else {
+            Valid::succeed(())
+        }
+    })
+    .map(|_| ())
+}
+
+fn validate_iter<'a>(
+    config_module: &ConfigModule,
+    current_type: &str,
+    fields_iter: impl Iterator<Item = &'a String>,
+) -> Valid<(), String> {
+    let mut current_type = current_type;
+    Valid::from_iter(fields_iter.enumerate(), |(index, key)| {
+        if let Some(type_def) = config_module.types.get(current_type) {
+            if !type_def.fields.contains_key(key) {
+                return Valid::fail(format!(
+                    "Invalid key at index {}: '{}' is not a field of '{}'",
+                    index, key, current_type
+                ));
+            }
+            current_type = type_def.fields[key].type_of.name();
+        } else {
+            return Valid::fail(format!("Type '{}' not found in config", current_type));
+        }
+        Valid::succeed(())
+    })
+    .map(|_| ())
 }
 
 pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, String> {
@@ -30,17 +73,32 @@ pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, S
             // TODO: should be a proper way to run the validation both
             // on types and fields
             let field = &Field { type_of: Type::from(type_name.clone()), ..Default::default() };
-
             // TODO: make this code reusable in other operators like call
             let ir = match resolver {
                 // TODO: there are `validate_field` for field, but not for types
                 // implement validation as shared entity and use it for types
-                Resolver::Http(http) => compile_http(
-                    config_module,
-                    http,
-                    // inner resolver should resolve only single instance of type, not a list
-                    false,
-                ),
+                Resolver::Http(http) => {
+                    Valid::from_iter(http.query.iter(), |query| {
+                        let mustache = Mustache::parse(&query.value);
+                        validate_expressions(type_name, config_module, mustache.segments().iter())
+                    })
+                    .and_then(|_| {
+                        let mustache = Mustache::parse(&http.path);
+                        validate_expressions(type_name, config_module, mustache.segments().iter())
+                    })
+                    .and(validate_iter(
+                        config_module,
+                        type_name,
+                        http.batch_key.iter(),
+                    ))
+                    .and(compile_http(
+                        config_module,
+                        http,
+                        // inner resolver should resolve only single instance of type, not
+                        // a list
+                        false,
+                    ))
+                }
                 Resolver::Grpc(grpc) => compile_grpc(super::CompileGrpc {
                     config_module,
                     operation_type,
