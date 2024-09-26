@@ -47,17 +47,20 @@ pub enum IO {
         dl_id: Option<DataLoaderId>,
         http_filter: Option<HttpFilter>,
         is_list: bool,
+        dedupe: bool,
     },
     GraphQL {
         req_template: graphql::RequestTemplate,
         field_name: String,
         batch: bool,
         dl_id: Option<DataLoaderId>,
+        dedupe: bool,
     },
     Grpc {
         req_template: grpc::RequestTemplate,
         group_by: Option<GroupBy>,
         dl_id: Option<DataLoaderId>,
+        dedupe: bool,
     },
     Js {
         name: String,

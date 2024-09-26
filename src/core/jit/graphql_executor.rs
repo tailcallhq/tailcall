@@ -46,7 +46,7 @@ impl Executor for JITExecutor {
         let jit_request = jit::Request::from(request);
 
         async {
-            match ConstValueExecutor::new(&jit_request, self.app_ctx.clone()) {
+            match ConstValueExecutor::new(&jit_request, &self.app_ctx) {
                 Ok(exec) => {
                     let is_introspection_query =
                         self.app_ctx.blueprint.server.get_enable_introspection()

@@ -109,7 +109,11 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     let graphql_request = serde_json::from_slice::<T>(&bytes);
     match graphql_request {
         Ok(mut request) => {
-            if !(app_ctx.blueprint.server.dedupe && request.is_query()) {
+            // TODO: Check for dedupe here
+            // But I am not sure if it is good idea to
+            // check if dedupe is enabled by tracing the path
+            // and checking if dedupe is enabled in IR
+            if !(request.is_query()) {
                 Ok(execute_query(app_ctx, &req_ctx, request).await?)
             } else {
                 let operation_id = request.operation_id(&req.headers);
