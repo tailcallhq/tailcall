@@ -16,14 +16,13 @@ use super::{
     AddField, Alias, Cache, Call, Expr, GraphQL, Grpc, Http, Key, Link, Modify, Omit, Protected,
     Resolver, Server, Telemetry, Upstream, JS,
 };
-use crate::core::blueprint::Directive;
 use crate::core::config::npo::QueryPath;
 use crate::core::config::source::Source;
-use crate::core::is_default;
 use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
 use crate::core::scalar::Scalar;
 use crate::core::valid::{Valid, Validator};
+use crate::core::{is_default, Directive};
 
 #[derive(
     Serialize,

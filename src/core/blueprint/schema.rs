@@ -1,11 +1,9 @@
 use std::collections::{BTreeMap, HashSet};
 
-use async_graphql::parser::types::ConstDirective;
-
 use crate::core::blueprint::*;
 use crate::core::config::{Config, Field, Type};
-use crate::core::directive::DirectiveCodec;
-use crate::core::valid::{Valid, ValidationError, Validator};
+use crate::core::directive::{to_directive, DirectiveCodec};
+use crate::core::valid::{Valid, Validator};
 
 fn validate_query(config: &Config) -> Valid<(), String> {
     Valid::from_option(
@@ -63,21 +61,6 @@ pub fn validate_field_has_resolver(
             false
         })
         .trace(name)
-}
-
-pub fn to_directive(const_directive: ConstDirective) -> Valid<Directive, String> {
-    const_directive
-        .arguments
-        .into_iter()
-        .map(|(k, v)| {
-            let value = v.node.into_json();
-
-            value.map(|value| (k.node.to_string(), value))
-        })
-        .collect::<Result<_, _>>()
-        .map_err(|e| ValidationError::new(e.to_string()))
-        .map(|arguments| Directive { name: const_directive.name.node.to_string(), arguments })
-        .into()
 }
 
 fn validate_mutation(config: &Config) -> Valid<(), String> {

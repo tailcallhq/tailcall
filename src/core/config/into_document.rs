@@ -3,7 +3,6 @@ use async_graphql::{Pos, Positioned};
 use async_graphql_value::{ConstValue, Name};
 
 use super::Config;
-use crate::core::blueprint;
 use crate::core::directive::{to_const_directive, DirectiveCodec};
 use crate::core::valid::Validator;
 
@@ -208,7 +207,7 @@ fn config_document(config: &Config) -> ServiceDocument {
 }
 
 fn into_directives(
-    directives: &[blueprint::Directive],
+    directives: &[crate::core::Directive],
 ) -> impl Iterator<Item = Positioned<ConstDirective>> + '_ {
     directives
         .iter()

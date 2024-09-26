@@ -1,19 +1,17 @@
-use std::collections::{BTreeSet, HashMap};
+use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use async_graphql::dynamic::{Schema, SchemaBuilder};
 use async_graphql::extensions::ApolloTracing;
 use async_graphql::ValidationMode;
 use derive_setters::Setters;
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 use super::telemetry::Telemetry;
 use super::{GlobalTimeout, Index};
 use crate::core::blueprint::{Server, Upstream};
 use crate::core::ir::model::IR;
 use crate::core::schema_extension::SchemaExtension;
-use crate::core::{scalar, Type};
+use crate::core::{scalar, Directive, Type};
 
 /// Blueprint is an intermediary representation that allows us to generate
 /// graphQL APIs. It can only be generated from a valid Config.
@@ -122,12 +120,6 @@ impl FieldDefinition {
             self.resolver = Some(wrapper(resolver))
         }
     }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
-pub struct Directive {
-    pub name: String,
-    pub arguments: HashMap<String, Value>,
 }
 
 #[derive(Clone, Debug)]
