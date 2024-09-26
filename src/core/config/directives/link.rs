@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 use tailcall_macros::DirectiveDefinition;
 
-use crate::core::is_default;
 use crate::core::config::KeyValue;
+use crate::core::is_default;
 
 #[derive(
     Default,

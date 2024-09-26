@@ -248,21 +248,23 @@ where
         .fuse(Protected::from_directives(directives.iter()))
         .fuse(to_add_fields_from_directives(directives))
         .fuse(to_unknown_directives(directives))
-        .map(|(resolver, cache, fields, protected, added_fields, unknown_directives)| {
-            let doc = description.to_owned().map(|pos| pos.node);
-            let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
-            config::Type {
-                fields,
-                added_fields,
-                doc,
-                implements,
-                cache,
-                protected,
-                resolver,
-                key: None,
-                directives: unknown_directives,
-            }
-        })
+        .map(
+            |(resolver, cache, fields, protected, added_fields, unknown_directives)| {
+                let doc = description.to_owned().map(|pos| pos.node);
+                let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
+                config::Type {
+                    fields,
+                    added_fields,
+                    doc,
+                    implements,
+                    cache,
+                    protected,
+                    resolver,
+                    key: None,
+                    directives: unknown_directives,
+                }
+            },
+        )
 }
 fn to_input_object(
     input_object_type: InputObjectType,
