@@ -16,7 +16,7 @@ use tailcall_typedefs_common::ServiceDocumentBuilder;
 use super::directives::{Call, Expr, GraphQL, Grpc, Http, Key, JS};
 use super::from_document::from_document;
 use super::telemetry::Telemetry;
-use super::{KeyValue, Link, Resolver, Server, Upstream};
+use super::{Link, Resolver, Server, Upstream};
 use crate::core::config::npo::QueryPath;
 use crate::core::config::source::Source;
 use crate::core::is_default;

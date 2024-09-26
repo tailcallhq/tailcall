@@ -1,7 +1,9 @@
+use std::collections::BTreeSet;
+
 use serde::{Deserialize, Serialize};
 use tailcall_macros::{DirectiveDefinition, InputDefinition};
 
-use crate::core::config::KeyValue;
+use crate::core::config::{Batch, KeyValue, URLQuery};
 use crate::core::is_default;
 
 #[derive(
@@ -16,7 +18,7 @@ use crate::core::is_default;
     DirectiveDefinition,
     InputDefinition,
 )]
-#[directive_definition(locations = "FieldDefinition, Object")]
+#[directive_definition(locations = "FieldDefinition")]
 #[serde(deny_unknown_fields)]
 /// The @graphQL operator allows to specify GraphQL API server request to fetch
 /// data from.
@@ -30,15 +32,14 @@ pub struct GraphQL {
     /// base URL is the one specified in the `@upstream` operator.
     pub base_url: Option<String>,
 
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// If the upstream GraphQL server supports request batching, you can
-    /// specify the 'batch' argument to batch several requests into a single
-    /// batch request.
-    ///
-    /// Make sure you have also specified batch settings to the `@upstream` and
-    /// to the `@graphQL` operator.
-    pub batch: bool,
-
+    // #[serde(default, skip_serializing_if = "is_default")]
+    // /// If the upstream GraphQL server supports request batching, you can
+    // /// specify the 'batch' argument to batch several requests into a single
+    // /// batch request.
+    // ///
+    // /// Make sure you have also specified batch settings to the `@upstream` and
+    // /// to the `@graphQL` operator.
+    // pub batch: bool,
     #[serde(default, skip_serializing_if = "is_default")]
     /// The headers parameter allows you to customize the headers of the GraphQL
     /// request made by the `@graphQL` operator. It is used by specifying a
@@ -49,5 +50,16 @@ pub struct GraphQL {
     /// a field in your schema to a field in the upstream schema. When a query
     /// is received for this field, Tailcall requests data from the
     /// corresponding upstream field.
+    #[serde(default, skip_serializing_if = "is_default")]
     pub name: String,
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub query: Vec<URLQuery>,
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub allowed_headers: BTreeSet<String>,
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub batch: Option<Batch>,
+    // #[serde(default, skip_serializing_if = "is_default")]
+    // pub base_url: Option<String>,
+    // #[serde(default, skip_serializing_if = "is_default")]
+    // pub on_request: Option<String>,
 }

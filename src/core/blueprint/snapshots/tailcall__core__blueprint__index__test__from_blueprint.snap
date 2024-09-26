@@ -69,6 +69,14 @@ Index {
                                         group_by: None,
                                         dl_id: None,
                                         http_filter: None,
+                                        batch: Some(
+                                            Batch {
+                                                delay: 100,
+                                                headers: {},
+                                                max_size: None,
+                                            },
+                                        ),
+                                        headers: {},
                                         is_list: false,
                                     },
                                 ),
@@ -137,6 +145,14 @@ Index {
                                         group_by: None,
                                         dl_id: None,
                                         http_filter: None,
+                                        batch: Some(
+                                            Batch {
+                                                delay: 100,
+                                                headers: {},
+                                                max_size: None,
+                                            },
+                                        ),
+                                        headers: {},
                                         is_list: false,
                                     },
                                 ),
@@ -213,6 +229,14 @@ Index {
                                         group_by: None,
                                         dl_id: None,
                                         http_filter: None,
+                                        batch: Some(
+                                            Batch {
+                                                delay: 100,
+                                                headers: {},
+                                                max_size: None,
+                                            },
+                                        ),
+                                        headers: {},
                                         is_list: false,
                                     },
                                 ),
@@ -293,6 +317,14 @@ Index {
                                         group_by: None,
                                         dl_id: None,
                                         http_filter: None,
+                                        batch: Some(
+                                            Batch {
+                                                delay: 100,
+                                                headers: {},
+                                                max_size: None,
+                                            },
+                                        ),
+                                        headers: {},
                                         is_list: false,
                                     },
                                 ),
@@ -689,6 +721,14 @@ Index {
                                             group_by: None,
                                             dl_id: None,
                                             http_filter: None,
+                                            batch: Some(
+                                                Batch {
+                                                    delay: 100,
+                                                    headers: {},
+                                                    max_size: None,
+                                                },
+                                            ),
+                                            headers: {},
                                             is_list: true,
                                         },
                                     ),
@@ -751,6 +791,14 @@ Index {
                                         group_by: None,
                                         dl_id: None,
                                         http_filter: None,
+                                        batch: Some(
+                                            Batch {
+                                                delay: 100,
+                                                headers: {},
+                                                max_size: None,
+                                            },
+                                        ),
+                                        headers: {},
                                         is_list: false,
                                     },
                                 ),
@@ -850,6 +898,14 @@ Index {
                                             group_by: None,
                                             dl_id: None,
                                             http_filter: None,
+                                            batch: Some(
+                                                Batch {
+                                                    delay: 100,
+                                                    headers: {},
+                                                    max_size: None,
+                                                },
+                                            ),
+                                            headers: {},
                                             is_list: true,
                                         },
                                     ),
@@ -924,6 +980,14 @@ Index {
                                         group_by: None,
                                         dl_id: None,
                                         http_filter: None,
+                                        batch: Some(
+                                            Batch {
+                                                delay: 100,
+                                                headers: {},
+                                                max_size: None,
+                                            },
+                                        ),
+                                        headers: {},
                                         is_list: false,
                                     },
                                 ),

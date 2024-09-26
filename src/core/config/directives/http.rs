@@ -1,7 +1,9 @@
+use std::collections::BTreeSet;
+
 use serde::{Deserialize, Serialize};
 use tailcall_macros::{DirectiveDefinition, InputDefinition};
 
-use crate::core::config::{Encoding, KeyValue, URLQuery};
+use crate::core::config::{Batch, Encoding, KeyValue, URLQuery};
 use crate::core::http::Method;
 use crate::core::is_default;
 use crate::core::json::JsonSchema;
@@ -18,7 +20,8 @@ use crate::core::json::JsonSchema;
     DirectiveDefinition,
     InputDefinition,
 )]
-#[directive_definition(locations = "FieldDefinition, Object")]
+#[directive_definition(locations = "FieldDefinition")]
+#[serde(rename_all = "camelCase")]
 #[serde(deny_unknown_fields)]
 /// The @http operator indicates that a field or node is backed by a REST API.
 ///
@@ -90,4 +93,12 @@ pub struct Http {
     /// first parameter referencing a field in the current value using mustache
     /// syntax is automatically selected as the batching parameter.
     pub query: Vec<URLQuery>,
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub allowed_headers: BTreeSet<String>,
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub batch: Option<Batch>,
+    /*#[serde(default, skip_serializing_if = "is_default")]
+    pub base_url: Option<String>,
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub on_request: Option<String>,*/
 }

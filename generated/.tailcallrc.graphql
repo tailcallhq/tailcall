@@ -40,7 +40,7 @@ directive @call(
   of the previous step is passed as input to the next step.
   """
   steps: [Step]
-) on FIELD_DEFINITION | OBJECT
+) on FIELD_DEFINITION
 
 """
 The `@expr` operators allows you to specify an expression that can evaluate to a 
@@ -55,6 +55,7 @@ The @graphQL operator allows to specify GraphQL API server request to fetch data
 from.
 """
 directive @graphQL(
+  allowed_headers: [String!]
   """
   Named arguments for the requested field. More info [here](https://tailcall.run/docs/guides/operators/#args)
   """
@@ -64,12 +65,7 @@ directive @graphQL(
   the one specified in the `@upstream` operator.
   """
   baseURL: String
-  """
-  If the upstream GraphQL server supports request batching, you can specify the 'batch' 
-  argument to batch several requests into a single batch request.Make sure you have 
-  also specified batch settings to the `@upstream` and to the `@graphQL` operator.
-  """
-  batch: Boolean!
+  batch: Batch
   """
   The headers parameter allows you to customize the headers of the GraphQL request 
   made by the `@graphQL` operator. It is used by specifying a key-value map of header 
@@ -82,7 +78,8 @@ directive @graphQL(
   field, Tailcall requests data from the corresponding upstream field.
   """
   name: String!
-) on FIELD_DEFINITION | OBJECT
+  query: [URLQuery]
+) on FIELD_DEFINITION
 
 """
 The @grpc operator indicates that a field or node is backed by a gRPC API.For instance, 
@@ -94,11 +91,13 @@ In this scenario, the GraphQL server will make a gRPC request to the gRPC endpoi
 specified when the `users` field is queried.
 """
 directive @grpc(
+  allowedHeaders: [String!]
   """
   This refers to the base URL of the API. If not specified, the default base URL is 
   the one specified in the `@upstream` operator.
   """
   baseURL: String
+  batch: Batch
   """
   The `batchKey` dictates the path Tailcall will follow to group the returned items 
   from the batch request. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
@@ -120,7 +119,8 @@ directive @grpc(
   This refers to the gRPC method you're going to call. For instance `GetAllNews`.
   """
   method: String!
-) on FIELD_DEFINITION | OBJECT
+  onRequest: String
+) on FIELD_DEFINITION
 
 """
 The @http operator indicates that a field or node is backed by a REST API.For instance, 
@@ -131,11 +131,13 @@ server will make a GET request to the API endpoint specified when the `users` fi
 is queried.
 """
 directive @http(
+  allowedHeaders: [String!]
   """
   This refers to the base URL of the API. If not specified, the default base URL is 
   the one specified in the `@upstream` operator.
   """
   baseURL: String
+  batch: Batch
   """
   The `batchKey` dictates the path Tailcall will follow to group the returned items 
   from the batch request. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
@@ -190,7 +192,7 @@ directive @http(
   is automatically selected as the batching parameter.
   """
   query: [URLQuery]
-) on FIELD_DEFINITION | OBJECT
+) on FIELD_DEFINITION
 
 directive @js(
   name: String!
@@ -365,12 +367,6 @@ directive @upstream(
   """
   baseURL: String
   """
-  An object that specifies the batch settings, including `maxSize` (the maximum size 
-  of the batch), `delay` (the delay in milliseconds between each batch), and `headers` 
-  (an array of HTTP headers to be included in the batch).
-  """
-  batch: Batch
-  """
   The time in seconds that the connection will wait for a response before timing out.
   """
   connectTimeout: Int
@@ -536,6 +532,12 @@ input Step {
   The name of the field on the `Query` type that you want to call.
   """
   query: String
+}
+
+input Batch {
+  delay: Int!
+  headers: [String!]
+  maxSize: Int
 }
 
 input KeyValue {
@@ -709,12 +711,6 @@ input TelemetryExporter {
   apollo: Apollo
 }
 
-input Batch {
-  delay: Int!
-  headers: [String!]
-  maxSize: Int
-}
-
 input Proxy {
   url: String!
 }
@@ -724,6 +720,7 @@ The @graphQL operator allows to specify GraphQL API server request to fetch data
 from.
 """
 input GraphQL {
+  allowed_headers: [String!]
   """
   Named arguments for the requested field. More info [here](https://tailcall.run/docs/guides/operators/#args)
   """
@@ -733,12 +730,7 @@ input GraphQL {
   the one specified in the `@upstream` operator.
   """
   baseURL: String
-  """
-  If the upstream GraphQL server supports request batching, you can specify the 'batch' 
-  argument to batch several requests into a single batch request.Make sure you have 
-  also specified batch settings to the `@upstream` and to the `@graphQL` operator.
-  """
-  batch: Boolean!
+  batch: Batch
   """
   The headers parameter allows you to customize the headers of the GraphQL request 
   made by the `@graphQL` operator. It is used by specifying a key-value map of header 
@@ -751,6 +743,7 @@ input GraphQL {
   field, Tailcall requests data from the corresponding upstream field.
   """
   name: String!
+  query: [URLQuery]
 }
 
 """
@@ -763,11 +756,13 @@ In this scenario, the GraphQL server will make a gRPC request to the gRPC endpoi
 specified when the `users` field is queried.
 """
 input Grpc {
+  allowedHeaders: [String!]
   """
   This refers to the base URL of the API. If not specified, the default base URL is 
   the one specified in the `@upstream` operator.
   """
   baseURL: String
+  batch: Batch
   """
   The `batchKey` dictates the path Tailcall will follow to group the returned items 
   from the batch request. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
@@ -789,6 +784,7 @@ input Grpc {
   This refers to the gRPC method you're going to call. For instance `GetAllNews`.
   """
   method: String!
+  onRequest: String
 }
 
 """
@@ -800,11 +796,13 @@ server will make a GET request to the API endpoint specified when the `users` fi
 is queried.
 """
 input Http {
+  allowedHeaders: [String!]
   """
   This refers to the base URL of the API. If not specified, the default base URL is 
   the one specified in the `@upstream` operator.
   """
   baseURL: String
+  batch: Batch
   """
   The `batchKey` dictates the path Tailcall will follow to group the returned items 
   from the batch request. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).

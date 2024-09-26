@@ -43,7 +43,6 @@ impl AppContext {
         for def in blueprint.definitions.iter_mut() {
             if let Definition::Object(def) = def {
                 for field in &mut def.fields {
-                    let of_type = field.of_type.clone();
                     field.map_expr(|expr| {
                         expr.modify(&mut |expr| match expr {
                             IR::IO(io) => match io {
