@@ -12,7 +12,7 @@ type Query {
   user(id: Int!): User @http(path: "/users/{{.args.id}}")
 }
 
-type User @call(steps: [{query: "user", args: {id: "{{.value.user.id}}"}}]) @shareable {
+type User @call(steps: [{query: "user", args: {id: "{{.value.id}}"}}]) @shareable {
   id: Int!
   name: String!
 }
@@ -52,8 +52,8 @@ type Post @expr(body: {id: "{{.value.id}}", title: "post-title-{{.value.id}}"}) 
     query: >
       {
         _entities(representations: [
-          {user: { id: 1 }, __typename: "User"}
-          {user: { id: 2 }, __typename: "User"}
+          {id: 1, __typename: "User"}
+          {id: 2, __typename: "User"}
           {id: 3, __typename: "Post"}
           {id: 5, __typename: "Post"}
         ]) {
