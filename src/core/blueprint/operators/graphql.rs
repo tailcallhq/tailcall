@@ -44,7 +44,7 @@ fn create_related_fields(
 }
 
 pub fn compile_graphql(
-    config: &Config,
+    config: &ConfigModule,
     operation_type: &GraphQLOperationType,
     type_name: &str,
     graphql: &GraphQL,

@@ -7,6 +7,7 @@ mod nested_unions;
 mod preset;
 mod rename_types;
 mod required;
+mod subgraph;
 mod tree_shake;
 mod union_input_type;
 
@@ -19,5 +20,6 @@ pub use nested_unions::NestedUnions;
 pub use preset::Preset;
 pub use rename_types::RenameTypes;
 pub use required::Required;
+pub use subgraph::Subgraph;
 pub use tree_shake::TreeShake;
 pub use union_input_type::UnionInputType;

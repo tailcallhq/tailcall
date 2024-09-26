@@ -6,14 +6,14 @@ schema @server @upstream {
   query: Query
 }
 
-input map__MapRequest {
+input GEN__map__MapRequest {
+  map: JSON
+}
+
+type GEN__map__MapResponse {
   map: JSON
 }
 
 type Query {
-  map__MapService__GetMap(mapRequest: map__MapRequest!): map__MapResponse @grpc(body: "{{.args.mapRequest}}", method: "map.MapService.GetMap")
-}
-
-type map__MapResponse {
-  map: JSON
+  GEN__map__MapService__GetMap(mapRequest: GEN__map__MapRequest!): GEN__map__MapResponse @grpc(body: "{{.args.mapRequest}}", method: "map.MapService.GetMap")
 }

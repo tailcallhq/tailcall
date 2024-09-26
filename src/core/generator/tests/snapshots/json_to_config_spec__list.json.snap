@@ -6,12 +6,12 @@ schema @server @upstream {
   query: Query
 }
 
-type Query {
-  userData: [T1] @http(baseURL: "https://example.com", path: "/users")
-}
-
-type T1 {
+type GEN__1 {
   adult: Boolean
   age: Int
   name: String
+}
+
+type Query {
+  userData: [GEN__1] @http(baseURL: "https://example.com", path: "/users")
 }

@@ -6,7 +6,7 @@ schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
   query: Query
 }
 
-union FooBar = Foo | M1
+union FooBar = Foo | GEN__M1
 
 type Foo {
   a: String
@@ -14,7 +14,7 @@ type Foo {
   foo: String
 }
 
-type M1 {
+type GEN__M1 {
   bar: String
 }
 

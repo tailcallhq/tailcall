@@ -45,7 +45,7 @@ impl AppContext {
                 for field in &mut def.fields {
                     let of_type = field.of_type.clone();
                     field.map_expr(|expr| {
-                        expr.modify(|expr| match expr {
+                        expr.modify(&mut |expr| match expr {
                             IR::IO(io) => match io {
                                 IO::Http {
                                     req_template,
@@ -53,12 +53,14 @@ impl AppContext {
                                     http_filter,
                                     batch,
                                     headers,
+                                    is_list,
                                     ..
                                 } => {
+                                    let is_list = *is_list;
                                     let data_loader = HttpDataLoader::new(
                                         runtime.clone(),
                                         group_by.clone(),
-                                        of_type.is_list(),
+                                        is_list,
                                     )
                                     .to_data_loader(batch.clone().unwrap_or_default());
 
@@ -69,6 +71,7 @@ impl AppContext {
                                         http_filter: http_filter.clone(),
                                         batch: batch.clone(),
                                         headers: headers.clone(),
+                                        is_list,
                                     }));
 
                                     http_data_loaders.push(data_loader);

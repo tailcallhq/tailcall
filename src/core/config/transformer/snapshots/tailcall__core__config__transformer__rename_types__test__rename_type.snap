@@ -11,6 +11,14 @@ input InputUser {
   username: String
 }
 
+union FooBar = InputUser | User
+
+enum TaskStatus {
+  COMPLETED
+  PENDING
+  STARTED
+}
+
 type Post {
   body: String
   id: ID!

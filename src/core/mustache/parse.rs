@@ -9,7 +9,6 @@ use nom::{Finish, IResult};
 use super::*;
 
 impl Mustache {
-    // TODO: infallible function, no need to return Result
     pub fn parse(str: &str) -> Mustache {
         let result = parse_mustache(str).finish();
         match result {

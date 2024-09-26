@@ -150,27 +150,38 @@ fn config_document(config: &Config) -> ServiceDocument {
                     .collect::<Vec<Positioned<FieldDefinition>>>(),
             })
         };
+
+        let directives = type_def
+            .added_fields
+            .iter()
+            .map(|added_field: &super::AddField| pos(added_field.to_directive()))
+            .chain(
+                type_def
+                    .cache
+                    .as_ref()
+                    .map(|cache| pos(cache.to_directive())),
+            )
+            .chain(
+                type_def
+                    .protected
+                    .as_ref()
+                    .map(|protected| pos(protected.to_directive())),
+            )
+            .chain(
+                type_def
+                    .resolver
+                    .as_ref()
+                    .and_then(|resolver| resolver.to_directive())
+                    .map(pos),
+            )
+            .chain(type_def.key.as_ref().map(|key| pos(key.to_directive())))
+            .collect::<Vec<_>>();
+
         definitions.push(TypeSystemDefinition::Type(pos(TypeDefinition {
             extend: false,
             description: type_def.doc.clone().map(pos),
             name: pos(Name::new(type_name.clone())),
-            directives: type_def
-                .added_fields
-                .iter()
-                .map(|added_field: &super::AddField| pos(added_field.to_directive()))
-                .chain(
-                    type_def
-                        .cache
-                        .as_ref()
-                        .map(|cache| pos(cache.to_directive())),
-                )
-                .chain(
-                    type_def
-                        .protected
-                        .as_ref()
-                        .map(|protected| pos(protected.to_directive())),
-                )
-                .collect::<Vec<_>>(),
+            directives,
             kind,
         })));
     }
@@ -220,7 +231,11 @@ fn config_document(config: &Config) -> ServiceDocument {
 
 fn get_directives(field: &crate::core::config::Field) -> Vec<Positioned<ConstDirective>> {
     let directives = vec![
-        field.resolver.as_ref().map(|d| pos(d.to_directive())),
+        field
+            .resolver
+            .as_ref()
+            .and_then(|d| d.to_directive())
+            .map(pos),
         field.modify.as_ref().map(|d| pos(d.to_directive())),
         field.omit.as_ref().map(|d| pos(d.to_directive())),
         field.cache.as_ref().map(|d| pos(d.to_directive())),

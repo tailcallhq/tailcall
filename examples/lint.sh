@@ -4,20 +4,20 @@
 
 # Function to print an error message and exit
 error_exit() {
-    echo "Error: $1" >&2
-    exit 1
+  echo "Error: $1" >&2
+  exit 1
 }
 
 # Function to check files with the specified extensions using tailcall
 check_files() {
-    local path="./examples"
-    local depth=1
-    local -a extensions=("-name" "*.json" -o "-name" "*.yml" -o "-name" "*.yaml" -o "-name" "*.graphql" -o "-name" "*.gql")
-    local command="./target/debug/tailcall check"
-    local -a ignore=("!" "-name" "grpc-reflection.graphql")
+  local path="./examples"
+  local depth=1
+  local -a extensions=("-name" "*.json" -o "-name" "*.yml" -o "-name" "*.yaml" -o "-name" "*.graphql" -o "-name" "*.gql")
+  local command="./target/debug/tailcall check"
+  local -a ignore=("!" "-name" "grpc-reflection.graphql" "!" "-name" "generate.yml")
 
-    # Execute find command with constructed options and extensions
-    find "$path" -maxdepth "$depth" \( "${extensions[@]}" \) "${ignore[@]}" -exec sh -c '
+  # Execute find command with constructed options and extensions
+  find "$path" -maxdepth "$depth" \( "${extensions[@]}" \) "${ignore[@]}" -exec sh -c '
         for file; do
             echo "Checking file: $file"
             '"$command"' "$file" || exit 255
@@ -27,7 +27,7 @@ check_files() {
 
 # Main script execution
 main() {
-    check_files
+  check_files
 }
 
 # Start the script
