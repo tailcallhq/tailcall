@@ -107,6 +107,10 @@ pub fn is_default<T: Default + Eq>(val: &T) -> bool {
     *val == T::default()
 }
 
+pub fn verify_ssl_is_default(val: &Option<bool>) -> bool {
+    val.is_none() || val.unwrap()
+}
+
 #[cfg(test)]
 pub mod tests {
     use std::collections::HashMap;

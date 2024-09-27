@@ -4,10 +4,9 @@ use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use tailcall_macros::{DirectiveDefinition, InputDefinition};
 
-use crate::core::default_verify_ssl;
-use crate::core::is_default;
 use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
+use crate::core::{default_verify_ssl, is_default, verify_ssl_is_default};
 
 const DEFAULT_MAX_SIZE: usize = 100;
 
@@ -149,12 +148,13 @@ pub struct Upstream {
     #[serde(
         default = "default_verify_ssl",
         rename = "verifySSL",
-        skip_serializing_if = "is_default"
+        skip_serializing_if = "verify_ssl_is_default"
     )]
     /// A boolean value that determines whether to verify certificates.
-    /// Setting this as `false` will make tailcall accept self-signed certificates.
-    /// NOTE: use this *only* during development or testing. It is highly
-    /// recommended to keep this enabled (`true`) in production.
+    /// Setting this as `false` will make tailcall accept self-signed
+    /// certificates. NOTE: use this *only* during development or testing.
+    /// It is highly recommended to keep this enabled (`true`) in
+    /// production.
     pub verify_ssl: Option<bool>,
 }
 
