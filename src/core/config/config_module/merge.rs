@@ -254,13 +254,13 @@ trait FederatedMergeCollection:
 {
     type Entry: TypedEntry;
 
-    fn remove(&mut self, name: &String) -> Option<Self::Entry>;
+    fn remove(&mut self, name: &str) -> Option<Self::Entry>;
 }
 
 impl<Entry: TypedEntry> FederatedMergeCollection for IndexMap<String, Entry> {
     type Entry = Entry;
 
-    fn remove(&mut self, name: &String) -> Option<Self::Entry> {
+    fn remove(&mut self, name: &str) -> Option<Self::Entry> {
         self.swap_remove(name)
     }
 }
@@ -268,7 +268,7 @@ impl<Entry: TypedEntry> FederatedMergeCollection for IndexMap<String, Entry> {
 impl<Entry: TypedEntry> FederatedMergeCollection for BTreeMap<String, Entry> {
     type Entry = Entry;
 
-    fn remove(&mut self, name: &String) -> Option<Self::Entry> {
+    fn remove(&mut self, name: &str) -> Option<Self::Entry> {
         self.remove(name)
     }
 }
