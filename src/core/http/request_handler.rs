@@ -4,10 +4,10 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_graphql::ServerError;
-use http_cache_reqwest::Parts;
 use hyper::header::{self, HeaderValue, CONTENT_TYPE};
 use hyper::http::Method;
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
+use hyper::http::request::Parts;
 use opentelemetry::trace::SpanKind;
 use opentelemetry_semantic_conventions::trace::{HTTP_REQUEST_METHOD, HTTP_ROUTE};
 use prometheus::{Encoder, ProtobufEncoder, TextEncoder, TEXT_FORMAT};
