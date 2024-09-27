@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use async_graphql::dynamic::{self, DynamicRequest};
 use async_graphql_value::ConstValue;
-use hyper::body::Bytes;
 
 use crate::core::async_graphql_hyper::OperationId;
 use crate::core::auth::context::GlobalAuthContext;
@@ -11,7 +10,7 @@ use crate::core::data_loader::{DataLoader, DedupeResult};
 use crate::core::graphql::GraphqlDataLoader;
 use crate::core::grpc;
 use crate::core::grpc::data_loader::GrpcDataLoader;
-use crate::core::http::{DataLoaderRequest, HttpDataLoader, Response};
+use crate::core::http::{DataLoaderRequest, HttpDataLoader};
 use crate::core::ir::model::{DataLoaderId, IoId, IO, IR};
 use crate::core::ir::Error;
 use crate::core::rest::{Checked, EndpointSet};
@@ -27,7 +26,7 @@ pub struct AppContext {
     pub endpoints: EndpointSet<Checked>,
     pub auth_ctx: Arc<GlobalAuthContext>,
     pub dedupe_handler: Arc<DedupeResult<IoId, ConstValue, Error>>,
-    pub dedupe_operation_handler: DedupeResult<OperationId, Response<Bytes>, Error>,
+    pub dedupe_operation_handler: DedupeResult<OperationId, Arc<async_graphql::Response>, Error>,
 }
 
 impl AppContext {

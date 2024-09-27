@@ -23,17 +23,6 @@ pub trait GraphQLRequestLike: Hash + Send {
 
     fn parse_query(&mut self) -> Option<&ExecutableDocument>;
 
-    fn is_dedupe(&mut self) -> bool {
-        self.parse_query()
-            .map(|a| {
-                let mut is_dedupe = false;
-                for (_, operation) in a.operations.iter() {
-                    is_dedupe = operation.node.ty == OperationType::Query;
-                }
-                is_dedupe
-            })
-            .unwrap_or(false)
-    }
     fn is_query(&mut self) -> bool {
         self.parse_query()
             .map(|a| {

@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_graphql::ServerError;
+use http_cache_reqwest::Parts;
 use hyper::header::{self, HeaderValue, CONTENT_TYPE};
 use hyper::http::Method;
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
@@ -108,13 +109,11 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     let bytes = hyper::body::to_bytes(body).await?;
     let graphql_request = serde_json::from_slice::<T>(&bytes);
     match graphql_request {
-        Ok(mut request) => {
-            // TODO: Check for dedupe here
-            // But I am not sure if it is good idea to
-            // check if dedupe is enabled by tracing the path
-            // and checking if dedupe is enabled in IR
-            if !(request.is_query()) {
-                Ok(execute_query(app_ctx, &req_ctx, request).await?)
+        Ok(request) => {
+            let resp = execute_query(app_ctx, &req_ctx, request, req).await?;
+            Ok(resp)
+            /*if !(request.is_query()) {
+                Ok()
             } else {
                 let operation_id = request.operation_id(&req.headers);
                 let out = app_ctx
@@ -127,7 +126,7 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
                     })
                     .await?;
                 Ok(hyper::Response::from(out))
-            }
+            }*/
         }
         Err(err) => {
             tracing::error!(
@@ -148,11 +147,19 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
 async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
     app_ctx: &Arc<AppContext>,
     req_ctx: &Arc<RequestContext>,
-    request: T,
+    mut request: T,
+    req: Parts,
 ) -> anyhow::Result<Response<Body>> {
     let mut response = if app_ctx.blueprint.server.enable_jit {
+        let is_query = request.is_query();
+        let operation_id = request.operation_id(&req.headers);
         request
-            .execute(&JITExecutor::new(app_ctx.clone(), req_ctx.clone()))
+            .execute(&JITExecutor::new(
+                app_ctx.clone(),
+                req_ctx.clone(),
+                is_query,
+                operation_id,
+            ))
             .await
     } else {
         request.data(req_ctx.clone()).execute(&app_ctx.schema).await
