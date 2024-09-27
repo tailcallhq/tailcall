@@ -211,7 +211,15 @@ pub struct RootSchema {
 }
 
 #[derive(
-    Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, DirectiveDefinition,
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    DirectiveDefinition,
+    MergeRight,
 )]
 #[directive_definition(locations = "FieldDefinition")]
 #[serde(deny_unknown_fields)]
@@ -331,6 +339,7 @@ impl Field {
     schemars::JsonSchema,
     DirectiveDefinition,
     InputDefinition,
+    MergeRight,
 )]
 #[directive_definition(locations = "FieldDefinition")]
 #[serde(deny_unknown_fields)]
@@ -553,6 +562,8 @@ impl Config {
                     types = self.find_connections(field.type_of.name(), types);
                 }
             }
+        } else if let Some(_) = self.find_enum(type_of) {
+            types.insert(type_of.into());
         }
         types
     }

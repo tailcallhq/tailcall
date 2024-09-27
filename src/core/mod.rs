@@ -14,6 +14,7 @@ pub mod document;
 pub mod endpoint;
 mod errata;
 pub mod error;
+pub mod federation;
 pub mod generator;
 pub mod graphql;
 pub mod grpc;
