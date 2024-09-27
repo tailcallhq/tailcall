@@ -352,6 +352,7 @@ pub struct OperationPlan<Input> {
     // TODO: drop index from here. Embed all the necessary information in each field of the plan.
     pub index: Arc<Index>,
     pub is_introspection_query: bool,
+    pub dedupe: bool,
 }
 
 impl<Input> std::fmt::Debug for OperationPlan<Input> {
@@ -386,6 +387,7 @@ impl<Input> OperationPlan<Input> {
             nested,
             index: self.index,
             is_introspection_query: self.is_introspection_query,
+            dedupe: self.dedupe,
         })
     }
 }
@@ -408,6 +410,9 @@ impl<Input> OperationPlan<Input> {
             .filter(|f| f.extensions.is_none())
             .map(|f| f.into_nested(&fields))
             .collect::<Vec<_>>();
+        let dedupe = fields
+            .iter()
+            .all(|v| v.ir.as_ref().map(|v| v.is_dedupe()).unwrap_or_default());
 
         Self {
             root_name: root_name.to_string(),
@@ -416,6 +421,7 @@ impl<Input> OperationPlan<Input> {
             operation_type,
             index,
             is_introspection_query,
+            dedupe,
         }
     }
 
