@@ -2,14 +2,13 @@ use std::collections::BTreeMap;
 
 use indexmap::IndexMap;
 
-use crate::core::{
-    config::{Arg, Config, Enum, Field, Type},
-    federation::merge::{FederatedMerge, FederatedMergeIntersection, FederatedMergeUnion},
-    merge_right::MergeRight,
-    valid::{Valid, Validator},
-};
-
 use super::{Cache, ConfigModule};
+use crate::core::config::{Arg, Config, Enum, Field, Type};
+use crate::core::federation::merge::{
+    FederatedMerge, FederatedMergeIntersection, FederatedMergeUnion,
+};
+use crate::core::merge_right::MergeRight;
+use crate::core::valid::{Valid, Validator};
 
 impl FederatedMergeIntersection for Arg {
     fn federated_merge_intersection(self, other: Self) -> Valid<Self, String> {
@@ -112,7 +111,7 @@ impl FederatedMergeIntersection for Enum {
 
 impl FederatedMergeUnion for Enum {
     fn federated_merge_union(mut self, other: Self) -> Valid<Self, String> {
-        self.variants.extend(other.variants.into_iter());
+        self.variants.extend(other.variants);
 
         Valid::succeed(Self {
             variants: self.variants,
@@ -209,8 +208,8 @@ impl FederatedMerge for Cache {
             .trace(&trace_name)
         }))
         .map( |(merged_types, merged_enums)| {
-            types.extend(merged_types.into_iter());
-            enums.extend(merged_enums.into_iter());
+            types.extend(merged_types);
+            enums.extend(merged_enums);
 
             let config = Config { types, enums, unions: self.config.unions.merge_right(other.config.unions), ..self.config };
 
@@ -321,7 +320,7 @@ where
         })
         .map(|merged_fields| {
             let mut merged_fields: C = merged_fields.into_iter().collect();
-            merged_fields.extend(self.into_iter());
+            merged_fields.extend(self);
 
             merged_fields
         })
@@ -332,14 +331,12 @@ where
 mod tests {
     use std::fs;
 
-    use crate::core::{
-        config::{Config, ConfigModule},
-        valid::Validator,
-    };
     use insta::assert_snapshot;
     use tailcall_fixtures::configs::federation;
 
     use super::*;
+    use crate::core::config::{Config, ConfigModule};
+    use crate::core::valid::Validator;
 
     #[test]
     fn test_federation_merge() -> anyhow::Result<()> {

@@ -5,11 +5,9 @@ use async_graphql::parser::types as async_graphql_types;
 use async_graphql::Name;
 use serde::{Deserialize, Serialize};
 
-use crate::core::{federation::merge::FederatedMergeIntersection, is_default};
-use crate::core::{
-    federation::merge::FederatedMergeUnion,
-    valid::{Valid, Validator},
-};
+use crate::core::federation::merge::{FederatedMergeIntersection, FederatedMergeUnion};
+use crate::core::is_default;
+use crate::core::valid::{Valid, Validator};
 
 /// Type to represent GraphQL type usage with modifiers
 /// [spec](https://spec.graphql.org/October2021/#sec-Wrapping-Types)

@@ -562,7 +562,7 @@ impl Config {
                     types = self.find_connections(field.type_of.name(), types);
                 }
             }
-        } else if let Some(_) = self.find_enum(type_of) {
+        } else if self.find_enum(type_of).is_some() {
             types.insert(type_of.into());
         }
         types
