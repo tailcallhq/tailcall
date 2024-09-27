@@ -412,6 +412,7 @@ impl<Input> OperationPlan<Input> {
             .collect::<Vec<_>>();
         let dedupe = fields
             .iter()
+            .filter(|v| v.ir.is_none())
             .all(|v| v.ir.as_ref().map(|v| v.is_dedupe()).unwrap_or_default());
 
         Self {
