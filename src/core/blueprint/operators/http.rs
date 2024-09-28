@@ -13,6 +13,8 @@ pub fn compile_http(
     http: &config::Http,
     is_list: bool,
 ) -> Valid<IR, String> {
+    let dedupe = http.dedupe.unwrap_or_default();
+
     Valid::<(), String>::fail("GroupBy is only supported for GET requests".to_string())
         .when(|| !http.batch_key.is_empty() && http.method != Method::GET)
         .and(
@@ -81,6 +83,7 @@ pub fn compile_http(
                     dl_id: None,
                     http_filter,
                     is_list,
+                    dedupe,
                 })
             } else {
                 IR::IO(IO::Http {
@@ -89,6 +92,7 @@ pub fn compile_http(
                     dl_id: None,
                     http_filter,
                     is_list,
+                    dedupe,
                 })
             }
         })

@@ -483,6 +483,7 @@ mod tests {
                     .collect(),
                     ..Default::default()
                 }],
+                dedupe: None,
             };
 
             let resolver = Resolver::Call(call);
