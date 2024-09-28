@@ -2,18 +2,30 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema @server @upstream(baseURL: "http://example.com", batch: {delay: 1, headers: [], maxSize: 1000}) {
+schema @server @upstream(baseURL: "http://example.com") {
   query: Query
 }
 
 type Bar {
-  foo: [Foo] @http(batchKey: ["id"], path: "/foos", query: [{key: "id", value: "{{.value.fooId}}"}])
+  foo: [Foo]
+    @http(
+      batchKey: ["id"]
+      path: "/foos"
+      query: [{key: "id", value: "{{.value.fooId}}"}]
+      batch: {delay: 1, headers: [], maxSize: 1000}
+    )
   fooId: Int!
   id: Int!
 }
 
 type Foo {
-  bar: Bar @http(batchKey: ["fooId"], path: "/bars", query: [{key: "fooId", value: "{{.value.id}}"}])
+  bar: Bar
+    @http(
+      batchKey: ["fooId"]
+      path: "/bars"
+      query: [{key: "fooId", value: "{{.value.id}}"}]
+      batch: {delay: 1, headers: [], maxSize: 1000}
+    )
   id: Int!
   name: String!
 }

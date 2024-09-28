@@ -43,7 +43,7 @@ impl Resolver {
         match self {
             Resolver::Http(http) => !http.batch_key.is_empty(),
             Resolver::Grpc(grpc) => !grpc.batch_key.is_empty(),
-            Resolver::Graphql(graphql) => graphql.batch,
+            Resolver::Graphql(graphql) => graphql.batch.is_some(),
             Resolver::ApolloFederation(ApolloFederation::EntityResolver(entity_resolver)) => {
                 entity_resolver
                     .resolver_by_type

@@ -1,6 +1,6 @@
 use std::num::NonZeroU64;
 use std::str::FromStr;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 
 use async_graphql_value::ConstValue;
 use cache_control::{Cachability, CacheControl};
@@ -27,7 +27,7 @@ pub struct RequestContext {
     pub cookie_headers: Option<Arc<Mutex<HeaderMap>>>,
     // A subset of all the headers received in the GraphQL Request that will be sent to the
     // upstream.
-    pub allowed_headers: HeaderMap,
+    pub allowed_headers: Arc<RwLock<HeaderMap>>,
     pub auth_ctx: AuthContext,
     pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
     pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
@@ -54,7 +54,7 @@ impl RequestContext {
             runtime: target_runtime,
             cache: DedupeResult::new(true),
             dedupe_handler: Arc::new(DedupeResult::new(false)),
-            allowed_headers: HeaderMap::new(),
+            allowed_headers: Default::default(),
             auth_ctx: AuthContext::default(),
         }
     }
@@ -151,9 +151,11 @@ impl RequestContext {
         self.runtime.cache.set(key, value, ttl).await
     }
 
+    /*
+    TODO: drop commented code and tests
     pub fn is_batching_enabled(&self) -> bool {
         self.upstream.is_batching_enabled()
-    }
+    }*/
 
     /// Checks if experimental headers is enabled
     pub fn has_experimental_headers(&self) -> bool {
@@ -195,7 +197,7 @@ impl From<&AppContext> for RequestContext {
             upstream: app_ctx.blueprint.upstream.clone(),
             x_response_headers: Arc::new(Mutex::new(HeaderMap::new())),
             cookie_headers,
-            allowed_headers: HeaderMap::new(),
+            allowed_headers: Default::default(),
             auth_ctx: (&app_ctx.auth_ctx).into(),
             http_data_loaders: app_ctx.http_data_loaders.clone(),
             gql_data_loaders: app_ctx.gql_data_loaders.clone(),
@@ -214,7 +216,6 @@ mod test {
     use cache_control::Cachability;
 
     use crate::core::blueprint::{Server, Upstream};
-    use crate::core::config::{self, Batch};
     use crate::core::http::RequestContext;
 
     impl Default for RequestContext {
@@ -264,38 +265,5 @@ mod test {
         let req_ctx: RequestContext = RequestContext::default();
         req_ctx.set_cache_visibility(&Some(Cachability::Public));
         assert_eq!(req_ctx.is_cache_public(), None);
-    }
-
-    fn create_req_ctx_with_batch(batch: Batch) -> RequestContext {
-        let config_module = config::ConfigModule::default();
-        let mut upstream = Upstream::try_from(&config_module).unwrap();
-        let server = Server::try_from(config_module).unwrap();
-        upstream.batch = Some(batch);
-        RequestContext::default().upstream(upstream).server(server)
-    }
-
-    #[test]
-    fn test_is_batching_disabled_default() {
-        let req_ctx = create_req_ctx_with_batch(Default::default());
-        assert!(!req_ctx.is_batching_enabled());
-    }
-
-    #[test]
-    fn test_is_batching_disabled_for_delay_zero() {
-        let req_ctx = create_req_ctx_with_batch(Batch { delay: 0, ..Default::default() });
-        assert!(!req_ctx.is_batching_enabled());
-    }
-
-    #[test]
-    fn test_is_batching_disabled_for_max_size_none() {
-        let req_ctx = create_req_ctx_with_batch(Batch { max_size: None, ..Default::default() });
-        assert!(!req_ctx.is_batching_enabled());
-    }
-
-    #[test]
-    fn test_is_batching_enabled() {
-        let req_ctx =
-            create_req_ctx_with_batch(Batch { delay: 1, max_size: Some(1), ..Default::default() });
-        assert!(req_ctx.is_batching_enabled());
     }
 }

@@ -1,8 +1,10 @@
+use std::collections::BTreeSet;
+
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall_macros::{DirectiveDefinition, InputDefinition};
 
-use crate::core::config::KeyValue;
+use crate::core::config::{Batch, KeyValue};
 use crate::core::is_default;
 
 #[derive(
@@ -17,7 +19,7 @@ use crate::core::is_default;
     InputDefinition,
     DirectiveDefinition,
 )]
-#[directive_definition(locations = "FieldDefinition, Object")]
+#[directive_definition(locations = "FieldDefinition")]
 #[serde(rename_all = "camelCase")]
 #[serde(deny_unknown_fields)]
 /// The @grpc operator indicates that a field or node is backed by a gRPC API.
@@ -51,4 +53,10 @@ pub struct Grpc {
     /// This refers to the gRPC method you're going to call. For instance
     /// `GetAllNews`.
     pub method: String,
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub allowed_headers: BTreeSet<String>,
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub batch: Option<Batch>,
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub on_request: Option<String>,
 }

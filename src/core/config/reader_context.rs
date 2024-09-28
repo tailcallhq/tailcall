@@ -29,8 +29,8 @@ impl<'a> PathString for ConfigReaderContext<'a> {
 }
 
 impl HasHeaders for ConfigReaderContext<'_> {
-    fn headers(&self) -> &HeaderMap {
-        &self.headers
+    fn headers(&self) -> HeaderMap {
+        self.headers.to_owned()
     }
 }
 

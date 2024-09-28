@@ -38,8 +38,8 @@ impl PathString for Context {
     }
 }
 impl HasHeaders for Context {
-    fn headers(&self) -> &HeaderMap {
-        &self.headers
+    fn headers(&self) -> HeaderMap {
+        self.headers.to_owned()
     }
 }
 pub fn benchmark_to_request(c: &mut Criterion) {

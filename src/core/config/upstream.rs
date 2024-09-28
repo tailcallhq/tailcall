@@ -75,13 +75,13 @@ pub struct Upstream {
     /// compilation error.
     pub base_url: Option<String>,
 
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// An object that specifies the batch settings, including `maxSize` (the
-    /// maximum size of the batch), `delay` (the delay in milliseconds between
-    /// each batch), and `headers` (an array of HTTP headers to be included in
-    /// the batch).
-    pub batch: Option<Batch>,
-
+    /*#[serde(default, skip_serializing_if = "is_default")]
+        /// An object that specifies the batch settings, including `maxSize` (the
+        /// maximum size of the batch), `delay` (the delay in milliseconds between
+        /// each batch), and `headers` (an array of HTTP headers to be included in
+        /// the batch).
+        pub batch: Option<Batch>,
+    */
     #[serde(default, skip_serializing_if = "is_default")]
     /// The time in seconds that the connection will wait for a response before
     /// timing out.
@@ -181,15 +181,6 @@ impl Upstream {
     }
     pub fn get_allowed_headers(&self) -> BTreeSet<String> {
         self.allowed_headers.clone().unwrap_or_default()
-    }
-    pub fn get_delay(&self) -> usize {
-        self.batch.clone().unwrap_or_default().delay
-    }
-
-    pub fn get_max_size(&self) -> usize {
-        self.batch
-            .as_ref()
-            .map_or(DEFAULT_MAX_SIZE, |b| b.max_size.unwrap_or(DEFAULT_MAX_SIZE))
     }
 
     pub fn get_http_2_only(&self) -> bool {

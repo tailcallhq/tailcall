@@ -43,9 +43,9 @@ where
     Ctx: ResolverContextLike + Sync,
 {
     match io {
-        IO::Http { req_template, dl_id, http_filter, .. } => {
+        IO::Http { req_template, dl_id, http_filter, batch, .. } => {
             let worker = &ctx.request_ctx.runtime.cmd_worker;
-            let eval_http = EvalHttp::new(ctx, req_template, dl_id);
+            let eval_http = EvalHttp::new(ctx, req_template, dl_id, batch);
             let request = eval_http.init_request()?;
             let response = match (&worker, http_filter) {
                 (Some(worker), Some(http_filter)) => {
@@ -53,20 +53,20 @@ where
                         .execute_with_worker(request, worker, http_filter)
                         .await?
                 }
-                _ => eval_http.execute(request).await?,
+                _ => eval_http.execute(request, batch).await?,
             };
 
             Ok(response.body)
         }
-        IO::GraphQL { req_template, field_name, dl_id, .. } => {
+        IO::GraphQL { req_template, field_name, dl_id, batch, .. } => {
             let req = req_template.to_request(ctx)?;
 
-            let res = if ctx.request_ctx.upstream.batch.is_some()
+            let res = if batch.is_some()
                 && matches!(req_template.operation_type, GraphQLOperationType::Query)
             {
                 let data_loader: Option<&DataLoader<DataLoaderRequest, GraphqlDataLoader>> =
                     dl_id.and_then(|dl| ctx.request_ctx.gql_data_loaders.get(dl.as_usize()));
-                execute_request_with_dl(ctx, req, data_loader).await?
+                execute_request_with_dl(req, data_loader, &None).await?
             } else {
                 execute_raw_request(ctx, req).await?
             };
@@ -74,16 +74,16 @@ where
             set_headers(ctx, &res);
             parse_graphql_response(ctx, res, field_name)
         }
-        IO::Grpc { req_template, dl_id, .. } => {
+        IO::Grpc { req_template, dl_id, batch, .. } => {
             let rendered = req_template.render(ctx)?;
 
-            let res = if ctx.request_ctx.upstream.batch.is_some() &&
-                    // TODO: share check for operation_type for resolvers
-                    matches!(req_template.operation_type, GraphQLOperationType::Query)
+            let res = if batch.is_some() &&
+                // TODO: share check for operation_type for resolvers
+                matches!(req_template.operation_type, GraphQLOperationType::Query)
             {
                 let data_loader: Option<&DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>> =
                     dl_id.and_then(|index| ctx.request_ctx.grpc_data_loaders.get(index.as_usize()));
-                execute_grpc_request_with_dl(ctx, rendered, data_loader).await?
+                execute_grpc_request_with_dl(rendered, data_loader, batch).await?
             } else {
                 let req = rendered.to_request()?;
                 execute_raw_grpc_request(ctx, req, &req_template.operation).await?

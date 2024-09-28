@@ -88,7 +88,7 @@ impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
             .and_then(move |(head, tail)| match head.as_ref() {
                 "value" => Some(ValueString::Value(ctx.path_value(tail)?)),
                 "args" => Some(ValueString::Value(ctx.path_arg(tail)?)),
-                "headers" => Some(ValueString::String(Cow::Borrowed(
+                "headers" => Some(ValueString::String(Cow::Owned(
                     ctx.header(tail[0].as_ref())?,
                 ))),
                 "vars" => Some(ValueString::String(Cow::Borrowed(
@@ -134,7 +134,7 @@ mod tests {
     mod evaluation_context {
         use std::borrow::Cow;
         use std::collections::BTreeMap;
-        use std::sync::Arc;
+        use std::sync::{Arc, RwLock};
 
         use async_graphql_value::{ConstValue as Value, Name, Number};
         use hyper::header::HeaderValue;
@@ -242,7 +242,8 @@ mod tests {
         }
 
         static REQ_CTX: Lazy<RequestContext> = Lazy::new(|| {
-            let mut req_ctx = RequestContext::default().allowed_headers(TEST_HEADERS.clone());
+            let mut req_ctx = RequestContext::default()
+                .allowed_headers(Arc::new(RwLock::new(TEST_HEADERS.clone())));
 
             req_ctx.server.vars = TEST_VARS.clone();
             req_ctx.runtime.env = Arc::new(Env::init(TEST_ENV_VARS.clone()));

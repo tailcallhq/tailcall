@@ -2,13 +2,14 @@ use std::sync::Arc;
 
 use async_graphql_value::ConstValue;
 use futures_util::future::join_all;
+use headers::HeaderMap;
 
 use super::context::Context;
 use super::exec::{Executor, IRExecutor};
 use super::{Error, OperationPlan, Request, Response, Result};
 use crate::core::app_context::AppContext;
 use crate::core::http::RequestContext;
-use crate::core::ir::model::IR;
+use crate::core::ir::model::{IO, IR};
 use crate::core::ir::{self, EvalContext};
 use crate::core::jit::synth::Synth;
 use crate::core::json::{JsonLike, JsonLikeList};
@@ -60,6 +61,13 @@ impl<'a> ConstValueExec<'a> {
     ) -> Result<<ConstValueExec<'a> as IRExecutor>::Output> {
         let req_context = &self.req_context;
         let mut eval_ctx = EvalContext::new(req_context, ctx);
+        if let Some(h) = self.headers(ir) {
+            self.req_context
+                .allowed_headers
+                .write()
+                .unwrap()
+                .extend(h.to_owned());
+        }
 
         Ok(ir.eval(&mut eval_ctx).await?)
     }
@@ -116,6 +124,17 @@ impl<'ctx> IRExecutor for ConstValueExec<'ctx> {
                 })?)
             }
             _ => Ok(self.call(ctx, ir).await?),
+        }
+    }
+    fn headers<'a>(&self, ir: &'a IR) -> Option<&'a HeaderMap> {
+        match ir {
+            IR::IO(io) => match io {
+                IO::Http { headers, .. } => Some(headers),
+                IO::GraphQL { headers, .. } => Some(headers),
+                IO::Grpc { headers, .. } => Some(headers),
+                IO::Js { .. } => None,
+            },
+            _ => None,
         }
     }
 }

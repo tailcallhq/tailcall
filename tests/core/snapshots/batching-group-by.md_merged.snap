@@ -4,11 +4,7 @@ expression: formatter
 ---
 schema
   @server(port: 8000, queryValidation: false)
-  @upstream(
-    baseURL: "http://jsonplaceholder.typicode.com"
-    batch: {delay: 1, headers: [], maxSize: 1000}
-    httpCache: 42
-  ) {
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42) {
   query: Query
 }
 
@@ -21,6 +17,7 @@ type Post {
       batchKey: ["id"]
       path: "/users"
       query: [{key: "id", value: "{{.value.userId}}"}, {key: "foo", value: "bar"}]
+      batch: {delay: 1, headers: [], maxSize: 1000}
     )
   userId: Int!
 }

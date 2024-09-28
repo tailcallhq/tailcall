@@ -41,6 +41,8 @@ impl JwtVerifier {
     fn resolve_token(&self, request: &RequestContext) -> anyhow::Result<Option<String>> {
         let value = request
             .allowed_headers
+            .read()
+            .unwrap()
             .typed_try_get::<Authorization<Bearer>>()?;
 
         Ok(value.map(|token| token.token().to_owned()))
@@ -164,10 +166,12 @@ pub mod tests {
     }
 
     pub fn create_jwt_auth_request(token: &str) -> RequestContext {
-        let mut req_context = RequestContext::default();
+        let req_context = RequestContext::default();
 
         req_context
             .allowed_headers
+            .write()
+            .unwrap()
             .typed_insert(Authorization::bearer(token).unwrap());
 
         req_context

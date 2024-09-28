@@ -2,14 +2,9 @@
 
 ```json @config
 {
+  "$schema": "../generated/.tailcallrc.schema.json",
   "server": {},
-  "upstream": {
-    "batch": {
-      "maxSize": 100,
-      "delay": 1,
-      "headers": []
-    }
-  },
+  "upstream": {},
   "schema": {
     "query": "Query"
   },
@@ -28,6 +23,10 @@
             }
           },
           "http": {
+            "batch": {
+              "delay": 1,
+              "maxSize": 100
+            },
             "path": "/users",
             "query": [
               {

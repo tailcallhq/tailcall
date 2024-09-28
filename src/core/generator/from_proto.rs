@@ -372,6 +372,9 @@ impl Context {
                     batch_key: vec![],
                     headers: vec![],
                     method: field_name.id(),
+                    allowed_headers: Default::default(),
+                    batch: None,
+                    on_request: None,
                 }));
 
                 let method_path =

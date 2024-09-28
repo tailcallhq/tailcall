@@ -8,7 +8,7 @@ use super::Server;
 use crate::core::blueprint::compress::compress;
 use crate::core::blueprint::*;
 use crate::core::config::transformer::Required;
-use crate::core::config::{Arg, Batch, Config, ConfigModule};
+use crate::core::config::{Arg, Config, ConfigModule};
 use crate::core::ir::model::{IO, IR};
 use crate::core::json::JsonSchema;
 use crate::core::try_fold::TryFold;
@@ -55,12 +55,15 @@ pub fn config_blueprint<'a>() -> TryFold<'a, ConfigModule, Blueprint, String> {
 
 // Apply batching if any of the fields have a @http directive with groupBy field
 
-pub fn apply_batching(mut blueprint: Blueprint) -> Blueprint {
+pub fn apply_batching(blueprint: Blueprint) -> Blueprint {
     for def in blueprint.definitions.iter() {
         if let Definition::Object(object_type_definition) = def {
             for field in object_type_definition.fields.iter() {
                 if let Some(IR::IO(IO::Http { group_by: Some(_), .. })) = field.resolver.clone() {
-                    blueprint.upstream.batch = blueprint.upstream.batch.or(Some(Batch::default()));
+                    // TODO: Needs review..
+                    // we probably don't need this function
+                    // blueprint.upstream.batch =
+                    // blueprint.upstream.batch.or(Some(Batch::default()));
                     return blueprint;
                 }
             }

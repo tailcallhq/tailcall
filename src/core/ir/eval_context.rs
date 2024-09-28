@@ -79,14 +79,21 @@ impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
         }
     }
 
-    pub fn headers(&self) -> &HeaderMap {
-        &self.request_ctx.allowed_headers
+    pub fn headers(&self) -> HeaderMap {
+        self.request_ctx.allowed_headers.read().unwrap().to_owned()
     }
 
-    pub fn header(&self, key: &str) -> Option<&str> {
-        let value = self.headers().get(key)?;
-
-        value.to_str().ok()
+    pub fn header(&self, key: &str) -> Option<String> {
+        let value = self
+            .request_ctx
+            .allowed_headers
+            .read()
+            .unwrap()
+            .get(key)?
+            .to_str()
+            .map(|v| v.to_owned())
+            .ok()?;
+        Some(value)
     }
 
     pub fn env_var(&self, key: &str) -> Option<Cow<'_, str>> {

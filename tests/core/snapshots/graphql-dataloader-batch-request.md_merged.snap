@@ -2,7 +2,7 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema @server @upstream(batch: {delay: 1, headers: []}) {
+schema @server @upstream {
   query: Query
 }
 
@@ -13,8 +13,8 @@ type Post {
     @graphQL(
       args: [{key: "id", value: "{{.value.userId}}"}]
       baseURL: "http://upstream/graphql"
-      batch: true
       name: "user"
+      batch: {delay: 1, headers: []}
     )
   userId: Int
 }

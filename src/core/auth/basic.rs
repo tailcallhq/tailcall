@@ -18,6 +18,8 @@ impl Verify for BasicVerifier {
     async fn verify(&self, req_ctx: &RequestContext) -> Verification {
         let header = req_ctx
             .allowed_headers
+            .read()
+            .unwrap()
             .typed_try_get::<Authorization<Basic>>();
 
         let Ok(header) = header else {
@@ -63,10 +65,12 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
     }
 
     pub fn create_basic_auth_request(username: &str, password: &str) -> RequestContext {
-        let mut req_context = RequestContext::default();
+        let req_context = RequestContext::default();
 
         req_context
             .allowed_headers
+            .write()
+            .unwrap()
             .typed_insert(Authorization::basic(username, password));
 
         req_context
@@ -118,8 +122,8 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
     #[tokio::test]
     async fn verify_auth_failure() {
         let provider = setup_provider();
-        let mut req_ctx = RequestContext::default();
-        req_ctx.allowed_headers.insert(
+        let req_ctx = RequestContext::default();
+        req_ctx.allowed_headers.write().unwrap().insert(
             "Authorization",
             HeaderValue::from_static("Basic dGVzdHVzZXIyOm15cGFzc3dvcmQ"),
         );

@@ -1,9 +1,7 @@
 # Batching group by default
 
 ```graphql @config
-schema
-  @server
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 1, maxSize: 1000}) {
+schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42) {
   query: Query
 }
 
@@ -21,6 +19,7 @@ type Post {
       batchKey: ["id"]
       path: "/users"
       query: [{key: "id", value: "{{.value.userId}}"}, {key: "foo", value: "bar"}]
+      batch: {delay: 1, maxSize: 1000}
     )
 }
 

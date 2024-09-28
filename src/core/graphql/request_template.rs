@@ -57,7 +57,7 @@ impl RequestTemplate {
             reqwest::header::CONTENT_TYPE,
             HeaderValue::from_static("application/json"),
         );
-        headers.extend(ctx.headers().to_owned());
+        headers.extend(ctx.headers());
         req
     }
 
@@ -193,8 +193,8 @@ mod tests {
     }
 
     impl HasHeaders for Context {
-        fn headers(&self) -> &HeaderMap {
-            &self.headers
+        fn headers(&self) -> HeaderMap {
+            self.headers.to_owned()
         }
     }
 

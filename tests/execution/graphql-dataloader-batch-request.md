@@ -1,7 +1,7 @@
 # Graphql datasource
 
 ```graphql @config
-schema @upstream(batch: {delay: 1}) {
+schema {
   query: Query
 }
 
@@ -15,6 +15,7 @@ type Post {
       baseURL: "http://upstream/graphql"
       batch: true
       name: "user"
+      batch: {delay: 1}
     )
 }
 

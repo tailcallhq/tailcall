@@ -1,8 +1,6 @@
-use std::collections::BTreeSet;
-
 use derive_setters::Setters;
 
-use crate::core::config::{self, Batch, ConfigModule};
+use crate::core::config::{self, ConfigModule};
 use crate::core::valid::{Valid, ValidationError, Validator};
 
 #[derive(PartialEq, Eq, Clone, Debug, schemars::JsonSchema)]
@@ -22,14 +20,16 @@ pub struct Upstream {
     pub timeout: u64,
     pub tcp_keep_alive: u64,
     pub user_agent: String,
-    pub allowed_headers: BTreeSet<String>,
-    pub base_url: Option<String>,
     pub http_cache: u64,
-    pub batch: Option<Batch>,
     pub http2_only: bool,
-    pub on_request: Option<String>,
+    // pub allowed_headers: BTreeSet<String>,
+    // pub base_url: Option<String>,
+    // pub batch: Option<Batch>,
+    // pub on_request: Option<String>,
 }
 
+/*
+TODO: drop commented code
 impl Upstream {
     /// If the delay is set to 0, then batching is disabled. By default delay is
     /// set to 0.
@@ -40,7 +40,7 @@ impl Upstream {
             false
         }
     }
-}
+}*/
 
 impl Default for Upstream {
     fn default() -> Self {
@@ -62,10 +62,10 @@ impl TryFrom<&ConfigModule> for Upstream {
             allowed_headers.insert(hyper::header::AUTHORIZATION.to_string());
         }
 
-        get_batch(&config_upstream)
-            .fuse(get_base_url(&config_upstream))
-            .fuse(get_proxy(&config_upstream))
-            .map(|(batch, base_url, proxy)| Upstream {
+        // get_batch(&config_upstream)
+        // .fuse(get_base_url(&config_upstream))
+        get_proxy(&config_upstream)
+            .map(|proxy| Upstream {
                 pool_idle_timeout: (config_upstream).get_pool_idle_timeout(),
                 pool_max_idle_per_host: (config_upstream).get_pool_max_idle_per_host(),
                 keep_alive_interval: (config_upstream).get_keep_alive_interval(),
@@ -76,18 +76,18 @@ impl TryFrom<&ConfigModule> for Upstream {
                 timeout: (config_upstream).get_timeout(),
                 tcp_keep_alive: (config_upstream).get_tcp_keep_alive(),
                 user_agent: (config_upstream).get_user_agent(),
-                allowed_headers,
-                base_url,
+                // allowed_headers,
+                // base_url,
                 http_cache: (config_upstream).get_http_cache_size(),
-                batch,
+                // batch,
                 http2_only: (config_upstream).get_http_2_only(),
-                on_request: (config_upstream).get_on_request(),
+                // on_request: (config_upstream).get_on_request(),
             })
             .to_result()
     }
 }
 
-fn get_batch(upstream: &config::Upstream) -> Valid<Option<Batch>, String> {
+/*fn get_batch(upstream: &config::Upstream) -> Valid<Option<Batch>, String> {
     upstream.batch.as_ref().map_or_else(
         || Valid::succeed(None),
         |batch| {
@@ -108,7 +108,7 @@ fn get_base_url(upstream: &config::Upstream) -> Valid<Option<String>, String> {
         Valid::succeed(None)
     }
 }
-
+*/
 fn get_proxy(upstream: &config::Upstream) -> Valid<Option<Proxy>, String> {
     if let Some(ref proxy) = upstream.proxy {
         Valid::succeed(Some(Proxy { url: proxy.url.clone() }))

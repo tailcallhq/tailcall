@@ -2,9 +2,7 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema
-  @server(port: 8000)
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", batch: {delay: 10, headers: [], maxSize: 1000}) {
+schema @server(port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
 
@@ -20,6 +18,7 @@ type Foo {
       batchKey: ["bars", "id"]
       path: "/bar"
       query: [{key: "baz", value: "static_value"}, {key: "barId[]", value: "{{.value.barId}}"}]
+      batch: {delay: 10, headers: [], maxSize: 1000}
     )
   fooName: String!
   id: ID!

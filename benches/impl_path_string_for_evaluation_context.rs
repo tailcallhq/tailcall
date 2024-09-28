@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 use std::collections::BTreeMap;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
 use async_graphql::{Name, Value};
@@ -258,7 +258,8 @@ fn request_context() -> RequestContext {
 }
 
 pub fn bench_main(c: &mut Criterion) {
-    let mut req_ctx = request_context().allowed_headers(TEST_HEADERS.clone());
+    let mut req_ctx =
+        request_context().allowed_headers(Arc::new(RwLock::new(TEST_HEADERS.clone())));
 
     req_ctx.server.vars = TEST_VARS.clone();
     let eval_ctx = EvalContext::new(&req_ctx, &MockGraphqlContext);

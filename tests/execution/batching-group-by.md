@@ -3,7 +3,7 @@
 ```graphql @config
 schema
   @server(port: 8000, queryValidation: false)
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 1, maxSize: 1000}) {
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42) {
   query: Query
 }
 
@@ -21,6 +21,7 @@ type Post {
       path: "/users"
       query: [{key: "id", value: "{{.value.userId}}"}, {key: "foo", value: "bar"}]
       batchKey: ["id"]
+      batch: {delay: 1, maxSize: 1000}
     )
 }
 
