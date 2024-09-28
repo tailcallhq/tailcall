@@ -36,6 +36,13 @@ Provides the ability to refer to multiple fields in the Query or Mutation root.
 """
 directive @call(
   """
+  Enables deduplication of IO operations to enhance performance.This flag prevents 
+  duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
+  May lead to issues with APIs that expect unique results for identical inputs, such 
+  as nonce-based APIs.
+  """
+  dedupe: Boolean
+  """
   Steps are composed together to form a call. If you have multiple steps, the output 
   of the previous step is passed as input to the next step.
   """
@@ -70,6 +77,13 @@ directive @graphQL(
   also specified batch settings to the `@upstream` and to the `@graphQL` operator.
   """
   batch: Boolean!
+  """
+  Enables deduplication of IO operations to enhance performance.This flag prevents 
+  duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
+  May lead to issues with APIs that expect unique results for identical inputs, such 
+  as nonce-based APIs.
+  """
+  dedupe: Boolean
   """
   The headers parameter allows you to customize the headers of the GraphQL request 
   made by the `@graphQL` operator. It is used by specifying a key-value map of header 
@@ -111,6 +125,13 @@ directive @grpc(
   """
   body: JSON
   """
+  Enables deduplication of IO operations to enhance performance.This flag prevents 
+  duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
+  May lead to issues with APIs that expect unique results for identical inputs, such 
+  as nonce-based APIs.
+  """
+  dedupe: Boolean
+  """
   The `headers` parameter allows you to customize the headers of the HTTP request made 
   by the `@grpc` operator. It is used by specifying a key-value map of header names 
   and their values. Note: content-type is automatically set to application/grpc
@@ -147,6 +168,13 @@ directive @http(
   variables from the GraphQL variables.
   """
   body: String
+  """
+  Enables deduplication of IO operations to enhance performance.This flag prevents 
+  duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
+  May lead to issues with APIs that expect unique results for identical inputs, such 
+  as nonce-based APIs.
+  """
+  dedupe: Boolean
   """
   The `encoding` parameter specifies the encoding of the request body. It can be `ApplicationJson` 
   or `ApplicationXWwwFormUrlEncoded`. @default `ApplicationJson`.
@@ -253,13 +281,6 @@ directive @server(
   introducing latency and complicating debugging. Use judiciously. @default `false`.
   """
   batchRequests: Boolean
-  """
-  Enables deduplication of IO operations to enhance performance.This flag prevents 
-  duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
-  May lead to issues with APIs that expect unique results for identical inputs, such 
-  as nonce-based APIs.
-  """
-  dedupe: Boolean
   enableJIT: Boolean
   """
   `globalResponseTimeout` sets the maximum query duration before termination, acting 
@@ -740,6 +761,13 @@ input GraphQL {
   """
   batch: Boolean!
   """
+  Enables deduplication of IO operations to enhance performance.This flag prevents 
+  duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
+  May lead to issues with APIs that expect unique results for identical inputs, such 
+  as nonce-based APIs.
+  """
+  dedupe: Boolean
+  """
   The headers parameter allows you to customize the headers of the GraphQL request 
   made by the `@graphQL` operator. It is used by specifying a key-value map of header 
   names and their values.
@@ -780,6 +808,13 @@ input Grpc {
   """
   body: JSON
   """
+  Enables deduplication of IO operations to enhance performance.This flag prevents 
+  duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
+  May lead to issues with APIs that expect unique results for identical inputs, such 
+  as nonce-based APIs.
+  """
+  dedupe: Boolean
+  """
   The `headers` parameter allows you to customize the headers of the HTTP request made 
   by the `@grpc` operator. It is used by specifying a key-value map of header names 
   and their values. Note: content-type is automatically set to application/grpc
@@ -816,6 +851,13 @@ input Http {
   variables from the GraphQL variables.
   """
   body: String
+  """
+  Enables deduplication of IO operations to enhance performance.This flag prevents 
+  duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
+  May lead to issues with APIs that expect unique results for identical inputs, such 
+  as nonce-based APIs.
+  """
+  dedupe: Boolean
   """
   The `encoding` parameter specifies the encoding of the request body. It can be `ApplicationJson` 
   or `ApplicationXWwwFormUrlEncoded`. @default `ApplicationJson`.
