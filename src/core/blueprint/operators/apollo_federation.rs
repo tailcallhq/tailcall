@@ -3,7 +3,7 @@ use std::fmt::Write;
 
 use async_graphql::parser::types::{SchemaDefinition, ServiceDocument, TypeSystemDefinition};
 
-use crate::core::{config, Type};
+use super::{compile_call, compile_expr, compile_graphql, compile_grpc, compile_http, compile_js};
 use crate::core::blueprint::FieldDefinition;
 use crate::core::config::{
     ApolloFederation, ConfigModule, EntityResolver, Field, GraphQLOperationType, Resolver,
@@ -11,8 +11,7 @@ use crate::core::config::{
 use crate::core::ir::model::IR;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, Validator};
-
-use super::{compile_call, compile_expr, compile_graphql, compile_grpc, compile_http, compile_js};
+use crate::core::{config, Type};
 
 pub struct CompileEntityResolver<'a> {
     config_module: &'a ConfigModule,
@@ -77,7 +76,7 @@ pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, S
             })
         },
     )
-        .map_to(IR::Entity(resolver_by_type))
+    .map_to(IR::Entity(resolver_by_type))
 }
 
 pub fn compile_service(config: &ConfigModule) -> Valid<IR, String> {
@@ -150,7 +149,7 @@ pub fn update_apollo_federation<'a>(
                 }
                 ApolloFederation::Service => compile_service(config_module),
             }
-                .map(|resolver| b_field.resolver(Some(resolver)))
+            .map(|resolver| b_field.resolver(Some(resolver)))
         },
     )
 }
