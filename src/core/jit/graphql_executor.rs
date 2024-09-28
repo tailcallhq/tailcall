@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::future::Future;
 use std::sync::Arc;
 
-use async_graphql::{Data, Executor, Response, Value};
+use async_graphql::{Data, Executor, Response, ServerError, Value};
 use async_graphql_value::{ConstValue, Extensions};
 use futures_util::stream::BoxStream;
 
@@ -88,9 +88,13 @@ impl Executor for JITExecutor {
                                 })
                             })
                             .await;
-                        // TODO: check if `unwrap_or_default` is correct
                         let val = out.unwrap_or_default();
-                        Arc::into_inner(val).unwrap_or_default()
+                        Arc::into_inner(val).unwrap_or_else(|| {
+                            Response::from_errors(vec![ServerError::new(
+                                "Deduplication failed",
+                                None,
+                            )])
+                        })
                     } else {
                         self.exec(exec, jit_request).await
                     }
