@@ -20,12 +20,7 @@ where
 {
     // Note: Handled the case separately for performance reasons. It avoids cache
     // key generation when it's not required
-    let dedupe = match io {
-        IO::Http { dedupe, .. } => *dedupe,
-        IO::GraphQL { dedupe, .. } => *dedupe,
-        IO::Grpc { dedupe, .. } => *dedupe,
-        IO::Js { .. } => false,
-    };
+    let dedupe = io.dedupe();
 
     if !dedupe || !ctx.is_query() {
         return eval_io_inner(io, ctx).await;

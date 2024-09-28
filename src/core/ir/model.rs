@@ -67,6 +67,17 @@ pub enum IO {
     },
 }
 
+impl IO {
+    pub fn dedupe(&self) -> bool {
+        match self {
+            IO::Http { dedupe, .. } => *dedupe,
+            IO::GraphQL { dedupe, .. } => *dedupe,
+            IO::Grpc { dedupe, .. } => *dedupe,
+            IO::Js { .. } => false,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 pub struct DataLoaderId(usize);
 
@@ -117,14 +128,6 @@ impl Cache {
 }
 
 impl IR {
-    pub fn is_dedupe(&self) -> bool {
-        match self {
-            IR::IO(IO::Http { dedupe, .. }) => *dedupe,
-            IR::IO(IO::GraphQL { dedupe, .. }) => *dedupe,
-            IR::IO(IO::Grpc { dedupe, .. }) => *dedupe,
-            _ => false,
-        }
-    }
     pub fn pipe(self, next: Self) -> Self {
         IR::Pipe(Box::new(self), Box::new(next))
     }

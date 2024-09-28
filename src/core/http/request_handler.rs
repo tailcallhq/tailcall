@@ -5,9 +5,9 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_graphql::ServerError;
 use hyper::header::{self, HeaderValue, CONTENT_TYPE};
+use hyper::http::request::Parts;
 use hyper::http::Method;
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
-use hyper::http::request::Parts;
 use opentelemetry::trace::SpanKind;
 use opentelemetry_semantic_conventions::trace::{HTTP_REQUEST_METHOD, HTTP_ROUTE};
 use prometheus::{Encoder, ProtobufEncoder, TextEncoder, TEXT_FORMAT};
@@ -112,21 +112,6 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
         Ok(request) => {
             let resp = execute_query(app_ctx, &req_ctx, request, req).await?;
             Ok(resp)
-            /*if !(request.is_query()) {
-                Ok()
-            } else {
-                let operation_id = request.operation_id(&req.headers);
-                let out = app_ctx
-                    .dedupe_operation_handler
-                    .dedupe(&operation_id, || {
-                        Box::pin(async move {
-                            let resp = execute_query(app_ctx, &req_ctx, request).await?;
-                            Ok(crate::core::http::Response::from_hyper(resp).await?)
-                        })
-                    })
-                    .await?;
-                Ok(hyper::Response::from(out))
-            }*/
         }
         Err(err) => {
             tracing::error!(
