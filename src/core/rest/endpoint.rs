@@ -284,7 +284,8 @@ mod tests {
 
         use async_graphql::Variables;
         use async_graphql_value::{ConstValue, Name};
-        use hyper::{Body, Method, Request, Uri, Version};
+        use http::{Method, Request, Uri, Version};
+        use hyper::Body;
         use maplit::btreemap;
         use pretty_assertions::assert_eq;
 
@@ -292,7 +293,7 @@ mod tests {
         use crate::core::rest::endpoint::tests::TEST_QUERY;
         use crate::core::rest::endpoint::Endpoint;
 
-        fn test_request(method: Method, uri: &str) -> Result<hyper::Request<Body>> {
+        fn test_request(method: Method, uri: &str) -> Result<http::Request<Body>> {
             Ok(Request::builder()
                 .method(method)
                 .uri(Uri::from_str(uri)?)

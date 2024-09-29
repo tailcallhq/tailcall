@@ -7,6 +7,8 @@ use tailcall::core::HttpIO;
 
 use crate::to_anyhow;
 
+extern crate http;
+
 #[derive(Clone)]
 pub struct CloudflareHttp {
     client: Client,
@@ -48,7 +50,7 @@ impl HttpIO for CloudflareHttp {
     }
 }
 
-pub async fn to_response(response: hyper::Response<hyper::Body>) -> Result<worker::Response> {
+pub async fn to_response(response: http::Response<hyper::Body>) -> Result<worker::Response> {
     let status = response.status().as_u16();
     let headers = response.headers().clone();
     let bytes = hyper::body::to_bytes(response).await?;
@@ -66,30 +68,28 @@ pub async fn to_response(response: hyper::Response<hyper::Body>) -> Result<worke
     Ok(w_response)
 }
 
-pub fn to_method(method: worker::Method) -> Result<hyper::Method> {
+pub fn to_method(method: worker::Method) -> Result<http::Method> {
     let method = &*method.to_string().to_uppercase();
     match method {
-        "GET" => Ok(hyper::Method::GET),
-        "POST" => Ok(hyper::Method::POST),
-        "PUT" => Ok(hyper::Method::PUT),
-        "DELETE" => Ok(hyper::Method::DELETE),
-        "HEAD" => Ok(hyper::Method::HEAD),
-        "OPTIONS" => Ok(hyper::Method::OPTIONS),
-        "PATCH" => Ok(hyper::Method::PATCH),
-        "CONNECT" => Ok(hyper::Method::CONNECT),
-        "TRACE" => Ok(hyper::Method::TRACE),
+        "GET" => Ok(http::Method::GET),
+        "POST" => Ok(http::Method::POST),
+        "PUT" => Ok(http::Method::PUT),
+        "DELETE" => Ok(http::Method::DELETE),
+        "HEAD" => Ok(http::Method::HEAD),
+        "OPTIONS" => Ok(http::Method::OPTIONS),
+        "PATCH" => Ok(http::Method::PATCH),
+        "CONNECT" => Ok(http::Method::CONNECT),
+        "TRACE" => Ok(http::Method::TRACE),
         method => Err(anyhow!("Unsupported HTTP method: {}", method)),
     }
 }
 
-pub async fn to_request(mut req: worker::Request) -> Result<hyper::Request<hyper::Body>> {
+pub async fn to_request(mut req: worker::Request) -> Result<http::Request<hyper::Body>> {
     let body = req.text().await.map_err(to_anyhow)?;
     let method = req.method();
     let uri = req.url().map_err(to_anyhow)?.as_str().to_string();
     let headers = req.headers();
-    let mut builder = hyper::Request::builder()
-        .method(to_method(method)?)
-        .uri(uri);
+    let mut builder = http::Request::builder().method(to_method(method)?).uri(uri);
     for (k, v) in headers {
         builder = builder.header(k, v);
     }

@@ -30,7 +30,7 @@ type Query {
   user(id: Int!): User @http(path: "/users/{{.args.id}}")
 }
 
-type User @call(steps: [{query: "user", args: {id: "{{.value.user.id}}"}}]) @key(fields: "user { id }") {
+type User @call(steps: [{query: "user", args: {id: "{{.value.id}}"}}]) @key(fields: "id") {
   id: Int!
   name: String!
 }
