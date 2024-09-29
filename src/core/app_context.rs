@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use async_graphql::dynamic::{self, DynamicRequest};
 use async_graphql_value::ConstValue;
+use hyper::body::Bytes;
 
 use crate::core::async_graphql_hyper::OperationId;
 use crate::core::auth::context::GlobalAuthContext;
@@ -10,7 +11,7 @@ use crate::core::data_loader::{DataLoader, DedupeResult};
 use crate::core::graphql::GraphqlDataLoader;
 use crate::core::grpc;
 use crate::core::grpc::data_loader::GrpcDataLoader;
-use crate::core::http::{DataLoaderRequest, HttpDataLoader};
+use crate::core::http::{DataLoaderRequest, HttpDataLoader, Response};
 use crate::core::ir::model::{DataLoaderId, IoId, IO, IR};
 use crate::core::ir::Error;
 use crate::core::rest::{Checked, EndpointSet};
@@ -26,7 +27,7 @@ pub struct AppContext {
     pub endpoints: EndpointSet<Checked>,
     pub auth_ctx: Arc<GlobalAuthContext>,
     pub dedupe_handler: Arc<DedupeResult<IoId, ConstValue, Error>>,
-    pub dedupe_operation_handler: DedupeResult<OperationId, Arc<async_graphql::Response>, Error>,
+    pub dedupe_operation_handler: DedupeResult<OperationId, Response<Bytes>, Error>,
 }
 
 impl AppContext {
@@ -47,15 +48,9 @@ impl AppContext {
                         expr.modify(&mut |expr| match expr {
                             IR::IO(io) => match io {
                                 IO::Http {
-                                    req_template,
-                                    group_by,
-                                    http_filter,
-                                    is_list,
-                                    dedupe,
-                                    ..
+                                    req_template, group_by, http_filter, is_list, ..
                                 } => {
                                     let is_list = *is_list;
-                                    let dedupe = *dedupe;
                                     let data_loader = HttpDataLoader::new(
                                         runtime.clone(),
                                         group_by.clone(),
@@ -69,7 +64,6 @@ impl AppContext {
                                         dl_id: Some(DataLoaderId::new(http_data_loaders.len())),
                                         http_filter: http_filter.clone(),
                                         is_list,
-                                        dedupe,
                                     }));
 
                                     http_data_loaders.push(data_loader);
@@ -77,8 +71,7 @@ impl AppContext {
                                     result
                                 }
 
-                                IO::GraphQL { req_template, field_name, batch, dedupe, .. } => {
-                                    let dedupe = *dedupe;
+                                IO::GraphQL { req_template, field_name, batch, .. } => {
                                     let graphql_data_loader =
                                         GraphqlDataLoader::new(runtime.clone(), *batch)
                                             .into_data_loader(
@@ -90,7 +83,6 @@ impl AppContext {
                                         field_name: field_name.clone(),
                                         batch: *batch,
                                         dl_id: Some(DataLoaderId::new(gql_data_loaders.len())),
-                                        dedupe,
                                     }));
 
                                     gql_data_loaders.push(graphql_data_loader);
@@ -98,8 +90,7 @@ impl AppContext {
                                     result
                                 }
 
-                                IO::Grpc { req_template, group_by, dedupe, .. } => {
-                                    let dedupe = *dedupe;
+                                IO::Grpc { req_template, group_by, .. } => {
                                     let data_loader = GrpcDataLoader {
                                         runtime: runtime.clone(),
                                         operation: req_template.operation.clone(),
@@ -113,7 +104,6 @@ impl AppContext {
                                         req_template: req_template.clone(),
                                         group_by: group_by.clone(),
                                         dl_id: Some(DataLoaderId::new(grpc_data_loaders.len())),
-                                        dedupe,
                                     }));
 
                                     grpc_data_loaders.push(data_loader);

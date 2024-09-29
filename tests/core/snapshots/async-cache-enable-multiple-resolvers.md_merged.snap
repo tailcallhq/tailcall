@@ -2,21 +2,23 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema @server(port: 8000, queryValidation: false) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema
+  @server(dedupe: true, port: 8000, queryValidation: false)
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
 
 type Post {
   body: String
   id: Int!
-  taggedUsers: [User] @http(path: "/taggedUsers/{{.value.id}}", dedupe: true)
+  taggedUsers: [User] @http(path: "/taggedUsers/{{.value.id}}")
   title: String
-  user: User @http(path: "/users/{{.value.userId}}", dedupe: true)
+  user: User @http(path: "/users/{{.value.userId}}")
   userId: Int!
 }
 
 type Query {
-  posts: [Post] @http(path: "/posts?id=1", dedupe: true)
+  posts: [Post] @http(path: "/posts?id=1")
 }
 
 type User {

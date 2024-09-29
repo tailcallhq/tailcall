@@ -6,7 +6,6 @@ use anyhow::Result;
 use async_graphql::ServerError;
 use headers::{HeaderMap, HeaderValue};
 use hyper::header::{self, CONTENT_TYPE};
-use hyper::http::request::Parts;
 use hyper::http::Method;
 use hyper::{Body, Request, Response, StatusCode};
 use opentelemetry::trace::SpanKind;
@@ -110,9 +109,22 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     let bytes = hyper::body::to_bytes(body).await?;
     let graphql_request = serde_json::from_slice::<T>(&bytes);
     match graphql_request {
-        Ok(request) => {
-            let resp = execute_query(app_ctx, &req_ctx, request, req).await?;
-            Ok(resp)
+        Ok(mut request) => {
+            if !(app_ctx.blueprint.server.dedupe && request.is_query()) {
+                Ok(execute_query(app_ctx, &req_ctx, request).await?)
+            } else {
+                let operation_id = request.operation_id(&req.headers);
+                let out = app_ctx
+                    .dedupe_operation_handler
+                    .dedupe(&operation_id, || {
+                        Box::pin(async move {
+                            let resp = execute_query(app_ctx, &req_ctx, request).await?;
+                            Ok(crate::core::http::Response::from_hyper(resp).await?)
+                        })
+                    })
+                    .await?;
+                Ok(hyper::Response::from(out))
+            }
         }
         Err(err) => {
             tracing::error!(
@@ -133,19 +145,11 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
 async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
     app_ctx: &Arc<AppContext>,
     req_ctx: &Arc<RequestContext>,
-    mut request: T,
-    req: Parts,
+    request: T,
 ) -> anyhow::Result<Response<Body>> {
     let mut response = if app_ctx.blueprint.server.enable_jit {
-        let is_query = request.is_query();
-        let operation_id = request.operation_id(&req.headers);
         request
-            .execute(&JITExecutor::new(
-                app_ctx.clone(),
-                req_ctx.clone(),
-                is_query,
-                operation_id,
-            ))
+            .execute(&JITExecutor::new(app_ctx.clone(), req_ctx.clone()))
             .await
     } else {
         request.data(req_ctx.clone()).execute(&app_ctx.schema).await

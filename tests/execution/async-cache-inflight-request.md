@@ -1,12 +1,14 @@
 # Async Cache Inflight and InRequest
 
 ```graphql @config
-schema @server(port: 8000, queryValidation: false) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema
+  @server(port: 8000, queryValidation: false, dedupe: true)
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
 
 type Query {
-  posts: [Post] @http(path: "/posts?id=1", dedupe: true)
+  posts: [Post] @http(path: "/posts?id=1")
 }
 
 type Post {
@@ -14,7 +16,7 @@ type Post {
   title: String
   body: String
   userId: Int!
-  user: User @http(path: "/users/{{.value.userId}}", dedupe: true)
+  user: User @http(path: "/users/{{.value.userId}}")
 }
 
 type User {
