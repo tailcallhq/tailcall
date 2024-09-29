@@ -4,8 +4,7 @@ use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
 
 use derive_setters::Setters;
-use hyper::HeaderMap;
-use reqwest::header::HeaderValue;
+use headers::{HeaderMap, HeaderValue};
 use tailcall_hasher::TailcallHasher;
 
 use crate::core::config::{GraphQLOperationType, KeyValue};
@@ -168,7 +167,7 @@ mod tests {
     use std::collections::HashSet;
 
     use async_graphql::Value;
-    use hyper::HeaderMap;
+    use headers::HeaderMap;
     use pretty_assertions::assert_eq;
     use serde_json::json;
 

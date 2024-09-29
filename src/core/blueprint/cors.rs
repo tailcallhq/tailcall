@@ -1,6 +1,6 @@
 use derive_setters::Setters;
+use headers::{HeaderName, HeaderValue};
 use hyper::header;
-use hyper::header::{HeaderName, HeaderValue};
 use hyper::http::request::Parts;
 
 use crate::core::config;
@@ -205,7 +205,7 @@ pub fn is_wildcard(header_value: &HeaderValue) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use hyper::header::HeaderValue;
+    use headers::HeaderValue;
 
     use super::*;
 
@@ -219,7 +219,7 @@ mod tests {
         assert_eq!(
             cors.allow_origin_to_header(origin.as_ref()),
             Some((
-                header::ACCESS_CONTROL_ALLOW_ORIGIN,
+                hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN,
                 HeaderValue::from_static("https://example.com")
             ))
         );

@@ -4,10 +4,11 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_graphql::ServerError;
-use hyper::header::{self, HeaderValue, CONTENT_TYPE};
+use headers::{HeaderMap, HeaderValue};
+use hyper::header::{self, CONTENT_TYPE};
 use hyper::http::request::Parts;
 use hyper::http::Method;
-use hyper::{Body, HeaderMap, Request, Response, StatusCode};
+use hyper::{Body, Request, Response, StatusCode};
 use opentelemetry::trace::SpanKind;
 use opentelemetry_semantic_conventions::trace::{HTTP_REQUEST_METHOD, HTTP_ROUTE};
 use prometheus::{Encoder, ProtobufEncoder, TextEncoder, TEXT_FORMAT};
@@ -449,7 +450,7 @@ mod test {
     fn test_create_allowed_headers() {
         use std::collections::BTreeSet;
 
-        use hyper::header::{HeaderMap, HeaderValue};
+        use headers::{HeaderMap, HeaderValue};
 
         use super::create_allowed_headers;
 

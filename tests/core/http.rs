@@ -6,8 +6,8 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
 use anyhow::anyhow;
+use headers::{HeaderName, HeaderValue};
 use hyper::body::Bytes;
-use reqwest::header::{HeaderName, HeaderValue};
 use tailcall::core::http::Response;
 use tailcall::core::HttpIO;
 

@@ -9,6 +9,7 @@ publish = false
 [dependencies]
 hyper = { version = "0.14.28", features = ["full"] }
 tokio = { version = "1.37.0", features = ["full"] }
+headers = { workspace = true }
 tonic = "0.11.0"
 tonic-reflection = "0.11.0"
 prost = "0.12.4"
@@ -23,9 +24,9 @@ opentelemetry_sdk = { version = "0.23.0", features = ["trace", "rt-tokio"] }
 opentelemetry-semantic-conventions = "0.15.0"
 opentelemetry-http = "0.12.0"
 opentelemetry-otlp = { version = "0.16.0", features = [
-  "trace",
-  # required to make grpc requests
-  "tls-roots",
+    "trace",
+    # required to make grpc requests
+    "tls-roots",
 ] }
 tracing = "0.1.40"
 tracing-opentelemetry = "0.24.0"

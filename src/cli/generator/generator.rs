@@ -1,8 +1,7 @@
 use std::fs;
 use std::path::Path;
 
-use hyper::header::{HeaderName, HeaderValue};
-use hyper::HeaderMap;
+use headers::{HeaderMap, HeaderName, HeaderValue};
 use inquire::Confirm;
 use pathdiff::diff_paths;
 

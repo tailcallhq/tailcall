@@ -1,8 +1,7 @@
 use std::collections::BTreeMap;
 use std::str::FromStr;
 
-use headers::HeaderValue;
-use reqwest::header::HeaderName;
+use headers::{HeaderName, HeaderValue};
 use rquickjs::{FromJs, IntoJs};
 
 use super::create_header_map;
@@ -91,7 +90,7 @@ impl<'js> FromJs<'js> for WorkerRequest {
                 })?,
                 HeaderValue::from_str(v.as_str()).map_err(|e| rquickjs::Error::FromJs {
                     from: "string",
-                    to: "reqwest::header::HeaderValue",
+                    to: "headers::HeaderValue",
                     message: Some(e.to_string()),
                 })?,
             );
@@ -192,7 +191,7 @@ impl<'js> FromJs<'js> for WorkerResponse {
             })?,
             headers: create_header_map(headers).map_err(|e| rquickjs::Error::FromJs {
                 from: "BTreeMap<String, String>",
-                to: "reqwest::header::HeaderMap",
+                to: "headers::HeaderMap",
                 message: Some(e.to_string()),
             })?,
             body: body.unwrap_or_default(),
@@ -206,10 +205,9 @@ mod test {
     use std::collections::BTreeMap;
 
     use anyhow::Result;
-    use headers::{HeaderName, HeaderValue};
+    use headers::{HeaderMap, HeaderName, HeaderValue};
     use hyper::body::Bytes;
     use pretty_assertions::assert_eq;
-    use reqwest::header::HeaderMap;
     use reqwest::Request;
     use rquickjs::{Context, FromJs, IntoJs, Object, Runtime, String as JsString};
 
@@ -354,7 +352,7 @@ mod test {
         context.with(|ctx| {
             let js_response = WorkerResponse::try_from(Response {
                 status: reqwest::StatusCode::OK,
-                headers: reqwest::header::HeaderMap::default(),
+                headers: headers::HeaderMap::default(),
                 body: Bytes::new(),
             })
             .unwrap();

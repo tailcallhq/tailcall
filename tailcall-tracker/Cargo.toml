@@ -26,3 +26,4 @@ chrono = "0.4.38"
 whoami = "1.5.2"
 strum = "0.26.3"
 convert_case = { workspace = true }
+headers = { workspace = true }

@@ -14,7 +14,7 @@ use crate::core::ir::Error;
 #[derive(Clone, Debug, Default, Setters)]
 pub struct Response<Body> {
     pub status: reqwest::StatusCode,
-    pub headers: reqwest::header::HeaderMap,
+    pub headers: headers::HeaderMap,
     pub body: Body,
 }
 
@@ -66,7 +66,7 @@ impl Response<Bytes> {
     pub fn empty() -> Self {
         Response {
             status: reqwest::StatusCode::OK,
-            headers: reqwest::header::HeaderMap::default(),
+            headers: headers::HeaderMap::default(),
             body: Bytes::new(),
         }
     }

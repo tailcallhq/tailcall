@@ -45,8 +45,8 @@ mod tests {
 
     use anyhow::Result;
     use async_trait::async_trait;
+    use headers::HeaderMap;
     use hyper::body::Bytes;
-    use reqwest::header::HeaderMap;
     use reqwest::{Method, Request, StatusCode};
     use serde_json::json;
     use tailcall_fixtures::protobuf;

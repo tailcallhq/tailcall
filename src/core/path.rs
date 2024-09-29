@@ -137,8 +137,7 @@ mod tests {
         use std::sync::Arc;
 
         use async_graphql_value::{ConstValue as Value, Name, Number};
-        use hyper::header::HeaderValue;
-        use hyper::HeaderMap;
+        use headers::{HeaderMap, HeaderValue};
         use indexmap::IndexMap;
         use once_cell::sync::Lazy;
 
