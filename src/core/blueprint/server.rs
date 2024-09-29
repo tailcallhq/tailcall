@@ -5,8 +5,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use derive_setters::Setters;
-use hyper::header::{HeaderName, HeaderValue};
-use hyper::HeaderMap;
+use headers::{HeaderMap, HeaderName, HeaderValue};
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
 use super::Auth;

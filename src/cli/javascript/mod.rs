@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use hyper::header::{HeaderName, HeaderValue};
+use headers::{HeaderName, HeaderValue};
 
 pub mod codec;
 
@@ -18,10 +18,8 @@ where
     (Arc::new(Runtime::new(script))) as _
 }
 
-fn create_header_map(
-    headers: BTreeMap<String, String>,
-) -> anyhow::Result<reqwest::header::HeaderMap> {
-    let mut header_map = reqwest::header::HeaderMap::new();
+fn create_header_map(headers: BTreeMap<String, String>) -> anyhow::Result<headers::HeaderMap> {
+    let mut header_map = headers::HeaderMap::new();
     for (key, value) in headers.iter() {
         let key = HeaderName::from_bytes(key.as_bytes())?;
         let value = HeaderValue::from_str(value.as_str())?;

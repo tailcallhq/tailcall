@@ -2,9 +2,8 @@ use std::hash::{Hash, Hasher};
 
 use anyhow::Result;
 use derive_setters::Setters;
+use headers::{HeaderMap, HeaderValue};
 use hyper::header::CONTENT_TYPE;
-use hyper::HeaderMap;
-use reqwest::header::HeaderValue;
 use tailcall_hasher::TailcallHasher;
 use url::Url;
 
@@ -134,8 +133,8 @@ mod tests {
     use std::collections::HashSet;
 
     use derive_setters::Setters;
-    use hyper::header::{HeaderName, HeaderValue};
-    use hyper::{HeaderMap, Method};
+    use headers::{HeaderMap, HeaderName, HeaderValue};
+    use hyper::Method;
     use pretty_assertions::assert_eq;
     use tailcall_fixtures::protobuf;
 

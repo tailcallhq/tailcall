@@ -5569,6 +5569,7 @@ dependencies = [
  "chrono",
  "convert_case 0.6.0",
  "derive_more 0.99.18",
+ "headers",
  "lazy_static",
  "machineid-rs",
  "posthog-rs",
@@ -5614,6 +5615,7 @@ name = "tailcall-upstream-grpc"
 version = "0.1.0"
 dependencies = [
  "derive_more 0.99.18",
+ "headers",
  "http-body-util",
  "hyper 0.14.30",
  "hyper-util",

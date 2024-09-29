@@ -1,4 +1,4 @@
-use reqwest::header::{HeaderName, HeaderValue};
+use headers::{HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
 
 use super::super::Result;

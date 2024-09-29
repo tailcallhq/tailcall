@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use criterion::{black_box, Criterion};
 use derive_setters::Setters;
-use hyper::HeaderMap;
+use headers::HeaderMap;
 use serde_json::json;
 use tailcall::core::endpoint::Endpoint;
 use tailcall::core::has_headers::HasHeaders;

@@ -43,7 +43,7 @@ impl BasicVerifier {
 
 #[cfg(test)]
 pub mod tests {
-    use hyper::header::HeaderValue;
+    use headers::HeaderValue;
 
     use super::*;
 
