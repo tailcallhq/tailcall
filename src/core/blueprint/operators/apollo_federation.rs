@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 use std::fmt::Write;
 
-use async_graphql::parser::types::{SchemaDefinition, ServiceDocument, TypeSystemDefinition};
+use async_graphql::parser::types::{
+    SchemaDefinition, ServiceDocument, TypeDefinition, TypeSystemDefinition,
+};
 
 use super::{compile_call, compile_expr, compile_graphql, compile_grpc, compile_http, compile_js};
 use crate::core::blueprint::FieldDefinition;
@@ -12,6 +14,22 @@ use crate::core::ir::model::IR;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, Validator};
 use crate::core::{config, Type};
+
+// ref: https://www.apollographql.com/docs/federation/federated-schemas/federated-directives
+const FEDERATION_DIRECTIVES: &[&str] = &[
+    "link",
+    "key",
+    "extends",
+    "external",
+    "provides",
+    "requires",
+    "tag",
+    "shareable",
+    "inaccessible",
+    "override",
+    "composeDirective",
+    "interfaceObject",
+];
 
 pub struct CompileEntityResolver<'a> {
     config_module: &'a ConfigModule,
@@ -96,7 +114,7 @@ pub fn compile_service(config: &ConfigModule) -> Valid<IR, String> {
 
 fn filter_conflicting_directives(sd: ServiceDocument) -> ServiceDocument {
     fn filter_directive(directive_name: &str) -> bool {
-        directive_name == "link"
+        FEDERATION_DIRECTIVES.iter().any(|d| *d == directive_name)
     }
 
     fn filter_map(def: TypeSystemDefinition) -> Option<TypeSystemDefinition> {
@@ -120,7 +138,16 @@ fn filter_conflicting_directives(sd: ServiceDocument) -> ServiceDocument {
                     None
                 }
             }
-            ty => Some(ty),
+            TypeSystemDefinition::Type(ty) => Some(TypeSystemDefinition::Type(ty.map(|ty| {
+                TypeDefinition {
+                    directives: ty
+                        .directives
+                        .into_iter()
+                        .filter(|d| filter_directive(d.node.name.node.as_str()))
+                        .collect(),
+                    ..ty
+                }
+            }))),
         }
     }
 
