@@ -90,12 +90,4 @@ pub struct Http {
     /// first parameter referencing a field in the current value using mustache
     /// syntax is automatically selected as the batching parameter.
     pub query: Vec<URLQuery>,
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// Enables deduplication of IO operations to enhance performance.
-    ///
-    /// This flag prevents duplicate IO requests from being executed
-    /// concurrently, reducing resource load. Caution: May lead to issues
-    /// with APIs that expect unique results for identical inputs, such as
-    /// nonce-based APIs.
-    pub dedupe: Option<bool>,
 }

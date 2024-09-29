@@ -160,7 +160,6 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
     let field = inputs.field;
     let grpc = inputs.grpc;
     let validate_with_schema = inputs.validate_with_schema;
-    let dedupe = grpc.dedupe.unwrap_or_default();
 
     Valid::from(GrpcMethod::try_from(grpc.method.as_str()))
         .and_then(|method| {
@@ -202,10 +201,9 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
                     req_template,
                     group_by: Some(GroupBy::new(grpc.batch_key.clone(), None)),
                     dl_id: None,
-                    dedupe,
                 })
             } else {
-                IR::IO(IO::Grpc { req_template, group_by: None, dl_id: None, dedupe })
+                IR::IO(IO::Grpc { req_template, group_by: None, dl_id: None })
             }
         })
 }

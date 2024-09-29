@@ -1,4 +1,4 @@
-use hyper::header;
+use http::header;
 use serde::{Deserialize, Serialize};
 
 use crate::core::http::Method;

@@ -5,8 +5,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use derive_setters::Setters;
-use hyper::header::{HeaderName, HeaderValue};
-use hyper::HeaderMap;
+use http::header::{HeaderMap, HeaderName, HeaderValue};
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
 use super::Auth;
@@ -37,6 +36,7 @@ pub struct Server {
     pub cors: Option<Cors>,
     pub experimental_headers: HashSet<HeaderName>,
     pub auth: Option<Auth>,
+    pub dedupe: bool,
     pub routes: Routes,
 }
 
@@ -153,6 +153,7 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
                         script,
                         cors,
                         auth,
+                        dedupe: config_server.get_dedupe(),
                         routes: config_server.get_routes(),
                     }
                 },

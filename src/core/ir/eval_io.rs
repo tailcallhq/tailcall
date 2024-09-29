@@ -20,9 +20,7 @@ where
 {
     // Note: Handled the case separately for performance reasons. It avoids cache
     // key generation when it's not required
-    let dedupe = io.dedupe();
-
-    if !dedupe || !ctx.is_query() {
+    if !ctx.request_ctx.server.dedupe || !ctx.is_query() {
         return eval_io_inner(io, ctx).await;
     }
     if let Some(key) = io.cache_key(ctx) {
