@@ -96,7 +96,8 @@ pub fn compile_service(config: &ConfigModule) -> Valid<IR, String> {
 
 fn filter_conflicting_directives(sd: ServiceDocument) -> ServiceDocument {
     fn filter_directive(directive_name: &str) -> bool {
-        directive_name != "link"
+        println!("{}", directive_name);
+        directive_name == "link"
     }
 
     fn filter_map(def: TypeSystemDefinition) -> Option<TypeSystemDefinition> {
