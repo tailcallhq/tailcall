@@ -6,7 +6,7 @@ use std::time::Duration;
 use async_graphql::{Name, Value};
 use async_trait::async_trait;
 use criterion::{BenchmarkId, Criterion};
-use headers::{HeaderMap, HeaderValue};
+use http::header::{HeaderMap, HeaderValue};
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
 use hyper::body::Bytes;
 use indexmap::IndexMap;

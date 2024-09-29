@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use headers::{HeaderMap, HeaderName, HeaderValue};
+use http::header::{HeaderMap, HeaderName, HeaderValue};
 use url::Url;
 
 use super::TryFoldConfig;

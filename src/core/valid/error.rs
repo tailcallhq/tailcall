@@ -125,8 +125,8 @@ impl From<serde_path_to_error::Error<serde_json::Error>> for ValidationError<Str
     }
 }
 
-impl From<hyper::header::InvalidHeaderValue> for ValidationError<String> {
-    fn from(error: hyper::header::InvalidHeaderValue) -> Self {
+impl From<http::header::InvalidHeaderValue> for ValidationError<String> {
+    fn from(error: http::header::InvalidHeaderValue) -> Self {
         ValidationError::new(error.to_string())
     }
 }
