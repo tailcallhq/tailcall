@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::Result;
-use hyper::body::Bytes;
+use hyper::body::{Bytes, HttpBody};
 use lambda_http::RequestExt;
 use reqwest::Client;
 use tailcall::core::http::Response;
@@ -90,7 +90,7 @@ pub async fn to_response(
     }
 
     build.body(lambda_http::Body::Binary(Vec::from(
-        hyper::body::to_bytes(res.into_body()).await.unwrap(),
+        res.into_body().collect().await.unwrap().to_bytes(),
     )))
 }
 

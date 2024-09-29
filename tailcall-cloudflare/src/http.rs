@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use async_std::task::spawn_local;
-use hyper::body::Bytes;
+use hyper::body::{Bytes, HttpBody};
 use reqwest::Client;
 use tailcall::core::http::Response;
 use tailcall::core::HttpIO;
@@ -53,7 +53,7 @@ impl HttpIO for CloudflareHttp {
 pub async fn to_response(response: http::Response<hyper::Body>) -> Result<worker::Response> {
     let status = response.status().as_u16();
     let headers = response.headers().clone();
-    let bytes = hyper::body::to_bytes(response).await?;
+    let bytes = response.collect().await?.to_bytes();
     let body = worker::ResponseBody::Body(bytes.to_vec());
     let mut w_response = worker::Response::from_body(body).map_err(to_anyhow)?;
     w_response = w_response.with_status(status);

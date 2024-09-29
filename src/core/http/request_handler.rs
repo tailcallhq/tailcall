@@ -6,6 +6,7 @@ use anyhow::Result;
 use async_graphql::ServerError;
 use http::header::{self, HeaderMap, HeaderValue, CONTENT_TYPE};
 use http::{Method, Request, Response, StatusCode};
+use hyper::body::HttpBody;
 use hyper::Body;
 use opentelemetry::trace::SpanKind;
 use opentelemetry_semantic_conventions::trace::{HTTP_REQUEST_METHOD, HTTP_ROUTE};
@@ -105,7 +106,7 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     req_counter.set_http_route("/graphql");
     let req_ctx = Arc::new(create_request_context(&req, app_ctx));
     let (req, body) = req.into_parts();
-    let bytes = hyper::body::to_bytes(body).await?;
+    let bytes = body.collect().await?.to_bytes();
     let graphql_request = serde_json::from_slice::<T>(&bytes);
     match graphql_request {
         Ok(mut request) => {
@@ -385,6 +386,8 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
 
 #[cfg(test)]
 mod test {
+    use hyper::body::HttpBody;
+
     use super::*;
     use crate::core::async_graphql_hyper::GraphQLRequest;
     use crate::core::blueprint::Blueprint;
@@ -413,7 +416,7 @@ mod test {
         let resp = handle_request::<GraphQLRequest>(req, app_ctx).await?;
 
         assert_eq!(resp.status(), StatusCode::OK);
-        let body = hyper::body::to_bytes(resp.into_body()).await?;
+        let body = resp.into_body().collect().await?.to_bytes();
         assert_eq!(body, r#"{"message": "ready"}"#);
 
         Ok(())
@@ -441,7 +444,7 @@ mod test {
         let resp = handle_request::<GraphQLRequest>(req, app_ctx).await?;
 
         assert_eq!(resp.status(), StatusCode::OK);
-        let body = hyper::body::to_bytes(resp.into_body()).await?;
+        let body = resp.into_body().collect().await?.to_bytes();
         let body_str = String::from_utf8(body.to_vec())?;
         assert!(body_str.contains("queryType"));
         assert!(body_str.contains("name"));

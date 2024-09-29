@@ -271,6 +271,7 @@ impl GraphQLResponse {
 mod tests {
     use async_graphql::{Name, Response, ServerError, Value};
     use http::StatusCode;
+    use hyper::body::HttpBody;
     use indexmap::IndexMap;
     use serde_json::json;
 
@@ -289,9 +290,12 @@ mod tests {
         assert_eq!(rest_response.status(), StatusCode::OK);
         assert_eq!(rest_response.headers()["content-type"], "application/json");
         assert_eq!(
-            hyper::body::to_bytes(rest_response.into_body())
+            rest_response
+                .into_body()
+                .collect()
                 .await
                 .unwrap()
+                .to_bytes()
                 .to_vec(),
             json!({ "name": name }).to_string().as_bytes().to_vec()
         );
@@ -316,9 +320,12 @@ mod tests {
         assert_eq!(rest_response.status(), StatusCode::OK);
         assert_eq!(rest_response.headers()["content-type"], "application/json");
         assert_eq!(
-            hyper::body::to_bytes(rest_response.into_body())
+            rest_response
+                .into_body()
+                .collect()
                 .await
                 .unwrap()
+                .to_bytes()
                 .to_vec(),
             json!([
                 { "name": names[0] },
@@ -345,9 +352,12 @@ mod tests {
         assert_eq!(rest_response.status(), StatusCode::INTERNAL_SERVER_ERROR);
         assert_eq!(rest_response.headers()["content-type"], "application/json");
         assert_eq!(
-            hyper::body::to_bytes(rest_response.into_body())
+            rest_response
+                .into_body()
+                .collect()
                 .await
                 .unwrap()
+                .to_bytes()
                 .to_vec(),
             json!({
                 "data": null,
