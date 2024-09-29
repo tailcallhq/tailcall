@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use chrono::NaiveDateTime;
-use headers::{HeaderName, HeaderValue};
+use http::header::{HeaderName, HeaderValue};
 use serde::Serialize;
 use serde_json::Value;
 

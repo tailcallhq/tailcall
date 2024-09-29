@@ -33,6 +33,7 @@ tracing-opentelemetry = "0.24.0"
 tracing-subscriber = "0.3.18"
 derive_more = { workspace = true }
 thiserror = { workspace = true }
+http = { workspace = true }
 
 [build-dependencies]
 protoc-bin-vendored = "3.0.0"

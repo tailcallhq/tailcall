@@ -60,7 +60,7 @@ impl TryFrom<&ConfigModule> for Upstream {
 
         if config_module.extensions().has_auth() {
             // force add auth specific headers to use it to make actual validation
-            allowed_headers.insert(hyper::header::AUTHORIZATION.to_string());
+            allowed_headers.insert(http::header::AUTHORIZATION.to_string());
         }
 
         get_batch(&config_upstream)

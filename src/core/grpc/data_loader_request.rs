@@ -54,7 +54,7 @@ impl DataLoaderRequest {
 mod tests {
     use std::collections::BTreeSet;
 
-    use headers::{HeaderMap, HeaderName, HeaderValue};
+    use http::header::{HeaderMap, HeaderName, HeaderValue};
     use pretty_assertions::assert_eq;
     use tailcall_fixtures::protobuf;
     use url::Url;

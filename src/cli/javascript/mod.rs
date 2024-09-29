@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use headers::{HeaderName, HeaderValue};
+use http::header::{HeaderName, HeaderValue};
 
 pub mod codec;
 

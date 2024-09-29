@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::str::FromStr;
 
-use headers::{HeaderName, HeaderValue};
+use http::header::{HeaderName, HeaderValue};
 use rquickjs::{FromJs, IntoJs};
 
 use super::create_header_map;
@@ -205,7 +205,7 @@ mod test {
     use std::collections::BTreeMap;
 
     use anyhow::Result;
-    use headers::{HeaderMap, HeaderName, HeaderValue};
+    use http::header::{HeaderMap, HeaderName, HeaderValue};
     use hyper::body::Bytes;
     use pretty_assertions::assert_eq;
     use reqwest::Request;
@@ -352,7 +352,7 @@ mod test {
         context.with(|ctx| {
             let js_response = WorkerResponse::try_from(Response {
                 status: reqwest::StatusCode::OK,
-                headers: headers::HeaderMap::default(),
+                headers: HeaderMap::default(),
                 body: Bytes::new(),
             })
             .unwrap();

@@ -4,9 +4,9 @@ use std::hash::{Hash, Hasher};
 use anyhow::Result;
 use async_graphql::parser::types::{ExecutableDocument, OperationType};
 use async_graphql::{BatchResponse, Executor, Value};
-use headers::{HeaderMap, HeaderValue};
-use hyper::header::{CACHE_CONTROL, CONTENT_TYPE};
-use hyper::{Body, Response, StatusCode};
+use http::header::{HeaderMap, HeaderValue, CACHE_CONTROL, CONTENT_TYPE};
+use http::{Response, StatusCode};
+use hyper::Body;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use tailcall_hasher::TailcallHasher;
@@ -270,7 +270,7 @@ impl GraphQLResponse {
 #[cfg(test)]
 mod tests {
     use async_graphql::{Name, Response, ServerError, Value};
-    use hyper::StatusCode;
+    use http::StatusCode;
     use indexmap::IndexMap;
     use serde_json::json;
 

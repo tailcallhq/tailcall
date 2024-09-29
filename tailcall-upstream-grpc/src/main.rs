@@ -3,7 +3,7 @@ mod error;
 use std::sync::{Arc, Mutex};
 
 use error::Error;
-use headers::{HeaderMap, HeaderName, HeaderValue};
+use http::header::{HeaderMap, HeaderName, HeaderValue};
 use news::news_service_server::{NewsService, NewsServiceServer};
 use news::{MultipleNewsId, News, NewsId, NewsList};
 use once_cell::sync::Lazy;

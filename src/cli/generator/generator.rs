@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::Path;
 
-use headers::{HeaderMap, HeaderName, HeaderValue};
+use http::header::{HeaderMap, HeaderName, HeaderValue};
 use inquire::Confirm;
 use pathdiff::diff_paths;
 
