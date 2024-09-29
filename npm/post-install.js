@@ -30,7 +30,7 @@ if (matched_platform != null) {
   }
 
   const pkg_download_base_url = "https://github.com/tailcallhq/tailcall/releases/download/"
-  const specific_url = `v${version}/tailcall-${targetPlatform.get("target")}${targetPlatformExt}`
+  const specific_url = `${version}/tailcall-${targetPlatform.get("target")}${targetPlatformExt}`
   const full_url = pkg_download_base_url + specific_url
 
   console.log(`Downloading Tailcall for ${targetPlatform.get("target")}${targetPlatformExt} ,\nUrl - ${full_url} ...`)
