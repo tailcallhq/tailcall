@@ -6,6 +6,7 @@ use derive_more::From;
 use thiserror::Error;
 
 use crate::core::{auth, cache, worker, Errata};
+
 #[derive(From, Debug, Error, Clone)]
 pub enum Error {
     IO(String),
@@ -30,6 +31,9 @@ pub enum Error {
     Worker(worker::Error),
 
     Cache(cache::Error),
+
+    #[from(ignore)]
+    Entity(String),
 }
 
 impl Display for Error {
@@ -62,6 +66,7 @@ impl From<Error> for Errata {
             }
             Error::Worker(err) => Errata::new("Worker Error").description(err.to_string()),
             Error::Cache(err) => Errata::new("Cache Error").description(err.to_string()),
+            Error::Entity(message) => Errata::new("Entity Resolver Error").description(message)
         }
     }
 }

@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use crate::core::jit::model::{Field, Nested, OperationPlan, Variables};
 use crate::core::jit::store::{DataPath, Store};
 use crate::core::jit::{Error, PathSegment, Positioned, ValidationError};
@@ -36,6 +38,7 @@ where
     pub fn synthesize(&'a self) -> Result<Value, Positioned<Error>> {
         let mut data = Value::JsonObject::new();
         let mut path = Vec::new();
+        let root_name = self.plan.root_name();
 
         for child in self.plan.as_nested().iter() {
             if !self.include(child) {
@@ -43,7 +46,7 @@ where
             }
             // TODO: in case of error set `child.output_name` to null
             // and append error to response error array
-            let val = self.iter(child, None, &DataPath::new(), &mut path)?;
+            let val = self.iter(child, None, &DataPath::new(), &mut path, Some(root_name))?;
             data.insert_key(&child.output_name, val);
         }
 
@@ -58,6 +61,7 @@ where
         value: Option<&'a Value>,
         data_path: &DataPath,
         path: &mut Vec<PathSegment>,
+        root_name: Option<&'a str>,
     ) -> Result<Value, Positioned<Error>> {
         path.push(PathSegment::Field(node.output_name.clone()));
 
@@ -74,13 +78,13 @@ where
                 }
 
                 if node.type_of.is_list() != value.as_array().is_some() {
-                    return self.node_nullable_guard(node, path);
+                    return self.node_nullable_guard(node, path, None);
                 }
                 self.iter_inner(node, value, data_path, path)
             }
             None => match value {
                 Some(result) => self.iter_inner(node, result, data_path, path),
-                None => self.node_nullable_guard(node, path),
+                None => self.node_nullable_guard(node, path, root_name),
             },
         };
 
@@ -94,7 +98,13 @@ where
         &'a self,
         node: &'a Field<Nested<Value>, Value>,
         path: &[PathSegment],
+        root_name: Option<&'a str>,
     ) -> Result<Value, Positioned<Error>> {
+        if let Some(root_name) = root_name {
+            if node.name.eq("__typename") {
+                return Ok(Value::string(Cow::Borrowed(root_name)));
+            }
+        }
         // according to GraphQL spec https://spec.graphql.org/October2021/#sec-Handling-Field-Errors
         if node.type_of.is_nullable() {
             Ok(Value::null())
@@ -173,7 +183,7 @@ where
                                 Value::string(node.value_type(value).into())
                             } else {
                                 let val = obj.get_key(child.name.as_str());
-                                self.iter(child, val, data_path, path)?
+                                self.iter(child, val, data_path, path, None)?
                             };
                             ans.insert_key(&child.output_name, value);
                         }
@@ -414,6 +424,14 @@ mod tests {
     #[test]
     fn test_json_placeholder_typename() {
         let jp = JP::init("{ posts { id __typename user { __typename id } } }", None);
+        let synth = jp.synth();
+        let val: serde_json_borrow::Value = synth.synthesize().unwrap();
+        insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())
+    }
+
+    #[test]
+    fn test_json_placeholder_typename_root_level() {
+        let jp = JP::init("{ __typename posts { id user { id }} }", None);
         let synth = jp.synth();
         let val: serde_json_borrow::Value = synth.synthesize().unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())

@@ -345,12 +345,14 @@ pub struct Nested<Input>(Vec<Field<Nested<Input>, Input>>);
 
 #[derive(Clone)]
 pub struct OperationPlan<Input> {
+    root_name: String,
     flat: Vec<Field<Flat, Input>>,
     operation_type: OperationType,
     nested: Vec<Field<Nested<Input>, Input>>,
     // TODO: drop index from here. Embed all the necessary information in each field of the plan.
     pub index: Arc<Index>,
     pub is_introspection_query: bool,
+    pub dedupe: bool,
 }
 
 impl<Input> std::fmt::Debug for OperationPlan<Input> {
@@ -379,17 +381,21 @@ impl<Input> OperationPlan<Input> {
         }
 
         Ok(OperationPlan {
+            root_name: self.root_name,
             flat,
             operation_type: self.operation_type,
             nested,
             index: self.index,
             is_introspection_query: self.is_introspection_query,
+            dedupe: self.dedupe,
         })
     }
 }
 
 impl<Input> OperationPlan<Input> {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
+        root_name: &str,
         fields: Vec<Field<Flat, Input>>,
         operation_type: OperationType,
         index: Arc<Index>,
@@ -404,14 +410,29 @@ impl<Input> OperationPlan<Input> {
             .filter(|f| f.extensions.is_none())
             .map(|f| f.into_nested(&fields))
             .collect::<Vec<_>>();
+        let dedupe = fields.iter().filter(|v| v.ir.is_none()).all(|v| {
+            v.ir.as_ref()
+                .map(|v| match v {
+                    IR::IO(io) => io.dedupe(),
+                    _ => false,
+                })
+                .unwrap_or_default()
+        });
 
         Self {
+            root_name: root_name.to_string(),
             flat: fields,
             nested,
             operation_type,
             index,
             is_introspection_query,
+            dedupe,
         }
+    }
+
+    /// Returns the name of the root type
+    pub fn root_name(&self) -> &str {
+        &self.root_name
     }
 
     /// Returns a graphQL operation type

@@ -13,6 +13,7 @@ pub fn to_body(body: Option<&Value>) -> Valid<Option<RequestBody>, String> {
 
     let value = body.to_string();
     let mustache = Mustache::parse(&value);
+    // TODO: req_body.mustache is always set making req_body.value useless
     req_body = req_body.mustache(Some(mustache));
 
     Valid::succeed(Some(req_body.value(value)))

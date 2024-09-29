@@ -229,6 +229,13 @@
         "steps"
       ],
       "properties": {
+        "dedupe": {
+          "description": "Enables deduplication of IO operations to enhance performance.\n\nThis flag prevents duplicate IO requests from being executed concurrently, reducing resource load. Caution: May lead to issues with APIs that expect unique results for identical inputs, such as nonce-based APIs.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
         "steps": {
           "description": "Steps are composed together to form a call. If you have multiple steps, the output of the previous step is passed as input to the next step.",
           "type": "array",
@@ -541,6 +548,13 @@
           "description": "If the upstream GraphQL server supports request batching, you can specify the 'batch' argument to batch several requests into a single batch request.\n\nMake sure you have also specified batch settings to the `@upstream` and to the `@graphQL` operator.",
           "type": "boolean"
         },
+        "dedupe": {
+          "description": "Enables deduplication of IO operations to enhance performance.\n\nThis flag prevents duplicate IO requests from being executed concurrently, reducing resource load. Caution: May lead to issues with APIs that expect unique results for identical inputs, such as nonce-based APIs.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
         "headers": {
           "description": "The headers parameter allows you to customize the headers of the GraphQL request made by the `@graphQL` operator. It is used by specifying a key-value map of header names and their values.",
           "type": "array",
@@ -578,6 +592,13 @@
         },
         "body": {
           "description": "This refers to the arguments of your gRPC call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added in the body in `protobuf` format."
+        },
+        "dedupe": {
+          "description": "Enables deduplication of IO operations to enhance performance.\n\nThis flag prevents duplicate IO requests from being executed concurrently, reducing resource load. Caution: May lead to issues with APIs that expect unique results for identical inputs, such as nonce-based APIs.",
+          "type": [
+            "boolean",
+            "null"
+          ]
         },
         "headers": {
           "description": "The `headers` parameter allows you to customize the headers of the HTTP request made by the `@grpc` operator. It is used by specifying a key-value map of header names and their values. Note: content-type is automatically set to application/grpc",
@@ -666,6 +687,13 @@
           "description": "The body of the API call. It's used for methods like POST or PUT that send data to the server. You can pass it as a static object or use a Mustache template to substitute variables from the GraphQL variables.",
           "type": [
             "string",
+            "null"
+          ]
+        },
+        "dedupe": {
+          "description": "Enables deduplication of IO operations to enhance performance.\n\nThis flag prevents duplicate IO requests from being executed concurrently, reducing resource load. Caution: May lead to issues with APIs that expect unique results for identical inputs, such as nonce-based APIs.",
+          "type": [
+            "boolean",
             "null"
           ]
         },
@@ -777,6 +805,18 @@
       "title": "JSON",
       "description": "Field whose value conforms to the standard JSON format as specified in RFC 8259 (https://datatracker.ietf.org/doc/html/rfc8259)."
     },
+    "Key": {
+      "description": "Directive `@key` for Apollo Federation",
+      "type": "object",
+      "required": [
+        "fields"
+      ],
+      "properties": {
+        "fields": {
+          "type": "string"
+        }
+      }
+    },
     "KeyValue": {
       "type": "object",
       "required": [
@@ -796,6 +836,16 @@
       "description": "The @link directive allows you to import external resources, such as configuration – which will be merged into the config importing it –, or a .proto file – which will be later used by `@grpc` directive –.",
       "type": "object",
       "properties": {
+        "headers": {
+          "description": "Custom headers for gRPC reflection server.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/KeyValue"
+          }
+        },
         "id": {
           "description": "The id of the link. It is used to reference the link in the schema.",
           "type": [
@@ -991,13 +1041,6 @@
         },
         "batchRequests": {
           "description": "`batchRequests` combines multiple requests into one, improving performance but potentially introducing latency and complicating debugging. Use judiciously. @default `false`.",
-          "type": [
-            "boolean",
-            "null"
-          ]
-        },
-        "dedupe": {
-          "description": "Enables deduplication of IO operations to enhance performance.\n\nThis flag prevents duplicate IO requests from being executed concurrently, reducing resource load. Caution: May lead to issues with APIs that expect unique results for identical inputs, such as nonce-based APIs.",
           "type": [
             "boolean",
             "null"
@@ -1245,6 +1288,80 @@
     "Type": {
       "description": "Represents a GraphQL type. A type can be an object, interface, enum or scalar.",
       "type": "object",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "http"
+          ],
+          "properties": {
+            "http": {
+              "$ref": "#/definitions/Http"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "grpc"
+          ],
+          "properties": {
+            "grpc": {
+              "$ref": "#/definitions/Grpc"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "graphql"
+          ],
+          "properties": {
+            "graphql": {
+              "$ref": "#/definitions/GraphQL"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "call"
+          ],
+          "properties": {
+            "call": {
+              "$ref": "#/definitions/Call"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "js"
+          ],
+          "properties": {
+            "js": {
+              "$ref": "#/definitions/JS"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "expr"
+          ],
+          "properties": {
+            "expr": {
+              "$ref": "#/definitions/Expr"
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
       "required": [
         "fields"
       ],
@@ -1288,6 +1405,18 @@
             "type": "string"
           },
           "uniqueItems": true
+        },
+        "key": {
+          "description": "Apollo federation key directive. skip since it's set automatically by config transformer",
+          "writeOnly": true,
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Key"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "protected": {
           "description": "Marks field as protected by auth providers",
@@ -1551,6 +1680,13 @@
           "description": "The User-Agent header value to be used in HTTP requests. @default `Tailcall/1.0`",
           "type": [
             "string",
+            "null"
+          ]
+        },
+        "verifySSL": {
+          "description": "A boolean value that determines whether to verify certificates. Setting this as `false` will make tailcall accept self-signed certificates. NOTE: use this *only* during development or testing. It is highly recommended to keep this enabled (`true`) in production.",
+          "type": [
+            "boolean",
             "null"
           ]
         }

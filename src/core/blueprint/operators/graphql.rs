@@ -41,7 +41,7 @@ fn create_related_fields(
 }
 
 pub fn compile_graphql(
-    config: &Config,
+    config: &ConfigModule,
     operation_type: &GraphQLOperationType,
     type_name: &str,
     graphql: &GraphQL,
@@ -71,7 +71,8 @@ pub fn compile_graphql(
     .map(|req_template| {
         let field_name = graphql.name.clone();
         let batch = graphql.batch;
-        IR::IO(IO::GraphQL { req_template, field_name, batch, dl_id: None })
+        let dedupe = graphql.dedupe.unwrap_or_default();
+        IR::IO(IO::GraphQL { req_template, field_name, batch, dl_id: None, dedupe })
     })
 }
 
