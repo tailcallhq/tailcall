@@ -282,6 +282,10 @@ impl Server {
     pub fn get_routes(&self) -> Routes {
         self.routes.clone().unwrap_or_default()
     }
+
+    pub fn get_enable_federation(&self) -> bool {
+        self.enable_federation.unwrap_or(false)
+    }
 }
 
 #[cfg(test)]

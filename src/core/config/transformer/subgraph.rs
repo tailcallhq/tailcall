@@ -34,10 +34,8 @@ impl Transform for Subgraph {
     type Error = String;
 
     fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
-        let enable_federation = config.server.enable_federation;
-
-        if matches!(enable_federation, Some(false)) {
-            // if federation is disabled explicitly don't process the config
+        if !config.server.get_enable_federation() {
+            // if federation is disabled don't process the config
             return Valid::succeed(config);
         }
 
@@ -60,12 +58,6 @@ impl Transform for Subgraph {
 
         if valid.is_fail() {
             return valid.map_to(config);
-        }
-
-        if resolver_by_type.is_empty() && enable_federation.is_none() {
-            // if federation is not explicitly enabled and there is no entity
-            // resolvers return config as is
-            return Valid::succeed(config);
         }
 
         let service_field = Field { type_of: "String".to_string().into(), ..Default::default() };
