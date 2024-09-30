@@ -2,7 +2,8 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 
-use hyper::{Body, Request, Response};
+use http::{Request, Response};
+use hyper::Body;
 use lazy_static::lazy_static;
 use tailcall::core::app_context::AppContext;
 use tailcall::core::async_graphql_hyper::GraphQLRequest;

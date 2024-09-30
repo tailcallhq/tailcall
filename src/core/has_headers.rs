@@ -1,4 +1,4 @@
-use hyper::HeaderMap;
+use http::header::HeaderMap;
 
 use crate::core::ir::{EvalContext, ResolverContextLike};
 

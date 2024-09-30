@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 
-use headers::HeaderMap;
+use http::header::HeaderMap;
 
 use crate::core::has_headers::HasHeaders;
 use crate::core::path::PathString;

@@ -17,6 +17,8 @@ mod file;
 mod http;
 mod runtime;
 
+extern crate http as http_crate;
+
 #[wasm_bindgen]
 pub struct TailcallExecutor {
     app_context: Arc<AppContext>,
@@ -29,8 +31,8 @@ impl TailcallExecutor {
     }
     async fn execute_inner(&self, query: String) -> anyhow::Result<String> {
         let body = json!({"query":query}).to_string();
-        let req =
-            hyper::Request::post("http://fake.host/graphql").body(hyper::body::Body::from(body))?;
+        let req = http_crate::Request::post("http://fake.host/graphql")
+            .body(hyper::body::Body::from(body))?;
 
         let resp = handle_request::<GraphQLRequest>(req, self.app_context.clone()).await?;
         tracing::debug!("{:#?}", resp);

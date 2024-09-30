@@ -1,8 +1,6 @@
 use serde::{Deserialize, Serialize};
 use tailcall_macros::{DirectiveDefinition, MergeRight};
 
-use crate::core::merge_right::MergeRight;
-
 #[derive(
     Clone,
     Debug,

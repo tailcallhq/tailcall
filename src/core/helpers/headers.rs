@@ -1,4 +1,4 @@
-use hyper::header::HeaderName;
+use http::header::HeaderName;
 
 use crate::core::config::KeyValue;
 use crate::core::mustache::Mustache;
@@ -24,7 +24,7 @@ pub fn to_mustache_headers(headers: &[KeyValue]) -> Valid<MustacheHeaders, Strin
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
-    use hyper::header::HeaderName;
+    use http::header::HeaderName;
 
     use super::to_mustache_headers;
     use crate::core::config::KeyValue;

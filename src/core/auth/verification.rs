@@ -3,7 +3,8 @@ use std::cmp::max;
 use super::error::Error;
 
 ///
-/// Represents the result of the auth verification process.
+/// Represents the result of the auth verification process. It can either
+/// succeed or fail with an Error.
 #[derive(Clone, PartialEq, Debug)]
 pub enum Verification {
     Succeed,
