@@ -6,7 +6,7 @@ use async_graphql::parser::types::{SchemaDefinition, ServiceDocument, TypeSystem
 use super::{compile_call, compile_expr, compile_graphql, compile_grpc, compile_http, compile_js};
 use crate::core::blueprint::FieldDefinition;
 use crate::core::config::{
-    ApolloFederation, Config, ConfigModule, EntityResolver, Field, GraphQLOperationType, Resolver,
+    ApolloFederation, ConfigModule, EntityResolver, Field, GraphQLOperationType, Resolver,
 };
 use crate::core::ir::model::IR;
 use crate::core::try_fold::TryFold;
@@ -82,16 +82,8 @@ pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, S
 pub fn compile_service(config: &ConfigModule) -> Valid<IR, String> {
     let mut sdl =
         crate::core::document::print(filter_conflicting_directives(config.config().into()));
+    writeln!(sdl).ok();
 
-    writeln!(sdl).ok();
-    // Add tailcall specific definitions to the sdl output
-    writeln!(
-        sdl,
-        "{}",
-        crate::core::document::print(filter_conflicting_directives(Config::graphql_schema()))
-    )
-    .ok();
-    writeln!(sdl).ok();
     // Mark subgraph as Apollo federation v2 compatible according to [docs](https://www.apollographql.com/docs/apollo-server/using-federation/apollo-subgraph-setup/#2-opt-in-to-federation-2)
     // (borrowed from async_graphql)
     writeln!(sdl, "extend schema @link(").ok();

@@ -57,6 +57,11 @@ pub use mustache::Mustache;
 pub use tailcall_macros as macros;
 pub use transform::Transform;
 
+const DEFAULT_VERIFY_SSL: bool = true;
+pub const fn default_verify_ssl() -> Option<bool> {
+    Some(DEFAULT_VERIFY_SSL)
+}
+
 pub trait EnvIO: Send + Sync + 'static {
     fn get(&self, key: &str) -> Option<Cow<'_, str>>;
 }
@@ -100,6 +105,10 @@ pub trait WorkerIO<In, Out>: Send + Sync + 'static {
 
 pub fn is_default<T: Default + Eq>(val: &T) -> bool {
     *val == T::default()
+}
+
+pub fn verify_ssl_is_default(val: &Option<bool>) -> bool {
+    val.is_none() || val.unwrap()
 }
 
 #[cfg(test)]

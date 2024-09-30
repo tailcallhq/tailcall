@@ -1,7 +1,7 @@
 use derive_setters::Setters;
-use hyper::header;
-use hyper::header::{HeaderName, HeaderValue};
-use hyper::http::request::Parts;
+use http::header;
+use http::header::{HeaderName, HeaderValue};
+use http::request::Parts;
 
 use crate::core::config;
 use crate::core::valid::ValidationError;
@@ -205,7 +205,7 @@ pub fn is_wildcard(header_value: &HeaderValue) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use hyper::header::HeaderValue;
+    use http::header::HeaderValue;
 
     use super::*;
 

@@ -2,8 +2,7 @@ use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
 
 use derive_setters::Setters;
-use hyper::HeaderMap;
-use reqwest::header::HeaderValue;
+use http::header::{HeaderMap, HeaderValue};
 use tailcall_hasher::TailcallHasher;
 use url::Url;
 
@@ -309,8 +308,7 @@ mod tests {
     use std::borrow::Cow;
 
     use derive_setters::Setters;
-    use hyper::header::HeaderName;
-    use hyper::HeaderMap;
+    use http::header::{HeaderMap, HeaderName};
     use pretty_assertions::assert_eq;
     use serde_json::json;
 
@@ -648,7 +646,7 @@ mod tests {
     }
 
     mod endpoint {
-        use hyper::HeaderMap;
+        use http::header::HeaderMap;
         use serde_json::json;
 
         use crate::core::http::request_template::tests::Context;
@@ -845,7 +843,7 @@ mod tests {
     mod cache_key {
         use std::collections::HashSet;
 
-        use hyper::HeaderMap;
+        use http::header::HeaderMap;
         use serde_json::json;
 
         use crate::core::http::request_template::tests::Context;

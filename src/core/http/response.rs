@@ -14,7 +14,7 @@ use crate::core::ir::Error;
 #[derive(Clone, Debug, Default, Setters)]
 pub struct Response<Body> {
     pub status: reqwest::StatusCode,
-    pub headers: reqwest::header::HeaderMap,
+    pub headers: headers::HeaderMap,
     pub body: Body,
 }
 
@@ -56,7 +56,7 @@ impl Response<Bytes> {
         Ok(Response { status, headers, body })
     }
 
-    pub async fn from_hyper(resp: hyper::Response<hyper::Body>) -> Result<Self> {
+    pub async fn from_hyper(resp: http::Response<hyper::Body>) -> Result<Self> {
         let status = resp.status();
         let headers = resp.headers().to_owned();
         let body = hyper::body::to_bytes(resp.into_body()).await?;
@@ -66,7 +66,7 @@ impl Response<Bytes> {
     pub fn empty() -> Self {
         Response {
             status: reqwest::StatusCode::OK,
-            headers: reqwest::header::HeaderMap::default(),
+            headers: headers::HeaderMap::default(),
             body: Bytes::new(),
         }
     }
@@ -156,9 +156,9 @@ impl Response<Bytes> {
     }
 }
 
-impl From<Response<Bytes>> for hyper::Response<Body> {
+impl From<Response<Bytes>> for http::Response<Body> {
     fn from(resp: Response<Bytes>) -> Self {
-        let mut response = hyper::Response::new(Body::from(resp.body));
+        let mut response = http::Response::new(Body::from(resp.body));
         *response.headers_mut() = resp.headers;
         *response.status_mut() = resp.status;
         response

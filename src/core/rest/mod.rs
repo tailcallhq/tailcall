@@ -11,5 +11,5 @@ mod typed_variables;
 
 pub use endpoint_set::{Checked, EndpointSet, Unchecked};
 
-type Request = hyper::Request<hyper::Body>;
+type Request = http::Request<hyper::Body>;
 pub use error::{Error, Result};

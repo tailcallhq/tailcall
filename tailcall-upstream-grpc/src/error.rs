@@ -1,7 +1,7 @@
 use std::env::VarError;
 
 use derive_more::From;
-use hyper::header::InvalidHeaderValue;
+use http::header::InvalidHeaderValue;
 use opentelemetry::trace::TraceError;
 use tracing::subscriber::SetGlobalDefaultError;
 

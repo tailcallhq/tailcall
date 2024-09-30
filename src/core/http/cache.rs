@@ -3,7 +3,7 @@ use cache_control::CacheControl;
 use super::Response;
 
 pub fn cache_policy(res: &Response<async_graphql::Value>) -> Option<CacheControl> {
-    let header = res.headers.get(hyper::header::CACHE_CONTROL)?;
+    let header = res.headers.get(http::header::CACHE_CONTROL)?;
     let value = header.to_str().ok()?;
 
     CacheControl::from_value(value)
@@ -15,7 +15,7 @@ mod tests {
     use std::time::Duration;
 
     use cache_control::Cachability;
-    use hyper::HeaderMap;
+    use http::header::HeaderMap;
 
     use crate::core::http::Response;
 
@@ -53,13 +53,13 @@ mod tests {
     }
 
     fn cache_control_header(i: i32) -> HeaderMap {
-        let mut headers = reqwest::header::HeaderMap::default();
+        let mut headers = headers::HeaderMap::default();
         headers.append("Cache-Control", format!("max-age={}", i).parse().unwrap());
         headers
     }
 
     fn cache_control_header_visibility(i: i32, visibility: &str) -> HeaderMap {
-        let mut headers = reqwest::header::HeaderMap::default();
+        let mut headers = headers::HeaderMap::default();
         headers.append(
             "Cache-Control",
             format!("max-age={}, {}", i, visibility).parse().unwrap(),

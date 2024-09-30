@@ -77,7 +77,7 @@ fn update_cache_control_header(
 }
 
 pub fn update_response_headers(
-    resp: &mut hyper::Response<hyper::Body>,
+    resp: &mut Response<Body>,
     req_ctx: &RequestContext,
     app_ctx: &AppContext,
 ) {
@@ -305,10 +305,10 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
         // NOTE:
         // The first check for the route should be for `/graphql`
         // This is always going to be the most used route.
-        hyper::Method::POST if req.uri().path() == graphql_endpoint => {
+        Method::POST if req.uri().path() == graphql_endpoint => {
             graphql_request::<T>(req, &app_ctx, req_counter).await
         }
-        hyper::Method::POST
+        Method::POST
             if app_ctx.blueprint.server.enable_showcase
                 && req.uri().path() == "/showcase/graphql" =>
         {
@@ -320,14 +320,14 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
 
             graphql_request::<T>(req, &Arc::new(app_ctx), req_counter).await
         }
-        hyper::Method::GET if req.uri().path() == health_check_endpoint => {
+        Method::GET if req.uri().path() == health_check_endpoint => {
             let status_response = Response::builder()
                 .status(StatusCode::OK)
                 .header(CONTENT_TYPE, "application/json")
                 .body(Body::from(r#"{"message": "ready"}"#))?;
             Ok(status_response)
         }
-        hyper::Method::GET => {
+        Method::GET => {
             if let Some(TelemetryExporter::Prometheus(prometheus)) =
                 app_ctx.blueprint.telemetry.export.as_ref()
             {
@@ -449,7 +449,7 @@ mod test {
     fn test_create_allowed_headers() {
         use std::collections::BTreeSet;
 
-        use hyper::header::{HeaderMap, HeaderValue};
+        use http::header::{HeaderMap, HeaderValue};
 
         use super::create_allowed_headers;
 

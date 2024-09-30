@@ -46,10 +46,10 @@ pub enum Error {
     ParseGraphQL(async_graphql::parser::Error),
 
     #[error("Hyper HTTP Invalid URI Error: {}", _0)]
-    HyperHttpInvalidUri(hyper::http::uri::InvalidUri),
+    HyperHttpInvalidUri(http::uri::InvalidUri),
 
     #[error("Hyper HTTP Error: {}", _0)]
-    HyperHttp(hyper::http::Error),
+    HyperHttp(http::Error),
 
     #[error("Hyper Error: {}", _0)]
     Hyper(hyper::Error),
