@@ -28,6 +28,7 @@ pub struct Upstream {
     pub batch: Option<Batch>,
     pub http2_only: bool,
     pub on_request: Option<String>,
+    pub verify_ssl: bool,
 }
 
 impl Upstream {
@@ -59,7 +60,7 @@ impl TryFrom<&ConfigModule> for Upstream {
 
         if config_module.extensions().has_auth() {
             // force add auth specific headers to use it to make actual validation
-            allowed_headers.insert(hyper::header::AUTHORIZATION.to_string());
+            allowed_headers.insert(http::header::AUTHORIZATION.to_string());
         }
 
         get_batch(&config_upstream)
@@ -82,6 +83,7 @@ impl TryFrom<&ConfigModule> for Upstream {
                 batch,
                 http2_only: (config_upstream).get_http_2_only(),
                 on_request: (config_upstream).get_on_request(),
+                verify_ssl: (config_upstream).get_verify_ssl(),
             })
             .to_result()
     }
