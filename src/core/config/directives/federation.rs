@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 use tailcall_macros::MergeRight;
 
 use crate::core::config::Resolver;
-use crate::core::merge_right::MergeRight;
 
 /// Directive `@key` for Apollo Federation
 #[derive(

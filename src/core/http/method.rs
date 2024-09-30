@@ -27,17 +27,17 @@ pub enum Method {
 }
 
 impl Method {
-    pub fn to_hyper(self) -> hyper::Method {
+    pub fn to_hyper(self) -> http::Method {
         match self {
-            Method::GET => hyper::Method::GET,
-            Method::POST => hyper::Method::POST,
-            Method::PUT => hyper::Method::PUT,
-            Method::PATCH => hyper::Method::PATCH,
-            Method::DELETE => hyper::Method::DELETE,
-            Method::HEAD => hyper::Method::HEAD,
-            Method::OPTIONS => hyper::Method::OPTIONS,
-            Method::CONNECT => hyper::Method::CONNECT,
-            Method::TRACE => hyper::Method::TRACE,
+            Method::GET => http::Method::GET,
+            Method::POST => http::Method::POST,
+            Method::PUT => http::Method::PUT,
+            Method::PATCH => http::Method::PATCH,
+            Method::DELETE => http::Method::DELETE,
+            Method::HEAD => http::Method::HEAD,
+            Method::OPTIONS => http::Method::OPTIONS,
+            Method::CONNECT => http::Method::CONNECT,
+            Method::TRACE => http::Method::TRACE,
         }
     }
 }

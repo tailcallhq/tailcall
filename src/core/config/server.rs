@@ -10,7 +10,6 @@ use crate::core::config::headers::Headers;
 use crate::core::config::KeyValue;
 use crate::core::is_default;
 use crate::core::macros::MergeRight;
-use crate::core::merge_right::MergeRight;
 
 #[derive(
     Serialize,
@@ -47,6 +46,15 @@ pub struct Server {
     /// performance but potentially introducing latency and complicating
     /// debugging. Use judiciously. @default `false`.
     pub batch_requests: Option<bool>,
+
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// Enables deduplication of IO operations to enhance performance.
+    ///
+    /// This flag prevents duplicate IO requests from being executed
+    /// concurrently, reducing resource load. Caution: May lead to issues
+    /// with APIs that expect unique results for identical inputs, such as
+    /// nonce-based APIs.
+    pub dedupe: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// `headers` contains key-value pairs that are included as default headers
@@ -264,6 +272,9 @@ impl Server {
         self.pipeline_flush.unwrap_or(true)
     }
 
+    pub fn get_dedupe(&self) -> bool {
+        self.dedupe.unwrap_or(false)
+    }
     pub fn enable_jit(&self) -> bool {
         self.enable_jit.unwrap_or(true)
     }
@@ -277,6 +288,7 @@ impl Server {
 mod tests {
     use super::*;
     use crate::core::config::ScriptOptions;
+    use crate::core::merge_right::MergeRight;
 
     fn server_with_script_options(so: ScriptOptions) -> Server {
         Server { script: Some(so), ..Default::default() }

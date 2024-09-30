@@ -229,13 +229,6 @@
         "steps"
       ],
       "properties": {
-        "dedupe": {
-          "description": "Enables deduplication of IO operations to enhance performance.\n\nThis flag prevents duplicate IO requests from being executed concurrently, reducing resource load. Caution: May lead to issues with APIs that expect unique results for identical inputs, such as nonce-based APIs.",
-          "type": [
-            "boolean",
-            "null"
-          ]
-        },
         "steps": {
           "description": "Steps are composed together to form a call. If you have multiple steps, the output of the previous step is passed as input to the next step.",
           "type": "array",
@@ -548,13 +541,6 @@
           "description": "If the upstream GraphQL server supports request batching, you can specify the 'batch' argument to batch several requests into a single batch request.\n\nMake sure you have also specified batch settings to the `@upstream` and to the `@graphQL` operator.",
           "type": "boolean"
         },
-        "dedupe": {
-          "description": "Enables deduplication of IO operations to enhance performance.\n\nThis flag prevents duplicate IO requests from being executed concurrently, reducing resource load. Caution: May lead to issues with APIs that expect unique results for identical inputs, such as nonce-based APIs.",
-          "type": [
-            "boolean",
-            "null"
-          ]
-        },
         "headers": {
           "description": "The headers parameter allows you to customize the headers of the GraphQL request made by the `@graphQL` operator. It is used by specifying a key-value map of header names and their values.",
           "type": "array",
@@ -592,13 +578,6 @@
         },
         "body": {
           "description": "This refers to the arguments of your gRPC call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added in the body in `protobuf` format."
-        },
-        "dedupe": {
-          "description": "Enables deduplication of IO operations to enhance performance.\n\nThis flag prevents duplicate IO requests from being executed concurrently, reducing resource load. Caution: May lead to issues with APIs that expect unique results for identical inputs, such as nonce-based APIs.",
-          "type": [
-            "boolean",
-            "null"
-          ]
         },
         "headers": {
           "description": "The `headers` parameter allows you to customize the headers of the HTTP request made by the `@grpc` operator. It is used by specifying a key-value map of header names and their values. Note: content-type is automatically set to application/grpc",
@@ -687,13 +666,6 @@
           "description": "The body of the API call. It's used for methods like POST or PUT that send data to the server. You can pass it as a static object or use a Mustache template to substitute variables from the GraphQL variables.",
           "type": [
             "string",
-            "null"
-          ]
-        },
-        "dedupe": {
-          "description": "Enables deduplication of IO operations to enhance performance.\n\nThis flag prevents duplicate IO requests from being executed concurrently, reducing resource load. Caution: May lead to issues with APIs that expect unique results for identical inputs, such as nonce-based APIs.",
-          "type": [
-            "boolean",
             "null"
           ]
         },
@@ -1046,7 +1018,6 @@
             "null"
           ]
         },
-<<<<<<< HEAD
         "dedupe": {
           "description": "Enables deduplication of IO operations to enhance performance.\n\nThis flag prevents duplicate IO requests from being executed concurrently, reducing resource load. Caution: May lead to issues with APIs that expect unique results for identical inputs, such as nonce-based APIs.",
           "type": [
@@ -1061,8 +1032,6 @@
             "null"
           ]
         },
-=======
->>>>>>> main
         "enableJIT": {
           "type": [
             "boolean",
@@ -1697,6 +1666,13 @@
           "description": "The User-Agent header value to be used in HTTP requests. @default `Tailcall/1.0`",
           "type": [
             "string",
+            "null"
+          ]
+        },
+        "verifySSL": {
+          "description": "A boolean value that determines whether to verify certificates. Setting this as `false` will make tailcall accept self-signed certificates. NOTE: use this *only* during development or testing. It is highly recommended to keep this enabled (`true`) in production.",
+          "type": [
+            "boolean",
             "null"
           ]
         }

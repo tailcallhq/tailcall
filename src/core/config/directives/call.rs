@@ -44,12 +44,4 @@ pub struct Call {
     /// If you have multiple steps, the output of the previous step is passed as
     /// input to the next step.
     pub steps: Vec<Step>,
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// Enables deduplication of IO operations to enhance performance.
-    ///
-    /// This flag prevents duplicate IO requests from being executed
-    /// concurrently, reducing resource load. Caution: May lead to issues
-    /// with APIs that expect unique results for identical inputs, such as
-    /// nonce-based APIs.
-    pub dedupe: Option<bool>,
 }

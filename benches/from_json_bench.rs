@@ -1,5 +1,5 @@
 use criterion::Criterion;
-use hyper::Method;
+use http::Method;
 use serde_json::Value;
 use tailcall::cli::runtime::NativeHttp;
 use tailcall::core::generator::{Generator, Input};

@@ -64,7 +64,7 @@ pub fn expand_merge_right_derive(input: TokenStream) -> TokenStream {
                 Fields::Unnamed(fields) => &fields.unnamed,
                 Fields::Unit => {
                     return quote! {
-                        impl MergeRight for #name {
+                        impl crate::core::merge_right::MergeRight for #name {
                             fn merge_right(self, other: Self) -> Self {
                                 other
                             }
@@ -131,7 +131,7 @@ pub fn expand_merge_right_derive(input: TokenStream) -> TokenStream {
             };
 
             quote! {
-                impl #generics_del MergeRight for #name #generics_del {
+                impl #generics_del crate::core::merge_right::MergeRight for #name #generics_del {
                     fn merge_right(self, other: Self) -> Self {
                         #initializer
                     }
@@ -140,7 +140,7 @@ pub fn expand_merge_right_derive(input: TokenStream) -> TokenStream {
         }
         // Implement for enums
         Data::Enum(_) => quote! {
-            impl MergeRight for #name {
+            impl crate::core::merge_right::MergeRight for #name {
                 fn merge_right(self, other: Self) -> Self {
                     other
                 }
