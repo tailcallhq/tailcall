@@ -410,7 +410,7 @@ impl<Input> OperationPlan<Input> {
             .filter(|f| f.extensions.is_none())
             .map(|f| f.into_nested(&fields))
             .collect::<Vec<_>>();
-        let dedupe = fields.iter().filter(|v| v.ir.is_none()).all(|v| {
+        let dedupe = fields.iter().filter(|v| v.ir.is_some()).all(|v| {
             v.ir.as_ref()
                 .map(|v| match v {
                     IR::IO(io) => io.dedupe(),
