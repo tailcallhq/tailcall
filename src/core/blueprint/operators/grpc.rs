@@ -155,6 +155,8 @@ impl TryFrom<&str> for GrpcMethod {
 }
 
 pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
+    let is_list = inputs.field.type_of.is_list();
+
     let config_module = inputs.config_module;
     let operation_type = inputs.operation_type;
     let field = inputs.field;
@@ -201,9 +203,10 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
                     req_template,
                     group_by: Some(GroupBy::new(grpc.batch_key.clone(), None)),
                     dl_id: None,
+                    is_list,
                 })
             } else {
-                IR::IO(IO::Grpc { req_template, group_by: None, dl_id: None })
+                IR::IO(IO::Grpc { req_template, group_by: None, dl_id: None, is_list })
             }
         })
 }

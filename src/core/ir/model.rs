@@ -58,6 +58,7 @@ pub enum IO {
         req_template: grpc::RequestTemplate,
         group_by: Option<GroupBy>,
         dl_id: Option<DataLoaderId>,
+        is_list: bool,
     },
     Js {
         name: String,

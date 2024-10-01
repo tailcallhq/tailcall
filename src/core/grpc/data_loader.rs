@@ -18,14 +18,51 @@ use crate::core::http::Response;
 use crate::core::json::JsonLike;
 use crate::core::runtime::TargetRuntime;
 
+fn get_body_value_single(body_value: &HashMap<String, Vec<&ConstValue>>, id: &str) -> ConstValue {
+    body_value
+        .get(id)
+        .and_then(|a| a.first().cloned().cloned())
+        .unwrap_or(ConstValue::Null)
+}
+
+fn get_body_value_list(body_value: &HashMap<String, Vec<&ConstValue>>, id: &str) -> ConstValue {
+    ConstValue::List(
+        body_value
+            .get(id)
+            .unwrap_or(&Vec::new())
+            .iter()
+            .map(|&o| o.to_owned())
+            .collect::<Vec<_>>(),
+    )
+}
+
 #[derive(Clone)]
 pub struct GrpcDataLoader {
     pub(crate) runtime: TargetRuntime,
     pub(crate) operation: ProtobufOperation,
     pub(crate) group_by: Option<GroupBy>,
+    pub(crate) body: fn(&HashMap<String, Vec<&ConstValue>>, &str) -> ConstValue,
 }
 
 impl GrpcDataLoader {
+    pub fn new(
+        runtime: TargetRuntime,
+        operation: ProtobufOperation,
+        group_by: Option<GroupBy>,
+        is_list: bool,
+    ) -> Self {
+        GrpcDataLoader {
+            runtime,
+            operation,
+            group_by,
+            body: if is_list {
+                get_body_value_list
+            } else {
+                get_body_value_single
+            },
+        }
+    }
+
     pub fn into_data_loader(self, batch: Batch) -> DataLoader<DataLoaderRequest, GrpcDataLoader> {
         DataLoader::new(self)
             .delay(Duration::from_millis(batch.delay as u64))
@@ -90,6 +127,8 @@ impl GrpcDataLoader {
                     .and_then(|a| a.first().cloned().cloned())
                     .unwrap_or(ConstValue::Null),
             );
+            let body = (self.body)(&response_body, id.as_str());
+            let res = res.body(body);
 
             result.insert(key.clone(), res);
         }
