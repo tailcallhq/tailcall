@@ -9,6 +9,7 @@ use anyhow::Context;
 use colored::Colorize;
 use futures_util::future::join_all;
 use http::Request;
+use hyper::body::HttpBody;
 use hyper::Body;
 use serde::{Deserialize, Serialize};
 use tailcall::core::app_context::AppContext;
@@ -192,7 +193,7 @@ async fn run_query_tests_on_spec(
                 headers,
                 body: Some(APIBody::Value(
                     serde_json::from_slice(
-                        &hyper::body::to_bytes(response.into_body()).await.unwrap(),
+                        &response.into_body().collect().await.unwrap().to_bytes(),
                     )
                     .unwrap_or_default(),
                 )),

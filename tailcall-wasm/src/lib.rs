@@ -4,6 +4,7 @@ use std::fmt::Display;
 use std::panic;
 use std::sync::Arc;
 
+use hyper::body::HttpBody;
 use serde_json::json;
 use tailcall::core::app_context::AppContext;
 use tailcall::core::async_graphql_hyper::GraphQLRequest;
@@ -37,7 +38,7 @@ impl TailcallExecutor {
         let resp = handle_request::<GraphQLRequest>(req, self.app_context.clone()).await?;
         tracing::debug!("{:#?}", resp);
 
-        let body_bytes = hyper::body::to_bytes(resp.into_body()).await?;
+        let body_bytes = resp.into_body().collect().await?.to_bytes();
         let body_str = String::from_utf8(body_bytes.to_vec())?;
         Ok(body_str)
     }

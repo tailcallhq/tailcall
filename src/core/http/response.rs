@@ -1,7 +1,7 @@
 use anyhow::Result;
 use async_graphql_value::{ConstValue, Name};
 use derive_setters::Setters;
-use hyper::body::Bytes;
+use hyper::body::{Bytes, HttpBody};
 use hyper::Body;
 use indexmap::IndexMap;
 use prost::Message;
@@ -59,7 +59,7 @@ impl Response<Bytes> {
     pub async fn from_hyper(resp: http::Response<hyper::Body>) -> Result<Self> {
         let status = resp.status();
         let headers = resp.headers().to_owned();
-        let body = hyper::body::to_bytes(resp.into_body()).await?;
+        let body = resp.into_body().collect().await?.to_bytes();
         Ok(Response { status, headers, body })
     }
 
