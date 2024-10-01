@@ -415,11 +415,8 @@ impl<Input> OperationPlan<Input> {
 
         for field in fields.iter() {
             if let Some(val) = field.ir.as_ref() {
-                match val {
-                    IR::IO(io) => {
-                        is_dedupe = is_dedupe && !io.dedupe();
-                    }
-                    _ => {}
+                if let IR::IO(io) = val {
+                    is_dedupe = is_dedupe && !io.dedupe();
                 }
             }
         }
