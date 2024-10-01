@@ -695,11 +695,21 @@ mod test {
     use async_graphql::Request;
     use async_graphql_value::ConstValue;
 
-    use super::Directive;
+    use super::{Directive, OperationPlan};
     use crate::core::blueprint::Blueprint;
     use crate::core::config::ConfigModule;
     use crate::core::jit;
     use crate::include_config;
+
+    fn plan(query: &str) -> OperationPlan<ConstValue> {
+        let config = include_config!("./fixtures/dedupe.graphql").unwrap();
+        let module = ConfigModule::from(config);
+        let bp = Blueprint::try_from(&module).unwrap();
+
+        let request = Request::new(query);
+        let jit_request = jit::Request::from(request);
+        jit_request.create_plan(&bp).unwrap()
+    }
 
     #[test]
     fn test_from_custom_directive() {
@@ -711,45 +721,25 @@ mod test {
         let async_directive: ConstDirective = (&custom_directive).into();
         insta::assert_debug_snapshot!(async_directive);
     }
+
     #[test]
     fn test_operation_plan_dedupe() {
-        let config =
-            include_config!("../../../tailcall-fixtures/fixtures/configs/dedupe.graphql").unwrap();
-        let module = ConfigModule::from(config);
-        let bp = Blueprint::try_from(&module).unwrap();
+        let actual = plan(r#"{ posts { id } }"#);
 
-        let request = Request::new(r#"{ posts { id } }"#);
-        let jit_request = jit::Request::from(request);
-        let plan = jit_request.create_plan(&bp).unwrap();
-
-        assert!(plan.dedupe);
+        assert!(!actual.dedupe);
     }
 
     #[test]
     fn test_operation_plan_dedupe_nested() {
-        let config =
-            include_config!("../../../tailcall-fixtures/fixtures/configs/dedupe.graphql").unwrap();
-        let module = ConfigModule::from(config);
-        let bp = Blueprint::try_from(&module).unwrap();
+        let actual = plan(r#"{ posts { id users { id } } }"#);
 
-        let request = Request::new(r#"{ posts { id users { id } } }"#);
-        let jit_request = jit::Request::from(request);
-        let plan = jit_request.create_plan(&bp).unwrap();
-
-        assert!(!plan.dedupe);
+        assert!(!actual.dedupe);
     }
 
     #[test]
     fn test_operation_plan_dedupe_false() {
-        let config =
-            include_config!("../../../tailcall-fixtures/fixtures/configs/dedupe.graphql").unwrap();
-        let module = ConfigModule::from(config);
-        let bp = Blueprint::try_from(&module).unwrap();
+        let actual = plan(r#"{ users { id comments {body} } }"#);
 
-        let request = Request::new(r#"{ users { id } }"#);
-        let jit_request = jit::Request::from(request);
-        let plan = jit_request.create_plan(&bp).unwrap();
-
-        assert!(!plan.dedupe);
+        assert!(actual.dedupe);
     }
 }
