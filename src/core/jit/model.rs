@@ -413,19 +413,14 @@ impl<Input> OperationPlan<Input> {
 
         let dedupe = fields
             .iter()
-            .filter_map(|field| {
+            .map(|field| {
                 if let Some(IR::IO(io)) = field.ir.as_ref() {
-                    Some(io.dedupe())
+                    io.dedupe()
                 } else {
-                    None
+                    true
                 }
             })
-            .fold(None, |acc, dedupe| match acc {
-                None => Some(dedupe),
-                Some(prev_dedupe) if prev_dedupe != dedupe => Some(false),
-                _ => acc,
-            })
-            .unwrap_or_default();
+            .all(|a| a);
 
         Self {
             root_name: root_name.to_string(),
