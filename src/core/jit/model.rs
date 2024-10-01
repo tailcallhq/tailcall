@@ -49,7 +49,7 @@ impl<Value> Variables<Value> {
 }
 
 impl<V> FromIterator<(String, V)> for Variables<V> {
-    fn from_iter<T: IntoIterator<Item=(String, V)>>(iter: T) -> Self {
+    fn from_iter<T: IntoIterator<Item = (String, V)>>(iter: T) -> Self {
         Self(iter.into_iter().collect())
     }
 }
@@ -248,7 +248,7 @@ impl<Input> Field<Flat, Input> {
 
 impl<Input> Field<Nested<Input>, Input> {
     /// iters over children fields
-    pub fn iter(&self) -> impl Iterator<Item=&Field<Nested<Input>, Input>> {
+    pub fn iter(&self) -> impl Iterator<Item = &Field<Nested<Input>, Input>> {
         self.extensions
             .as_ref()
             .map(move |nested| nested.0.iter())
@@ -698,11 +698,12 @@ mod test {
     use async_graphql::parser::types::ConstDirective;
     use async_graphql::Request;
     use async_graphql_value::ConstValue;
+
+    use super::Directive;
     use crate::core::blueprint::Blueprint;
     use crate::core::config::ConfigModule;
     use crate::core::jit;
     use crate::include_config;
-    use super::Directive;
 
     #[test]
     fn test_from_custom_directive() {
@@ -716,7 +717,9 @@ mod test {
     }
     #[test]
     fn test_operation_plan_dedupe() {
-        let config = include_config!("../../../tailcall-fixtures/fixtures/configs/jsonplaceholder.graphql").unwrap();
+        let config =
+            include_config!("../../../tailcall-fixtures/fixtures/configs/jsonplaceholder.graphql")
+                .unwrap();
         let module = ConfigModule::from(config);
         let bp = Blueprint::try_from(&module).unwrap();
 
@@ -729,7 +732,9 @@ mod test {
 
     #[test]
     fn test_operation_plan_dedupe_false() {
-        let config = include_config!("../../../tailcall-fixtures/fixtures/configs/jsonplaceholder.graphql").unwrap();
+        let config =
+            include_config!("../../../tailcall-fixtures/fixtures/configs/jsonplaceholder.graphql")
+                .unwrap();
         let module = ConfigModule::from(config);
         let bp = Blueprint::try_from(&module).unwrap();
 

@@ -53,7 +53,11 @@ impl JITExecutor {
         }
     }
     #[inline(always)]
-    async fn dedupe_and_exec(&self, exec: ConstValueExecutor, jit_request: jit::Request<ConstValue>) -> Response {
+    async fn dedupe_and_exec(
+        &self,
+        exec: ConstValueExecutor,
+        jit_request: jit::Request<ConstValue>,
+    ) -> Response {
         let out = self
             .app_ctx
             .dedupe_operation_handler
@@ -66,10 +70,7 @@ impl JITExecutor {
             .await;
         let val = out.unwrap_or_default();
         Arc::into_inner(val).unwrap_or_else(|| {
-            Response::from_errors(vec![ServerError::new(
-                "Deduplication failed",
-                None,
-            )])
+            Response::from_errors(vec![ServerError::new("Deduplication failed", None)])
         })
     }
 }
