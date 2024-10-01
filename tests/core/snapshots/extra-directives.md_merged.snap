@@ -1,0 +1,23 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server(port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+  query: Query
+}
+
+type Post @expr(body: {id: "{{.value.id}}", title: "post-title-{{.value.id}}"}) {
+  body: String! @extension(a: 1, b: 2, c: 3)
+  id: Int!
+  title: String! @override(from: "name")
+}
+
+type Query {
+  post(id: Int!): User @http(path: "/posts/{{.args.id}}")
+  user(id: Int!): User @http(path: "/users/{{.args.id}}")
+}
+
+type User @call(steps: [{query: "user", args: {id: "{{.value.id}}"}}]) @shareable {
+  id: Int!
+  name: String!
+}

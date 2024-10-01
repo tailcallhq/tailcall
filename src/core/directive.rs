@@ -2,10 +2,12 @@ use std::collections::HashMap;
 
 use async_graphql::parser::types::ConstDirective;
 use async_graphql::{Name, Pos, Positioned};
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use serde_path_to_error::deserialize;
 
+use crate::core::is_default;
 use crate::core::valid::{Valid, ValidationError, Validator};
 
 fn pos<A>(a: A) -> Positioned<A> {
@@ -15,7 +17,9 @@ fn pos<A>(a: A) -> Positioned<A> {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
 pub struct Directive {
     pub name: String,
-    pub arguments: HashMap<String, Value>,
+    #[serde(default, skip_serializing_if = "is_default")]
+    #[schemars(with = "HashMap::<String, Value>")]
+    pub arguments: IndexMap<String, Value>,
 }
 
 pub fn to_const_directive(directive: &Directive) -> Valid<ConstDirective, String> {

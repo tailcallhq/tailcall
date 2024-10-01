@@ -12,7 +12,7 @@ type Query {
   user(id: Int!): User @http(path: "/users/{{.args.id}}")
 }
 
-type User @call(steps: [{query: "user", args: {id: "{{.value.id}}"}}]) @shareable {
+type User @call(steps: [{query: "user", args: {id: "{{.value.id}}"}}]) {
   id: Int!
   name: String!
 }
@@ -21,7 +21,7 @@ type User @call(steps: [{query: "user", args: {id: "{{.value.id}}"}}]) @shareabl
 ```graphql @file:posts.graphql
 type Post @expr(body: {id: "{{.value.id}}", title: "post-title-{{.value.id}}"}) {
   id: Int!
-  title: String! @override(from: "name")
+  title: String!
 }
 ```
 
