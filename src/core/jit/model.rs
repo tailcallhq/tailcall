@@ -352,6 +352,7 @@ pub struct OperationPlan<Input> {
     // TODO: drop index from here. Embed all the necessary information in each field of the plan.
     pub index: Arc<Index>,
     pub is_introspection_query: bool,
+    pub dedupe: bool,
 }
 
 impl<Input> std::fmt::Debug for OperationPlan<Input> {
@@ -386,6 +387,7 @@ impl<Input> OperationPlan<Input> {
             nested,
             index: self.index,
             is_introspection_query: self.is_introspection_query,
+            dedupe: self.dedupe,
         })
     }
 }
@@ -409,6 +411,17 @@ impl<Input> OperationPlan<Input> {
             .map(|f| f.into_nested(&fields))
             .collect::<Vec<_>>();
 
+        let dedupe = fields
+            .iter()
+            .map(|field| {
+                if let Some(IR::IO(io)) = field.ir.as_ref() {
+                    io.dedupe()
+                } else {
+                    true
+                }
+            })
+            .all(|a| a);
+
         Self {
             root_name: root_name.to_string(),
             flat: fields,
@@ -416,6 +429,7 @@ impl<Input> OperationPlan<Input> {
             operation_type,
             index,
             is_introspection_query,
+            dedupe,
         }
     }
 
@@ -678,9 +692,24 @@ impl From<Positioned<Error>> for ServerError {
 #[cfg(test)]
 mod test {
     use async_graphql::parser::types::ConstDirective;
+    use async_graphql::Request;
     use async_graphql_value::ConstValue;
 
-    use super::Directive;
+    use super::{Directive, OperationPlan};
+    use crate::core::blueprint::Blueprint;
+    use crate::core::config::ConfigModule;
+    use crate::core::jit;
+    use crate::include_config;
+
+    fn plan(query: &str) -> OperationPlan<ConstValue> {
+        let config = include_config!("./fixtures/dedupe.graphql").unwrap();
+        let module = ConfigModule::from(config);
+        let bp = Blueprint::try_from(&module).unwrap();
+
+        let request = Request::new(query);
+        let jit_request = jit::Request::from(request);
+        jit_request.create_plan(&bp).unwrap()
+    }
 
     #[test]
     fn test_from_custom_directive() {
@@ -691,5 +720,26 @@ mod test {
 
         let async_directive: ConstDirective = (&custom_directive).into();
         insta::assert_debug_snapshot!(async_directive);
+    }
+
+    #[test]
+    fn test_operation_plan_dedupe() {
+        let actual = plan(r#"{ posts { id } }"#);
+
+        assert!(!actual.dedupe);
+    }
+
+    #[test]
+    fn test_operation_plan_dedupe_nested() {
+        let actual = plan(r#"{ posts { id users { id } } }"#);
+
+        assert!(!actual.dedupe);
+    }
+
+    #[test]
+    fn test_operation_plan_dedupe_false() {
+        let actual = plan(r#"{ users { id comments {body} } }"#);
+
+        assert!(actual.dedupe);
     }
 }

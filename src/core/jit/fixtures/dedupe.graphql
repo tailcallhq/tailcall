@@ -1,0 +1,35 @@
+schema
+  @server(port: 8000, hostname: "0.0.0.0")
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42) {
+  query: Query
+}
+
+type Query {
+  posts: [Post] @http(path: "/posts")
+  users: [User] @http(path: "/users", dedupe: true)
+}
+
+type User {
+  id: ID!
+  name: String!
+  username: String!
+  email: String!
+  phone: String
+  comments: [Comment] @http(path: "/users/{{.value.id}}/comments", dedupe: true)
+}
+
+type Post {
+  id: ID!
+  userId: ID!
+  title: String!
+  body: String!
+  user: User @http(path: "/users/{{.value.userId}}", dedupe: true)
+}
+
+type Comment {
+  id: ID!
+  name: String!
+  email: String!
+  body: String!
+  postId: ID!
+}

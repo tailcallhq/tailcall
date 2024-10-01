@@ -372,6 +372,7 @@ impl Context {
                     batch_key: vec![],
                     headers: vec![],
                     method: field_name.id(),
+                    dedupe: None,
                 }));
 
                 let method_path =
