@@ -411,28 +411,19 @@ impl<Input> OperationPlan<Input> {
             .map(|f| f.into_nested(&fields))
             .collect::<Vec<_>>();
 
-        // by default dedupe should be set to false
-        // then we check if there is any ir with dedupe set to true
-        // in that case we set is_dedupe to true
-        let mut is_dedupe = false;
-
-        // if there is any ir with dedupe set to false
-        // in that case we set is_not_dedupe to true
-        let mut is_not_dedupe = false;
-        for field in fields.iter() {
+        let dedupe = fields.iter().filter_map(|field| {
             if let Some(IR::IO(io)) = field.ir.as_ref() {
-                if io.dedupe() {
-                    is_dedupe = true;
-                } else {
-                    is_not_dedupe = true;
-                }
+                Some(io.dedupe())
+            } else {
+                None
             }
-        }
-
-        // now we check if all the IRs have dedupe set to true
-        // this method is more accurate then `filter.all(...)`
-        // because this could handle a list with no elements
-        let dedupe = is_dedupe && !is_not_dedupe;
+        }).fold(None, |acc, dedupe| {
+            match acc {
+                None => Some(dedupe),
+                Some(prev_dedupe) if prev_dedupe != dedupe => Some(false),
+                _ => acc
+            }
+        }).unwrap_or_default();
 
         Self {
             root_name: root_name.to_string(),
