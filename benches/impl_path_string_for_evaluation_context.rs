@@ -6,10 +6,9 @@ use std::time::Duration;
 use async_graphql::{Name, Value};
 use async_trait::async_trait;
 use criterion::{BenchmarkId, Criterion};
+use http::header::{HeaderMap, HeaderValue};
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
 use hyper::body::Bytes;
-use hyper::header::HeaderValue;
-use hyper::HeaderMap;
 use indexmap::IndexMap;
 use once_cell::sync::Lazy;
 use reqwest::{Client, Request};
@@ -39,7 +38,8 @@ impl Http {
             .http2_keep_alive_while_idle(upstream.keep_alive_while_idle)
             .pool_idle_timeout(Some(Duration::from_secs(upstream.pool_idle_timeout)))
             .pool_max_idle_per_host(upstream.pool_max_idle_per_host)
-            .user_agent(upstream.user_agent.clone());
+            .user_agent(upstream.user_agent.clone())
+            .danger_accept_invalid_certs(!upstream.verify_ssl);
 
         // Add Http2 Prior Knowledge
         if upstream.http2_only {

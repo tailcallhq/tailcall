@@ -2,7 +2,7 @@
 
 ```graphql @config
 schema
-  @server(port: 8000)
+  @server(port: 8000, enableFederation: true)
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 100}) {
   query: Query
 }

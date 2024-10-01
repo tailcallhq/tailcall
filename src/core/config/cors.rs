@@ -1,10 +1,9 @@
-use hyper::header;
+use http::header;
 use serde::{Deserialize, Serialize};
 
 use crate::core::http::Method;
 use crate::core::is_default;
 use crate::core::macros::MergeRight;
-use crate::core::merge_right::MergeRight;
 
 /// Type to configure Cross-Origin Resource Sharing (CORS) for a server.
 #[derive(
