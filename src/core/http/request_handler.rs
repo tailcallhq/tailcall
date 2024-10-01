@@ -154,7 +154,7 @@ async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
     };
     response = update_cache_control_header(response, app_ctx, req_ctx.clone());
 
-    let mut resp = response.into_response(StatusCode::OK, headers)?;
+    let mut resp = response.into_response(StatusCode::OK, &req.headers)?;
     update_response_headers(&mut resp, req_ctx, app_ctx);
     Ok(resp)
 }
