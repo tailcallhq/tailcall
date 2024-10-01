@@ -411,17 +411,28 @@ impl<Input> OperationPlan<Input> {
             .map(|f| f.into_nested(&fields))
             .collect::<Vec<_>>();
 
+        // by default dedupe should be set to false
+        // then we check if there is any ir with dedupe set to true
+        // in that case we set is_dedupe to true
         let mut is_dedupe = false;
 
+        // if there is any ir with dedupe set to false
+        // in that case we set is_not_dedupe to true
+        let mut is_not_dedupe = false;
         for field in fields.iter() {
-            if let Some(val) = field.ir.as_ref() {
-                if let IR::IO(io) = val {
-                    is_dedupe = is_dedupe && !io.dedupe();
+            if let Some(IR::IO(io)) = field.ir.as_ref() {
+                if io.dedupe() {
+                    is_dedupe = true;
+                } else {
+                    is_not_dedupe = true;
                 }
             }
         }
 
-        let dedupe = !is_dedupe;
+        // now we check if all the IRs have dedupe set to true
+        // this method is more accurate then `filter.all(...)`
+        // because this could handle a list with no elements
+        let dedupe = is_dedupe && !is_not_dedupe;
 
         Self {
             root_name: root_name.to_string(),
@@ -715,8 +726,7 @@ mod test {
     #[test]
     fn test_operation_plan_dedupe() {
         let config =
-            include_config!("../../../tailcall-fixtures/fixtures/configs/jsonplaceholder.graphql")
-                .unwrap();
+            include_config!("../../../tailcall-fixtures/fixtures/configs/dedupe.graphql").unwrap();
         let module = ConfigModule::from(config);
         let bp = Blueprint::try_from(&module).unwrap();
 
@@ -730,8 +740,7 @@ mod test {
     #[test]
     fn test_operation_plan_dedupe_false() {
         let config =
-            include_config!("../../../tailcall-fixtures/fixtures/configs/jsonplaceholder.graphql")
-                .unwrap();
+            include_config!("../../../tailcall-fixtures/fixtures/configs/dedupe.graphql").unwrap();
         let module = ConfigModule::from(config);
         let bp = Blueprint::try_from(&module).unwrap();
 
