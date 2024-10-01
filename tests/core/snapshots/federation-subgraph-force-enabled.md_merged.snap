@@ -8,22 +8,12 @@ schema
   query: Query
 }
 
-scalar _Any
-
-union _Entity = Post | User
-
-type Post
-  @graphQL(args: [{key: "id", value: "{{.value.id}}"}], baseURL: "http://upstream/graphql", batch: true, name: "post")
-  @key(fields: "id") {
+type Post {
   id: Int!
   title: String!
 }
 
 type Query {
-  """
-  Apollo federation Query._entities resolver
-  """
-  _entities(representations: [_Any!]!): [_Entity]!
   """
   Apollo federation Query._service resolver
   """
@@ -31,7 +21,7 @@ type Query {
   user(id: Int!): User @http(path: "/users/{{.args.id}}")
 }
 
-type User @http(batchKey: ["id"], path: "/users", query: [{key: "id", value: "{{.value.id}}"}]) @key(fields: "id") {
+type User {
   id: Int!
   name: String!
 }
