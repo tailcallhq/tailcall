@@ -260,6 +260,11 @@ directive @server(
   as nonce-based APIs.
   """
   dedupe: Boolean
+  """
+  `enableFederation` enables functionality to Tailcall server to act as a federation 
+  subgraph.
+  """
+  enableFederation: Boolean
   enableJIT: Boolean
   """
   `globalResponseTimeout` sets the maximum query duration before termination, acting 

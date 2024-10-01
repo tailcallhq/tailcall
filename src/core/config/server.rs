@@ -77,6 +77,11 @@ pub struct Server {
     /// and operations. @default `true`.
     pub introspection: Option<bool>,
 
+    /// `enableFederation` enables functionality to Tailcall server to act
+    /// as a federation subgraph.
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub enable_federation: Option<bool>,
+
     #[serde(default, skip_serializing_if = "is_default")]
     /// `pipelineFlush` allows to control flushing behavior of the server
     /// pipeline.
@@ -276,6 +281,10 @@ impl Server {
 
     pub fn get_routes(&self) -> Routes {
         self.routes.clone().unwrap_or_default()
+    }
+
+    pub fn get_enable_federation(&self) -> bool {
+        self.enable_federation.unwrap_or(false)
     }
 }
 

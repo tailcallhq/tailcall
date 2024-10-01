@@ -1025,6 +1025,13 @@
             "null"
           ]
         },
+        "enableFederation": {
+          "description": "`enableFederation` enables functionality to Tailcall server to act as a federation subgraph.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
         "enableJIT": {
           "type": [
             "boolean",

@@ -1,0 +1,17 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "_service": {
+        "sdl": "schema @server(enableFederation: true, port: 8000) @upstream(baseURL: \"http://jsonplaceholder.typicode.com\", batch: {delay: 100, headers: []}, httpCache: 42) {\n  query: Query\n}\n\ntype Post {\n  id: Int!\n  title: String!\n}\n\ntype Query {\n  \"\"\"\n  Apollo federation Query._service resolver\n  \"\"\"\n  _service: _Service!\n  user(id: Int!): User @http(path: \"/users/{{.args.id}}\")\n}\n\ntype User {\n  id: Int!\n  name: String!\n}\n\ntype _Service {\n  sdl: String\n}\nextend schema @link(\n\turl: \"https://specs.apollo.dev/federation/v2.3\",\n\timport: [\"@key\", \"@tag\", \"@shareable\", \"@inaccessible\", \"@override\", \"@external\", \"@provides\", \"@requires\", \"@composeDirective\", \"@interfaceObject\"]\n)\n"
+      }
+    }
+  }
+}
