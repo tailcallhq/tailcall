@@ -411,19 +411,21 @@ impl<Input> OperationPlan<Input> {
             .map(|f| f.into_nested(&fields))
             .collect::<Vec<_>>();
 
-        let dedupe = fields.iter().filter_map(|field| {
-            if let Some(IR::IO(io)) = field.ir.as_ref() {
-                Some(io.dedupe())
-            } else {
-                None
-            }
-        }).fold(None, |acc, dedupe| {
-            match acc {
+        let dedupe = fields
+            .iter()
+            .filter_map(|field| {
+                if let Some(IR::IO(io)) = field.ir.as_ref() {
+                    Some(io.dedupe())
+                } else {
+                    None
+                }
+            })
+            .fold(None, |acc, dedupe| match acc {
                 None => Some(dedupe),
                 Some(prev_dedupe) if prev_dedupe != dedupe => Some(false),
-                _ => acc
-            }
-        }).unwrap_or_default();
+                _ => acc,
+            })
+            .unwrap_or_default();
 
         Self {
             root_name: root_name.to_string(),
