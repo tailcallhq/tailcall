@@ -3,6 +3,7 @@ mod blueprint;
 mod compress;
 mod cors;
 mod definitions;
+mod directive;
 mod dynamic_value;
 mod from_config;
 mod index;

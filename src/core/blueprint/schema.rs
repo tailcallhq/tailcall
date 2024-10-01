@@ -1,8 +1,10 @@
 use std::collections::{BTreeMap, HashSet};
 
+use directive::to_directive;
+
 use crate::core::blueprint::*;
 use crate::core::config::{Config, Field, Type};
-use crate::core::directive::{to_directive, DirectiveCodec};
+use crate::core::directive::DirectiveCodec;
 use crate::core::valid::{Valid, Validator};
 
 fn validate_query(config: &Config) -> Valid<(), String> {

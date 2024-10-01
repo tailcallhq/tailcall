@@ -3,9 +3,7 @@
 Use of directives that is not part of Tailcall directives.
 
 ```graphql @config
-schema
-  @server(port: 8000)
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @server(port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
 

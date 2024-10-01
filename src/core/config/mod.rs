@@ -12,6 +12,7 @@ mod apollo;
 mod config;
 mod config_module;
 pub mod cors;
+mod directive;
 pub mod directives;
 mod from_document;
 pub mod group_by;

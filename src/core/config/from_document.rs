@@ -10,14 +10,14 @@ use async_graphql::Name;
 use async_graphql_value::ConstValue;
 use indexmap::IndexMap;
 
+use super::directive::{to_directive, Directive};
 use super::{Alias, Resolver, Telemetry, KNOWN_DIRECTIVES};
 use crate::core::config::{
     self, Cache, Config, Enum, Link, Modify, Omit, Protected, RootSchema, Server, Union, Upstream,
     Variant,
 };
-use crate::core::directive::{to_directive, DirectiveCodec};
+use crate::core::directive::DirectiveCodec;
 use crate::core::valid::{Valid, ValidationError, Validator};
-use crate::core::Directive;
 
 const DEFAULT_SCHEMA_DEFINITION: &SchemaDefinition = &SchemaDefinition {
     extend: false,

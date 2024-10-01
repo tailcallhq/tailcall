@@ -6,12 +6,13 @@ use async_graphql::extensions::ApolloTracing;
 use async_graphql::ValidationMode;
 use derive_setters::Setters;
 
+use super::directive::Directive;
 use super::telemetry::Telemetry;
 use super::{GlobalTimeout, Index};
 use crate::core::blueprint::{Server, Upstream};
 use crate::core::ir::model::IR;
 use crate::core::schema_extension::SchemaExtension;
-use crate::core::{scalar, Directive, Type};
+use crate::core::{scalar, Type};
 
 /// Blueprint is an intermediary representation that allows us to generate
 /// graphQL APIs. It can only be generated from a valid Config.

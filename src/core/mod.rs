@@ -48,8 +48,8 @@ use std::borrow::Cow;
 use std::hash::Hash;
 use std::num::NonZeroU64;
 
+use async_graphql::{Pos, Positioned};
 use async_graphql_value::ConstValue;
-pub use directive::Directive;
 pub use errata::Errata;
 pub use error::{Error, Result};
 use http::Response;
@@ -107,6 +107,10 @@ pub trait WorkerIO<In, Out>: Send + Sync + 'static {
 
 pub fn is_default<T: Default + Eq>(val: &T) -> bool {
     *val == T::default()
+}
+
+pub fn pos<A>(a: A) -> Positioned<A> {
+    Positioned::new(a, Pos::default())
 }
 
 pub fn verify_ssl_is_default(val: &Option<bool>) -> bool {

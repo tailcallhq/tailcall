@@ -11,6 +11,7 @@ use tailcall_typedefs_common::directive_definition::DirectiveDefinition;
 use tailcall_typedefs_common::input_definition::InputDefinition;
 use tailcall_typedefs_common::ServiceDocumentBuilder;
 
+use super::directive::Directive;
 use super::from_document::from_document;
 use super::{
     AddField, Alias, Cache, Call, Expr, GraphQL, Grpc, Http, Key, Link, Modify, Omit, Protected,
@@ -18,11 +19,11 @@ use super::{
 };
 use crate::core::config::npo::QueryPath;
 use crate::core::config::source::Source;
+use crate::core::is_default;
 use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
 use crate::core::scalar::Scalar;
 use crate::core::valid::{Valid, Validator};
-use crate::core::{is_default, Directive};
 
 #[derive(
     Serialize,

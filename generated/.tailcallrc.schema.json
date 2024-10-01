@@ -325,7 +325,6 @@
     "Directive": {
       "type": "object",
       "required": [
-        "arguments",
         "name"
       ],
       "properties": {

@@ -2,8 +2,9 @@ use async_graphql::parser::types::*;
 use async_graphql::{Pos, Positioned};
 use async_graphql_value::{ConstValue, Name};
 
+use super::directive::to_const_directive;
 use super::Config;
-use crate::core::directive::{to_const_directive, DirectiveCodec};
+use crate::core::directive::DirectiveCodec;
 use crate::core::valid::Validator;
 
 fn pos<A>(a: A) -> Positioned<A> {
@@ -207,7 +208,7 @@ fn config_document(config: &Config) -> ServiceDocument {
 }
 
 fn into_directives(
-    directives: &[crate::core::Directive],
+    directives: &[super::directive::Directive],
 ) -> impl Iterator<Item = Positioned<ConstDirective>> + '_ {
     directives
         .iter()
