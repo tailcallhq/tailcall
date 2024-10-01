@@ -40,7 +40,7 @@ type Post {
 
 type Query {
   post(id: Int! = 1): Post @http(path: "/posts/{{.args.id}}")
-  posts: [Post] @http(path: "/posts?_limit=11")
+  posts: [Post] @http(path: "/posts?_limit=11", dedupe: true)
   user(id: Int!): User @http(path: "/users/{{.args.id}}")
   users: [User] @http(path: "/users")
 }

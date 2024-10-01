@@ -86,7 +86,7 @@ type Query {
   GEN__news__NewsService__GetNews(newsId: Id!): News @grpc(body: "{{.args.newsId}}", method: "news.NewsService.GetNews")
   inCompatibleProperties: InCompatibleProperty @http(path: "/")
   post(id: Int! = 1): Post @http(path: "/posts/{{.args.id}}")
-  posts: [Post] @http(path: "/posts?_limit=11")
+  posts: [Post] @http(path: "/posts?_limit=11", dedupe: true)
   user(id: Int!): User @http(path: "/users/{{.args.id}}")
   users: [User] @http(path: "/users")
 }

@@ -49,7 +49,7 @@ impl<Value> Variables<Value> {
 }
 
 impl<V> FromIterator<(String, V)> for Variables<V> {
-    fn from_iter<T: IntoIterator<Item = (String, V)>>(iter: T) -> Self {
+    fn from_iter<T: IntoIterator<Item=(String, V)>>(iter: T) -> Self {
         Self(iter.into_iter().collect())
     }
 }
@@ -248,7 +248,7 @@ impl<Input> Field<Flat, Input> {
 
 impl<Input> Field<Nested<Input>, Input> {
     /// iters over children fields
-    pub fn iter(&self) -> impl Iterator<Item = &Field<Nested<Input>, Input>> {
+    pub fn iter(&self) -> impl Iterator<Item=&Field<Nested<Input>, Input>> {
         self.extensions
             .as_ref()
             .map(move |nested| nested.0.iter())
@@ -410,14 +410,21 @@ impl<Input> OperationPlan<Input> {
             .filter(|f| f.extensions.is_none())
             .map(|f| f.into_nested(&fields))
             .collect::<Vec<_>>();
-        let dedupe = fields.iter().filter(|v| v.ir.is_some()).all(|v| {
-            v.ir.as_ref()
-                .map(|v| match v {
-                    IR::IO(io) => io.dedupe(),
-                    _ => false,
-                })
-                .unwrap_or_default()
-        });
+
+        let mut is_dedupe = false;
+
+        for field in fields.iter() {
+            if let Some(val) = field.ir.as_ref() {
+                match val {
+                    IR::IO(io) => {
+                        is_dedupe = is_dedupe && !io.dedupe();
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        let dedupe = !is_dedupe;
 
         Self {
             root_name: root_name.to_string(),
@@ -689,8 +696,12 @@ impl From<Positioned<Error>> for ServerError {
 #[cfg(test)]
 mod test {
     use async_graphql::parser::types::ConstDirective;
+    use async_graphql::Request;
     use async_graphql_value::ConstValue;
-
+    use crate::core::blueprint::Blueprint;
+    use crate::core::config::ConfigModule;
+    use crate::core::jit;
+    use crate::include_config;
     use super::Directive;
 
     #[test]
@@ -702,5 +713,30 @@ mod test {
 
         let async_directive: ConstDirective = (&custom_directive).into();
         insta::assert_debug_snapshot!(async_directive);
+    }
+    #[test]
+    fn test_operation_plan_dedupe() {
+        let config = include_config!("../../../tailcall-fixtures/fixtures/configs/jsonplaceholder.graphql").unwrap();
+        let module = ConfigModule::from(config);
+        let bp = Blueprint::try_from(&module).unwrap();
+
+        let request = Request::new(r#"{ posts { id } }"#);
+        let jit_request = jit::Request::from(request);
+        let plan = jit_request.create_plan(&bp).unwrap();
+
+        assert!(plan.dedupe);
+    }
+
+    #[test]
+    fn test_operation_plan_dedupe_false() {
+        let config = include_config!("../../../tailcall-fixtures/fixtures/configs/jsonplaceholder.graphql").unwrap();
+        let module = ConfigModule::from(config);
+        let bp = Blueprint::try_from(&module).unwrap();
+
+        let request = Request::new(r#"{ users { id } }"#);
+        let jit_request = jit::Request::from(request);
+        let plan = jit_request.create_plan(&bp).unwrap();
+
+        assert!(!plan.dedupe);
     }
 }
