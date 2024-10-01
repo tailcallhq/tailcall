@@ -3,7 +3,7 @@ schema @server(port: 8000, hostname: "0.0.0.0") @upstream(baseURL: "http://jsonp
 }
 
 type Query @cache(maxAge: 30000) {
-  posts: [Post] @http(path: "/posts", dedupe: true)
+  posts: [Post] @http(path: "/posts")
 }
 
 type User {
