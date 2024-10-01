@@ -1,10 +1,9 @@
-# Apollo federation query
+# Federation subgraph with no entities in the config
 
 ```graphql @config
 schema
-  @server(port: 8000, enableFederation: true)
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 100})
-  @link(src: "./posts.graphql") {
+  @server(port: 8000, enableFederation: false)
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 100}) {
   query: Query
 }
 
@@ -12,37 +11,15 @@ type Query {
   user(id: Int!): User @http(path: "/users/{{.args.id}}")
 }
 
-type User @call(steps: [{query: "user", args: {id: "{{.value.id}}"}}]) @shareable {
+type User @call(steps: [{query: "user", args: {id: "{{.value.id}}"}}]) {
   id: Int!
   name: String!
 }
-```
 
-```graphql @file:posts.graphql
 type Post @expr(body: {id: "{{.value.id}}", title: "post-title-{{.value.id}}"}) {
   id: Int!
-  title: String! @override(from: "name")
+  title: String!
 }
-```
-
-```yml @mock
-- request:
-    method: GET
-    url: http://jsonplaceholder.typicode.com/users/1
-  response:
-    status: 200
-    body:
-      id: 1
-      name: Leanne Graham
-
-- request:
-    method: GET
-    url: http://jsonplaceholder.typicode.com/users/2
-  response:
-    status: 200
-    body:
-      id: 2
-      name: Ervin Howell
 ```
 
 ```yml @test

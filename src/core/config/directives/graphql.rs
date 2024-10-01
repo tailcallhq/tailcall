@@ -50,4 +50,12 @@ pub struct GraphQL {
     /// is received for this field, Tailcall requests data from the
     /// corresponding upstream field.
     pub name: String,
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// Enables deduplication of IO operations to enhance performance.
+    ///
+    /// This flag prevents duplicate IO requests from being executed
+    /// concurrently, reducing resource load. Caution: May lead to issues
+    /// with APIs that expect unique results for identical inputs, such as
+    /// nonce-based APIs.
+    pub dedupe: Option<bool>,
 }

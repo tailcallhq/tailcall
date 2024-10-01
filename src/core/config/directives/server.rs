@@ -47,15 +47,6 @@ pub struct Server {
     pub batch_requests: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// Enables deduplication of IO operations to enhance performance.
-    ///
-    /// This flag prevents duplicate IO requests from being executed
-    /// concurrently, reducing resource load. Caution: May lead to issues
-    /// with APIs that expect unique results for identical inputs, such as
-    /// nonce-based APIs.
-    pub dedupe: Option<bool>,
-
-    #[serde(default, skip_serializing_if = "is_default")]
     /// `headers` contains key-value pairs that are included as default headers
     /// in server responses, allowing for consistent header management across
     /// all responses.
@@ -75,6 +66,11 @@ pub struct Server {
     /// aiding tools and applications in understanding available types, fields,
     /// and operations. @default `true`.
     pub introspection: Option<bool>,
+
+    /// `enableFederation` enables functionality to Tailcall server to act
+    /// as a federation subgraph.
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub enable_federation: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// `pipelineFlush` allows to control flushing behavior of the server
@@ -266,15 +262,16 @@ impl Server {
         self.pipeline_flush.unwrap_or(true)
     }
 
-    pub fn get_dedupe(&self) -> bool {
-        self.dedupe.unwrap_or(false)
-    }
     pub fn enable_jit(&self) -> bool {
         self.enable_jit.unwrap_or(true)
     }
 
     pub fn get_routes(&self) -> Routes {
         self.routes.clone().unwrap_or_default()
+    }
+
+    pub fn get_enable_federation(&self) -> bool {
+        self.enable_federation.unwrap_or(false)
     }
 }
 
