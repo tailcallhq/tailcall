@@ -42,6 +42,7 @@ mod transform;
 pub mod try_fold;
 pub mod valid;
 pub mod worker;
+mod wrapping_type;
 
 // Re-export everything from `tailcall_macros` as `macros`
 use std::borrow::Cow;
@@ -49,7 +50,7 @@ use std::hash::Hash;
 use std::num::NonZeroU64;
 
 use async_graphql_value::ConstValue;
-pub use blueprint::Type;
+pub use wrapping_type::Type;
 pub use errata::Errata;
 pub use error::{Error, Result};
 use http::Response;

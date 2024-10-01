@@ -3,12 +3,79 @@ use std::collections::BTreeMap;
 use indexmap::IndexMap;
 
 use super::{Cache, ConfigModule};
+use crate::core;
 use crate::core::config::{Arg, Config, Enum, Field, Type};
 use crate::core::federation::merge::{
     FederatedMerge, FederatedMergeIntersection, FederatedMergeUnion,
 };
 use crate::core::merge_right::MergeRight;
 use crate::core::valid::{Valid, Validator};
+
+impl core::Type {
+    fn merge(self, other: Self, non_null_merge: fn(bool, bool) -> bool) -> Valid<Self, String> {
+        use core::Type;
+
+        match (self, other) {
+            (
+                Type::Named { name, non_null },
+                Type::Named { name: other_name, non_null: other_non_null },
+            ) => {
+                if name != other_name {
+                    return Valid::fail(format!(
+                        "Type mismatch: expected `{}`, got `{}`",
+                        &name, other_name
+                    ));
+                }
+
+                Valid::succeed(Type::Named {
+                    name,
+                    // non_null only if type is non_null for both sources
+                    non_null: non_null_merge(non_null, other_non_null),
+                })
+            }
+            (
+                Type::List { of_type, non_null },
+                Type::List { of_type: other_of_type, non_null: other_non_null },
+            ) => (*of_type)
+                .merge(*other_of_type, non_null_merge)
+                .map(|of_type| Type::List {
+                    of_type: Box::new(of_type),
+                    non_null: non_null_merge(non_null, other_non_null),
+                }),
+            _ => Valid::fail("Type mismatch: expected list, got singular value".to_string()),
+        }
+    }
+}
+
+impl FederatedMergeIntersection for core::Type {
+    /// Executes merge the way that the result type is non_null
+    /// if it is specified as non_null in at least one of the definitions.
+    /// That's a narrows merge i.e. the result narrows the input definitions
+    /// the way it could be handled by both self and other sources
+    fn federated_merge_intersection(self, other: Self) -> Valid<Self, String> {
+        #[inline]
+        fn non_null_merge(non_null: bool, other_non_null: bool) -> bool {
+            non_null || other_non_null
+        }
+
+        self.merge(other, non_null_merge)
+    }
+}
+
+impl FederatedMergeUnion for core::Type {
+    /// Executes merge the way that the result type is non_null only
+    /// if it is specified as non_null in both sources.
+    /// That's a wide merge i.e. the result wides the input definitions
+    /// the way it could be handled by both self and other sources
+    fn federated_merge_union(self, other: Self) -> Valid<Self, String> {
+        #[inline]
+        fn non_null_merge(non_null: bool, other_non_null: bool) -> bool {
+            non_null && other_non_null
+        }
+
+        self.merge(other, non_null_merge)
+    }
+}
 
 impl FederatedMergeIntersection for Arg {
     fn federated_merge_intersection(self, other: Self) -> Valid<Self, String> {
@@ -358,5 +425,174 @@ mod tests {
         assert_snapshot!(merged.to_sdl());
 
         Ok(())
+    }
+
+    mod core_type {
+        use super::*;
+        use crate::core::Type;
+
+        mod federated_merge_union {
+            use super::*;
+
+            #[test]
+            fn test_equal() {
+                let a = Type::Named { name: "String".to_owned(), non_null: false };
+                let b = Type::Named { name: "String".to_owned(), non_null: false };
+
+                assert_eq!(
+                    a.federated_merge_union(b),
+                    Valid::succeed(Type::Named { name: "String".to_owned(), non_null: false })
+                );
+
+                let a = Type::List {
+                    of_type: Box::new(Type::Named { name: "Int".to_owned(), non_null: false }),
+                    non_null: true,
+                };
+                let b = Type::List {
+                    of_type: Box::new(Type::Named { name: "Int".to_owned(), non_null: false }),
+                    non_null: true,
+                };
+
+                assert_eq!(
+                    a.federated_merge_union(b),
+                    Valid::succeed(Type::List {
+                        of_type: Box::new(Type::Named { name: "Int".to_owned(), non_null: false }),
+                        non_null: true,
+                    })
+                );
+            }
+
+            #[test]
+            fn test_different_non_null() {
+                let a = Type::Named { name: "String".to_owned(), non_null: false };
+                let b = Type::Named { name: "String".to_owned(), non_null: true };
+
+                assert_eq!(
+                    a.federated_merge_union(b),
+                    Valid::succeed(Type::Named { name: "String".to_owned(), non_null: false })
+                );
+
+                let a = Type::List {
+                    of_type: Box::new(Type::Named { name: "Int".to_owned(), non_null: false }),
+                    non_null: false,
+                };
+                let b = Type::List {
+                    of_type: Box::new(Type::Named { name: "Int".to_owned(), non_null: true }),
+                    non_null: true,
+                };
+
+                assert_eq!(
+                    a.federated_merge_union(b),
+                    Valid::succeed(Type::List {
+                        of_type: Box::new(Type::Named { name: "Int".to_owned(), non_null: false }),
+                        non_null: false,
+                    })
+                );
+            }
+
+            #[test]
+            fn test_different_types() {
+                let a = Type::Named { name: "String".to_owned(), non_null: false };
+                let b = Type::Named { name: "Int".to_owned(), non_null: false };
+
+                assert_eq!(
+                    a.federated_merge_union(b),
+                    Valid::fail("Type mismatch: expected `String`, got `Int`".to_owned())
+                );
+
+                let a = Type::List {
+                    of_type: Box::new(Type::Named { name: "Int".to_owned(), non_null: false }),
+                    non_null: true,
+                };
+                let b = Type::Named { name: "Int".to_owned(), non_null: false };
+
+                assert_eq!(
+                    a.federated_merge_union(b),
+                    Valid::fail("Type mismatch: expected list, got singular value".to_owned())
+                );
+            }
+        }
+
+        mod federated_merge_intersection {
+            use super::*;
+
+            #[test]
+            fn test_equal() {
+                let a = Type::Named { name: "String".to_owned(), non_null: false };
+                let b = Type::Named { name: "String".to_owned(), non_null: false };
+
+                assert_eq!(
+                    a.federated_merge_intersection(b),
+                    Valid::succeed(Type::Named { name: "String".to_owned(), non_null: false })
+                );
+
+                let a = Type::List {
+                    of_type: Box::new(Type::Named { name: "Int".to_owned(), non_null: false }),
+                    non_null: true,
+                };
+                let b = Type::List {
+                    of_type: Box::new(Type::Named { name: "Int".to_owned(), non_null: false }),
+                    non_null: true,
+                };
+
+                assert_eq!(
+                    a.federated_merge_intersection(b),
+                    Valid::succeed(Type::List {
+                        of_type: Box::new(Type::Named { name: "Int".to_owned(), non_null: false }),
+                        non_null: true,
+                    })
+                );
+            }
+
+            #[test]
+            fn test_different_non_null() {
+                let a = Type::Named { name: "String".to_owned(), non_null: false };
+                let b = Type::Named { name: "String".to_owned(), non_null: true };
+
+                assert_eq!(
+                    a.federated_merge_intersection(b),
+                    Valid::succeed(Type::Named { name: "String".to_owned(), non_null: true })
+                );
+
+                let a = Type::List {
+                    of_type: Box::new(Type::Named { name: "Int".to_owned(), non_null: false }),
+                    non_null: false,
+                };
+                let b = Type::List {
+                    of_type: Box::new(Type::Named { name: "Int".to_owned(), non_null: true }),
+                    non_null: true,
+                };
+
+                assert_eq!(
+                    a.federated_merge_intersection(b),
+                    Valid::succeed(Type::List {
+                        of_type: Box::new(Type::Named { name: "Int".to_owned(), non_null: true }),
+                        non_null: true,
+                    })
+                );
+            }
+
+            #[test]
+            fn test_different_types() {
+                let a = Type::Named { name: "String".to_owned(), non_null: false };
+                let b = Type::Named { name: "Int".to_owned(), non_null: false };
+
+                assert_eq!(
+                    a.federated_merge_intersection(b),
+                    Valid::fail("Type mismatch: expected `String`, got `Int`".to_owned())
+                );
+
+                let a = Type::List {
+                    of_type: Box::new(Type::Named { name: "Int".to_owned(), non_null: false }),
+                    non_null: true,
+                };
+                let b = Type::Named { name: "Int".to_owned(), non_null: false };
+
+                assert_eq!(
+                    a.federated_merge_intersection(b),
+                    Valid::fail("Type mismatch: expected list, got singular value".to_owned())
+                );
+            }
+        }
     }
 }
