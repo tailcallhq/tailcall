@@ -396,27 +396,83 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
-
+    use anyhow::Result;
     use insta::assert_snapshot;
-    use tailcall_fixtures::configs::federation;
 
     use super::*;
-    use crate::core::config::{Config, ConfigModule};
+    use crate::core::config::ConfigModule;
     use crate::core::valid::Validator;
+    use crate::include_config;
 
     #[test]
-    fn test_federation_merge() -> anyhow::Result<()> {
-        let config = Config::from_sdl(&fs::read_to_string(federation::ROUTER)?).to_result()?;
-        let router = ConfigModule::from(config);
+    fn test_types_valid() -> Result<()> {
+        let types1 = ConfigModule::from(include_config!("./fixtures/types-1.graphql")?);
+        let types2 = ConfigModule::from(include_config!("./fixtures/types-2.graphql")?);
 
-        let config =
-            Config::from_sdl(&fs::read_to_string(federation::SUBGRAPH_USERS)?).to_result()?;
-        let subgraph_users = ConfigModule::from(config);
+        let merged = types1.federated_merge(types2).to_result()?;
 
-        let config =
-            Config::from_sdl(&fs::read_to_string(federation::SUBGRAPH_POSTS)?).to_result()?;
-        let subgraph_posts = ConfigModule::from(config);
+        assert_snapshot!(merged.to_sdl());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_types_invalid() -> Result<()> {
+        let types1 = ConfigModule::from(include_config!("./fixtures/types-1.graphql")?);
+        let types3 = ConfigModule::from(include_config!("./fixtures/types-3.graphql")?);
+
+        let merged = types1.federated_merge(types3).to_result();
+
+        assert_snapshot!(merged.unwrap_err());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_unions_valid() -> Result<()> {
+        let unions1 = ConfigModule::from(include_config!("./fixtures/unions-1.graphql")?);
+        let unions2 = ConfigModule::from(include_config!("./fixtures/unions-2.graphql")?);
+
+        let merged = unions1.federated_merge(unions2).to_result()?;
+
+        assert_snapshot!(merged.to_sdl());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_enums_valid() -> Result<()> {
+        let enums1 = ConfigModule::from(include_config!("./fixtures/enums-1.graphql")?);
+        let enums2 = ConfigModule::from(include_config!("./fixtures/enums-2.graphql")?);
+
+        let merged = enums1.federated_merge(enums2).to_result()?;
+
+        assert_snapshot!(merged.to_sdl());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_enums_invalid() -> Result<()> {
+        let enums1 = ConfigModule::from(include_config!("./fixtures/enums-1.graphql")?);
+        let enums3 = ConfigModule::from(include_config!("./fixtures/enums-3.graphql")?);
+
+        let merged = enums1.federated_merge(enums3).to_result();
+
+        assert_snapshot!(merged.unwrap_err());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_federation_router() -> Result<()> {
+        let router = ConfigModule::from(include_config!("./fixtures/router.graphql")?);
+
+        let subgraph_users =
+            ConfigModule::from(include_config!("./fixtures/subgraph-users.graphql")?);
+
+        let subgraph_posts =
+            ConfigModule::from(include_config!("./fixtures/subgraph-posts.graphql")?);
 
         let merged = router;
         let merged = merged.federated_merge(subgraph_users).to_result()?;

@@ -1,0 +1,25 @@
+---
+source: src/core/config/config_module/merge.rs
+expression: merged.to_sdl()
+---
+schema @server @upstream {
+  query: Query
+}
+
+union Union = A | B | C
+
+type A {
+  a: String
+}
+
+type B {
+  b: String
+}
+
+type C {
+  c: Int
+}
+
+type Query {
+  b: B
+}

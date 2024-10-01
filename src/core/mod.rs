@@ -50,7 +50,6 @@ use std::hash::Hash;
 use std::num::NonZeroU64;
 
 use async_graphql_value::ConstValue;
-pub use wrapping_type::Type;
 pub use errata::Errata;
 pub use error::{Error, Result};
 use http::Response;
@@ -58,6 +57,7 @@ use ir::model::IoId;
 pub use mustache::Mustache;
 pub use tailcall_macros as macros;
 pub use transform::Transform;
+pub use wrapping_type::Type;
 
 const DEFAULT_VERIFY_SSL: bool = true;
 pub const fn default_verify_ssl() -> Option<bool> {
