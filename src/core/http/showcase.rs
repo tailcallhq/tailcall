@@ -2,7 +2,8 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 use async_graphql::ServerError;
-use hyper::{Body, Request, Response, StatusCode};
+use http::{Request, Response, StatusCode};
+use hyper::Body;
 use serde::de::DeserializeOwned;
 use url::Url;
 
@@ -79,7 +80,7 @@ pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
 mod tests {
     use std::sync::Arc;
 
-    use hyper::Request;
+    use http::Request;
     use serde_json::json;
 
     use crate::core::async_graphql_hyper::GraphQLRequest;

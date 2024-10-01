@@ -25,6 +25,8 @@ pub trait Validator<A, E>: Sized {
 
     fn is_succeed(&self) -> bool;
 
+    fn is_fail(&self) -> bool;
+
     fn and<A1>(self, other: Valid<A1, E>) -> Valid<A1, E> {
         self.zip(other).map(|(_, a1)| a1)
     }
@@ -165,6 +167,10 @@ impl<A, E> Validator<A, E> for Valid<A, E> {
     fn is_succeed(&self) -> bool {
         self.0.is_ok()
     }
+
+    fn is_fail(&self) -> bool {
+        self.0.is_err()
+    }
 }
 
 pub struct Fusion<A, E>(Valid<A, E>);
@@ -183,6 +189,9 @@ impl<A, E> Validator<A, E> for Fusion<A, E> {
     }
     fn is_succeed(&self) -> bool {
         self.0.is_succeed()
+    }
+    fn is_fail(&self) -> bool {
+        self.0.is_fail()
     }
 }
 

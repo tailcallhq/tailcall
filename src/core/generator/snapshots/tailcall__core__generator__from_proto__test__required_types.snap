@@ -6,19 +6,19 @@ schema @server @upstream {
   query: Query
 }
 
-type Query {
-  person__PersonService__GetPerson: person__Person @grpc(method: "person.PersonService.GetPerson")
-}
-
   """
   Defines a person
   """
-type person__Person {
+type GEN__person__Person {
   email: String
   id: Int!
   name: String!
   phone: [person__PhoneNumber]
   stringMap: JSON
+}
+
+type Query {
+  GEN__person__PersonService__GetPerson: GEN__person__Person @grpc(method: "person.PersonService.GetPerson")
 }
 
   """

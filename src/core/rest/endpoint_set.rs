@@ -6,7 +6,6 @@ use super::{Request, Result};
 use crate::core::blueprint::Blueprint;
 use crate::core::http::RequestContext;
 use crate::core::macros::MergeRight;
-use crate::core::merge_right::MergeRight;
 use crate::core::rest::operation::OperationQuery;
 use crate::core::runtime::TargetRuntime;
 use crate::core::valid::Validator;

@@ -6,7 +6,7 @@ schema @server @upstream {
   query: Query
 }
 
-type M1 {
+type GEN__M1 {
   f1: String
   f2: Int
   f3: Boolean
@@ -15,8 +15,8 @@ type M1 {
 }
 
 type Query {
-  q1: M1
-  q2: M1
-  q3: M1
-  q4: M1
+  q1: GEN__M1
+  q2: GEN__M1
+  q3: GEN__M1
+  q4: GEN__M1
 }

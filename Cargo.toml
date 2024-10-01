@@ -12,6 +12,8 @@ anyhow = "1.0.82"
 async-graphql = { version = "7.0.9" }
 futures-util = { version = "0.3.30" }
 indexmap = "2.2.6"
+headers = "0.3.9" # previous version until hyper is updated to 1+
+http = "0.2.12" # previous version until hyper is updated to 1+
 insta = { version = "1.38.0", features = ["json"] }
 tokio = { version = "1.37.0", features = ["rt", "time"] }
 reqwest = { version = "0.11", features = [
@@ -25,6 +27,7 @@ serde = { version = "1.0.200", features = ["derive"] }
 derive_more = "0.99.18"
 thiserror = "1.0.59"
 url = { version = "2.5.0", features = ["serde"] }
+convert_case = "0.6.0"
 
 [dependencies]
 # dependencies specific to CLI must have optional = true and the dep should be added to default feature.
@@ -137,7 +140,8 @@ opentelemetry-prometheus = "0.16.0"
 phonenumber = "0.3.4"
 chrono = "0.4.38"
 async-graphql-extension-apollo-tracing = { version = "3.2.15" }
-headers = "0.3.9" # previous version until hyper is updated to 1+
+headers = { workspace = true }
+http = { workspace = true }
 mime = "0.3.17"
 htpasswd-verify = { version = "0.3.0", git = "https://github.com/twistedfall/htpasswd-verify", rev = "ff14703083cbd639f7d05622b398926f3e718d61" } # fork version that is wasm compatible
 jsonwebtoken = "9.3.0"
@@ -149,7 +153,7 @@ async-graphql = { workspace = true, features = [
     "opentelemetry",
 ] }
 dotenvy = "0.15.7"
-convert_case = "0.6.0"
+convert_case = { workspace = true }
 rand = "0.8.5"
 tailcall-macros = { path = "tailcall-macros" }
 tailcall-tracker = { path = "tailcall-tracker", optional = true }

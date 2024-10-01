@@ -1,52 +1,56 @@
-use machineid_rs::{Encryption, HWIDComponent, IdBuilder};
+use std::ops::Deref;
+
+use chrono::{DateTime, Utc};
+use convert_case::{Case, Casing};
 use serde::{Deserialize, Serialize};
-use sysinfo::System;
 
-const PARAPHRASE: &str = "tc_key";
-const DEFAULT_CLIENT_ID: &str = "<anonymous>";
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Params {
-    cpu_cores: String,
-    os_name: String,
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Event {
+    pub event_name: Name,
+    pub start_time: DateTime<Utc>,
+    pub cores: usize,
+    pub client_id: String,
+    pub os_name: String,
+    pub up_time: i64,
+    pub path: Option<String>,
+    pub cwd: Option<String>,
+    pub user: String,
+    pub args: Vec<String>,
+    pub version: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct EventValue {
-    name: String,
-    params: Params,
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Name(String);
+impl From<String> for Name {
+    fn from(name: String) -> Self {
+        Self(name.to_case(Case::Snake))
+    }
 }
+impl Deref for Name {
+    type Target = str;
 
-impl EventValue {
-    fn new(name: &str) -> EventValue {
-        let sys = System::new_all();
-        let cores = sys.physical_core_count().unwrap_or(2).to_string();
-        let os_name = System::long_os_version().unwrap_or("Unknown".to_string());
-        EventValue {
-            name: name.to_string(),
-            params: Params { cpu_cores: cores, os_name },
-        }
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
-/// Event structure to be sent to GA
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Event {
-    client_id: String,
-    events: Vec<EventValue>,
+impl From<Name> for String {
+    fn from(val: Name) -> Self {
+        val.0
+    }
 }
 
-impl Event {
-    pub fn new(name: &str) -> Self {
-        let mut builder = IdBuilder::new(Encryption::SHA256);
-        builder
-            .add_component(HWIDComponent::SystemID)
-            .add_component(HWIDComponent::CPUCores);
+#[derive(Debug, Clone)]
+pub enum EventKind {
+    Ping,
+    Command(String),
+}
 
-        let id = builder
-            .build(PARAPHRASE)
-            .unwrap_or(DEFAULT_CLIENT_ID.to_string());
-
-        Self { client_id: id, events: vec![EventValue::new(name)] }
+impl EventKind {
+    pub fn name(&self) -> Name {
+        match self {
+            Self::Ping => Name::from("ping".to_string()),
+            Self::Command(name) => Name::from(name.to_string()),
+        }
     }
 }

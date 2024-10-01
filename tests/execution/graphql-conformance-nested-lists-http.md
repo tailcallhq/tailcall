@@ -1,0 +1,91 @@
+# List of lists.
+
+```graphql @config
+schema
+  @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
+  @upstream(baseURL: "http://upstream/", httpCache: 42) {
+  query: Query
+}
+
+type Query {
+  userGroups: [[User!]!]! @http(path: "/users")
+  addUsers(userNames: [[String!]!]!): Boolean @http(path: "/users", method: POST, body: "{{.args.userNames}}")
+}
+
+type User {
+  id: ID!
+  name: String!
+  accountRef: String! @expr(body: "ref-{{.value.id}}-{{.value.name}}")
+}
+```
+
+```yml @mock
+- request:
+    method: GET
+    url: http://upstream/users
+  expectedHits: 1
+  response:
+    status: 200
+    body:
+      - - id: 1
+          name: user-1
+        - id: 2
+          name: user-2
+        - id: 3
+          name: user-3
+      - - id: 4
+          name: user-4
+        - id: 5
+          name: user-5
+        - id: 6
+          name: user-6
+
+- request:
+    method: POST
+    url: http://upstream/users
+    body:
+      - - user-1
+        - user-2
+      - - user-3
+        - user-4
+  expectedHits: 1
+  response:
+    status: 200
+    body: true
+```
+
+```yml @test
+# Positve
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: |
+      query {
+        userGroups {
+          id
+          name
+          accountRef
+        }
+      }
+
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: |
+      query {
+        addUsers(userNames: [["user-1", "user-2"], ["user-3", "user-4"]])
+      }
+# Negative
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: |
+      query {
+        userGroups {
+          {
+            id
+            name
+          }
+        }
+      }
+```

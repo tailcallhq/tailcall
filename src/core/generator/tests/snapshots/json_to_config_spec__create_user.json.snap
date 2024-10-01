@@ -6,8 +6,17 @@ schema @server @upstream {
   mutation: Mutation
 }
 
-input T2 {
+input GEN__2 {
   email: String
+  name: String
+  phone: String
+  username: String
+  website: String
+}
+
+type GEN__1 {
+  email: String
+  id: Int
   name: String
   phone: String
   username: String
@@ -15,14 +24,5 @@ input T2 {
 }
 
 type Mutation {
-  createPost(createPostInput: T2): T1 @http(baseURL: "https://jsonplaceholder.typicode.com", body: "{{.args.createPostInput}}", method: "POST", path: "/posts")
-}
-
-type T1 {
-  email: String
-  id: Int
-  name: String
-  phone: String
-  username: String
-  website: String
+  createPost(GEN__Input1: GEN__2): GEN__1 @http(baseURL: "https://jsonplaceholder.typicode.com", body: "{{.args.GEN__Input1}}", method: "POST", path: "/posts")
 }

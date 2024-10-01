@@ -5,6 +5,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_graphql::ServerError;
 use hyper::header::{self, HeaderValue, CONTENT_TYPE};
+use hyper::http::request::Parts;
 use hyper::http::Method;
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 use opentelemetry::trace::SpanKind;
@@ -76,7 +77,7 @@ fn update_cache_control_header(
 }
 
 pub fn update_response_headers(
-    resp: &mut hyper::Response<hyper::Body>,
+    resp: &mut Response<Body>,
     req_ctx: &RequestContext,
     app_ctx: &AppContext,
 ) {
@@ -111,33 +112,9 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
 
     let graphql_request = serde_json::from_slice::<T>(&bytes);
     match graphql_request {
-        Ok(mut request) => {
-            if !request.is_valid_query() {
-                let mut response = async_graphql::Response::default();
-                let server_error =
-                    ServerError::new("Query not present in request".to_string(), None);
-                response.errors = vec![server_error];
-
-                return GraphQLResponse::from(response)
-                    .into_response(StatusCode::BAD_REQUEST, req_headers);
-            };
-
-            if !(app_ctx.blueprint.server.dedupe && request.is_query()) {
-                Ok(execute_query(app_ctx, &req_ctx, request, req_headers).await?)
-            } else {
-                let operation_id = request.operation_id(req_headers);
-                let out = app_ctx
-                    .dedupe_operation_handler
-                    .dedupe(&operation_id, || {
-                        Box::pin(async move {
-                            let resp =
-                                execute_query(app_ctx, &req_ctx, request, req_headers).await?;
-                            Ok(crate::core::http::Response::from_hyper(resp).await?)
-                        })
-                    })
-                    .await?;
-                Ok(hyper::Response::from(out))
-            }
+        Ok(request) => {
+            let resp = execute_query(app_ctx, &req_ctx, request, req).await?;
+            Ok(resp)
         }
         Err(err) => {
             tracing::error!(
@@ -158,12 +135,19 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
 async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
     app_ctx: &Arc<AppContext>,
     req_ctx: &Arc<RequestContext>,
-    request: T,
-    headers: &HeaderMap,
+    mut request: T,
+    req: Parts,
 ) -> anyhow::Result<Response<Body>> {
     let mut response = if app_ctx.blueprint.server.enable_jit {
+        let is_query = request.is_query();
+        let operation_id = request.operation_id(&req.headers);
         request
-            .execute(&JITExecutor::new(app_ctx.clone(), req_ctx.clone()))
+            .execute(&JITExecutor::new(
+                app_ctx.clone(),
+                req_ctx.clone(),
+                is_query,
+                operation_id,
+            ))
             .await
     } else {
         request.data(req_ctx.clone()).execute(&app_ctx.schema).await
@@ -317,14 +301,17 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
         return handle_rest_apis(req, app_ctx, req_counter).await;
     }
 
+    let health_check_endpoint = app_ctx.blueprint.server.routes.status();
+    let graphql_endpoint = app_ctx.blueprint.server.routes.graphql();
+
     match *req.method() {
         // NOTE:
         // The first check for the route should be for `/graphql`
         // This is always going to be the most used route.
-        hyper::Method::POST if req.uri().path() == "/graphql" => {
+        Method::POST if req.uri().path() == graphql_endpoint => {
             graphql_request::<T>(req, &app_ctx, req_counter).await
         }
-        hyper::Method::POST
+        Method::POST
             if app_ctx.blueprint.server.enable_showcase
                 && req.uri().path() == "/showcase/graphql" =>
         {
@@ -336,8 +323,14 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
 
             graphql_request::<T>(req, &Arc::new(app_ctx), req_counter).await
         }
-
-        hyper::Method::GET => {
+        Method::GET if req.uri().path() == health_check_endpoint => {
+            let status_response = Response::builder()
+                .status(StatusCode::OK)
+                .header(CONTENT_TYPE, "application/json")
+                .body(Body::from(r#"{"message": "ready"}"#))?;
+            Ok(status_response)
+        }
+        Method::GET => {
             if let Some(TelemetryExporter::Prometheus(prometheus)) =
                 app_ctx.blueprint.telemetry.export.as_ref()
             {
@@ -345,7 +338,6 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
                     return prometheus_metrics(prometheus);
                 }
             };
-
             not_found()
         }
         _ => not_found(),
@@ -392,11 +384,75 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
 
 #[cfg(test)]
 mod test {
+    use super::*;
+    use crate::core::async_graphql_hyper::GraphQLRequest;
+    use crate::core::blueprint::Blueprint;
+    use crate::core::config::{Config, ConfigModule, Routes};
+    use crate::core::rest::EndpointSet;
+    use crate::core::runtime::test::init;
+    use crate::core::valid::Validator;
+
+    #[tokio::test]
+    async fn test_health_endpoint() -> anyhow::Result<()> {
+        let sdl = tokio::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER).await?;
+        let config = Config::from_sdl(&sdl).to_result()?;
+        let mut blueprint = Blueprint::try_from(&ConfigModule::from(config))?;
+        blueprint.server.routes = Routes::default().with_status("/health");
+        let app_ctx = Arc::new(AppContext::new(
+            blueprint,
+            init(None),
+            EndpointSet::default(),
+        ));
+
+        let req = Request::builder()
+            .method(Method::GET)
+            .uri("http://localhost:8000/health".to_string())
+            .body(Body::empty())?;
+
+        let resp = handle_request::<GraphQLRequest>(req, app_ctx).await?;
+
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = hyper::body::to_bytes(resp.into_body()).await?;
+        assert_eq!(body, r#"{"message": "ready"}"#);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_graphql_endpoint() -> anyhow::Result<()> {
+        let sdl = tokio::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER).await?;
+        let config = Config::from_sdl(&sdl).to_result()?;
+        let mut blueprint = Blueprint::try_from(&ConfigModule::from(config))?;
+        blueprint.server.routes = Routes::default().with_graphql("/gql");
+        let app_ctx = Arc::new(AppContext::new(
+            blueprint,
+            init(None),
+            EndpointSet::default(),
+        ));
+
+        let query = r#"{"query": "{ __schema { queryType { name } } }"}"#;
+        let req = Request::builder()
+            .method(Method::POST)
+            .uri("http://localhost:8000/gql".to_string())
+            .header("Content-Type", "application/json")
+            .body(Body::from(query))?;
+
+        let resp = handle_request::<GraphQLRequest>(req, app_ctx).await?;
+
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = hyper::body::to_bytes(resp.into_body()).await?;
+        let body_str = String::from_utf8(body.to_vec())?;
+        assert!(body_str.contains("queryType"));
+        assert!(body_str.contains("name"));
+
+        Ok(())
+    }
+
     #[test]
     fn test_create_allowed_headers() {
         use std::collections::BTreeSet;
 
-        use hyper::header::{HeaderMap, HeaderValue};
+        use http::header::{HeaderMap, HeaderValue};
 
         use super::create_allowed_headers;
 
