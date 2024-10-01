@@ -738,6 +738,20 @@ mod test {
     }
 
     #[test]
+    fn test_operation_plan_dedupe_nested() {
+        let config =
+            include_config!("../../../tailcall-fixtures/fixtures/configs/dedupe.graphql").unwrap();
+        let module = ConfigModule::from(config);
+        let bp = Blueprint::try_from(&module).unwrap();
+
+        let request = Request::new(r#"{ posts { id users { id } } }"#);
+        let jit_request = jit::Request::from(request);
+        let plan = jit_request.create_plan(&bp).unwrap();
+
+        assert!(!plan.dedupe);
+    }
+
+    #[test]
     fn test_operation_plan_dedupe_false() {
         let config =
             include_config!("../../../tailcall-fixtures/fixtures/configs/dedupe.graphql").unwrap();
