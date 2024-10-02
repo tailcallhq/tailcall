@@ -308,6 +308,10 @@ directive @server(
   """
   introspection: Boolean
   """
+  lint
+  """
+  lint: Linter
+  """
   `pipelineFlush` allows to control flushing behavior of the server pipeline.
   """
   pipelineFlush: Boolean
@@ -677,6 +681,15 @@ input Headers {
   setCookies: Boolean
 }
 
+input Linter {
+  autoFix: Boolean
+  default: Boolean
+  enum: TextCase
+  enumValue: TextCase
+  field: TextCase
+  type: TextCase
+}
+
 input Routes {
   graphQL: String!
   status: String!
@@ -991,6 +1004,14 @@ enum LinkType {
 enum HttpVersion {
   HTTP1
   HTTP2
+}
+
+enum TextCase {
+  camelCase
+  pascalCase
+  snakeCase
+  screamingSnakeCase
+  allCaps
 }
 
 """

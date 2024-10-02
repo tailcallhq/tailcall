@@ -1,15 +1,13 @@
-use anyhow::Result;
 use std::collections::BTreeSet;
 
+use anyhow::Result;
 use convert_case::{Case, Casing};
 use serde::{Deserialize, Serialize};
 
+use super::Config;
 use crate::core::config::Variant;
 use crate::core::macros::MergeRight;
-use crate::core::merge_right::MergeRight;
 use crate::core::valid::{Valid, Validator};
-
-use super::Config;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
 pub enum TextCase {

@@ -30,7 +30,9 @@
     },
     "server": {
       "description": "Dictates how the server behaves and helps tune tailcall for all ingress requests. Features such as request batching, SSL, HTTP2 etc. can be configured here.",
-      "default": {},
+      "default": {
+        "routes": null
+      },
       "allOf": [
         {
           "$ref": "#/definitions/Server"
@@ -885,6 +887,63 @@
         "Grpc"
       ]
     },
+    "Linter": {
+      "type": "object",
+      "properties": {
+        "autoFix": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "default": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "enum": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TextCase"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "enumValue": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TextCase"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "field": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TextCase"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "type": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TextCase"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
     "Method": {
       "type": "string",
       "enum": [
@@ -1092,6 +1151,17 @@
             "null"
           ]
         },
+        "lint": {
+          "description": "lint",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Linter"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "pipelineFlush": {
           "description": "`pipelineFlush` allows to control flushing behavior of the server pipeline.",
           "type": [
@@ -1290,6 +1360,16 @@
           },
           "additionalProperties": false
         }
+      ]
+    },
+    "TextCase": {
+      "type": "string",
+      "enum": [
+        "camelCase",
+        "pascalCase",
+        "snakeCase",
+        "screamingSnakeCase",
+        "allCaps"
       ]
     },
     "Type": {
