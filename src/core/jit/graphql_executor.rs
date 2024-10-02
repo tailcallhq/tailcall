@@ -80,8 +80,8 @@ impl JITExecutor {
     fn req_hash(request: &async_graphql::Request) -> OPHash {
         let mut hasher = TailcallHasher::default();
         request.query.hash(&mut hasher);
-        let req_hash = OPHash::new(hasher.finish());
-        req_hash
+        
+        OPHash::new(hasher.finish())
     }
 }
 
@@ -108,25 +108,25 @@ impl Executor for JITExecutor {
 
         async move {
             let jit_request = jit::Request::from(request);
-            let exec = if let Some(op) = self.app_ctx.operation_plans.get(&hash).await.ok().flatten()
-            {
-                ConstValueExecutor::from(op)
-            } else {
-                let exec = match ConstValueExecutor::new(&jit_request, &self.app_ctx) {
-                    Ok(exec) => exec,
-                    Err(error) => return Response::from_errors(vec![error.into()]),
+            let exec =
+                if let Some(op) = self.app_ctx.operation_plans.get(&hash).await.ok().flatten() {
+                    ConstValueExecutor::from(op)
+                } else {
+                    let exec = match ConstValueExecutor::new(&jit_request, &self.app_ctx) {
+                        Ok(exec) => exec,
+                        Err(error) => return Response::from_errors(vec![error.into()]),
+                    };
+                    self.app_ctx
+                        .operation_plans
+                        .set(
+                            hash,
+                            exec.plan.clone(),
+                            NonZeroU64::new(60 * 60 * 24 * 1000).unwrap(),
+                        )
+                        .await
+                        .unwrap_or_default();
+                    exec
                 };
-                self.app_ctx
-                    .operation_plans
-                    .set(
-                        hash,
-                        exec.plan.clone(),
-                        NonZeroU64::new(60 * 60 * 24 * 1000).unwrap(),
-                    )
-                    .await
-                    .unwrap_or_default();
-                exec
-            };
             if self.is_query && exec.plan.dedupe {
                 self.dedupe_and_exec(exec, jit_request).await
             } else {
