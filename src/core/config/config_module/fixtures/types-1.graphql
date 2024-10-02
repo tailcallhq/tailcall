@@ -1,0 +1,13 @@
+schema {
+  query: Query
+}
+
+type Query {
+  a: A
+}
+
+type A {
+  a: String
+  b: Int
+  c: Boolean
+}

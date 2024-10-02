@@ -1,0 +1,25 @@
+---
+source: src/core/config/config_module/merge.rs
+expression: merged.to_sdl()
+---
+schema @server @upstream {
+  query: Query
+}
+
+enum enumInput {
+  B
+}
+
+enum enumOutput {
+  A
+  B
+  C
+}
+
+type A {
+  a(x: enumInput): enumOutput
+}
+
+type Query {
+  a: A
+}
