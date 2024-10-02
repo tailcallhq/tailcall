@@ -1,4 +1,5 @@
 use std::collections::BTreeSet;
+use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::sync::Arc;
 
@@ -12,6 +13,7 @@ use opentelemetry::trace::SpanKind;
 use opentelemetry_semantic_conventions::trace::{HTTP_REQUEST_METHOD, HTTP_ROUTE};
 use prometheus::{Encoder, ProtobufEncoder, TextEncoder, TEXT_FORMAT};
 use serde::de::DeserializeOwned;
+use tailcall_hasher::TailcallHasher;
 use tracing::Instrument;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
@@ -22,7 +24,7 @@ use crate::core::app_context::AppContext;
 use crate::core::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::core::blueprint::telemetry::TelemetryExporter;
 use crate::core::config::{PrometheusExporter, PrometheusFormat};
-use crate::core::jit::JITExecutor;
+use crate::core::jit::{JITExecutor, OPHash};
 
 pub const API_URL_PREFIX: &str = "/api";
 
@@ -107,10 +109,14 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     let req_ctx = Arc::new(create_request_context(&req, app_ctx));
     let (req, body) = req.into_parts();
     let bytes = hyper::body::to_bytes(body).await?;
+    let mut hasher = TailcallHasher::default();
+    bytes.hash(&mut hasher);
+    let req_hash = OPHash::new(hasher.finish());
+
     let graphql_request = serde_json::from_slice::<T>(&bytes);
     match graphql_request {
         Ok(request) => {
-            let resp = execute_query(app_ctx, &req_ctx, request, req).await?;
+            let resp = execute_query(app_ctx, &req_ctx, request, req, req_hash).await?;
             Ok(resp)
         }
         Err(err) => {
@@ -129,11 +135,13 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
     app_ctx: &Arc<AppContext>,
     req_ctx: &Arc<RequestContext>,
     mut request: T,
     req: Parts,
+    req_hash: OPHash,
 ) -> anyhow::Result<Response<Body>> {
     let mut response = if app_ctx.blueprint.server.enable_jit {
         let is_query = request.is_query();
@@ -144,6 +152,7 @@ async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
                 req_ctx.clone(),
                 is_query,
                 operation_id,
+                req_hash,
             ))
             .await
     } else {

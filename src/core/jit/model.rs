@@ -343,6 +343,15 @@ impl Flat {
 #[derive(Clone, Debug)]
 pub struct Nested<Input>(Vec<Field<Nested<Input>, Input>>);
 
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+pub struct OPHash(u64);
+
+impl OPHash {
+    pub fn new(hash: u64) -> Self {
+        OPHash(hash)
+    }
+}
+
 #[derive(Clone)]
 pub struct OperationPlan<Input> {
     root_name: String,

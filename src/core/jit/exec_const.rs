@@ -18,6 +18,12 @@ pub struct ConstValueExecutor {
     pub plan: OperationPlan<ConstValue>,
 }
 
+impl From<OperationPlan<ConstValue>> for ConstValueExecutor {
+    fn from(plan: OperationPlan<ConstValue>) -> Self {
+        Self { plan }
+    }
+}
+
 impl ConstValueExecutor {
     pub fn new(request: &Request<ConstValue>, app_ctx: &Arc<AppContext>) -> Result<Self> {
         Ok(Self { plan: request.create_plan(&app_ctx.blueprint)? })

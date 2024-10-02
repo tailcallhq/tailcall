@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 use std::future::Future;
+use std::num::NonZeroU64;
 use std::sync::Arc;
 
 use async_graphql::{Data, Executor, Response, ServerError, Value};
@@ -9,9 +10,9 @@ use futures_util::stream::BoxStream;
 use crate::core::app_context::AppContext;
 use crate::core::async_graphql_hyper::OperationId;
 use crate::core::http::RequestContext;
-use crate::core::jit;
-use crate::core::jit::ConstValueExecutor;
+use crate::core::jit::{ConstValueExecutor, OPHash};
 use crate::core::merge_right::MergeRight;
+use crate::core::{jit, Cache};
 
 #[derive(Clone)]
 pub struct JITExecutor {
@@ -19,16 +20,19 @@ pub struct JITExecutor {
     req_ctx: Arc<RequestContext>,
     is_query: bool,
     operation_id: OperationId,
+    req_hash: OPHash,
 }
 
 impl JITExecutor {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         app_ctx: Arc<AppContext>,
         req_ctx: Arc<RequestContext>,
         is_query: bool,
         operation_id: OperationId,
+        req_hash: OPHash,
     ) -> Self {
-        Self { app_ctx, req_ctx, is_query, operation_id }
+        Self { app_ctx, req_ctx, is_query, operation_id, req_hash }
     }
     #[inline(always)]
     async fn exec(
@@ -94,18 +98,33 @@ impl From<jit::Request<Value>> for async_graphql::Request {
 
 impl Executor for JITExecutor {
     fn execute(&self, request: async_graphql::Request) -> impl Future<Output = Response> + Send {
-        let jit_request = jit::Request::from(request);
+        let hash = &self.req_hash;
 
         async move {
-            match ConstValueExecutor::new(&jit_request, &self.app_ctx) {
-                Ok(exec) => {
-                    if self.is_query && exec.plan.dedupe {
-                        self.dedupe_and_exec(exec, jit_request).await
-                    } else {
-                        self.exec(exec, jit_request).await
-                    }
-                }
-                Err(error) => Response::from_errors(vec![error.into()]),
+            let jit_request = jit::Request::from(request);
+            let exec = if let Some(op) = self.app_ctx.operation_plans.get(hash).await.ok().flatten()
+            {
+                ConstValueExecutor::from(op)
+            } else {
+                let exec = match ConstValueExecutor::new(&jit_request, &self.app_ctx) {
+                    Ok(exec) => exec,
+                    Err(error) => return Response::from_errors(vec![error.into()]),
+                };
+                self.app_ctx
+                    .operation_plans
+                    .set(
+                        hash.clone(),
+                        exec.plan.clone(),
+                        NonZeroU64::new(60 * 60 * 24 * 1000).unwrap(),
+                    )
+                    .await
+                    .unwrap_or_default();
+                exec
+            };
+            if self.is_query && exec.plan.dedupe {
+                self.dedupe_and_exec(exec, jit_request).await
+            } else {
+                self.exec(exec, jit_request).await
             }
         }
     }

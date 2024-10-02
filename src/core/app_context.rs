@@ -6,6 +6,7 @@ use async_graphql_value::ConstValue;
 use crate::core::async_graphql_hyper::OperationId;
 use crate::core::auth::context::GlobalAuthContext;
 use crate::core::blueprint::{Blueprint, Definition, SchemaModifiers};
+use crate::core::cache::InMemoryCache;
 use crate::core::data_loader::{DataLoader, DedupeResult};
 use crate::core::graphql::GraphqlDataLoader;
 use crate::core::grpc;
@@ -13,6 +14,7 @@ use crate::core::grpc::data_loader::GrpcDataLoader;
 use crate::core::http::{DataLoaderRequest, HttpDataLoader};
 use crate::core::ir::model::{DataLoaderId, IoId, IO, IR};
 use crate::core::ir::Error;
+use crate::core::jit::{OPHash, OperationPlan};
 use crate::core::rest::{Checked, EndpointSet};
 use crate::core::runtime::TargetRuntime;
 
@@ -27,6 +29,7 @@ pub struct AppContext {
     pub auth_ctx: Arc<GlobalAuthContext>,
     pub dedupe_handler: Arc<DedupeResult<IoId, ConstValue, Error>>,
     pub dedupe_operation_handler: DedupeResult<OperationId, Arc<async_graphql::Response>, Error>,
+    pub operation_plans: InMemoryCache<OPHash, OperationPlan<ConstValue>>,
 }
 
 impl AppContext {
@@ -147,6 +150,7 @@ impl AppContext {
             auth_ctx: Arc::new(auth_ctx),
             dedupe_handler: Arc::new(DedupeResult::new(false)),
             dedupe_operation_handler: DedupeResult::new(false),
+            operation_plans: InMemoryCache::new(100),
         }
     }
 
