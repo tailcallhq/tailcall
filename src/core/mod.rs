@@ -40,7 +40,9 @@ pub mod tracing;
 mod transform;
 pub mod try_fold;
 pub mod valid;
+mod variance;
 pub mod worker;
+mod wrapping_type;
 
 // Re-export everything from `tailcall_macros` as `macros`
 use std::borrow::Cow;
@@ -48,7 +50,6 @@ use std::hash::Hash;
 use std::num::NonZeroU64;
 
 use async_graphql_value::ConstValue;
-pub use blueprint::Type;
 pub use errata::Errata;
 pub use error::{Error, Result};
 use http::Response;
@@ -56,6 +57,7 @@ use ir::model::IoId;
 pub use mustache::Mustache;
 pub use tailcall_macros as macros;
 pub use transform::Transform;
+pub use wrapping_type::Type;
 
 const DEFAULT_VERIFY_SSL: bool = true;
 pub const fn default_verify_ssl() -> Option<bool> {
