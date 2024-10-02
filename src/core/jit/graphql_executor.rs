@@ -1,11 +1,13 @@
 use std::collections::BTreeMap;
 use std::future::Future;
+use std::hash::{Hash, Hasher};
 use std::num::NonZeroU64;
 use std::sync::Arc;
 
 use async_graphql::{Data, Executor, Response, ServerError, Value};
 use async_graphql_value::{ConstValue, Extensions};
 use futures_util::stream::BoxStream;
+use tailcall_hasher::TailcallHasher;
 
 use crate::core::app_context::AppContext;
 use crate::core::async_graphql_hyper::OperationId;
@@ -20,19 +22,16 @@ pub struct JITExecutor {
     req_ctx: Arc<RequestContext>,
     is_query: bool,
     operation_id: OperationId,
-    req_hash: OPHash,
 }
 
 impl JITExecutor {
-    #[allow(clippy::too_many_arguments)]
     pub fn new(
         app_ctx: Arc<AppContext>,
         req_ctx: Arc<RequestContext>,
         is_query: bool,
         operation_id: OperationId,
-        req_hash: OPHash,
     ) -> Self {
-        Self { app_ctx, req_ctx, is_query, operation_id, req_hash }
+        Self { app_ctx, req_ctx, is_query, operation_id }
     }
     #[inline(always)]
     async fn exec(
@@ -77,6 +76,13 @@ impl JITExecutor {
             Response::from_errors(vec![ServerError::new("Deduplication failed", None)])
         })
     }
+    #[inline(always)]
+    fn req_hash(request: &async_graphql::Request) -> OPHash {
+        let mut hasher = TailcallHasher::default();
+        request.query.hash(&mut hasher);
+        let req_hash = OPHash::new(hasher.finish());
+        req_hash
+    }
 }
 
 impl From<jit::Request<Value>> for async_graphql::Request {
@@ -98,11 +104,11 @@ impl From<jit::Request<Value>> for async_graphql::Request {
 
 impl Executor for JITExecutor {
     fn execute(&self, request: async_graphql::Request) -> impl Future<Output = Response> + Send {
-        let hash = &self.req_hash;
+        let hash = Self::req_hash(&request);
 
         async move {
             let jit_request = jit::Request::from(request);
-            let exec = if let Some(op) = self.app_ctx.operation_plans.get(hash).await.ok().flatten()
+            let exec = if let Some(op) = self.app_ctx.operation_plans.get(&hash).await.ok().flatten()
             {
                 ConstValueExecutor::from(op)
             } else {
@@ -113,7 +119,7 @@ impl Executor for JITExecutor {
                 self.app_ctx
                     .operation_plans
                     .set(
-                        hash.clone(),
+                        hash,
                         exec.plan.clone(),
                         NonZeroU64::new(60 * 60 * 24 * 1000).unwrap(),
                     )
