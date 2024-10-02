@@ -14,7 +14,6 @@ pub mod document;
 pub mod endpoint;
 mod errata;
 pub mod error;
-pub mod federation;
 pub mod generator;
 pub mod graphql;
 pub mod grpc;
@@ -41,6 +40,7 @@ pub mod tracing;
 mod transform;
 pub mod try_fold;
 pub mod valid;
+mod variance;
 pub mod worker;
 mod wrapping_type;
 

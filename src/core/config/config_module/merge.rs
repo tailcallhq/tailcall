@@ -5,11 +5,9 @@ use indexmap::IndexMap;
 use super::{Cache, ConfigModule};
 use crate::core;
 use crate::core::config::{Arg, Config, Enum, Field, Type};
-use crate::core::federation::merge::{
-    FederatedMerge, FederatedMergeIntersection, FederatedMergeUnion,
-};
 use crate::core::merge_right::MergeRight;
 use crate::core::valid::{Valid, Validator};
+use crate::core::variance::{Contravariant, Covariant, Invariant};
 
 impl core::Type {
     fn merge(self, other: Self, non_null_merge: fn(bool, bool) -> bool) -> Valid<Self, String> {
@@ -47,12 +45,12 @@ impl core::Type {
     }
 }
 
-impl FederatedMergeIntersection for core::Type {
+impl Contravariant for core::Type {
     /// Executes merge the way that the result type is non_null
     /// if it is specified as non_null in at least one of the definitions.
     /// That's a narrows merge i.e. the result narrows the input definitions
     /// the way it could be handled by both self and other sources
-    fn federated_merge_intersection(self, other: Self) -> Valid<Self, String> {
+    fn shrink(self, other: Self) -> Valid<Self, String> {
         #[inline]
         fn non_null_merge(non_null: bool, other_non_null: bool) -> bool {
             non_null || other_non_null
@@ -62,12 +60,12 @@ impl FederatedMergeIntersection for core::Type {
     }
 }
 
-impl FederatedMergeUnion for core::Type {
+impl Covariant for core::Type {
     /// Executes merge the way that the result type is non_null only
     /// if it is specified as non_null in both sources.
     /// That's a wide merge i.e. the result wides the input definitions
     /// the way it could be handled by both self and other sources
-    fn federated_merge_union(self, other: Self) -> Valid<Self, String> {
+    fn expand(self, other: Self) -> Valid<Self, String> {
         #[inline]
         fn non_null_merge(non_null: bool, other_non_null: bool) -> bool {
             non_null && other_non_null
@@ -77,24 +75,22 @@ impl FederatedMergeUnion for core::Type {
     }
 }
 
-impl FederatedMergeIntersection for Arg {
-    fn federated_merge_intersection(self, other: Self) -> Valid<Self, String> {
-        self.type_of
-            .federated_merge_intersection(other.type_of)
-            .map(|type_of| Self {
-                type_of,
-                doc: self.doc.merge_right(other.doc),
-                modify: self.modify.merge_right(other.modify),
-                default_value: self.default_value.or(other.default_value),
-            })
+impl Contravariant for Arg {
+    fn shrink(self, other: Self) -> Valid<Self, String> {
+        self.type_of.shrink(other.type_of).map(|type_of| Self {
+            type_of,
+            doc: self.doc.merge_right(other.doc),
+            modify: self.modify.merge_right(other.modify),
+            default_value: self.default_value.or(other.default_value),
+        })
     }
 }
 
-impl FederatedMergeIntersection for Field {
-    fn federated_merge_intersection(self, other: Self) -> Valid<Self, String> {
+impl Contravariant for Field {
+    fn shrink(self, other: Self) -> Valid<Self, String> {
         self.type_of
-            .federated_merge_intersection(other.type_of)
-            .fuse(self.args.federated_merge_intersection(other.args))
+            .shrink(other.type_of)
+            .fuse(self.args.shrink(other.args))
             .map(|(type_of, args)| Self {
                 type_of,
                 args,
@@ -109,12 +105,12 @@ impl FederatedMergeIntersection for Field {
     }
 }
 
-impl FederatedMergeUnion for Field {
-    fn federated_merge_union(self, other: Self) -> Valid<Self, String> {
+impl Covariant for Field {
+    fn expand(self, other: Self) -> Valid<Self, String> {
         self.type_of
-            .federated_merge_union(other.type_of)
+            .expand(other.type_of)
             // args are always merged with narrow
-            .fuse(self.args.federated_merge_intersection(other.args))
+            .fuse(self.args.shrink(other.args))
             .map(|(type_of, args)| Self {
                 type_of,
                 args,
@@ -129,44 +125,40 @@ impl FederatedMergeUnion for Field {
     }
 }
 
-impl FederatedMergeIntersection for Type {
-    fn federated_merge_intersection(self, other: Self) -> Valid<Self, String> {
-        self.fields
-            .federated_merge_intersection(other.fields)
-            .map(|fields| Self {
-                fields,
-                // TODO: is not very clear how to merge added_fields here
-                added_fields: self.added_fields.merge_right(other.added_fields),
-                doc: self.doc.merge_right(other.doc),
-                implements: self.implements.merge_right(other.implements),
-                cache: self.cache.merge_right(other.cache),
-                protected: self.protected.merge_right(other.protected),
-                resolver: self.resolver.merge_right(other.resolver),
-                key: self.key.merge_right(other.key),
-            })
+impl Contravariant for Type {
+    fn shrink(self, other: Self) -> Valid<Self, String> {
+        self.fields.shrink(other.fields).map(|fields| Self {
+            fields,
+            // TODO: is not very clear how to merge added_fields here
+            added_fields: self.added_fields.merge_right(other.added_fields),
+            doc: self.doc.merge_right(other.doc),
+            implements: self.implements.merge_right(other.implements),
+            cache: self.cache.merge_right(other.cache),
+            protected: self.protected.merge_right(other.protected),
+            resolver: self.resolver.merge_right(other.resolver),
+            key: self.key.merge_right(other.key),
+        })
     }
 }
 
-impl FederatedMergeUnion for Type {
-    fn federated_merge_union(self, other: Self) -> Valid<Self, String> {
-        self.fields
-            .federated_merge_union(other.fields)
-            .map(|fields| Self {
-                fields,
-                // TODO: is not very clear how to merge added_fields here
-                added_fields: self.added_fields.merge_right(other.added_fields),
-                doc: self.doc.merge_right(other.doc),
-                implements: self.implements.merge_right(other.implements),
-                cache: self.cache.merge_right(other.cache),
-                protected: self.protected.merge_right(other.protected),
-                resolver: self.resolver.merge_right(other.resolver),
-                key: self.key.merge_right(other.key),
-            })
+impl Covariant for Type {
+    fn expand(self, other: Self) -> Valid<Self, String> {
+        self.fields.expand(other.fields).map(|fields| Self {
+            fields,
+            // TODO: is not very clear how to merge added_fields here
+            added_fields: self.added_fields.merge_right(other.added_fields),
+            doc: self.doc.merge_right(other.doc),
+            implements: self.implements.merge_right(other.implements),
+            cache: self.cache.merge_right(other.cache),
+            protected: self.protected.merge_right(other.protected),
+            resolver: self.resolver.merge_right(other.resolver),
+            key: self.key.merge_right(other.key),
+        })
     }
 }
 
-impl FederatedMergeIntersection for Enum {
-    fn federated_merge_intersection(mut self, other: Self) -> Valid<Self, String> {
+impl Contravariant for Enum {
+    fn shrink(mut self, other: Self) -> Valid<Self, String> {
         self.variants.retain(|key| other.variants.contains(key));
 
         Valid::succeed(Self {
@@ -176,8 +168,8 @@ impl FederatedMergeIntersection for Enum {
     }
 }
 
-impl FederatedMergeUnion for Enum {
-    fn federated_merge_union(mut self, other: Self) -> Valid<Self, String> {
+impl Covariant for Enum {
+    fn expand(mut self, other: Self) -> Valid<Self, String> {
         self.variants.extend(other.variants);
 
         Valid::succeed(Self {
@@ -187,8 +179,8 @@ impl FederatedMergeUnion for Enum {
     }
 }
 
-impl FederatedMerge for Cache {
-    fn federated_merge(self, other: Self) -> Valid<Self, String> {
+impl Invariant for Cache {
+    fn unify(self, other: Self) -> Valid<Self, String> {
         let mut types = self.config.types;
         let mut enums = self.config.enums;
 
@@ -210,15 +202,15 @@ impl FederatedMerge for Cache {
                         is_other_output,
                     ) {
                         // both input types
-                        (true, false, true, false) => ty.federated_merge_intersection(other_type),
+                        (true, false, true, false) => ty.shrink(other_type),
                         // both output types
-                        (false, true, false, true) => ty.federated_merge_union(other_type),
+                        (false, true, false, true) => ty.expand(other_type),
                         // if type is unknown on one side, we merge based on info from another side
                         (false, false, true, false) | (true, false, false, false) => {
-                            ty.federated_merge_intersection(other_type)
+                            ty.shrink(other_type)
                         }
                         (false, false, false, true) | (false, true, false, false) => {
-                            ty.federated_merge_union(other_type)
+                            ty.expand(other_type)
                         }
                         // if type is used as both input and output on either side
                         // generated validation error because we need to merge it differently
@@ -245,15 +237,15 @@ impl FederatedMerge for Cache {
 
                     match (is_self_input, is_self_output, is_other_input, is_other_output) {
                         // both input types
-                        (true, false, true, false) => en.federated_merge_intersection(other_enum),
+                        (true, false, true, false) => en.shrink(other_enum),
                         // both output types
-                        (false, true, false, true) => en.federated_merge_union(other_enum),
+                        (false, true, false, true) => en.expand(other_enum),
                         // if type is unknown on one side, we merge based on info from another side
                         (false, false, true, false) | (true, false, false, false) => {
-                            en.federated_merge_intersection(other_enum)
+                            en.shrink(other_enum)
                         }
                         (false, false, false, true) | (false, true, false, false) => {
-                            en.federated_merge_union(other_enum)
+                            en.expand(other_enum)
                         }
                         // if type is used as both input and output on either side
                         // generated validation error because we need to merge it differently
@@ -290,10 +282,10 @@ impl FederatedMerge for Cache {
     }
 }
 
-impl FederatedMerge for ConfigModule {
-    fn federated_merge(self, other: Self) -> Valid<Self, String> {
+impl Invariant for ConfigModule {
+    fn unify(self, other: Self) -> Valid<Self, String> {
         self.cache
-            .federated_merge(other.cache)
+            .unify(other.cache)
             .map(|cache| Self { cache, extensions: self.extensions })
     }
 }
@@ -340,15 +332,15 @@ impl<Entry: TypedEntry> FederatedMergeCollection for BTreeMap<String, Entry> {
     }
 }
 
-impl<C> FederatedMergeIntersection for C
+impl<C> Contravariant for C
 where
     C: FederatedMergeCollection,
-    C::Entry: FederatedMergeIntersection,
+    C::Entry: Contravariant,
 {
-    fn federated_merge_intersection(mut self, other: Self) -> Valid<Self, String> {
+    fn shrink(mut self, other: Self) -> Valid<Self, String> {
         Valid::from_iter(other, |(name, other_field)| {
         match self.remove(&name) {
-            Some(field) => FederatedMergeIntersection::federated_merge_intersection(field, other_field).map(|merged| Some((name.clone(), merged))),
+            Some(field) => Contravariant::shrink(field, other_field).map(|merged| Some((name.clone(), merged))),
             None => {
                 if other_field.type_of().is_nullable() {
                     Valid::succeed(None)
@@ -372,15 +364,15 @@ where
     }
 }
 
-impl<C> FederatedMergeUnion for C
+impl<C> Covariant for C
 where
     C: FederatedMergeCollection,
-    C::Entry: FederatedMergeUnion,
+    C::Entry: Covariant,
 {
-    fn federated_merge_union(mut self, other: Self) -> Valid<Self, String> {
+    fn expand(mut self, other: Self) -> Valid<Self, String> {
         Valid::from_iter(other, |(name, other_field)| match self.remove(&name) {
             Some(field) => field
-                .federated_merge_union(other_field)
+                .expand(other_field)
                 .map(|merged| (name.clone(), merged))
                 .trace(&name),
             None => Valid::succeed((name, other_field)),
@@ -409,7 +401,7 @@ mod tests {
         let types1 = ConfigModule::from(include_config!("./fixtures/types-1.graphql")?);
         let types2 = ConfigModule::from(include_config!("./fixtures/types-2.graphql")?);
 
-        let merged = types1.federated_merge(types2).to_result()?;
+        let merged = types1.unify(types2).to_result()?;
 
         assert_snapshot!(merged.to_sdl());
 
@@ -421,7 +413,7 @@ mod tests {
         let types1 = ConfigModule::from(include_config!("./fixtures/types-1.graphql")?);
         let types3 = ConfigModule::from(include_config!("./fixtures/types-3.graphql")?);
 
-        let merged = types1.federated_merge(types3).to_result();
+        let merged = types1.unify(types3).to_result();
 
         assert_snapshot!(merged.unwrap_err());
 
@@ -433,7 +425,7 @@ mod tests {
         let unions1 = ConfigModule::from(include_config!("./fixtures/unions-1.graphql")?);
         let unions2 = ConfigModule::from(include_config!("./fixtures/unions-2.graphql")?);
 
-        let merged = unions1.federated_merge(unions2).to_result()?;
+        let merged = unions1.unify(unions2).to_result()?;
 
         assert_snapshot!(merged.to_sdl());
 
@@ -445,7 +437,7 @@ mod tests {
         let enums1 = ConfigModule::from(include_config!("./fixtures/enums-1.graphql")?);
         let enums2 = ConfigModule::from(include_config!("./fixtures/enums-2.graphql")?);
 
-        let merged = enums1.federated_merge(enums2).to_result()?;
+        let merged = enums1.unify(enums2).to_result()?;
 
         assert_snapshot!(merged.to_sdl());
 
@@ -457,7 +449,7 @@ mod tests {
         let enums1 = ConfigModule::from(include_config!("./fixtures/enums-1.graphql")?);
         let enums3 = ConfigModule::from(include_config!("./fixtures/enums-3.graphql")?);
 
-        let merged = enums1.federated_merge(enums3).to_result();
+        let merged = enums1.unify(enums3).to_result();
 
         assert_snapshot!(merged.unwrap_err());
 
@@ -475,8 +467,8 @@ mod tests {
             ConfigModule::from(include_config!("./fixtures/subgraph-posts.graphql")?);
 
         let merged = router;
-        let merged = merged.federated_merge(subgraph_users).to_result()?;
-        let merged = merged.federated_merge(subgraph_posts).to_result()?;
+        let merged = merged.unify(subgraph_users).to_result()?;
+        let merged = merged.unify(subgraph_posts).to_result()?;
 
         assert_snapshot!(merged.to_sdl());
 
@@ -487,7 +479,7 @@ mod tests {
         use super::*;
         use crate::core::Type;
 
-        mod federated_merge_union {
+        mod expand {
             use super::*;
 
             #[test]
@@ -496,7 +488,7 @@ mod tests {
                 let b = Type::Named { name: "String".to_owned(), non_null: false };
 
                 assert_eq!(
-                    a.federated_merge_union(b),
+                    a.expand(b),
                     Valid::succeed(Type::Named { name: "String".to_owned(), non_null: false })
                 );
 
@@ -510,7 +502,7 @@ mod tests {
                 };
 
                 assert_eq!(
-                    a.federated_merge_union(b),
+                    a.expand(b),
                     Valid::succeed(Type::List {
                         of_type: Box::new(Type::Named { name: "Int".to_owned(), non_null: false }),
                         non_null: true,
@@ -524,7 +516,7 @@ mod tests {
                 let b = Type::Named { name: "String".to_owned(), non_null: true };
 
                 assert_eq!(
-                    a.federated_merge_union(b),
+                    a.expand(b),
                     Valid::succeed(Type::Named { name: "String".to_owned(), non_null: false })
                 );
 
@@ -538,7 +530,7 @@ mod tests {
                 };
 
                 assert_eq!(
-                    a.federated_merge_union(b),
+                    a.expand(b),
                     Valid::succeed(Type::List {
                         of_type: Box::new(Type::Named { name: "Int".to_owned(), non_null: false }),
                         non_null: false,
@@ -552,7 +544,7 @@ mod tests {
                 let b = Type::Named { name: "Int".to_owned(), non_null: false };
 
                 assert_eq!(
-                    a.federated_merge_union(b),
+                    a.expand(b),
                     Valid::fail("Type mismatch: expected `String`, got `Int`".to_owned())
                 );
 
@@ -563,13 +555,13 @@ mod tests {
                 let b = Type::Named { name: "Int".to_owned(), non_null: false };
 
                 assert_eq!(
-                    a.federated_merge_union(b),
+                    a.expand(b),
                     Valid::fail("Type mismatch: expected list, got singular value".to_owned())
                 );
             }
         }
 
-        mod federated_merge_intersection {
+        mod shrink {
             use super::*;
 
             #[test]
@@ -578,7 +570,7 @@ mod tests {
                 let b = Type::Named { name: "String".to_owned(), non_null: false };
 
                 assert_eq!(
-                    a.federated_merge_intersection(b),
+                    a.shrink(b),
                     Valid::succeed(Type::Named { name: "String".to_owned(), non_null: false })
                 );
 
@@ -592,7 +584,7 @@ mod tests {
                 };
 
                 assert_eq!(
-                    a.federated_merge_intersection(b),
+                    a.shrink(b),
                     Valid::succeed(Type::List {
                         of_type: Box::new(Type::Named { name: "Int".to_owned(), non_null: false }),
                         non_null: true,
@@ -606,7 +598,7 @@ mod tests {
                 let b = Type::Named { name: "String".to_owned(), non_null: true };
 
                 assert_eq!(
-                    a.federated_merge_intersection(b),
+                    a.shrink(b),
                     Valid::succeed(Type::Named { name: "String".to_owned(), non_null: true })
                 );
 
@@ -620,7 +612,7 @@ mod tests {
                 };
 
                 assert_eq!(
-                    a.federated_merge_intersection(b),
+                    a.shrink(b),
                     Valid::succeed(Type::List {
                         of_type: Box::new(Type::Named { name: "Int".to_owned(), non_null: true }),
                         non_null: true,
@@ -634,7 +626,7 @@ mod tests {
                 let b = Type::Named { name: "Int".to_owned(), non_null: false };
 
                 assert_eq!(
-                    a.federated_merge_intersection(b),
+                    a.shrink(b),
                     Valid::fail("Type mismatch: expected `String`, got `Int`".to_owned())
                 );
 
@@ -645,7 +637,7 @@ mod tests {
                 let b = Type::Named { name: "Int".to_owned(), non_null: false };
 
                 assert_eq!(
-                    a.federated_merge_intersection(b),
+                    a.shrink(b),
                     Valid::fail("Type mismatch: expected list, got singular value".to_owned())
                 );
             }
