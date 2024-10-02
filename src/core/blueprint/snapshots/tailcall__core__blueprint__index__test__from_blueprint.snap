@@ -1210,6 +1210,7 @@ Index {
             Directive {
                 name: "server",
                 arguments: {
+                    "routes": Null,
                     "port": Number(8000),
                 },
                 index: 0,
