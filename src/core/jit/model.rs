@@ -345,10 +345,10 @@ pub struct Nested<Input>(Vec<Field<Nested<Input>, Input>>);
 
 #[derive(Clone)]
 pub struct OperationPlan<Input> {
-    root_name: String,
-    flat: Vec<Field<Flat, Input>>,
-    operation_type: OperationType,
-    nested: Vec<Field<Nested<Input>, Input>>,
+    pub root_name: String,
+    pub flat: Vec<Field<Flat, Input>>,
+    pub operation_type: OperationType,
+    pub nested: Vec<Field<Nested<Input>, Input>>,
     // TODO: drop index from here. Embed all the necessary information in each field of the plan.
     pub index: Arc<Index>,
     pub is_introspection_query: bool,
@@ -701,7 +701,7 @@ mod test {
     use crate::core::jit;
     use crate::include_config;
 
-    fn plan(query: &str) -> OperationPlan<ConstValue> {
+    fn plan(query: &str) -> OperationPlan<async_graphql_value::Value> {
         let config = include_config!("./fixtures/dedupe.graphql").unwrap();
         let module = ConfigModule::from(config);
         let bp = Blueprint::try_from(&module).unwrap();

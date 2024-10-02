@@ -7,9 +7,8 @@ use async_graphql::parser::types::{
     OperationType, Selection, SelectionSet,
 };
 use async_graphql::Positioned;
-use async_graphql_value::{ConstValue, Value};
+use async_graphql_value::Value;
 
-use super::input_resolver::InputResolver;
 use super::model::{Directive as JitDirective, *};
 use super::BuildError;
 use crate::core::blueprint::{Blueprint, Index, QueryField};
@@ -322,11 +321,7 @@ impl Builder {
     }
 
     #[inline(always)]
-    pub fn build(
-        &self,
-        variables: &Variables<ConstValue>,
-        operation_name: Option<&str>,
-    ) -> Result<OperationPlan<ConstValue>, BuildError> {
+    pub fn build(&self, operation_name: Option<&str>) -> Result<OperationPlan<Value>, BuildError> {
         let mut fields = Vec::new();
         let mut fragments: HashMap<&str, &FragmentDefinition> = HashMap::new();
 
@@ -340,9 +335,6 @@ impl Builder {
             .get_type(operation.ty)
             .ok_or(BuildError::RootOperationTypeNotDefined { operation: operation.ty })?;
         fields.extend(self.iter(&operation.selection_set.node, name, None, &fragments));
-
-        // skip the fields depending on variables.
-        fields.retain(|f| !f.skip(variables));
 
         let is_introspection_query = operation.selection_set.node.items.iter().any(|f| {
             if let Selection::Field(Positioned { node: gql_field, .. }) = &f.node {
@@ -360,13 +352,7 @@ impl Builder {
             self.index.clone(),
             is_introspection_query,
         );
-
-        // TODO: operation from [ExecutableDocument] could contain definitions for
-        // default values of arguments. That info should be passed to
-        // [InputResolver] to resolve defaults properly
-        let input_resolver = InputResolver::new(plan);
-
-        Ok(input_resolver.resolve_input(variables)?)
+        Ok(plan)
     }
 }
 
@@ -382,16 +368,11 @@ mod tests {
 
     const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
 
-    fn plan(
-        query: impl AsRef<str>,
-        variables: &Variables<ConstValue>,
-    ) -> OperationPlan<ConstValue> {
+    fn plan(query: impl AsRef<str>) -> OperationPlan<Value> {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
-        Builder::new(&blueprint, document)
-            .build(variables, None)
-            .unwrap()
+        Builder::new(&blueprint, document).build(None).unwrap()
     }
 
     #[tokio::test]
@@ -402,7 +383,6 @@ mod tests {
                 posts { user { id name } }
             }
         "#,
-            &Variables::new(),
         );
         assert!(plan.is_query());
         insta::assert_debug_snapshot!(plan.into_nested());
@@ -416,7 +396,6 @@ mod tests {
                 posts { user { id name } }
             }
         "#,
-            &Variables::new(),
         );
 
         assert!(plan.is_query());
@@ -431,7 +410,6 @@ mod tests {
                 posts { user { id } }
             }
         "#,
-            &Variables::new(),
         );
 
         assert!(plan.is_query());
@@ -446,7 +424,6 @@ mod tests {
                 articles: posts { author: user { identifier: id } }
             }
         "#,
-            &Variables::new(),
         );
 
         assert!(plan.is_query());
@@ -475,7 +452,6 @@ mod tests {
               }
             }
         "#,
-            &Variables::new(),
         );
 
         assert!(!plan.is_query());
@@ -504,7 +480,6 @@ mod tests {
               }
             }
         "#,
-            &Variables::new(),
         );
 
         assert!(plan.is_query());
@@ -526,7 +501,6 @@ mod tests {
               }
             }
         "#,
-            &Variables::new(),
         );
 
         assert!(plan.is_query());
@@ -544,7 +518,6 @@ mod tests {
               }
             }
         "#,
-            &Variables::from_iter([("id".into(), ConstValue::from(1))]),
         );
 
         assert!(plan.is_query());
@@ -566,7 +539,6 @@ mod tests {
               }
             }
         "#,
-            &Variables::new(),
         );
 
         assert!(plan.is_query());
@@ -587,7 +559,6 @@ mod tests {
               }
             }
         "#,
-            &Variables::new(),
         );
 
         assert!(!plan.is_query());
@@ -670,25 +641,25 @@ mod tests {
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
         let error = Builder::new(&blueprint, document.clone())
-            .build(&Variables::new(), None)
+            .build(None)
             .unwrap_err();
 
         assert_eq!(error, BuildError::OperationNameRequired);
 
         let error = Builder::new(&blueprint, document.clone())
-            .build(&Variables::new(), Some("unknown"))
+            .build(Some("unknown"))
             .unwrap_err();
 
         assert_eq!(error, BuildError::OperationNotFound("unknown".to_string()));
 
         let plan = Builder::new(&blueprint, document.clone())
-            .build(&Variables::new(), Some("GetPosts"))
+            .build(Some("GetPosts"))
             .unwrap();
         assert!(plan.is_query());
         insta::assert_debug_snapshot!(plan.into_nested());
 
         let plan = Builder::new(&blueprint, document.clone())
-            .build(&Variables::new(), Some("CreateNewPost"))
+            .build(Some("CreateNewPost"))
             .unwrap();
         assert!(!plan.is_query());
         insta::assert_debug_snapshot!(plan.into_nested());
@@ -696,9 +667,6 @@ mod tests {
 
     #[test]
     fn test_directives() {
-        let mut variables = Variables::new();
-        variables.insert("includeName".to_string(), ConstValue::Boolean(true));
-
         let plan = plan(
             r#"
             query($includeName: Boolean! = true) {
@@ -708,7 +676,6 @@ mod tests {
                 }
             }
             "#,
-            &variables,
         );
 
         assert!(plan.is_query());

@@ -11,7 +11,7 @@ expression: response
     "data": null,
     "errors": [
       {
-        "message": "Build error: ResolveInputError: Argument `id` for field `user` is required"
+        "message": "Argument `id` for field `user` is required"
       }
     ]
   }

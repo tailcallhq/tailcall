@@ -228,6 +228,7 @@ mod tests {
     use crate::core::config::{Config, ConfigModule};
     use crate::core::jit::builder::Builder;
     use crate::core::jit::common::JP;
+    use crate::core::jit::input_resolver::InputResolver;
     use crate::core::jit::model::{FieldId, Variables};
     use crate::core::jit::store::Store;
     use crate::core::jit::synth::Synth;
@@ -313,7 +314,10 @@ mod tests {
         let config = ConfigModule::from(config);
 
         let builder = Builder::new(&Blueprint::try_from(&config).unwrap(), doc);
-        let plan = builder.build(&Variables::new(), None).unwrap();
+        let plan = builder.build(None).unwrap();
+        let input_resolver = InputResolver::new(plan);
+        let plan = input_resolver.resolve_input(&Variables::new()).unwrap();
+
         let plan = plan.try_map(Deserialize::deserialize).unwrap();
 
         let store = store

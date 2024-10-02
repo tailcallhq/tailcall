@@ -5,6 +5,7 @@ use serde::Deserialize;
 use crate::core::blueprint::Blueprint;
 use crate::core::config::{Config, ConfigModule};
 use crate::core::jit::builder::Builder;
+use crate::core::jit::input_resolver::InputResolver;
 use crate::core::jit::store::Store;
 use crate::core::jit::synth::Synth;
 use crate::core::jit::{OperationPlan, Variables};
@@ -91,7 +92,17 @@ impl<'a, Value: Deserialize<'a> + Clone + 'a + JsonLike<'a>> JP<Value> {
             async_graphql::parser::parse_query(query).unwrap(),
         );
 
-        let plan = builder.build(variables, None).unwrap();
+        let mut plan = builder.build(None).unwrap();
+        plan.flat.retain(|f| !f.skip(variables));
+        let plan = OperationPlan::new(
+            &plan.root_name,
+            plan.flat,
+            plan.operation_type,
+            plan.index,
+            plan.is_introspection_query,
+        );
+        let input_resolver = InputResolver::new(plan);
+        let plan = input_resolver.resolve_input(variables).unwrap();
 
         plan.try_map(Deserialize::deserialize).unwrap()
     }

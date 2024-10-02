@@ -11,7 +11,7 @@ expression: response
     "data": null,
     "errors": [
       {
-        "message": "Build error: ResolveInputError: Argument `size` for field `profilePic` is required"
+        "message": "Argument `size` for field `profilePic` is required"
       }
     ]
   }
