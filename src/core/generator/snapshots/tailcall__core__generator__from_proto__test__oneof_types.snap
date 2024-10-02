@@ -6,93 +6,101 @@ schema @server @upstream {
   query: Query
 }
 
-input oneof__CommandInput {
+input GEN__oneof__CommandInput {
   command: String
 }
 
-input oneof__PayloadInput {
+input GEN__oneof__PayloadInput {
   payload: String
 }
 
-input oneof__Request__Var0__Var {
-  payload: oneof__PayloadInput!
+input GEN__oneof__Request__Var0__Var {
+  payload: GEN__oneof__PayloadInput!
   usual: String
 }
 
-input oneof__Request__Var0__Var0 {
+input GEN__oneof__Request__Var0__Var0 {
   flag: Boolean!
-  payload: oneof__PayloadInput!
+  payload: GEN__oneof__PayloadInput!
   usual: String
 }
 
-input oneof__Request__Var0__Var1 {
-  optPayload: oneof__PayloadInput!
-  payload: oneof__PayloadInput!
+input GEN__oneof__Request__Var0__Var1 {
+  optPayload: GEN__oneof__PayloadInput!
+  payload: GEN__oneof__PayloadInput!
   usual: String
 }
 
-input oneof__Request__Var1__Var {
-  command: oneof__CommandInput!
+input GEN__oneof__Request__Var1__Var {
+  command: GEN__oneof__CommandInput!
   usual: String
 }
 
-input oneof__Request__Var1__Var0 {
-  command: oneof__CommandInput!
-  flag: Boolean!
-  usual: String
-}
-
-input oneof__Request__Var1__Var1 {
-  command: oneof__CommandInput!
-  optPayload: oneof__PayloadInput!
-  usual: String
-}
-
-input oneof__Request__Var__Var {
-  usual: String
-}
-
-input oneof__Request__Var__Var0 {
+input GEN__oneof__Request__Var1__Var0 {
+  command: GEN__oneof__CommandInput!
   flag: Boolean!
   usual: String
 }
 
-input oneof__Request__Var__Var1 {
-  optPayload: oneof__PayloadInput!
+input GEN__oneof__Request__Var1__Var1 {
+  command: GEN__oneof__CommandInput!
+  optPayload: GEN__oneof__PayloadInput!
   usual: String
 }
 
-union oneof__Request = oneof__Request__Var0__Var | oneof__Request__Var0__Var0 | oneof__Request__Var0__Var1 | oneof__Request__Var1__Var | oneof__Request__Var1__Var0 | oneof__Request__Var1__Var1 | oneof__Request__Var__Var | oneof__Request__Var__Var0 | oneof__Request__Var__Var1
-
-union oneof__Response = oneof__Response__Var | oneof__Response__Var0 | oneof__Response__Var1 | oneof__Response__Var2
-
-type Query {
-  oneof__OneOfService__GetOneOf(request: oneof__Request!): oneof__Response @grpc(body: "{{.args.request}}", method: "oneof.OneOfService.GetOneOf")
+input GEN__oneof__Request__Var__Var {
+  usual: String
 }
 
-type oneof__Command {
+input GEN__oneof__Request__Var__Var0 {
+  flag: Boolean!
+  usual: String
+}
+
+input GEN__oneof__Request__Var__Var1 {
+  optPayload: GEN__oneof__PayloadInput!
+  usual: String
+}
+
+interface GEN__oneof__Request__Interface {
+  usual: String
+}
+
+interface GEN__oneof__Response__Interface {
+  usual: Int
+}
+
+union GEN__oneof__Request = GEN__oneof__Request__Var0__Var | GEN__oneof__Request__Var0__Var0 | GEN__oneof__Request__Var0__Var1 | GEN__oneof__Request__Var1__Var | GEN__oneof__Request__Var1__Var0 | GEN__oneof__Request__Var1__Var1 | GEN__oneof__Request__Var__Var | GEN__oneof__Request__Var__Var0 | GEN__oneof__Request__Var__Var1
+
+union GEN__oneof__Response = GEN__oneof__Response__Var | GEN__oneof__Response__Var0 | GEN__oneof__Response__Var1 | GEN__oneof__Response__Var2
+
+type GEN__oneof__Command {
   command: String
 }
 
-type oneof__Payload {
+type GEN__oneof__Payload {
   payload: String
 }
 
-type oneof__Response__Var {
+type GEN__oneof__Response__Var implements GEN__oneof__Response__Interface {
   usual: Int
 }
 
-type oneof__Response__Var0 {
-  payload: oneof__Payload!
+type GEN__oneof__Response__Var0 implements GEN__oneof__Response__Interface {
+  payload: GEN__oneof__Payload!
   usual: Int
 }
 
-type oneof__Response__Var1 {
-  command: oneof__Command!
+type GEN__oneof__Response__Var1 implements GEN__oneof__Response__Interface {
+  command: GEN__oneof__Command!
   usual: Int
 }
 
-type oneof__Response__Var2 {
+type GEN__oneof__Response__Var2 implements GEN__oneof__Response__Interface {
   response: String!
   usual: Int
+}
+
+type Query {
+  GEN__oneof__OneOfService__GetOneOf(request: GEN__oneof__Request!): GEN__oneof__Response @grpc(body: "{{.args.request}}", method: "oneof.OneOfService.GetOneOf")
 }

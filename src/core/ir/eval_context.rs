@@ -3,9 +3,8 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use async_graphql::{ServerError, Value};
-use reqwest::header::HeaderMap;
+use http::header::HeaderMap;
 
-use super::discriminator::TypeName;
 use super::{GraphQLOperationContext, RelatedFields, ResolverContextLike, SelectionField};
 use crate::core::document::print_directives;
 use crate::core::http::RequestContext;
@@ -25,12 +24,6 @@ pub struct EvalContext<'a, Ctx: ResolverContextLike> {
 
     // Overridden Arguments for Async GraphQL Context
     graphql_ctx_args: Option<Arc<Value>>,
-
-    /// Type name of resolved data that is calculated
-    /// dynamically based on the shape of the value itself.
-    /// Required for proper Union type resolutions.
-    /// More details at [TypeName]
-    pub type_name: Option<TypeName>,
 }
 
 impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
@@ -56,7 +49,6 @@ impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
             graphql_ctx,
             graphql_ctx_value: None,
             graphql_ctx_args: None,
-            type_name: None,
         }
     }
 
@@ -113,10 +105,6 @@ impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
 
     pub fn add_error(&self, error: ServerError) {
         self.graphql_ctx.add_error(error)
-    }
-
-    pub fn set_type_name(&mut self, type_name: TypeName) {
-        self.type_name = Some(type_name);
     }
 }
 

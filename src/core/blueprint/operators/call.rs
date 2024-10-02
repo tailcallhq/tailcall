@@ -13,23 +13,23 @@ pub fn update_call<'a>(
 ) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
 {
     TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
-        move |(config, field, _, name), b_field| {
+        move |(config, field, _, _), b_field| {
             let Some(Resolver::Call(call)) = &field.resolver else {
                 return Valid::succeed(b_field);
             };
 
             compile_call(config, call, operation_type, object_name)
-                .map(|field| b_field.resolver(field.resolver).name(name.to_string()))
+                .map(|resolver| b_field.resolver(Some(resolver)))
         },
     )
 }
 
-fn compile_call(
+pub fn compile_call(
     config_module: &ConfigModule,
     call: &config::Call,
     operation_type: &GraphQLOperationType,
     object_name: &str,
-) -> Valid<FieldDefinition, String> {
+) -> Valid<IR, String> {
     Valid::from_iter(call.steps.iter(), |step| {
         get_field_and_field_name(step, config_module).and_then(|(field, field_name, type_of)| {
             let args = step.args.iter();
@@ -38,7 +38,7 @@ fn compile_call(
                 .args
                 .iter()
                 .filter_map(|(k, arg)| {
-                    if arg.required && !args.clone().any(|(k1, _)| k1.eq(k)) {
+                    if !arg.type_of.is_nullable() && !args.clone().any(|(k1, _)| k1.eq(k)) {
                         Some(k)
                     } else {
                         None
@@ -64,7 +64,7 @@ fn compile_call(
                 object_name,
                 config_module,
                 type_of,
-                &field.type_of,
+                field.type_of.name(),
             )
             .and_then(|b_field| {
                 if b_field.resolver.is_none() {
@@ -92,8 +92,6 @@ fn compile_call(
     .and_then(|b_fields| {
         Valid::from_option(
             b_fields.into_iter().reduce(|mut b_field, b_field_next| {
-                b_field.name = b_field_next.name;
-                b_field.of_type = b_field_next.of_type;
                 b_field.map_expr(|expr| {
                     b_field_next
                         .resolver
@@ -107,9 +105,14 @@ fn compile_call(
             "Steps can't be empty".to_string(),
         )
     })
+    .and_then(|field| {
+        Valid::from_option(field.resolver, "Result resolver can't be empty".to_string())
+    })
 }
 
 fn get_type_and_field(call: &config::Step) -> Option<(String, String)> {
+    // TODO: type names for query and mutations should be inferred from the
+    // config_module and should not be static values
     if let Some(query) = &call.query {
         Some(("Query".to_string(), query.clone()))
     } else {

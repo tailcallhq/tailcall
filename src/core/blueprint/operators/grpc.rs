@@ -3,7 +3,7 @@ use std::fmt::Display;
 use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::FieldDescriptor;
 
-use crate::core::blueprint::{FieldDefinition, TypeLike};
+use crate::core::blueprint::FieldDefinition;
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::{Config, ConfigModule, Field, GraphQLOperationType, Grpc, Resolver};
 use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
@@ -55,7 +55,7 @@ fn to_operation(
 }
 
 fn json_schema_from_field(config: &Config, field: &Field) -> FieldSchema {
-    let field_schema = crate::core::blueprint::to_json_schema_for_field(field, config);
+    let field_schema = crate::core::blueprint::to_json_schema(&field.type_of, config);
     let args_schema = crate::core::blueprint::to_json_schema_for_args(&field.args, config);
     FieldSchema { args: args_schema, field: field_schema }
 }
@@ -160,6 +160,7 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
     let field = inputs.field;
     let grpc = inputs.grpc;
     let validate_with_schema = inputs.validate_with_schema;
+    let dedupe = grpc.dedupe.unwrap_or_default();
 
     Valid::from(GrpcMethod::try_from(grpc.method.as_str()))
         .and_then(|method| {
@@ -179,7 +180,7 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
             let validation = if validate_with_schema {
                 let field_schema = json_schema_from_field(config_module, field);
                 if grpc.batch_key.is_empty() {
-                    validate_schema(field_schema, &operation, field.name()).unit()
+                    validate_schema(field_schema, &operation, field.type_of.name()).unit()
                 } else {
                     validate_group_by(&field_schema, &operation, grpc.batch_key.clone()).unit()
                 }
@@ -201,9 +202,10 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
                     req_template,
                     group_by: Some(GroupBy::new(grpc.batch_key.clone(), None)),
                     dl_id: None,
+                    dedupe,
                 })
             } else {
-                IR::IO(IO::Grpc { req_template, group_by: None, dl_id: None })
+                IR::IO(IO::Grpc { req_template, group_by: None, dl_id: None, dedupe })
             }
         })
 }

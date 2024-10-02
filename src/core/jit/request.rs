@@ -19,6 +19,7 @@ pub struct Request<V> {
     pub extensions: HashMap<String, V>,
 }
 
+// NOTE: This is hot code and should allocate minimal memory
 impl From<async_graphql::Request> for Request<ConstValue> {
     fn from(mut value: async_graphql::Request) -> Self {
         let variables = std::mem::take(value.variables.deref_mut());
@@ -27,7 +28,7 @@ impl From<async_graphql::Request> for Request<ConstValue> {
             query: value.query,
             operation_name: value.operation_name,
             variables: Variables::from_iter(variables.into_iter().map(|(k, v)| (k.to_string(), v))),
-            extensions: value.extensions,
+            extensions: value.extensions.0,
         }
     }
 }

@@ -1,0 +1,21 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema
+  @server(hostname: "0.0.0.0", port: 8001, queryValidation: false)
+  @upstream(baseURL: "http://upstream/graphql", httpCache: 42) {
+  query: Query
+}
+
+type Query {
+  addUsers(userNames: [[String!]!]!): Boolean
+    @graphQL(args: [{key: "userNames", value: "{{.args.userNames}}"}], name: "addUsers")
+  userGroups: [[User!]!]! @graphQL(name: "users")
+}
+
+type User {
+  accountRef: String! @expr(body: "ref-{{.value.id}}-{{.value.name}}")
+  id: ID!
+  name: String!
+}

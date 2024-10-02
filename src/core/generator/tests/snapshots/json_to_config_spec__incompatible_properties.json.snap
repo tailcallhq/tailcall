@@ -2,15 +2,15 @@
 source: src/core/generator/tests/json_to_config_spec.rs
 expression: cfg.to_sdl()
 ---
-schema @server @upstream {
+schema @server @upstream(allowedHeaders: ["authorization"]) {
   query: Query
 }
 
-type Query {
-  test: T1 @http(baseURL: "https://example.com", path: "/")
-}
-
-type T1 {
+type GEN__1 {
   campaignTemplates: JSON
   colors: [JSON]
+}
+
+type Query {
+  inCompatibleProperties: GEN__1 @http(baseURL: "https://example.com", path: "/")
 }

@@ -5,7 +5,9 @@ use regex::Regex;
 use url::Url;
 
 use crate::core::config::{Arg, Field, Http, URLQuery};
+use crate::core::generator::PREFIX;
 use crate::core::helpers::gql_type::detect_gql_data_type;
+use crate::core::Type;
 
 #[derive(Debug)]
 struct QueryParamInfo {
@@ -75,12 +77,11 @@ impl<'a> HttpDirectiveGenerator<'a> {
                 .fold(path_url.to_string(), |acc, (regex, type_of)| {
                     regex
                         .replace_all(&acc.to_string(), |_: &regex::Captures| {
-                            let arg_key = format!("p{}", arg_index);
+                            let arg_key = format!("{}{}", PREFIX, arg_index);
                             let placeholder = format!("/{{{{.args.{}}}}}", arg_key);
 
                             let arg = Arg {
-                                type_of: type_of.to_string(),
-                                required: true,
+                                type_of: Type::from(type_of.to_owned()).into_required(),
                                 ..Default::default()
                             };
 
@@ -100,12 +101,14 @@ impl<'a> HttpDirectiveGenerator<'a> {
         let url_utility = UrlUtility::new(self.url);
 
         for query in url_utility.get_query_params() {
-            let arg = Arg {
-                list: query.is_list,
-                type_of: query.data_type,
-                required: false,
-                ..Default::default()
+            let type_of = Type::from(query.data_type.clone());
+            let type_of = if query.is_list {
+                type_of.into_list()
+            } else {
+                type_of
             };
+
+            let arg = Arg { type_of, ..Default::default() };
 
             // Convert query key to camel case for better readability.
             let query_key = query.key.to_case(Case::Camel);
@@ -200,15 +203,15 @@ mod test {
         let args: HashMap<String, String> = field
             .args
             .iter()
-            .map(|(name, arg)| (name.to_string(), arg.type_of.clone()))
+            .map(|(name, arg)| (name.to_string(), arg.type_of.name().to_owned()))
             .collect::<HashMap<_, _>>();
         let test_args = vec![
-            ("p1".to_string(), "Int".to_string()),
-            ("p2".to_string(), "String".to_string()),
+            ("GEN__1".to_string(), "Int".to_string()),
+            ("GEN__2".to_string(), "String".to_string()),
         ]
         .into_iter()
         .collect::<HashMap<_, _>>();
-        assert_eq!("/foo/{{.args.p2}}/bar/{{.args.p1}}", http.path);
+        assert_eq!("/foo/{{.args.GEN__2}}/bar/{{.args.GEN__1}}", http.path);
         assert_eq!(test_args, args);
     }
 }

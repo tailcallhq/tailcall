@@ -2,7 +2,9 @@ use std::collections::{BTreeMap, HashSet};
 
 use convert_case::{Case, Casing};
 
+use super::RenameTypes;
 use crate::core::config::Config;
+use crate::core::generator::PREFIX;
 use crate::core::transform::Transform;
 use crate::core::valid::Valid;
 
@@ -76,14 +78,16 @@ impl<'a> CandidateGeneration<'a> {
     fn generate(mut self) -> CandidateConvergence<'a> {
         for (type_name, type_info) in self.config.types.iter() {
             for (field_name, field_info) in type_info.fields.iter() {
-                if self.config.is_scalar(&field_info.type_of) {
-                    // If field type is scalar then ignore type name inference.
+                if self.config.is_scalar(field_info.type_of.name())
+                    || field_name.starts_with(PREFIX)
+                {
+                    // If field type is scalar or auto generated then ignore type name inference.
                     continue;
                 }
 
                 let inner_map = self
                     .candidates
-                    .entry(field_info.type_of.to_owned())
+                    .entry(field_info.type_of.name().to_owned())
                     .or_default();
 
                 let singularized_candidate = pluralizer::pluralize(field_name, 1, false);
@@ -113,39 +117,12 @@ impl<'a> CandidateGeneration<'a> {
 #[derive(Default)]
 pub struct ImproveTypeNames;
 
-impl ImproveTypeNames {
-    /// Generates type names based on inferred candidates from the provided
-    /// configuration.
-    fn generate_type_names(&self, mut config: Config) -> Config {
-        let finalized_candidates = CandidateGeneration::new(&config).generate().converge();
-
-        for (old_type_name, new_type_name) in finalized_candidates {
-            if let Some(type_) = config.types.remove(old_type_name.as_str()) {
-                // Add newly generated type.
-                config.types.insert(new_type_name.to_owned(), type_);
-
-                // Replace all the instances of old name in config.
-                for actual_type in config.types.values_mut() {
-                    for actual_field in actual_type.fields.values_mut() {
-                        if actual_field.type_of == old_type_name {
-                            // Update the field's type with the new name
-                            actual_field.type_of.clone_from(&new_type_name);
-                        }
-                    }
-                }
-            }
-        }
-        config
-    }
-}
-
 impl Transform for ImproveTypeNames {
     type Value = Config;
     type Error = String;
     fn transform(&self, config: Config) -> Valid<Self::Value, Self::Error> {
-        let config = self.generate_type_names(config);
-
-        Valid::succeed(config)
+        let finalized_candidates = CandidateGeneration::new(&config).generate().converge();
+        RenameTypes::new(finalized_candidates.iter()).transform(config)
     }
 }
 

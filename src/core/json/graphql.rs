@@ -14,8 +14,8 @@ impl<'obj, Value: JsonLike<'obj> + Clone> JsonObjectLike<'obj> for IndexMap<Name
         IndexMap::new()
     }
 
-    fn get_key(&'obj self, key: &str) -> Option<&Self::Value> {
-        self.get(&Name::new(key))
+    fn get_key(&self, key: &str) -> Option<&Self::Value> {
+        self.get(key)
     }
 
     fn insert_key(&mut self, key: &'obj str, value: Self::Value) {
@@ -24,9 +24,23 @@ impl<'obj, Value: JsonLike<'obj> + Clone> JsonObjectLike<'obj> for IndexMap<Name
 }
 
 impl<'json> JsonLike<'json> for ConstValue {
-    type JsonObject<'obj> = IndexMap<Name, ConstValue>;
+    type JsonObject = IndexMap<Name, ConstValue>;
 
     fn as_array(&self) -> Option<&Vec<Self>> {
+        match self {
+            ConstValue::List(seq) => Some(seq),
+            _ => None,
+        }
+    }
+
+    fn as_array_mut(&mut self) -> Option<&mut Vec<Self>> {
+        match self {
+            ConstValue::List(seq) => Some(seq),
+            _ => None,
+        }
+    }
+
+    fn into_array(self) -> Option<Vec<Self>> {
         match self {
             ConstValue::List(seq) => Some(seq),
             _ => None,
@@ -103,14 +117,28 @@ impl<'json> JsonLike<'json> for ConstValue {
         Default::default()
     }
 
-    fn as_object(&self) -> Option<&Self::JsonObject<'_>> {
+    fn as_object(&self) -> Option<&Self::JsonObject> {
         match self {
             ConstValue::Object(map) => Some(map),
             _ => None,
         }
     }
 
-    fn object(obj: Self::JsonObject<'json>) -> Self {
+    fn as_object_mut(&mut self) -> Option<&mut Self::JsonObject> {
+        match self {
+            ConstValue::Object(map) => Some(map),
+            _ => None,
+        }
+    }
+
+    fn into_object(self) -> Option<Self::JsonObject> {
+        match self {
+            ConstValue::Object(map) => Some(map),
+            _ => None,
+        }
+    }
+
+    fn object(obj: Self::JsonObject) -> Self {
         ConstValue::Object(obj)
     }
 

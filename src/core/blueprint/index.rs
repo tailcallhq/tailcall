@@ -1,5 +1,6 @@
 use indexmap::IndexMap;
 
+use super::InputObjectTypeDefinition;
 use crate::core::blueprint::{
     Blueprint, Definition, FieldDefinition, InputFieldDefinition, SchemaDefinition,
 };
@@ -65,6 +66,25 @@ impl Index {
 
     pub fn get_mutation(&self) -> Option<&str> {
         self.schema.mutation.as_deref()
+    }
+
+    pub fn is_type_implements(&self, type_name: &str, type_or_interface: &str) -> bool {
+        if type_name == type_or_interface {
+            return true;
+        }
+
+        if let Some((Definition::Object(obj), _)) = self.map.get(type_name) {
+            obj.implements.contains(type_or_interface)
+        } else {
+            false
+        }
+    }
+
+    pub fn get_input_type_definition(&self, type_name: &str) -> Option<&InputObjectTypeDefinition> {
+        match self.map.get(type_name) {
+            Some((Definition::InputObject(input), _)) => Some(input),
+            _ => None,
+        }
     }
 }
 
@@ -231,5 +251,14 @@ mod test {
         let mut index = setup();
         index.schema.mutation = None;
         assert_eq!(index.get_mutation(), None);
+    }
+
+    #[test]
+    fn test_is_type_implements() {
+        let index = setup();
+
+        assert!(index.is_type_implements("User", "Node"));
+        assert!(index.is_type_implements("Post", "Post"));
+        assert!(!index.is_type_implements("Node", "User"));
     }
 }

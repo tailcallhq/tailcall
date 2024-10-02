@@ -14,7 +14,7 @@ use crate::core::ir::Error;
 #[derive(Clone, Debug, Default, Setters)]
 pub struct Response<Body> {
     pub status: reqwest::StatusCode,
-    pub headers: reqwest::header::HeaderMap,
+    pub headers: headers::HeaderMap,
     pub body: Body,
 }
 
@@ -56,7 +56,7 @@ impl Response<Bytes> {
         Ok(Response { status, headers, body })
     }
 
-    pub async fn from_hyper(resp: hyper::Response<hyper::Body>) -> Result<Self> {
+    pub async fn from_hyper(resp: http::Response<hyper::Body>) -> Result<Self> {
         let status = resp.status();
         let headers = resp.headers().to_owned();
         let body = hyper::body::to_bytes(resp.into_body()).await?;
@@ -66,7 +66,7 @@ impl Response<Bytes> {
     pub fn empty() -> Self {
         Response {
             status: reqwest::StatusCode::OK,
-            headers: reqwest::header::HeaderMap::default(),
+            headers: headers::HeaderMap::default(),
             body: Bytes::new(),
         }
     }
@@ -102,9 +102,7 @@ impl Response<Bytes> {
     pub fn to_grpc_error(&self, operation: &ProtobufOperation) -> anyhow::Error {
         let grpc_status = match Status::from_header_map(&self.headers) {
             Some(status) => status,
-            None => {
-                return Error::IOException("Error while parsing upstream headers".to_owned()).into()
-            }
+            None => return Error::IO("Error while parsing upstream headers".to_owned()).into(),
         };
 
         let mut obj: IndexMap<Name, async_graphql::Value> = IndexMap::new();
@@ -136,7 +134,7 @@ impl Response<Bytes> {
         }
         obj.insert(Name::new("details"), ConstValue::List(status_details));
 
-        let error = Error::GRPCError {
+        let error = Error::GRPC {
             grpc_code: grpc_status.code() as i32,
             grpc_description: grpc_status.code().description().to_owned(),
             grpc_status_message: grpc_status.message().to_owned(),
@@ -158,9 +156,9 @@ impl Response<Bytes> {
     }
 }
 
-impl From<Response<Bytes>> for hyper::Response<Body> {
+impl From<Response<Bytes>> for http::Response<Body> {
     fn from(resp: Response<Bytes>) -> Self {
-        let mut response = hyper::Response::new(Body::from(resp.body));
+        let mut response = http::Response::new(Body::from(resp.body));
         *response.headers_mut() = resp.headers;
         *response.status_mut() = resp.status;
         response

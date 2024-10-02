@@ -1,5 +1,5 @@
 use anyhow::{bail, Result};
-use hyper::{HeaderMap, Method};
+use http::{HeaderMap, Method};
 use reqwest::Request;
 use url::Url;
 
@@ -45,9 +45,10 @@ mod tests {
 
     use anyhow::Result;
     use async_trait::async_trait;
+    use http::header::HeaderMap;
+    use http::{Method, StatusCode};
     use hyper::body::Bytes;
-    use reqwest::header::HeaderMap;
-    use reqwest::{Method, Request, StatusCode};
+    use reqwest::Request;
     use serde_json::json;
     use tailcall_fixtures::protobuf;
     use tonic::{Code, Status};
@@ -160,7 +161,7 @@ mod tests {
 
         if let Err(err) = result {
             match err.downcast_ref::<Error>() {
-                Some(Error::GRPCError {
+                Some(Error::GRPC {
                     grpc_code,
                     grpc_description,
                     grpc_status_message,

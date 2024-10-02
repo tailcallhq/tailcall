@@ -8,8 +8,12 @@ schema
   query: Query
 }
 
+input Foo {
+  bar: String! = "BUZZ"
+}
+
 input VideoSize {
-  hdr: Boolean
+  hdr: Boolean = true
   height: Int!
   width: Int!
 }
@@ -25,7 +29,8 @@ type User {
     @expr(body: "video_{{.value.id}}_{{.args.video.width}}_{{.args.video.height}}_{{.args.video.hdr}}")
   id: ID!
   name: String!
-  profilePic(height: Int = 100, size: Int! = 100, width: Int): String!
+  profilePic(size: Int! = 100, width: Int, height: Int = 100): String!
     @expr(body: "{{.value.id}}_{{.args.size}}_{{.args.width}}_{{.args.height}}")
-  searchComments(query: [String]! = [["today"]]): String! @expr(body: "video_{{.value.id}}_{{.args.query}}")
+  searchComments(query: [[String!]!]! = [["today"]]): String! @expr(body: "video_{{.value.id}}_{{.args.query}}")
+  spam(foo: [Foo!]!): String! @expr(body: "FIZZ: {{.args.foo}}")
 }

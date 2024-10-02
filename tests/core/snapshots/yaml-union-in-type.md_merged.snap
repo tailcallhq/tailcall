@@ -66,15 +66,15 @@ type NU {
 }
 
 type Query {
-  testVar0Var0(nnu: NNU__nu0, nu: NU__u0!): U @http(baseURL: "http://localhost", path: "/users/{{args.nu.u}}")
-  testVar0Var1(nnu: NNU__nu0, nu: NU__u1!): U @http(baseURL: "http://localhost", path: "/users/{{args.nu.u}}")
-  testVar0Var2(nnu: NNU__nu0, nu: NU__u2!): U @http(baseURL: "http://localhost", path: "/users/{{args.nu.u}}")
-  testVar1Var0(nnu: NNU__nu1, nu: NU__u0!): U @http(baseURL: "http://localhost", path: "/users/{{args.nu.u}}")
-  testVar1Var1(nnu: NNU__nu1, nu: NU__u1!): U @http(baseURL: "http://localhost", path: "/users/{{args.nu.u}}")
-  testVar1Var2(nnu: NNU__nu1, nu: NU__u2!): U @http(baseURL: "http://localhost", path: "/users/{{args.nu.u}}")
-  testVar2Var0(nnu: NNU__nu2, nu: NU__u0!): U @http(baseURL: "http://localhost", path: "/users/{{args.nu.u}}")
-  testVar2Var1(nnu: NNU__nu2, nu: NU__u1!): U @http(baseURL: "http://localhost", path: "/users/{{args.nu.u}}")
-  testVar2Var2(nnu: NNU__nu2, nu: NU__u2!): U @http(baseURL: "http://localhost", path: "/users/{{args.nu.u}}")
+  testVar0Var0(nu: NU__u0!, nnu: NNU__nu0): U @http(baseURL: "http://localhost", path: "/users/{{args.nu.u}}")
+  testVar0Var1(nu: NU__u0!, nnu: NNU__nu1): U @http(baseURL: "http://localhost", path: "/users/{{args.nu.u}}")
+  testVar0Var2(nu: NU__u0!, nnu: NNU__nu2): U @http(baseURL: "http://localhost", path: "/users/{{args.nu.u}}")
+  testVar1Var0(nu: NU__u1!, nnu: NNU__nu0): U @http(baseURL: "http://localhost", path: "/users/{{args.nu.u}}")
+  testVar1Var1(nu: NU__u1!, nnu: NNU__nu1): U @http(baseURL: "http://localhost", path: "/users/{{args.nu.u}}")
+  testVar1Var2(nu: NU__u1!, nnu: NNU__nu2): U @http(baseURL: "http://localhost", path: "/users/{{args.nu.u}}")
+  testVar2Var0(nu: NU__u2!, nnu: NNU__nu0): U @http(baseURL: "http://localhost", path: "/users/{{args.nu.u}}")
+  testVar2Var1(nu: NU__u2!, nnu: NNU__nu1): U @http(baseURL: "http://localhost", path: "/users/{{args.nu.u}}")
+  testVar2Var2(nu: NU__u2!, nnu: NNU__nu2): U @http(baseURL: "http://localhost", path: "/users/{{args.nu.u}}")
 }
 
 type T1 {

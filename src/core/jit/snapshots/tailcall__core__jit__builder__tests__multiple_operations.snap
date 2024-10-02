@@ -6,9 +6,12 @@ expression: plan.into_nested()
     Field {
         id: 0,
         name: "user",
+        output_name: "user",
         ir: "Some(..)",
         type_of: User,
-        type_condition: "Query",
+        type_condition: Some(
+            "Query",
+        ),
         args: [
             Arg {
                 id: 0,
@@ -28,15 +31,21 @@ expression: plan.into_nested()
                     Field {
                         id: 1,
                         name: "id",
+                        output_name: "id",
                         type_of: ID!,
-                        type_condition: "User",
+                        type_condition: Some(
+                            "User",
+                        ),
                         directives: [],
                     },
                     Field {
                         id: 2,
                         name: "username",
+                        output_name: "username",
                         type_of: String!,
-                        type_condition: "User",
+                        type_condition: Some(
+                            "User",
+                        ),
                         directives: [],
                     },
                 ],
@@ -47,24 +56,33 @@ expression: plan.into_nested()
     Field {
         id: 3,
         name: "posts",
+        output_name: "posts",
         ir: "Some(..)",
         type_of: [Post],
-        type_condition: "Query",
+        type_condition: Some(
+            "Query",
+        ),
         extensions: Some(
             Nested(
                 [
                     Field {
                         id: 4,
                         name: "id",
+                        output_name: "id",
                         type_of: ID!,
-                        type_condition: "Post",
+                        type_condition: Some(
+                            "Post",
+                        ),
                         directives: [],
                     },
                     Field {
                         id: 5,
                         name: "title",
+                        output_name: "title",
                         type_of: String!,
-                        type_condition: "Post",
+                        type_condition: Some(
+                            "Post",
+                        ),
                         directives: [],
                     },
                 ],

@@ -6,21 +6,17 @@ schema @server @upstream {
   mutation: Mutation
 }
 
-input T3 {
+input GEN__3 {
   id: Int
   quantity: Int
 }
 
-input T4 {
-  products: [T3]
+input GEN__4 {
+  products: [GEN__3]
   userId: Int
 }
 
-type Mutation {
-  addCart(addCartInput: T4, code: String): T2 @http(baseURL: "https://dummyjson.com", body: "{{.args.addCartInput}}", method: "POST", path: "/carts/add", query: [{key: "code", value: "{{.args.code}}"}])
-}
-
-type T1 {
+type GEN__1 {
   discountPercentage: Int
   discountedPrice: Int
   id: Int
@@ -31,12 +27,16 @@ type T1 {
   total: Int
 }
 
-type T2 {
+type GEN__2 {
   discountedTotal: Int
   id: Int
-  products: [T1]
+  products: [GEN__1]
   total: Int
   totalProducts: Int
   totalQuantity: Int
   userId: Int
+}
+
+type Mutation {
+  addCart(code: String, GEN__Input1: GEN__4): GEN__2 @http(baseURL: "https://dummyjson.com", body: "{{.args.GEN__Input1}}", method: "POST", path: "/carts/add", query: [{key: "code", value: "{{.args.code}}"}])
 }

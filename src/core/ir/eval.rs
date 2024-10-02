@@ -2,11 +2,13 @@ use std::future::Future;
 use std::ops::Deref;
 
 use async_graphql_value::ConstValue;
+use futures_util::future::join_all;
+use indexmap::IndexMap;
 
 use super::eval_io::eval_io;
 use super::model::{Cache, CacheKey, Map, IR};
-use super::{Error, EvalContext, ResolverContextLike};
-use crate::core::json::JsonLike;
+use super::{Error, EvalContext, ResolverContextLike, TypedValue};
+use crate::core::json::{JsonLike, JsonLikeList, JsonObjectLike};
 use crate::core::serde_value_ext::ValueExt;
 
 // Fake trait to capture proper lifetimes.
@@ -72,13 +74,10 @@ impl IR {
                         if let Some(value) = map.get(&key) {
                             Ok(ConstValue::String(value.to_owned()))
                         } else {
-                            Err(Error::ExprEvalError(format!(
-                                "Can't find mapped key: {}.",
-                                key
-                            )))
+                            Err(Error::ExprEval(format!("Can't find mapped key: {}.", key)))
                         }
                     } else {
-                        Err(Error::ExprEvalError(
+                        Err(Error::ExprEval(
                             "Mapped key must be string value.".to_owned(),
                         ))
                     }
@@ -89,12 +88,70 @@ impl IR {
                     second.eval(ctx).await
                 }
                 IR::Discriminate(discriminator, expr) => expr.eval(ctx).await.and_then(|value| {
-                    let type_name = discriminator.resolve_type(&value)?;
+                    let value = value.map(&mut |mut value| {
+                        if value.get_type_name().is_some() {
+                            // if typename is already present in value just reuse it instead
+                            // of recalculating from scratch
+                            return Ok(value);
+                        }
 
-                    ctx.set_type_name(type_name);
+                        let type_name = discriminator.resolve_type(&value)?;
+
+                        value.set_type_name(type_name.to_string())?;
+
+                        anyhow::Ok(value)
+                    })?;
 
                     Ok(value)
                 }),
+                IR::Entity(map) => {
+                    let representations = ctx.path_arg(&["representations"]);
+
+                    let representations = representations
+                        .as_ref()
+                        .and_then(|repr| repr.as_array())
+                        .ok_or(Error::Entity(
+                            "expected `representations` arg as an array of _Any".to_string(),
+                        ))?;
+
+                    let mut tasks = Vec::with_capacity(representations.len());
+
+                    for repr in representations {
+                        // TODO: combine errors, instead of fail fast?
+                        let type_name = repr.get_type_name().ok_or(Error::Entity(
+                            "expected __typename to be the part of the representation".to_string(),
+                        ))?;
+
+                        let ir = map.get(type_name).ok_or(Error::Entity(format!(
+                            "Cannot find a resolver for type: `{type_name}`"
+                        )))?;
+
+                        // pass the input for current representation as value in context
+                        // TODO: can we drop clone?
+                        let mut ctx = ctx.with_value(repr.clone());
+
+                        tasks.push(async move {
+                            ir.eval(&mut ctx).await.and_then(|mut value| {
+                                // set typename explicitly to reuse it if needed
+                                value.set_type_name(type_name.to_owned())?;
+                                Ok(value)
+                            })
+                        });
+                    }
+
+                    let result = join_all(tasks).await;
+
+                    let entities = result.into_iter().collect::<Result<_, _>>()?;
+
+                    Ok(ConstValue::List(entities))
+                }
+                IR::Service(sdl) => {
+                    let mut obj = IndexMap::new();
+
+                    obj.insert_key("sdl", ConstValue::string(sdl.into()));
+
+                    Ok(ConstValue::object(obj))
+                }
             }
         })
     }

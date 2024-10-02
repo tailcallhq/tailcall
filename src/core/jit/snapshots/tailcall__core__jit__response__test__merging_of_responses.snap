@@ -1,0 +1,30 @@
+---
+source: src/core/jit/response.rs
+expression: merged_response
+---
+{
+  "data": {
+    "me": {
+      "id": 1,
+      "name": "John Smith",
+      "birthday": "2023-03-08T12:45:26-05:00"
+    },
+    "__type": {
+      "name": "User",
+      "fields": [
+        {
+          "name": "birthday",
+          "type": {
+            "name": "Date"
+          }
+        },
+        {
+          "name": "id",
+          "type": {
+            "name": "String"
+          }
+        }
+      ]
+    }
+  }
+}

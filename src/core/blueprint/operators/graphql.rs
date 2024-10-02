@@ -27,7 +27,7 @@ fn create_related_fields(
             if !field.has_resolver() {
                 map.insert(
                     name.clone(),
-                    create_related_fields(config, &field.type_of, visited),
+                    create_related_fields(config, field.type_of.name(), visited),
                 );
             }
         }
@@ -41,7 +41,7 @@ fn create_related_fields(
 }
 
 pub fn compile_graphql(
-    config: &Config,
+    config: &ConfigModule,
     operation_type: &GraphQLOperationType,
     type_name: &str,
     graphql: &GraphQL,
@@ -71,7 +71,8 @@ pub fn compile_graphql(
     .map(|req_template| {
         let field_name = graphql.name.clone();
         let batch = graphql.batch;
-        IR::IO(IO::GraphQL { req_template, field_name, batch, dl_id: None })
+        let dedupe = graphql.dedupe.unwrap_or_default();
+        IR::IO(IO::GraphQL { req_template, field_name, batch, dl_id: None, dedupe })
     })
 }
 
@@ -84,7 +85,7 @@ pub fn update_graphql<'a>(
                 return Valid::succeed(b_field);
             };
 
-            compile_graphql(config, operation_type, &field.type_of, graphql)
+            compile_graphql(config, operation_type, field.type_of.name(), graphql)
                 .map(|resolver| b_field.resolver(Some(resolver)))
                 .and_then(|b_field| b_field.validate_field(type_of, config).map_to(b_field))
         },

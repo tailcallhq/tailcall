@@ -3,7 +3,6 @@ use async_graphql::{Pos, Positioned};
 use async_graphql_value::{ConstValue, Name};
 
 use super::Config;
-use crate::core::blueprint::TypeLike;
 use crate::core::directive::DirectiveCodec;
 
 fn pos<A>(a: A) -> Positioned<A> {
@@ -73,21 +72,13 @@ fn config_document(config: &Config) -> ServiceDocument {
                     .clone()
                     .iter()
                     .map(|(name, field)| {
+                        let type_of = &field.type_of;
                         let directives = get_directives(field);
-                        let base_type = if field.list {
-                            BaseType::List(Box::new(Type {
-                                nullable: !field.list_type_required,
-                                base: BaseType::Named(Name::new(field.type_of.clone())),
-                            }))
-                        } else {
-                            BaseType::Named(Name::new(field.type_of.clone()))
-                        };
                         pos(FieldDefinition {
                             description: field.doc.clone().map(pos),
                             name: pos(Name::new(name.clone())),
                             arguments: vec![],
-                            ty: pos(Type { nullable: !field.required, base: base_type }),
-
+                            ty: pos(type_of.into()),
                             directives,
                         })
                     })
@@ -100,25 +91,13 @@ fn config_document(config: &Config) -> ServiceDocument {
                     .clone()
                     .iter()
                     .map(|(name, field)| {
+                        let type_of = &field.type_of;
                         let directives = get_directives(field);
-                        let base_type = if field.list {
-                            async_graphql::parser::types::BaseType::List(Box::new(Type {
-                                nullable: !field.list_type_required,
-                                base: async_graphql::parser::types::BaseType::Named(Name::new(
-                                    field.type_of.clone(),
-                                )),
-                            }))
-                        } else {
-                            async_graphql::parser::types::BaseType::Named(Name::new(
-                                field.type_of.clone(),
-                            ))
-                        };
 
                         pos(async_graphql::parser::types::InputValueDefinition {
                             description: field.doc.clone().map(pos),
                             name: pos(Name::new(name.clone())),
-                            ty: pos(Type { nullable: !field.required, base: base_type }),
-
+                            ty: pos(type_of.into()),
                             default_value: transform_default_value(field.default_value.clone())
                                 .map(pos),
                             directives,
@@ -139,40 +118,17 @@ fn config_document(config: &Config) -> ServiceDocument {
                     .fields
                     .iter()
                     .map(|(name, field)| {
+                        let type_of = &field.type_of;
                         let directives = get_directives(field);
-                        let base_type = if field.list {
-                            async_graphql::parser::types::BaseType::List(Box::new(Type {
-                                nullable: !field.list_type_required,
-                                base: async_graphql::parser::types::BaseType::Named(Name::new(
-                                    field.type_of.clone(),
-                                )),
-                            }))
-                        } else {
-                            async_graphql::parser::types::BaseType::Named(Name::new(
-                                field.type_of.clone(),
-                            ))
-                        };
 
                         let args_map = field.args.clone();
                         let args = args_map
                             .iter()
                             .map(|(name, arg)| {
-                                let base_type = if arg.list {
-                                    async_graphql::parser::types::BaseType::List(Box::new(Type {
-                                        nullable: !arg.list_type_required(),
-                                        base: async_graphql::parser::types::BaseType::Named(
-                                            Name::new(arg.type_of.clone()),
-                                        ),
-                                    }))
-                                } else {
-                                    async_graphql::parser::types::BaseType::Named(Name::new(
-                                        arg.type_of.clone(),
-                                    ))
-                                };
                                 pos(async_graphql::parser::types::InputValueDefinition {
                                     description: arg.doc.clone().map(pos),
                                     name: pos(Name::new(name.clone())),
-                                    ty: pos(Type { nullable: !arg.required, base: base_type }),
+                                    ty: pos((&arg.type_of).into()),
 
                                     default_value: transform_default_value(
                                         arg.default_value.clone(),
@@ -187,35 +143,45 @@ fn config_document(config: &Config) -> ServiceDocument {
                             description: field.doc.clone().map(pos),
                             name: pos(Name::new(name.clone())),
                             arguments: args,
-                            ty: pos(Type { nullable: !field.required, base: base_type }),
-
+                            ty: pos(type_of.into()),
                             directives,
                         })
                     })
                     .collect::<Vec<Positioned<FieldDefinition>>>(),
             })
         };
+
+        let directives = type_def
+            .added_fields
+            .iter()
+            .map(|added_field: &super::AddField| pos(added_field.to_directive()))
+            .chain(
+                type_def
+                    .cache
+                    .as_ref()
+                    .map(|cache| pos(cache.to_directive())),
+            )
+            .chain(
+                type_def
+                    .protected
+                    .as_ref()
+                    .map(|protected| pos(protected.to_directive())),
+            )
+            .chain(
+                type_def
+                    .resolver
+                    .as_ref()
+                    .and_then(|resolver| resolver.to_directive())
+                    .map(pos),
+            )
+            .chain(type_def.key.as_ref().map(|key| pos(key.to_directive())))
+            .collect::<Vec<_>>();
+
         definitions.push(TypeSystemDefinition::Type(pos(TypeDefinition {
             extend: false,
             description: type_def.doc.clone().map(pos),
             name: pos(Name::new(type_name.clone())),
-            directives: type_def
-                .added_fields
-                .iter()
-                .map(|added_field: &super::AddField| pos(added_field.to_directive()))
-                .chain(
-                    type_def
-                        .cache
-                        .as_ref()
-                        .map(|cache| pos(cache.to_directive())),
-                )
-                .chain(
-                    type_def
-                        .protected
-                        .as_ref()
-                        .map(|protected| pos(protected.to_directive())),
-                )
-                .collect::<Vec<_>>(),
+            directives,
             kind,
         })));
     }
@@ -265,7 +231,11 @@ fn config_document(config: &Config) -> ServiceDocument {
 
 fn get_directives(field: &crate::core::config::Field) -> Vec<Positioned<ConstDirective>> {
     let directives = vec![
-        field.resolver.as_ref().map(|d| pos(d.to_directive())),
+        field
+            .resolver
+            .as_ref()
+            .and_then(|d| d.to_directive())
+            .map(pos),
         field.modify.as_ref().map(|d| pos(d.to_directive())),
         field.omit.as_ref().map(|d| pos(d.to_directive())),
         field.cache.as_ref().map(|d| pos(d.to_directive())),

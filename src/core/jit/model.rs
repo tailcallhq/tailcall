@@ -10,6 +10,8 @@ use serde::{Deserialize, Serialize};
 use super::Error;
 use crate::core::blueprint::Index;
 use crate::core::ir::model::IR;
+use crate::core::ir::TypedValue;
+use crate::core::json::JsonLike;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Variables<Value>(HashMap<String, Value>);
@@ -27,6 +29,10 @@ impl<Value> Variables<Value> {
     pub fn get(&self, key: &str) -> Option<&Value> {
         self.0.get(key)
     }
+    pub fn into_hashmap(self) -> HashMap<String, Value> {
+        self.0
+    }
+
     pub fn insert(&mut self, key: String, value: Value) {
         self.0.insert(key, value);
     }
@@ -48,11 +54,37 @@ impl<V> FromIterator<(String, V)> for Variables<V> {
     }
 }
 
+impl<Extensions, Input> Field<Extensions, Input> {
+    #[inline(always)]
+    pub fn skip<'json, Value: JsonLike<'json>>(&self, variables: &Variables<Value>) -> bool {
+        let eval =
+            |variable_option: Option<&Variable>, variables: &Variables<Value>, default: bool| {
+                variable_option
+                    .map(|a| a.as_str())
+                    .and_then(|name| variables.get(name))
+                    .and_then(|value| value.as_bool())
+                    .unwrap_or(default)
+            };
+        let skip = eval(self.skip.as_ref(), variables, false);
+        let include = eval(self.include.as_ref(), variables, true);
+
+        skip == include
+    }
+
+    /// Returns the __typename of the value related to this field
+    pub fn value_type<'a, Output>(&'a self, value: &'a Output) -> &'a str
+    where
+        Output: TypedValue<'a>,
+    {
+        value.get_type_name().unwrap_or(self.type_of.name())
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Arg<Input> {
     pub id: ArgId,
     pub name: String,
-    pub type_of: crate::core::blueprint::Type,
+    pub type_of: crate::core::Type,
     pub value: Option<Input>,
     pub default_value: Option<Input>,
 }
@@ -108,14 +140,18 @@ impl FieldId {
 #[derive(Clone)]
 pub struct Field<Extensions, Input> {
     pub id: FieldId,
+    /// Name of key in the value object for this field
     pub name: String,
+    /// Output name (i.e. with alias) that should be used for the result value
+    /// of this field
+    pub output_name: String,
     pub ir: Option<IR>,
-    pub type_of: crate::core::blueprint::Type,
+    pub type_of: crate::core::Type,
     /// Specifies the name of type used in condition to fetch that field
     /// The type could be anything from graphql type system:
     /// interface, type, union, input type.
     /// See [spec](https://spec.graphql.org/October2021/#sec-Type-Conditions)
-    pub type_condition: String,
+    pub type_condition: Option<String>,
     pub skip: Option<Variable>,
     pub include: Option<Variable>,
     pub args: Vec<Arg<Input>>,
@@ -158,6 +194,7 @@ impl<Input> Field<Nested<Input>, Input> {
         Ok(Field {
             id: self.id,
             name: self.name,
+            output_name: self.output_name,
             ir: self.ir,
             type_of: self.type_of,
             type_condition: self.type_condition,
@@ -187,6 +224,7 @@ impl<Input> Field<Flat, Input> {
         Ok(Field {
             id: self.id,
             name: self.name,
+            output_name: self.output_name,
             ir: self.ir,
             type_of: self.type_of,
             type_condition: self.type_condition,
@@ -209,27 +247,11 @@ impl<Input> Field<Flat, Input> {
 }
 
 impl<Input> Field<Nested<Input>, Input> {
-    /// iters over children fields that are
-    /// related to passed `type_name` either
-    /// as direct field of the queried type or
-    /// field from fragment on type `type_name`
-    pub fn nested_iter<'a>(
-        &'a self,
-        type_name: &'a str,
-    ) -> impl Iterator<Item = &Field<Nested<Input>, Input>> + 'a {
+    /// iters over children fields
+    pub fn iter(&self) -> impl Iterator<Item = &Field<Nested<Input>, Input>> {
         self.extensions
             .as_ref()
-            .map(move |nested| {
-                nested
-                    .0
-                    .iter()
-                    // TODO: handle Interface and Union types here
-                    // Right now only exact type name is used to check the set of fields
-                    // but with Interfaces/Unions we need to check if that specific type
-                    // is member of some Interface/Union and if so call the fragments for
-                    // the related Interfaces/Unions
-                    .filter(move |field| field.type_condition == type_name)
-            })
+            .map(move |nested| nested.0.iter())
             .into_iter()
             .flatten()
     }
@@ -262,6 +284,7 @@ impl<Input> Field<Flat, Input> {
         Field {
             id: self.id,
             name: self.name,
+            output_name: self.output_name,
             ir: self.ir,
             type_of: self.type_of,
             type_condition: self.type_condition,
@@ -280,6 +303,7 @@ impl<Extensions: Debug, Input: Debug> Debug for Field<Extensions, Input> {
         let mut debug_struct = f.debug_struct("Field");
         debug_struct.field("id", &self.id);
         debug_struct.field("name", &self.name);
+        debug_struct.field("output_name", &self.output_name);
         if self.ir.is_some() {
             debug_struct.field("ir", &"Some(..)");
         }
@@ -298,6 +322,7 @@ impl<Extensions: Debug, Input: Debug> Debug for Field<Extensions, Input> {
             debug_struct.field("include", &self.include);
         }
         debug_struct.field("directives", &self.directives);
+
         debug_struct.finish()
     }
 }
@@ -320,12 +345,14 @@ pub struct Nested<Input>(Vec<Field<Nested<Input>, Input>>);
 
 #[derive(Clone)]
 pub struct OperationPlan<Input> {
+    root_name: String,
     flat: Vec<Field<Flat, Input>>,
     operation_type: OperationType,
     nested: Vec<Field<Nested<Input>, Input>>,
-
     // TODO: drop index from here. Embed all the necessary information in each field of the plan.
     pub index: Arc<Index>,
+    pub is_introspection_query: bool,
+    pub dedupe: bool,
 }
 
 impl<Input> std::fmt::Debug for OperationPlan<Input> {
@@ -354,19 +381,25 @@ impl<Input> OperationPlan<Input> {
         }
 
         Ok(OperationPlan {
+            root_name: self.root_name,
             flat,
             operation_type: self.operation_type,
             nested,
             index: self.index,
+            is_introspection_query: self.is_introspection_query,
+            dedupe: self.dedupe,
         })
     }
 }
 
 impl<Input> OperationPlan<Input> {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
+        root_name: &str,
         fields: Vec<Field<Flat, Input>>,
         operation_type: OperationType,
         index: Arc<Index>,
+        is_introspection_query: bool,
     ) -> Self
     where
         Input: Clone,
@@ -378,33 +411,64 @@ impl<Input> OperationPlan<Input> {
             .map(|f| f.into_nested(&fields))
             .collect::<Vec<_>>();
 
-        Self { flat: fields, nested, operation_type, index }
+        let dedupe = fields
+            .iter()
+            .map(|field| {
+                if let Some(IR::IO(io)) = field.ir.as_ref() {
+                    io.dedupe()
+                } else {
+                    true
+                }
+            })
+            .all(|a| a);
+
+        Self {
+            root_name: root_name.to_string(),
+            flat: fields,
+            nested,
+            operation_type,
+            index,
+            is_introspection_query,
+            dedupe,
+        }
     }
 
+    /// Returns the name of the root type
+    pub fn root_name(&self) -> &str {
+        &self.root_name
+    }
+
+    /// Returns a graphQL operation type
     pub fn operation_type(&self) -> OperationType {
         self.operation_type
     }
 
+    /// Check if current graphQL operation is query
     pub fn is_query(&self) -> bool {
         self.operation_type == OperationType::Query
     }
 
+    /// Returns a nested [Field] representation
     pub fn as_nested(&self) -> &[Field<Nested<Input>, Input>] {
         &self.nested
     }
 
+    /// Returns an owned version of [Field] representation
     pub fn into_nested(self) -> Vec<Field<Nested<Input>, Input>> {
         self.nested
     }
 
+    /// Returns a flat [Field] representation
     pub fn as_parent(&self) -> &[Field<Flat, Input>] {
         &self.flat
     }
 
+    /// Search for a field with a specified [FieldId]
     pub fn find_field(&self, id: FieldId) -> Option<&Field<Flat, Input>> {
         self.flat.iter().find(|field| field.id == id)
     }
 
+    /// Search for a field by specified path of nested fields
     pub fn find_field_path<S: AsRef<str>>(&self, path: &[S]) -> Option<&Field<Flat, Input>> {
         match path.split_first() {
             None => None,
@@ -419,24 +483,49 @@ impl<Input> OperationPlan<Input> {
         }
     }
 
+    /// Returns number of fields in plan
     pub fn size(&self) -> usize {
         self.flat.len()
     }
 
+    /// Check if the field is of scalar type
     pub fn field_is_scalar<Extensions>(&self, field: &Field<Extensions, Input>) -> bool {
         self.index.type_is_scalar(field.type_of.name())
     }
 
+    /// Check if the field is of enum type
     pub fn field_is_enum<Extensions>(&self, field: &Field<Extensions, Input>) -> bool {
         self.index.type_is_enum(field.type_of.name())
     }
 
+    /// Validate the value against enum variants of the field
     pub fn field_validate_enum_value<Extensions>(
         &self,
         field: &Field<Extensions, Input>,
         value: &str,
     ) -> bool {
         self.index.validate_enum_value(field.type_of.name(), value)
+    }
+
+    pub fn field_is_part_of_value<'a, Output>(
+        &'a self,
+        field: &'a Field<Nested<Input>, Input>,
+        value: &'a Output,
+    ) -> bool
+    where
+        Output: TypedValue<'a>,
+    {
+        match &field.type_condition {
+            Some(type_condition) => match value.get_type_name() {
+                Some(value_type) => self.index.is_type_implements(value_type, type_condition),
+                // if there is no __typename in value that means there is a bug in implementation
+                // such we haven't resolved the concrete type or type shouldn't be
+                // inferred here at all and we should just use the field
+                None => true,
+            },
+            // if there is no type_condition restriction then use this field
+            None => true,
+        }
     }
 }
 
@@ -603,9 +692,24 @@ impl From<Positioned<Error>> for ServerError {
 #[cfg(test)]
 mod test {
     use async_graphql::parser::types::ConstDirective;
+    use async_graphql::Request;
     use async_graphql_value::ConstValue;
 
-    use super::Directive;
+    use super::{Directive, OperationPlan};
+    use crate::core::blueprint::Blueprint;
+    use crate::core::config::ConfigModule;
+    use crate::core::jit;
+    use crate::include_config;
+
+    fn plan(query: &str) -> OperationPlan<ConstValue> {
+        let config = include_config!("./fixtures/dedupe.graphql").unwrap();
+        let module = ConfigModule::from(config);
+        let bp = Blueprint::try_from(&module).unwrap();
+
+        let request = Request::new(query);
+        let jit_request = jit::Request::from(request);
+        jit_request.create_plan(&bp).unwrap()
+    }
 
     #[test]
     fn test_from_custom_directive() {
@@ -616,5 +720,26 @@ mod test {
 
         let async_directive: ConstDirective = (&custom_directive).into();
         insta::assert_debug_snapshot!(async_directive);
+    }
+
+    #[test]
+    fn test_operation_plan_dedupe() {
+        let actual = plan(r#"{ posts { id } }"#);
+
+        assert!(!actual.dedupe);
+    }
+
+    #[test]
+    fn test_operation_plan_dedupe_nested() {
+        let actual = plan(r#"{ posts { id users { id } } }"#);
+
+        assert!(!actual.dedupe);
+    }
+
+    #[test]
+    fn test_operation_plan_dedupe_false() {
+        let actual = plan(r#"{ users { id comments {body} } }"#);
+
+        assert!(actual.dedupe);
     }
 }

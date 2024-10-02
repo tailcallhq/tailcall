@@ -1,3 +1,4 @@
+mod apollo_federation;
 mod call;
 mod enum_alias;
 mod expr;
@@ -8,6 +9,7 @@ mod js;
 mod modify;
 mod protected;
 
+pub use apollo_federation::*;
 pub use call::*;
 pub use enum_alias::*;
 pub use expr::*;
