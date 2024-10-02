@@ -8,7 +8,8 @@ use std::{fs, panic};
 use anyhow::Context;
 use colored::Colorize;
 use futures_util::future::join_all;
-use hyper::{Body, Request};
+use http::Request;
+use hyper::Body;
 use serde::{Deserialize, Serialize};
 use tailcall::core::app_context::AppContext;
 use tailcall::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
@@ -307,7 +308,7 @@ pub async fn load_and_test_execution_spec(path: &Path) -> anyhow::Result<()> {
 async fn run_test(
     app_ctx: Arc<AppContext>,
     request: &APIRequest,
-) -> anyhow::Result<hyper::Response<Body>> {
+) -> anyhow::Result<http::Response<Body>> {
     let body = request
         .body
         .as_ref()

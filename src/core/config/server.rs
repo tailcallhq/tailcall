@@ -1,5 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
+use derive_getters::Getters;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use tailcall_macros::DirectiveDefinition;
 
@@ -9,7 +11,6 @@ use crate::core::config::headers::Headers;
 use crate::core::config::KeyValue;
 use crate::core::is_default;
 use crate::core::macros::MergeRight;
-use crate::core::merge_right::MergeRight;
 
 #[derive(
     Serialize,
@@ -48,15 +49,6 @@ pub struct Server {
     pub batch_requests: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// Enables deduplication of IO operations to enhance performance.
-    ///
-    /// This flag prevents duplicate IO requests from being executed
-    /// concurrently, reducing resource load. Caution: May lead to issues
-    /// with APIs that expect unique results for identical inputs, such as
-    /// nonce-based APIs.
-    pub dedupe: Option<bool>,
-
-    #[serde(default, skip_serializing_if = "is_default")]
     /// `headers` contains key-value pairs that are included as default headers
     /// in server responses, allowing for consistent header management across
     /// all responses.
@@ -76,6 +68,11 @@ pub struct Server {
     /// aiding tools and applications in understanding available types, fields,
     /// and operations. @default `true`.
     pub introspection: Option<bool>,
+
+    /// `enableFederation` enables functionality to Tailcall server to act
+    /// as a federation subgraph.
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub enable_federation: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// `pipelineFlush` allows to control flushing behavior of the server
@@ -125,6 +122,45 @@ pub struct Server {
     #[serde(default, skip_serializing_if = "is_default")]
     /// lint
     pub lint: Option<Linter>,
+    /// `routes` allows customization of server endpoint paths.
+    /// It provides options to change the default paths for status and GraphQL
+    /// endpoints. Default values are:
+    /// - status: "/status"
+    /// - graphQL: "/graphql" If not specified, these default values will be
+    ///   used.
+    pub routes: Option<Routes>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, MergeRight, JsonSchema, Getters)]
+pub struct Routes {
+    #[serde(default = "default_status")]
+    status: String,
+    #[serde(rename = "graphQL", default = "default_graphql")]
+    graphql: String,
+}
+
+fn default_status() -> String {
+    "/status".into()
+}
+
+fn default_graphql() -> String {
+    "/graphql".into()
+}
+
+impl Default for Routes {
+    fn default() -> Self {
+        Self { status: "/status".into(), graphql: "/graphql".into() }
+    }
+}
+
+impl Routes {
+    pub fn with_status<T: Into<String>>(self, status: T) -> Self {
+        Self { graphql: self.graphql, status: status.into() }
+    }
+
+    pub fn with_graphql<T: Into<String>>(self, graphql: T) -> Self {
+        Self { status: self.status, graphql: graphql.into() }
+    }
 }
 
 fn merge_right_vars(mut left: Vec<KeyValue>, right: Vec<KeyValue>) -> Vec<KeyValue> {
@@ -230,11 +266,16 @@ impl Server {
         self.pipeline_flush.unwrap_or(true)
     }
 
-    pub fn get_dedupe(&self) -> bool {
-        self.dedupe.unwrap_or(false)
-    }
     pub fn enable_jit(&self) -> bool {
         self.enable_jit.unwrap_or(true)
+    }
+
+    pub fn get_routes(&self) -> Routes {
+        self.routes.clone().unwrap_or_default()
+    }
+
+    pub fn get_enable_federation(&self) -> bool {
+        self.enable_federation.unwrap_or(false)
     }
 }
 
@@ -242,6 +283,7 @@ impl Server {
 mod tests {
     use super::*;
     use crate::core::config::ScriptOptions;
+    use crate::core::merge_right::MergeRight;
 
     fn server_with_script_options(so: ScriptOptions) -> Server {
         Server { script: Some(so), ..Default::default() }

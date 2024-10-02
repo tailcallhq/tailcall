@@ -1,0 +1,26 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "_entities": [
+        {
+          "__typename": "User",
+          "id": 1,
+          "name": "Leanne Graham"
+        },
+        {
+          "__typename": "User",
+          "id": 2,
+          "name": "Ervin Howell"
+        }
+      ]
+    }
+  }
+}
