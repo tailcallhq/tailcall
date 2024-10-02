@@ -80,6 +80,10 @@ impl JITExecutor {
     fn req_hash(request: &async_graphql::Request) -> OPHash {
         let mut hasher = TailcallHasher::default();
         request.query.hash(&mut hasher);
+        for (k, v) in request.variables.iter() {
+            k.as_str().hash(&mut hasher);
+            v.to_string().hash(&mut hasher);
+        }
 
         OPHash::new(hasher.finish())
     }
