@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::num::NonZeroU16;
 
 use derive_getters::Getters;
 use schemars::JsonSchema;
@@ -130,6 +131,10 @@ pub struct Server {
     /// - graphQL: "/graphql" If not specified, these default values will be
     ///   used.
     pub routes: Option<Routes>,
+
+    /// Control private admin API settings
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub admin: Option<Admin>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, MergeRight, JsonSchema, Getters)]
@@ -182,6 +187,13 @@ pub enum HttpVersion {
     #[default]
     HTTP1,
     HTTP2,
+}
+
+#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone, schemars::JsonSchema, MergeRight)]
+#[serde(rename_all = "camelCase")]
+pub struct Admin {
+    /// TCP port on which the admin api will be available
+    pub port: NonZeroU16,
 }
 
 impl Server {

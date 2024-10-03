@@ -93,6 +93,20 @@
       },
       "additionalProperties": false
     },
+    "Admin": {
+      "type": "object",
+      "required": [
+        "port"
+      ],
+      "properties": {
+        "port": {
+          "description": "TCP port on which the admin api will be available",
+          "type": "integer",
+          "format": "uint16",
+          "minimum": 1.0
+        }
+      }
+    },
     "Alias": {
       "description": "The @alias directive indicates that aliases of one enum value.",
       "type": "object",
@@ -1004,6 +1018,17 @@
       "description": "The `@server` directive, when applied at the schema level, offers a comprehensive set of server configurations. It dictates how the server behaves and helps tune tailcall for various use-cases.",
       "type": "object",
       "properties": {
+        "admin": {
+          "description": "Control private admin API settings",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Admin"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "apolloTracing": {
           "description": "`apolloTracing` exposes GraphQL query performance data, including execution time of queries and individual resolvers.",
           "type": [

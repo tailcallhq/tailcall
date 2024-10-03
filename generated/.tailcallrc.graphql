@@ -244,6 +244,10 @@ for various use-cases.
 """
 directive @server(
   """
+  Control private admin API settings
+  """
+  admin: Admin
+  """
   `apolloTracing` exposes GraphQL query performance data, including execution time 
   of queries and individual resolvers.
   """
@@ -574,6 +578,13 @@ input Schema {
   Arr: Schema
   Opt: Schema
   Enum: [String!]
+}
+
+input Admin {
+  """
+  TCP port on which the admin api will be available
+  """
+  port: Int!
 }
 
 """

@@ -4,6 +4,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use tokio::sync::oneshot::{self};
 
+use super::admin_server::AdminServer;
 use super::http_1::start_http_1;
 use super::http_2::start_http_2;
 use super::server_config::ServerConfig;
@@ -53,7 +54,13 @@ impl Server {
             .enable_all()
             .build()?;
 
-        let result = runtime.spawn(async { self.start().await }).await?;
+        let admin_api = AdminServer::new(&self.config_module)?;
+
+        if let Some(admin_api) = admin_api {
+            runtime.spawn(admin_api.start());
+        }
+
+        let result = runtime.spawn(self.start()).await?;
         runtime.shutdown_background();
 
         result
