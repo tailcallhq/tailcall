@@ -1,0 +1,9 @@
+enum enumInput {
+  B
+  C
+}
+
+enum enumOutput {
+  B
+  C
+}
