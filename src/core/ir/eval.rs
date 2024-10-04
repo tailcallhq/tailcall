@@ -76,9 +76,31 @@ impl IR {
                         } else {
                             Err(Error::ExprEval(format!("Can't find mapped key: {}.", key)))
                         }
+                    } else if let ConstValue::List(vec) = value {
+                        let vec = vec
+                            .into_iter()
+                            .map(|value| {
+                                if let ConstValue::String(key) = value {
+                                    if let Some(value) = map.get(&key) {
+                                        Ok(ConstValue::String(value.to_owned()))
+                                    } else {
+                                        Err(Error::ExprEval(format!(
+                                            "Can't find mapped key: {}.",
+                                            key
+                                        )))
+                                    }
+                                } else {
+                                    Err(Error::ExprEval(
+                                        "Mapped key must be either string or array value."
+                                            .to_owned(),
+                                    ))
+                                }
+                            })
+                            .collect::<Result<Vec<_>, _>>()?;
+                        Ok(ConstValue::List(vec))
                     } else {
                         Err(Error::ExprEval(
-                            "Mapped key must be string value.".to_owned(),
+                            "Mapped key must be either string or array value.".to_owned(),
                         ))
                     }
                 }
