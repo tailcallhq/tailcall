@@ -163,8 +163,7 @@ where
             };
 
             let is_valid_enum = if let Some(vec) = value.as_array() {
-                vec.iter()
-                    .all(check_valid_enum)
+                vec.iter().all(check_valid_enum)
             } else {
                 check_valid_enum(value)
             };
