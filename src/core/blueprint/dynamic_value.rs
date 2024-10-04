@@ -4,7 +4,7 @@ use serde_json::Value;
 
 use crate::core::mustache::Mustache;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum DynamicValue<A> {
     Value(A),
     Mustache(Mustache),
@@ -109,5 +109,45 @@ impl TryFrom<&Value> for DynamicValue<ConstValue> {
             }
             _ => Ok(DynamicValue::Value(ConstValue::from_json(value.clone())?)),
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_dynamic_value_inject() {
+        let value: DynamicValue<ConstValue> =
+            DynamicValue::Mustache(Mustache::parse("{{.foo}}")).inject_args();
+        let expected: DynamicValue<ConstValue> =
+            DynamicValue::Mustache(Mustache::parse("{{.args.foo}}"));
+        assert_eq!(value, expected);
+
+        let mut value_map = IndexMap::new();
+        value_map.insert(
+            Name::new("foo"),
+            DynamicValue::Mustache(Mustache::parse("{{.foo}}")),
+        );
+        let value: DynamicValue<ConstValue> = DynamicValue::Object(value_map).inject_args();
+        let mut expected_map = IndexMap::new();
+        expected_map.insert(
+            Name::new("foo"),
+            DynamicValue::Mustache(Mustache::parse("{{.args.foo}}")),
+        );
+        let expected: DynamicValue<ConstValue> = DynamicValue::Object(expected_map);
+        assert_eq!(value, expected);
+
+        let value: DynamicValue<ConstValue> =
+            DynamicValue::Array(vec![DynamicValue::Mustache(Mustache::parse("{{.foo}}"))])
+                .inject_args();
+        let expected: DynamicValue<ConstValue> = DynamicValue::Array(vec![DynamicValue::Mustache(
+            Mustache::parse("{{.args.foo}}"),
+        )]);
+        assert_eq!(value, expected);
+
+        let value: DynamicValue<ConstValue> = DynamicValue::Value(ConstValue::Null).inject_args();
+        let expected: DynamicValue<ConstValue> = DynamicValue::Value(ConstValue::Null);
+        assert_eq!(value, expected);
     }
 }
