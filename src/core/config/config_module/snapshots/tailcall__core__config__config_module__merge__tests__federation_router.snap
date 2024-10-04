@@ -2,7 +2,7 @@
 source: src/core/config/config_module/merge.rs
 expression: merged.to_sdl()
 ---
-schema @server @upstream {
+schema @server(port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com", batch: {delay: 100, headers: []}, httpCache: 42) {
   query: Query
 }
 

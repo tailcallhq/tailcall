@@ -20,7 +20,7 @@ use tailcall::core::config::{Config, ConfigModule, Source};
 use tailcall::core::http::handle_request;
 use tailcall::core::print_schema::print_schema;
 use tailcall::core::valid::{Cause, Valid, ValidationError, Validator};
-use tailcall::core::variance::Covariant;
+use tailcall::core::variance::Invariant;
 use tailcall_prettier::Parser;
 
 use super::file::File;
@@ -59,11 +59,9 @@ impl From<Cause<String>> for SDLError {
 async fn is_sdl_error(spec: &ExecutionSpec, config_module: Valid<ConfigModule, String>) -> bool {
     if spec.sdl_error {
         // errors: errors are expected, make sure they match
-        let blueprint = config_module
-            .to_result()
-            .and_then(|cfg| Blueprint::try_from(&cfg));
+        let blueprint = config_module.and_then(|cfg| Valid::from(Blueprint::try_from(&cfg)));
 
-        match blueprint {
+        match blueprint.to_result() {
             Ok(_) => {
                 tracing::error!("\terror FAIL");
                 panic!(
@@ -71,9 +69,9 @@ async fn is_sdl_error(spec: &ExecutionSpec, config_module: Valid<ConfigModule, S
                     spec.name, spec.path
                 );
             }
-            Err(cause) => {
+            Err(error) => {
                 let errors: Vec<SDLError> =
-                    cause.as_vec().iter().map(|e| e.to_owned().into()).collect();
+                    error.as_vec().iter().map(|e| e.to_owned().into()).collect();
 
                 let snapshot_name = format!("{}_error", spec.safe_name);
 
@@ -200,16 +198,17 @@ async fn test_spec(spec: ExecutionSpec) {
     .await;
 
     let config_module = Valid::from_iter(config_modules.iter(), |config_module| {
-        Valid::from(
-            config_module
-                .as_ref()
-                .map_err(|e| ValidationError::new(e.to_string())),
-        )
+        Valid::from(config_module.as_ref().map_err(|e| {
+            match e.downcast_ref::<ValidationError<String>>() {
+                Some(err) => err.clone(),
+                None => ValidationError::new(e.to_string()),
+            }
+        }))
     })
     .and_then(|cfgs| {
         cfgs.into_iter()
             .fold(Valid::succeed(ConfigModule::default()), |acc, c| {
-                acc.and_then(|acc| acc.expand(c.clone()))
+                acc.and_then(|acc| acc.unify(c.clone()))
             })
     })
     // Apply required transformers to the configuration

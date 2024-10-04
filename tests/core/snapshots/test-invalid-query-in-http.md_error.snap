@@ -4,8 +4,13 @@ expression: errors
 ---
 [
   {
-    "message": "Validation Error\n• Parsing failed because of invalid type: map, expected a sequence [Query, user, @http, query]\n",
-    "trace": [],
+    "message": "Parsing failed because of invalid type: map, expected a sequence",
+    "trace": [
+      "Query",
+      "user",
+      "@http",
+      "query"
+    ],
     "description": null
   }
 ]

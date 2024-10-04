@@ -4,7 +4,7 @@ expression: errors
 ---
 [
   {
-    "message": "Validation Error\n• schema definition is missing query root\n",
+    "message": "schema definition is missing query root",
     "trace": [],
     "description": null
   }
