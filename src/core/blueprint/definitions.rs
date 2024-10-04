@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 
 use async_graphql_value::ConstValue;
+use directive::Directive;
 use regex::Regex;
 use union_resolver::update_union_resolver;
 
@@ -18,7 +19,7 @@ pub fn to_scalar_type_definition(name: &str) -> Valid<Definition, String> {
     } else {
         Valid::succeed(Definition::Scalar(ScalarTypeDefinition {
             name: name.to_string(),
-            directive: Vec::new(),
+            directives: Vec::new(),
             description: None,
             scalar: scalar::Scalar::find(name)
                 .unwrap_or(&scalar::Scalar::Empty)
@@ -52,6 +53,7 @@ pub fn to_input_object_type_definition(
             })
             .collect(),
         description: definition.description,
+        directives: Vec::new(),
     }))
 }
 
@@ -61,6 +63,7 @@ pub fn to_interface_type_definition(definition: ObjectTypeDefinition) -> Valid<D
         fields: definition.fields,
         description: definition.description,
         implements: definition.implements,
+        directives: Vec::new(),
     }))
 }
 
@@ -256,6 +259,7 @@ fn to_object_type_definition(
             description: type_of.doc.clone(),
             fields,
             implements: type_of.implements.clone(),
+            directives: to_directives(&type_of.directives),
         })
     })
 }
@@ -279,7 +283,7 @@ fn update_args<'a>(
                 description: field.doc.clone(),
                 args,
                 of_type: field.type_of.clone(),
-                directives: Vec::new(),
+                directives: to_directives(&field.directives),
                 resolver: None,
                 default_value: field.default_value.clone(),
             })
@@ -553,4 +557,8 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
             v
         })
     })
+}
+
+fn to_directives(directives: &[config::Directive]) -> Vec<Directive> {
+    directives.iter().cloned().map(Directive::from).collect()
 }

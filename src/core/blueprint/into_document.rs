@@ -1,19 +1,25 @@
-use async_graphql::parser::types::{SchemaDefinition, TypeDefinition};
-use async_graphql::{
-    parser::types::{
-        EnumType, EnumValueDefinition, FieldDefinition, InputObjectType, InputValueDefinition,
-        InterfaceType, ObjectType, ServiceDocument, TypeKind, TypeSystemDefinition, UnionType,
-    },
-    Name, Positioned,
+use async_graphql::parser::types::{
+    ConstDirective, EnumType, EnumValueDefinition, FieldDefinition, InputObjectType,
+    InputValueDefinition, InterfaceType, ObjectType, SchemaDefinition, ServiceDocument,
+    TypeDefinition, TypeKind, TypeSystemDefinition, UnionType,
 };
+use async_graphql::{Name, Positioned};
 use async_graphql_value::ConstValue;
 
-use crate::core::{
-    blueprint::{Blueprint, Definition},
-    pos,
-};
-
 use super::blueprint;
+use super::directive::{to_const_directive, Directive};
+use crate::core::blueprint::{Blueprint, Definition};
+use crate::core::pos;
+use crate::core::valid::Validator;
+
+fn to_directives(directives: &[Directive]) -> Vec<Positioned<ConstDirective>> {
+    directives
+        .iter()
+        // TODO: conversion if fallible but the overall conversion from blueprint should infallible
+        .filter_map(|directive| to_const_directive(directive).to_result().ok())
+        .map(pos)
+        .collect()
+}
 
 fn to_args(args: &[blueprint::InputFieldDefinition]) -> Vec<Positioned<InputValueDefinition>> {
     args.iter()
@@ -47,7 +53,7 @@ fn to_fields(fields: &[blueprint::FieldDefinition]) -> Vec<Positioned<FieldDefin
                 name: pos(Name::new(&field.name)),
                 arguments,
                 ty: pos(of_type.into()),
-                directives: Vec::new(),
+                directives: to_directives(&field.directives),
             })
         })
         .collect()
@@ -115,7 +121,7 @@ fn to_definition(def: &Definition) -> TypeSystemDefinition {
         extend: false,
         description: None,
         name: pos(Name::new(def.name())),
-        directives: Vec::new(),
+        directives: to_directives(def.directives()),
         kind,
     }))
 }

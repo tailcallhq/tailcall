@@ -11,7 +11,7 @@ use async_graphql_value::ConstValue;
 use indexmap::IndexMap;
 
 use super::directive::{to_directive, Directive};
-use super::{Alias, Resolver, Telemetry, KNOWN_DIRECTIVES};
+use super::{Alias, Resolver, Telemetry, FEDERATION_DIRECTIVES};
 use crate::core::config::{
     self, Cache, Config, Enum, Link, Modify, Omit, Protected, RootSchema, Server, Union, Upstream,
     Variant,
@@ -247,7 +247,7 @@ where
         .fuse(to_fields(fields))
         .fuse(Protected::from_directives(directives.iter()))
         .fuse(to_add_fields_from_directives(directives))
-        .fuse(to_unknown_directives(directives))
+        .fuse(to_federation_directives(directives))
         .map(
             |(resolver, cache, fields, protected, added_fields, unknown_directives)| {
                 let doc = description.to_owned().map(|pos| pos.node);
@@ -340,7 +340,7 @@ where
         .fuse(Modify::from_directives(directives.iter()))
         .fuse(Protected::from_directives(directives.iter()))
         .fuse(default_value)
-        .fuse(to_unknown_directives(directives))
+        .fuse(to_federation_directives(directives))
         .map(
             |(resolver, cache, omit, modify, protected, default_value, directives)| config::Field {
                 type_of: type_of.into(),
@@ -428,17 +428,17 @@ fn to_add_fields_from_directives(
     )
 }
 
-fn to_unknown_directives(
+fn to_federation_directives(
     directives: &[Positioned<ConstDirective>],
 ) -> Valid<Vec<Directive>, String> {
     Valid::from_iter(directives.iter(), |directive| {
-        if KNOWN_DIRECTIVES
+        if FEDERATION_DIRECTIVES
             .iter()
-            .any(|known| known == directive.node.name.node.as_str())
+            .any(|&known| known == directive.node.name.node.as_str())
         {
-            Valid::succeed(None)
-        } else {
             to_directive(directive.node.clone()).map(Some)
+        } else {
+            Valid::succeed(None)
         }
     })
     .map(|directives| directives.into_iter().flatten().collect())

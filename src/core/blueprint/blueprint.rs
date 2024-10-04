@@ -48,6 +48,18 @@ impl Definition {
             Definition::Union(def) => &def.name,
         }
     }
+
+    /// gets directives associated with definition
+    pub fn directives(&self) -> &[Directive] {
+        match self {
+            Definition::Interface(def) => &def.directives,
+            Definition::Object(def) => &def.directives,
+            Definition::InputObject(def) => &def.directives,
+            Definition::Scalar(def) => &def.directives,
+            Definition::Enum(def) => &def.directives,
+            Definition::Union(def) => &def.directives,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -56,6 +68,7 @@ pub struct InterfaceTypeDefinition {
     pub fields: Vec<FieldDefinition>,
     pub description: Option<String>,
     pub implements: BTreeSet<String>,
+    pub directives: Vec<Directive>,
 }
 
 #[derive(Clone, Debug)]
@@ -64,6 +77,7 @@ pub struct ObjectTypeDefinition {
     pub fields: Vec<FieldDefinition>,
     pub description: Option<String>,
     pub implements: BTreeSet<String>,
+    pub directives: Vec<Directive>,
 }
 
 #[derive(Clone, Debug)]
@@ -71,6 +85,7 @@ pub struct InputObjectTypeDefinition {
     pub name: String,
     pub fields: Vec<InputFieldDefinition>,
     pub description: Option<String>,
+    pub directives: Vec<Directive>,
 }
 
 #[derive(Clone, Debug)]
@@ -127,7 +142,7 @@ impl FieldDefinition {
 #[derive(Clone, Debug)]
 pub struct ScalarTypeDefinition {
     pub name: String,
-    pub directive: Vec<Directive>,
+    pub directives: Vec<Directive>,
     pub description: Option<String>,
     pub scalar: scalar::Scalar,
 }

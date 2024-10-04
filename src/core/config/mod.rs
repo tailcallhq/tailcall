@@ -1,6 +1,7 @@
 pub use apollo::*;
 pub use config::*;
 pub use config_module::*;
+pub use directive::Directive;
 pub use directives::*;
 pub use key_values::*;
 pub use npo::QueryPath;
