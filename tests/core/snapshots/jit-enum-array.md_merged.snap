@@ -1,0 +1,21 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server @upstream {
+  query: Query
+}
+
+enum Department {
+  BLUE
+  ENGINEERING
+  MARKETING
+}
+
+type DTA {
+  departments: [Department]
+}
+
+type Query {
+  color: DTA @expr(body: {departments: ["ENGINEERING", "MARKETING"]})
+}
