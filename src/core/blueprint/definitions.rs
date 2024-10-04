@@ -60,6 +60,7 @@ pub fn to_interface_type_definition(definition: ObjectTypeDefinition) -> Valid<D
         name: definition.name,
         fields: definition.fields,
         description: definition.description,
+        implements: definition.implements,
     }))
 }
 
@@ -492,7 +493,6 @@ pub fn to_field_definition(
     name: &String,
 ) -> Valid<FieldDefinition, String> {
     update_args()
-        .and(update_apollo_federation(operation_type).trace("_entities"))
         .and(update_http().trace(config::Http::trace_name().as_str()))
         .and(update_grpc(operation_type).trace(config::Grpc::trace_name().as_str()))
         .and(update_const_field().trace(config::Expr::trace_name().as_str()))

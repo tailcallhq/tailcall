@@ -1,15 +1,11 @@
 use async_graphql::parser::types::*;
-use async_graphql::{Pos, Positioned};
+use async_graphql::Positioned;
 use async_graphql_value::{ConstValue, Name};
 
 use super::directive::to_const_directive;
 use super::Config;
-use crate::core::directive::DirectiveCodec;
 use crate::core::valid::Validator;
-
-fn pos<A>(a: A) -> Positioned<A> {
-    Positioned::new(a, Pos::default())
-}
+use crate::core::{directive::DirectiveCodec, pos};
 
 fn transform_default_value(value: Option<serde_json::Value>) -> Option<ConstValue> {
     value.map(ConstValue::from_json).and_then(Result::ok)
@@ -90,7 +86,6 @@ fn config_document(config: &Config) -> ServiceDocument {
             TypeKind::InputObject(InputObjectType {
                 fields: type_def
                     .fields
-                    .clone()
                     .iter()
                     .map(|(name, field)| {
                         let type_of = &field.type_of;

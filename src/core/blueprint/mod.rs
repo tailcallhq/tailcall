@@ -8,6 +8,7 @@ mod dynamic_value;
 mod from_config;
 mod index;
 mod into_schema;
+mod into_document;
 mod links;
 mod mustache;
 mod operators;

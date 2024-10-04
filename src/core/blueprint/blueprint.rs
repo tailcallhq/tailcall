@@ -55,6 +55,7 @@ pub struct InterfaceTypeDefinition {
     pub name: String,
     pub fields: Vec<FieldDefinition>,
     pub description: Option<String>,
+    pub implements: BTreeSet<String>,
 }
 
 #[derive(Clone, Debug)]

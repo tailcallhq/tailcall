@@ -49,6 +49,9 @@ pub fn config_blueprint<'a>() -> TryFold<'a, ConfigModule, Blueprint, String> {
         .and(upstream)
         .and(links)
         .and(opentelemetry)
+        // set the federation config only after setting other properties to be able
+        // to use blueprint inside the handler and to avoid recursion overflow
+        .and(update_federation().trace("federation"))
         .update(apply_batching)
         .update(compress)
 }
