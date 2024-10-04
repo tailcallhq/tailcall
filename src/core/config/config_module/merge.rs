@@ -270,7 +270,8 @@ impl Invariant for Cache {
             types.extend(merged_types);
             enums.extend(merged_enums);
 
-            let config = Config { types, enums, unions: self.config.unions.merge_right(other.config.unions), ..self.config };
+            let config = Config {
+                types, enums, unions: self.config.unions.merge_right(other.config.unions), server: self.config.server.merge_right(other.config.server), upstream: self.config.upstream.merge_right(other.config.upstream), schema: self.config.schema.merge_right(other.config.schema), links: self.config.links.merge_right(other.config.links), telemetry: self.config.telemetry.merge_right(other.config.telemetry)  };
 
             Cache {
                 config,
@@ -284,9 +285,10 @@ impl Invariant for Cache {
 
 impl Invariant for ConfigModule {
     fn unify(self, other: Self) -> Valid<Self, String> {
-        self.cache
-            .unify(other.cache)
-            .map(|cache| Self { cache, extensions: self.extensions })
+        self.cache.unify(other.cache).map(|cache| Self {
+            cache,
+            extensions: self.extensions.merge_right(other.extensions),
+        })
     }
 }
 
