@@ -3,7 +3,7 @@ use std::fmt::Display;
 use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::FieldDescriptor;
 
-use crate::core::blueprint::FieldDefinition;
+use crate::core::blueprint::{DynamicValue, FieldDefinition};
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::{Config, ConfigModule, Field, GraphQLOperationType, Grpc, Resolver};
 use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
@@ -189,7 +189,7 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
             };
             validation.map(|_| (url, headers, operation, body))
         })
-        .map(|(url, headers, operation, body)| {
+        .and_then(|(url, headers, operation, body)| {
             let req_template = RequestTemplate {
                 url,
                 headers,
@@ -197,7 +197,7 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
                 body,
                 operation_type: operation_type.clone(),
             };
-            if !grpc.batch_key.is_empty() {
+            let mut io = if !grpc.batch_key.is_empty() {
                 IR::IO(IO::Grpc {
                     req_template,
                     group_by: Some(GroupBy::new(grpc.batch_key.clone(), None)),
@@ -206,7 +206,20 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
                 })
             } else {
                 IR::IO(IO::Grpc { req_template, group_by: None, dl_id: None, dedupe })
+            };
+
+            if let Some(select) = &grpc.select {
+                let dynamic_value = match DynamicValue::try_from(select) {
+                    Ok(dynamic_value) => dynamic_value.inject_args(),
+                    Err(_) => {
+                        return Valid::fail(format!("syntax error when parsing `{:?}`", select))
+                    }
+                };
+
+                io = io.pipe(IR::Dynamic(dynamic_value));
             }
+
+            Valid::succeed(io)
         })
 }
 

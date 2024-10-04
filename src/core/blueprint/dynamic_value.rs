@@ -12,6 +12,38 @@ pub enum DynamicValue<A> {
     Array(Vec<DynamicValue<A>>),
 }
 
+impl<A> DynamicValue<A> {
+    pub fn inject_args(self) -> Self {
+        match self {
+            DynamicValue::Value(value) => DynamicValue::Value(value),
+            DynamicValue::Mustache(mut mustache) => {
+                if mustache.is_const() {
+                    DynamicValue::Mustache(mustache)
+                } else {
+                    let segments = mustache.segments_mut();
+                    if let Some(crate::core::mustache::Segment::Expression(vec)) =
+                        segments.get_mut(0)
+                    {
+                        vec.insert(0, "args".to_string());
+                    }
+                    DynamicValue::Mustache(mustache)
+                }
+            }
+            DynamicValue::Object(index_map) => {
+                let index_map = index_map
+                    .into_iter()
+                    .map(|(key, val)| (key, val.inject_args()))
+                    .collect();
+                DynamicValue::Object(index_map)
+            }
+            DynamicValue::Array(vec) => {
+                let vec = vec.into_iter().map(|val| val.inject_args()).collect();
+                DynamicValue::Array(vec)
+            }
+        }
+    }
+}
+
 impl TryFrom<&DynamicValue<ConstValue>> for ConstValue {
     type Error = anyhow::Error;
 
