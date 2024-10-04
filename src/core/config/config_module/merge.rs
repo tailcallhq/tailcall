@@ -7,7 +7,7 @@ use crate::core;
 use crate::core::config::{Arg, Config, Enum, Field, Type};
 use crate::core::merge_right::MergeRight;
 use crate::core::valid::{Valid, Validator};
-use crate::core::variance::{Contravariant, Covariant, Invariant};
+use crate::core::variance::{Contravariant, Covariant};
 
 impl core::Type {
     fn merge(self, other: Self, non_null_merge: fn(bool, bool) -> bool) -> Valid<Self, String> {
@@ -179,12 +179,32 @@ impl Covariant for Enum {
     }
 }
 
-impl Invariant for Cache {
-    fn unify(self, other: Self) -> Valid<Self, String> {
-        let mut types = self.config.types;
-        let mut enums = self.config.enums;
+impl Contravariant for Config {
+    fn shrink(self, _other: Self) -> Valid<Self, String> {
+        Valid::succeed(self)
+    }
+}
 
-        Valid::from_iter(other.config.types, |(type_name, other_type)| {
+impl Covariant for Config {
+    fn expand(self, other: Self) -> Valid<Self, String> {
+        Valid::succeed(self.merge_right(other))
+    }
+}
+
+impl Cache {
+    fn merge(
+        mut self,
+        mut other: Self,
+        merge_config: impl FnOnce(Config, Config) -> Valid<Config, String>,
+    ) -> Valid<Self, String> {
+        let mut types = std::mem::take(&mut self.config.types);
+        let mut enums = std::mem::take(&mut self.config.enums);
+        let unions = std::mem::take(&mut self.config.unions);
+        let other_types = std::mem::take(&mut other.config.types);
+        let other_enums = std::mem::take(&mut other.config.enums);
+        let other_unions = std::mem::take(&mut other.config.unions);
+
+        Valid::from_iter(other_types, |(type_name, other_type)| {
             let trace_name = type_name.clone();
             match types.remove(&type_name) {
                 Some(ty) => {
@@ -225,7 +245,7 @@ impl Invariant for Cache {
             .map(|ty| (type_name, ty))
             .trace(&trace_name)
         })
-        .fuse(Valid::from_iter(other.config.enums, |(name, other_enum)| {
+        .fuse(Valid::from_iter(other_enums, |(name, other_enum)| {
             let trace_name = name.clone();
 
             match enums.remove(&name) {
@@ -266,11 +286,12 @@ impl Invariant for Cache {
             .map(|en| (name, en))
             .trace(&trace_name)
         }))
-        .map( |(merged_types, merged_enums)| {
+        .fuse(merge_config(self.config, other.config))
+        .map( |(merged_types, merged_enums, merged_config)| {
             types.extend(merged_types);
             enums.extend(merged_enums);
 
-            let config = Config { types, enums, unions: self.config.unions.merge_right(other.config.unions), ..self.config };
+            let config = Config { types, enums, unions: unions.merge_right(other_unions), ..merged_config };
 
             Cache {
                 config,
@@ -282,11 +303,32 @@ impl Invariant for Cache {
     }
 }
 
-impl Invariant for ConfigModule {
-    fn unify(self, other: Self) -> Valid<Self, String> {
+impl Contravariant for Cache {
+    fn shrink(self, other: Self) -> Valid<Self, String> {
+        self.merge(other, Contravariant::shrink)
+    }
+}
+
+impl Covariant for Cache {
+    fn expand(self, other: Self) -> Valid<Self, String> {
+        self.merge(other, Covariant::expand)
+    }
+}
+
+impl Contravariant for ConfigModule {
+    fn shrink(self, other: Self) -> Valid<Self, String> {
         self.cache
-            .unify(other.cache)
+            .shrink(other.cache)
             .map(|cache| Self { cache, extensions: self.extensions })
+    }
+}
+
+impl Covariant for ConfigModule {
+    fn expand(self, other: Self) -> Valid<Self, String> {
+        self.cache.expand(other.cache).map(|cache| Self {
+            cache,
+            extensions: self.extensions.merge_right(other.extensions),
+        })
     }
 }
 
@@ -401,7 +443,7 @@ mod tests {
         let types1 = ConfigModule::from(include_config!("./fixtures/types-1.graphql")?);
         let types2 = ConfigModule::from(include_config!("./fixtures/types-2.graphql")?);
 
-        let merged = types1.unify(types2).to_result()?;
+        let merged = types1.expand(types2).to_result()?;
 
         assert_snapshot!(merged.to_sdl());
 
@@ -413,7 +455,7 @@ mod tests {
         let types1 = ConfigModule::from(include_config!("./fixtures/types-1.graphql")?);
         let types3 = ConfigModule::from(include_config!("./fixtures/types-3.graphql")?);
 
-        let merged = types1.unify(types3).to_result();
+        let merged = types1.expand(types3).to_result();
 
         assert_snapshot!(merged.unwrap_err());
 
@@ -425,7 +467,7 @@ mod tests {
         let unions1 = ConfigModule::from(include_config!("./fixtures/unions-1.graphql")?);
         let unions2 = ConfigModule::from(include_config!("./fixtures/unions-2.graphql")?);
 
-        let merged = unions1.unify(unions2).to_result()?;
+        let merged = unions1.expand(unions2).to_result()?;
 
         assert_snapshot!(merged.to_sdl());
 
@@ -437,7 +479,7 @@ mod tests {
         let enums1 = ConfigModule::from(include_config!("./fixtures/enums-1.graphql")?);
         let enums2 = ConfigModule::from(include_config!("./fixtures/enums-2.graphql")?);
 
-        let merged = enums1.unify(enums2).to_result()?;
+        let merged = enums1.expand(enums2).to_result()?;
 
         assert_snapshot!(merged.to_sdl());
 
@@ -449,7 +491,7 @@ mod tests {
         let enums1 = ConfigModule::from(include_config!("./fixtures/enums-1.graphql")?);
         let enums3 = ConfigModule::from(include_config!("./fixtures/enums-3.graphql")?);
 
-        let merged = enums1.unify(enums3).to_result();
+        let merged = enums1.expand(enums3).to_result();
 
         assert_snapshot!(merged.unwrap_err());
 
@@ -467,8 +509,8 @@ mod tests {
             ConfigModule::from(include_config!("./fixtures/subgraph-posts.graphql")?);
 
         let merged = router;
-        let merged = merged.unify(subgraph_users).to_result()?;
-        let merged = merged.unify(subgraph_posts).to_result()?;
+        let merged = merged.shrink(subgraph_users).to_result()?;
+        let merged = merged.shrink(subgraph_posts).to_result()?;
 
         assert_snapshot!(merged.to_sdl());
 

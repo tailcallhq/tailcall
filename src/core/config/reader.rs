@@ -8,11 +8,12 @@ use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType, PrivateKey};
 use crate::core::config::{Config, ConfigReaderContext, Source};
-use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::{Cached, Resource, ResourceReader};
 use crate::core::rest::EndpointSet;
 use crate::core::runtime::TargetRuntime;
+use crate::core::valid::{Valid, Validator};
+use crate::core::variance::Covariant;
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all
 /// linked extensions to create a ConfigModule.
@@ -36,7 +37,7 @@ impl ConfigReader {
     #[async_recursion::async_recursion]
     async fn ext_links(
         &self,
-        mut config_module: ConfigModule,
+        config_module: ConfigModule,
         parent_dir: Option<&'async_recursion Path>,
     ) -> anyhow::Result<ConfigModule> {
         let links: Vec<Link> = config_module
@@ -57,6 +58,8 @@ impl ConfigReader {
         }
 
         let mut extensions = config_module.extensions().clone();
+        let mut config_module = Valid::succeed(config_module);
+
         // let mut base_config = config_module.config().clone();
 
         for link in links.iter() {
@@ -68,13 +71,16 @@ impl ConfigReader {
                     let content = source.content;
 
                     let config = Config::from_source(Source::detect(&source.path)?, &content)?;
-                    config_module = config_module.merge_right(config.clone().into());
+                    config_module = config_module.and_then(|config_module| {
+                        config_module.expand(ConfigModule::from(config.clone()))
+                    });
 
                     if !config.links.is_empty() {
                         let cfg_module = self
                             .ext_links(ConfigModule::from(config), Path::new(&link.src).parent())
                             .await?;
-                        config_module = config_module.merge_right(cfg_module.clone());
+                        config_module = config_module
+                            .and_then(|config_module| config_module.expand(cfg_module));
                     }
                 }
                 LinkType::Protobuf => {
@@ -134,9 +140,9 @@ impl ConfigReader {
             }
         }
 
-        // Recreating the ConfigModule in order to recompute the values of
-        // `input_types`, `output_types` and `interface_types`
-        Ok(config_module.set_extensions(extensions))
+        Ok(config_module
+            .map(|config_module| config_module.set_extensions(extensions))
+            .to_result()?)
     }
 
     /// Reads the certificate from a given file
@@ -182,7 +188,7 @@ impl ConfigReader {
         files: &[T],
     ) -> anyhow::Result<ConfigModule> {
         let files = self.resource_reader.read_files(files).await?;
-        let mut config_module = ConfigModule::default();
+        let mut config_module = Valid::succeed(ConfigModule::default());
 
         for file in files.iter() {
             let source = Source::detect(&file.path)?;
@@ -197,10 +203,11 @@ impl ConfigReader {
                 .await?;
 
             // Merge it with the original config set
-            config_module = config_module.merge_right(new_config_module);
+            config_module =
+                config_module.and_then(|config_module| config_module.expand(new_config_module));
         }
 
-        Ok(config_module)
+        Ok(config_module.to_result()?)
     }
 
     /// Resolves all the links in a Config to create a ConfigModule

@@ -4,12 +4,8 @@ expression: errors
 ---
 [
   {
-    "message": "Parsing failed because of invalid type: string \"{{.value.user.username}}\", expected a sequence",
-    "trace": [
-      "PostUser",
-      "@addField",
-      "path"
-    ],
+    "message": "Validation Error\n• Parsing failed because of invalid type: string \"{{.value.user.username}}\", expected a sequence [PostUser, @addField, path]\n",
+    "trace": [],
     "description": null
   }
 ]

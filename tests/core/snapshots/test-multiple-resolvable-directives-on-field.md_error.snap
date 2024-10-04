@@ -4,19 +4,8 @@ expression: errors
 ---
 [
   {
-    "message": "Multiple resolvers detected [@http, @expr]",
-    "trace": [
-      "Query",
-      "user1"
-    ],
-    "description": null
-  },
-  {
-    "message": "Multiple resolvers detected [@http, @call]",
-    "trace": [
-      "Query",
-      "user2"
-    ],
+    "message": "Validation Error\n• Multiple resolvers detected [@http, @expr] [Query, user1]\n• Multiple resolvers detected [@http, @call] [Query, user2]\n",
+    "trace": [],
     "description": null
   }
 ]

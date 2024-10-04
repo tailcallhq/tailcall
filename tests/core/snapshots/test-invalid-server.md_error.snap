@@ -4,11 +4,8 @@ expression: errors
 ---
 [
   {
-    "message": "Parsing failed because of invalid type: string \"8000\", expected u16",
-    "trace": [
-      "@server",
-      "port"
-    ],
+    "message": "Validation Error\n• Parsing failed because of invalid type: string \"8000\", expected u16 [@server, port]\n",
+    "trace": [],
     "description": null
   }
 ]

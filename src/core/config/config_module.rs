@@ -17,7 +17,7 @@ mod merge;
 
 /// A wrapper on top of Config that contains all the resolved extensions and
 /// computed values.
-#[derive(Clone, Debug, Default, MergeRight)]
+#[derive(Clone, Debug, Default)]
 pub struct ConfigModule {
     extensions: Extensions,
     cache: Cache,
@@ -45,12 +45,6 @@ impl From<Config> for Cache {
             output_types: output_types.clone(),
             interface_types: interface_types.clone(),
         }
-    }
-}
-
-impl MergeRight for Cache {
-    fn merge_right(self, other: Self) -> Self {
-        Cache::from(self.config.merge_right(other.config))
     }
 }
 
