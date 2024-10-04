@@ -52,6 +52,7 @@ fn convert_value(value: Cow<'_, async_graphql::Value>) -> Option<Cow<'_, str>> {
         Cow::Borrowed(async_graphql::Value::Boolean(b)) => Some(Cow::Owned(b.to_string())),
         Cow::Borrowed(async_graphql::Value::Object(map)) => Some(json!(map).to_string().into()),
         Cow::Borrowed(async_graphql::Value::List(list)) => Some(json!(list).to_string().into()),
+        Cow::Borrowed(async_graphql::Value::Enum(n)) => Some(Cow::Borrowed(n)),
         _ => None,
     }
 }
