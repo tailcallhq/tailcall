@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use tailcall_macros::{DirectiveDefinition, InputDefinition};
+use tailcall_macros::{DirectiveDefinition, InputDefinition, MergeRight};
 
 use crate::core::is_default;
 
@@ -13,6 +13,7 @@ use crate::core::is_default;
     schemars::JsonSchema,
     DirectiveDefinition,
     InputDefinition,
+    MergeRight,
 )]
 #[directive_definition(locations = "FieldDefinition")]
 #[serde(deny_unknown_fields)]

@@ -40,6 +40,7 @@ pub mod tracing;
 mod transform;
 pub mod try_fold;
 pub mod valid;
+pub mod variance;
 pub mod worker;
 pub mod wrapping_type;
 
