@@ -155,11 +155,20 @@ where
                 )
             }
         } else if self.plan.field_is_enum(node) {
-            if value
-                .as_str()
-                .map(|v| self.plan.field_validate_enum_value(node, v))
-                .unwrap_or(false)
-            {
+            let check_valid_enum = |value: &Value| -> bool {
+                value
+                    .as_str()
+                    .map(|v| self.plan.field_validate_enum_value(node, v))
+                    .unwrap_or(false)
+            };
+
+            let is_valid_enum = if let Some(vec) = value.as_array() {
+                vec.iter().all(check_valid_enum)
+            } else {
+                check_valid_enum(value)
+            };
+
+            if is_valid_enum {
                 Ok(value.clone())
             } else {
                 Err(
