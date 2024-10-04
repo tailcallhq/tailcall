@@ -1,0 +1,17 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server @upstream {
+  query: Query
+}
+
+enum COLOR {
+  BLUE
+  GREEN
+  RED
+}
+
+type Query {
+  color(item: COLOR): COLOR @expr(body: "{{.args.item}}")
+}
