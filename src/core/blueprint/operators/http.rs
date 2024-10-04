@@ -98,7 +98,7 @@ pub fn compile_http(
 
             if let Some(select) = &http.select {
                 let dynamic_value = match DynamicValue::try_from(select) {
-                    Ok(dynamic_value) => dynamic_value.inject_args(),
+                    Ok(dynamic_value) => dynamic_value.prepend("args"),
                     Err(_) => {
                         return Valid::fail(format!("syntax error when parsing `{:?}`", select))
                     }

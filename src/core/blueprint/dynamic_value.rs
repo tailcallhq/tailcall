@@ -13,7 +13,7 @@ pub enum DynamicValue<A> {
 }
 
 impl<A> DynamicValue<A> {
-    pub fn inject_args(self) -> Self {
+    pub fn prepend(self, name: &str) -> Self {
         match self {
             DynamicValue::Value(value) => DynamicValue::Value(value),
             DynamicValue::Mustache(mut mustache) => {
@@ -24,7 +24,7 @@ impl<A> DynamicValue<A> {
                     if let Some(crate::core::mustache::Segment::Expression(vec)) =
                         segments.get_mut(0)
                     {
-                        vec.insert(0, "args".to_string());
+                        vec.insert(0, name.to_string());
                     }
                     DynamicValue::Mustache(mustache)
                 }
@@ -32,12 +32,12 @@ impl<A> DynamicValue<A> {
             DynamicValue::Object(index_map) => {
                 let index_map = index_map
                     .into_iter()
-                    .map(|(key, val)| (key, val.inject_args()))
+                    .map(|(key, val)| (key, val.prepend(name)))
                     .collect();
                 DynamicValue::Object(index_map)
             }
             DynamicValue::Array(vec) => {
-                let vec = vec.into_iter().map(|val| val.inject_args()).collect();
+                let vec = vec.into_iter().map(|val| val.prepend(name)).collect();
                 DynamicValue::Array(vec)
             }
         }
@@ -119,7 +119,7 @@ mod test {
     #[test]
     fn test_dynamic_value_inject() {
         let value: DynamicValue<ConstValue> =
-            DynamicValue::Mustache(Mustache::parse("{{.foo}}")).inject_args();
+            DynamicValue::Mustache(Mustache::parse("{{.foo}}")).prepend("args");
         let expected: DynamicValue<ConstValue> =
             DynamicValue::Mustache(Mustache::parse("{{.args.foo}}"));
         assert_eq!(value, expected);
@@ -129,7 +129,7 @@ mod test {
             Name::new("foo"),
             DynamicValue::Mustache(Mustache::parse("{{.foo}}")),
         );
-        let value: DynamicValue<ConstValue> = DynamicValue::Object(value_map).inject_args();
+        let value: DynamicValue<ConstValue> = DynamicValue::Object(value_map).prepend("args");
         let mut expected_map = IndexMap::new();
         expected_map.insert(
             Name::new("foo"),
@@ -140,13 +140,13 @@ mod test {
 
         let value: DynamicValue<ConstValue> =
             DynamicValue::Array(vec![DynamicValue::Mustache(Mustache::parse("{{.foo}}"))])
-                .inject_args();
+                .prepend("args");
         let expected: DynamicValue<ConstValue> = DynamicValue::Array(vec![DynamicValue::Mustache(
             Mustache::parse("{{.args.foo}}"),
         )]);
         assert_eq!(value, expected);
 
-        let value: DynamicValue<ConstValue> = DynamicValue::Value(ConstValue::Null).inject_args();
+        let value: DynamicValue<ConstValue> = DynamicValue::Value(ConstValue::Null).prepend("args");
         let expected: DynamicValue<ConstValue> = DynamicValue::Value(ConstValue::Null);
         assert_eq!(value, expected);
     }
