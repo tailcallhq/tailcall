@@ -62,7 +62,7 @@ pub fn compile_http(
             .map_err(|e| ValidationError::new(e.to_string()))
             .into()
         })
-        .and_then(|req_template| {
+        .map(|req_template| {
             // marge http and upstream on_request
             let http_filter = http
                 .on_request
@@ -70,7 +70,7 @@ pub fn compile_http(
                 .or(config_module.upstream.on_request.clone())
                 .map(|on_request| HttpFilter { on_request });
 
-            let mut io = if !http.batch_key.is_empty() && http.method == Method::GET {
+            let io = if !http.batch_key.is_empty() && http.method == Method::GET {
                 // Find a query parameter that contains a reference to the {{.value}} key
                 let key = http.query.iter().find_map(|q| {
                     Mustache::parse(&q.value)
@@ -95,20 +95,9 @@ pub fn compile_http(
                     dedupe,
                 })
             };
-
-            if let Some(select) = &http.select {
-                let dynamic_value = match DynamicValue::try_from(select) {
-                    Ok(dynamic_value) => dynamic_value.prepend("args"),
-                    Err(_) => {
-                        return Valid::fail(format!("syntax error when parsing `{:?}`", select))
-                    }
-                };
-
-                io = io.pipe(IR::Dynamic(dynamic_value));
-            }
-
-            Valid::succeed(io)
+            (io, &http.select)
         })
+        .and_then(apply_select)
 }
 
 pub fn update_http<'a>(
