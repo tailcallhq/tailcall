@@ -1,5 +1,5 @@
 use std::marker::PhantomData;
-use std::num::NonZeroU64;
+use std::num::{NonZeroU16, NonZeroU64};
 
 use crate::core::merge_right::MergeRight;
 
@@ -16,6 +16,7 @@ impl Primitive for i8 {}
 impl Primitive for NonZeroU64 {}
 impl Primitive for String {}
 impl Primitive for u16 {}
+impl Primitive for NonZeroU16 {}
 impl Primitive for u32 {}
 impl Primitive for u64 {}
 impl Primitive for u8 {}

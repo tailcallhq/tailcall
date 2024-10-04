@@ -1,3 +1,4 @@
+mod admin_server;
 pub mod http_1;
 pub mod http_2;
 pub mod http_server;
