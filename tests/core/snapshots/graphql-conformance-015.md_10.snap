@@ -11,7 +11,13 @@ expression: response
     "data": null,
     "errors": [
       {
-        "message": "Argument `size` for field `profilePic` is required"
+        "message": "Build error: ResolveInputError: Argument `size` for field `profilePic` is required",
+        "locations": [
+          {
+            "line": 0,
+            "column": 0
+          }
+        ]
       }
     ]
   }
