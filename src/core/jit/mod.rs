@@ -2,6 +2,7 @@ mod exec;
 mod model;
 mod store;
 mod synth;
+mod transform;
 
 use builder::*;
 use store::*;
