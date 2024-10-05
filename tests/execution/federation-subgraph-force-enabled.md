@@ -11,14 +11,14 @@ type Query {
   user(id: Int!): User @http(path: "/users/{{.args.id}}")
 }
 
-type User {
+type User @tag(name: "team-accounts") {
   id: Int!
-  name: String!
+  name: String! @shareable
 }
 
 type Post {
   id: Int!
-  title: String!
+  title: String! @external
 }
 ```
 
