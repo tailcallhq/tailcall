@@ -6,6 +6,7 @@ use serde::Deserialize;
 
 use super::{transform, Builder, OperationPlan, Result, Variables};
 use crate::core::blueprint::Blueprint;
+use crate::core::transform::TransformerOps;
 use crate::core::valid::Validator;
 use crate::core::Transform;
 
@@ -44,7 +45,8 @@ impl Request<ConstValue> {
         let builder = Builder::new(blueprint, doc);
         let plan = builder.build(self.operation_name.as_deref())?;
 
-        let plan = transform::ConstCheck::new()
+        let plan = transform::CheckConst::new()
+            .pipe(transform::CheckDedupe::new())
             .transform(plan.clone())
             .to_result()
             .unwrap_or(plan);

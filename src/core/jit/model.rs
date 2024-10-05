@@ -422,17 +422,6 @@ impl<Input> OperationPlan<Input> {
             .map(|f| f.into_nested(&fields))
             .collect::<Vec<_>>();
 
-        let dedupe = fields
-            .iter()
-            .map(|field| {
-                if let Some(IR::IO(io)) = field.ir.as_ref() {
-                    io.dedupe()
-                } else {
-                    true
-                }
-            })
-            .all(|a| a);
-
         Self {
             root_name: root_name.to_string(),
             flat: fields,
@@ -440,7 +429,7 @@ impl<Input> OperationPlan<Input> {
             operation_type,
             index,
             is_introspection_query,
-            dedupe,
+            dedupe: false,
             is_const: false,
         }
     }

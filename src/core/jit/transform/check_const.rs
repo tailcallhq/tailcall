@@ -4,14 +4,14 @@ use crate::core::jit::OperationPlan;
 use crate::core::valid::Valid;
 use crate::core::Transform;
 
-pub struct ConstCheck<A>(PhantomData<A>);
-impl<A> ConstCheck<A> {
+pub struct CheckConst<A>(PhantomData<A>);
+impl<A> CheckConst<A> {
     pub fn new() -> Self {
         Self(PhantomData)
     }
 }
 
-impl<A> Transform for ConstCheck<A> {
+impl<A> Transform for CheckConst<A> {
     type Value = OperationPlan<A>;
     type Error = ();
 
