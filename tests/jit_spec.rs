@@ -1,13 +1,14 @@
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
+    use async_graphql::Pos;
 
     use async_graphql_value::ConstValue;
     use tailcall::core::app_context::AppContext;
     use tailcall::core::blueprint::Blueprint;
     use tailcall::core::config::{Config, ConfigModule};
     use tailcall::core::http::RequestContext;
-    use tailcall::core::jit::{ConstValueExecutor, Error, Request, Response};
+    use tailcall::core::jit::{BuildError, ConstValueExecutor, Error, Positioned, Request, ResolveInputError, Response};
     use tailcall::core::rest::EndpointSet;
     use tailcall::core::valid::Validator;
 
@@ -167,10 +168,11 @@ mod tests {
         let request = Request::new(query);
         let executor = TestExecutor::try_new().await.unwrap();
 
-        match executor.run(request).await {
-            Ok(_) => panic!("Should fail with unresolved variable"),
-            Err(err) => assert_eq!(err.to_string(), "Variable `id` is not defined"),
-        };
+        let resp = executor.run(request).await.unwrap();
+        let errs = vec![Positioned::new(Error::BuildError(BuildError::ResolveInputError(
+                ResolveInputError::VariableIsNotFound("id".to_string()),
+            )), Pos::default().into())];
+        assert_eq!(format!("{:?}", resp.errors), format!("{:?}", errs));
 
         let request = Request::new(query);
         let request = request.variables([("id".into(), ConstValue::from(1))]);
