@@ -112,7 +112,7 @@ impl Executor for JITExecutor {
                 if let Some(op) = self.app_ctx.operation_plans.get(&hash).await.ok().flatten() {
                     ConstValueExecutor::from(op)
                 } else {
-                    let exec = match ConstValueExecutor::new(&jit_request, &self.app_ctx) {
+                    let exec = match ConstValueExecutor::try_new(&jit_request, &self.app_ctx) {
                         Ok(exec) => exec,
                         Err(error) => return Response::from_errors(vec![error.into()]),
                     };

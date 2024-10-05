@@ -1,31 +1,32 @@
-use crate::core::{
-    jit::{Error, OperationPlan, Variables},
-    json::JsonLike,
-    valid::Valid,
-    Transform,
-};
+use std::marker::PhantomData;
 
-pub struct Skip<A> {
-    variables: Variables<A>,
+use crate::core::jit::{Error, OperationPlan, Variables};
+use crate::core::json::JsonLike;
+use crate::core::valid::Valid;
+use crate::core::Transform;
+
+pub struct Skip<'a, Var, Value> {
+    variables: &'a Variables<Var>,
+    _value: PhantomData<Value>,
 }
 
-impl<A> Skip<A> {
-    pub fn new(variables: Variables<A>) -> Self {
-        Self { variables }
+impl<'a, Var, Value> Skip<'a, Var, Value> {
+    pub fn new(variables: &'a Variables<Var>) -> Self {
+        Self { variables, _value: PhantomData }
     }
 }
 
-impl<A> Transform for Skip<A>
+impl<'a, Var, Value: Clone> Transform for Skip<'a, Var, Value>
 where
-    A: for<'a> JsonLike<'a> + Clone,
+    Var: for<'b> JsonLike<'b> + Clone,
 {
-    type Value = OperationPlan<A>;
+    type Value = OperationPlan<Value>;
 
     type Error = Error;
 
     fn transform(&self, mut value: Self::Value) -> Valid<Self::Value, Self::Error> {
         // Drop all the fields that are not needed
-        value.flat.retain(|f| !f.skip(&self.variables));
+        value.flat.retain(|f| !f.skip(self.variables));
 
         // Recreate a plan with the new fields
         let plan = OperationPlan::new(

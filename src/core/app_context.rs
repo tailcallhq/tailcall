@@ -29,7 +29,7 @@ pub struct AppContext {
     pub auth_ctx: Arc<GlobalAuthContext>,
     pub dedupe_handler: Arc<DedupeResult<IoId, ConstValue, Error>>,
     pub dedupe_operation_handler: DedupeResult<OperationId, Arc<async_graphql::Response>, Error>,
-    pub operation_plans: InMemoryCache<OPHash, OperationPlan<ConstValue>>,
+    pub operation_plans: InMemoryCache<OPHash, OperationPlan<async_graphql_value::Value>>,
 }
 
 impl AppContext {

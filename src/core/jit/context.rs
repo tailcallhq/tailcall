@@ -120,7 +120,7 @@ mod test {
     use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
     use crate::core::ir::ResolverContextLike;
-    use crate::core::jit::input_resolver::InputResolver;
+    use crate::core::jit::transform::InputResolver;
     use crate::core::jit::{OperationPlan, Request};
     use crate::core::valid::Validator;
 

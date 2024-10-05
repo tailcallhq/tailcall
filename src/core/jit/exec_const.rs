@@ -1,11 +1,13 @@
 use std::sync::Arc;
 
-use async_graphql_value::ConstValue;
+use async_graphql_value::{ConstValue, Value};
 use futures_util::future::join_all;
 
 use super::context::Context;
 use super::exec::{Executor, IRExecutor};
-use super::{Error, OperationPlan, Request, Response, Result};
+use super::{
+    transform, BuildError, Error, OperationPlan, Pos, Positioned, Request, Response, Result,
+};
 use crate::core::app_context::AppContext;
 use crate::core::http::RequestContext;
 use crate::core::ir::model::IR;
@@ -13,39 +15,24 @@ use crate::core::ir::{self, EvalContext};
 use crate::core::jit::synth::Synth;
 use crate::core::jit::transform::InputResolver;
 use crate::core::json::{JsonLike, JsonLikeList};
+use crate::core::valid::Validator;
+use crate::core::Transform;
 
 /// A specialized executor that executes with async_graphql::Value
 pub struct ConstValueExecutor {
-    pub plan: OperationPlan<ConstValue>,
+    pub plan: OperationPlan<Value>,
 }
 
-impl From<OperationPlan<ConstValue>> for ConstValueExecutor {
-    fn from(plan: OperationPlan<ConstValue>) -> Self {
+impl From<OperationPlan<Value>> for ConstValueExecutor {
+    fn from(plan: OperationPlan<Value>) -> Self {
         Self { plan }
     }
 }
 
 impl ConstValueExecutor {
-    pub fn new(request: &Request<ConstValue>, app_ctx: &Arc<AppContext>) -> Result<Self> {
-        let variables = &request.variables;
+    pub fn try_new(request: &Request<ConstValue>, app_ctx: &Arc<AppContext>) -> Result<Self> {
         // Create a new plan
-        let mut plan = request.create_plan(&app_ctx.blueprint)?;
-        plan.flat.retain(|f| !f.skip(variables));
-        let plan = OperationPlan::new(
-            &plan.root_name,
-            plan.flat,
-            plan.operation_type,
-            plan.index,
-            plan.is_introspection_query,
-        );
-
-        // TODO: operation from [ExecutableDocument] could contain definitions for
-        // default values of arguments. That info should be passed to
-        // [InputResolver] to resolve defaults properly
-        let input_resolver = InputResolver::new(plan);
-        let plan = input_resolver.resolve_input(variables).map_err(|err| {
-            super::Error::ServerError(async_graphql::ServerError::new(err.to_string(), None))
-        })?;
+        let plan = request.create_plan(&app_ctx.blueprint)?;
 
         Ok(Self { plan })
     }
@@ -55,7 +42,35 @@ impl ConstValueExecutor {
         req_ctx: &RequestContext,
         request: &Request<ConstValue>,
     ) -> Response<ConstValue, Error> {
-        let plan = self.plan;
+        let variables = &request.variables;
+
+        // Attempt to skip unnecessary fields
+        let plan = transform::Skip::new(variables)
+            .transform(self.plan.clone())
+            .to_result()
+            .unwrap_or(self.plan);
+
+        // Attempt to replace variables in the plan with the actual values
+        // TODO: operation from [ExecutableDocument] could contain definitions for
+        // default values of arguments. That info should be passed to
+        // [InputResolver] to resolve defaults properly
+        let result = InputResolver::new(plan.clone()).resolve_input(variables);
+
+        let plan = match result {
+            Ok(plan) => plan,
+            Err(err) => {
+                return Response {
+                    data: None,
+                    // TODO: Position shouldn't be 0, 0
+                    errors: vec![Positioned::new(
+                        BuildError::from(err).into(),
+                        Pos { line: 0, column: 0 },
+                    )],
+                    extensions: Default::default(),
+                };
+            }
+        };
+
         // TODO: drop the clones in plan
         let exec = ConstValueExec::new(plan.clone(), req_ctx);
         let vars = request.variables.clone();

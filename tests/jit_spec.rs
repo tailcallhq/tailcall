@@ -33,7 +33,7 @@ mod tests {
             &self,
             request: Request<ConstValue>,
         ) -> anyhow::Result<Response<ConstValue, Error>> {
-            let executor = ConstValueExecutor::new(&request, &self.app_ctx)?;
+            let executor = ConstValueExecutor::try_new(&request, &self.app_ctx)?;
 
             Ok(executor.execute(&self.req_ctx, &request).await)
         }

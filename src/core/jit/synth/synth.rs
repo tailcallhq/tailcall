@@ -237,10 +237,10 @@ mod tests {
     use crate::core::config::{Config, ConfigModule};
     use crate::core::jit::builder::Builder;
     use crate::core::jit::common::JP;
-    use crate::core::jit::input_resolver::InputResolver;
     use crate::core::jit::model::{FieldId, Variables};
     use crate::core::jit::store::Store;
     use crate::core::jit::synth::Synth;
+    use crate::core::jit::transform::InputResolver;
     use crate::core::json::JsonLike;
     use crate::core::valid::Validator;
 
