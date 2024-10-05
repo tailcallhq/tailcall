@@ -1,0 +1,9 @@
+type B {
+  b: String
+}
+
+type C {
+  c: Int
+}
+
+union Union = B | C

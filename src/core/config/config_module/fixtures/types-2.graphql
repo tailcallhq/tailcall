@@ -1,0 +1,5 @@
+type A {
+  b: Int!
+  d: Float!
+  e: String
+}
