@@ -5,6 +5,7 @@ use tailcall_macros::{DirectiveDefinition, MergeRight};
 
 /// The @alias directive indicates that aliases of one enum value.
 #[derive(
+    Default,
     Serialize,
     Deserialize,
     Clone,
