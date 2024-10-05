@@ -85,6 +85,7 @@ pub struct EnumValueDefinition {
     pub description: Option<String>,
     pub name: String,
     pub directives: Vec<Directive>,
+    pub alias: BTreeSet<String>,
 }
 
 #[derive(Clone, Debug, Default)]

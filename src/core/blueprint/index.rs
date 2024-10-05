@@ -48,7 +48,7 @@ impl Index {
         let def = self.map.get(type_name).map(|(def, _)| def);
 
         if let Some(Definition::Enum(enum_)) = def {
-            enum_.enum_values.iter().any(|v| v.name == value)
+            enum_.enum_values.iter().any(|v| v.name == value || v.alias.contains(value))
         } else {
             false
         }

@@ -239,6 +239,7 @@ fn to_enum_type_definition((name, eu): (&String, &Enum)) -> Definition {
                 description: None,
                 name: variant.name.clone(),
                 directives: vec![],
+                alias: variant.alias.clone().unwrap_or_default().options,
             })
             .collect(),
     })

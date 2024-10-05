@@ -404,6 +404,7 @@ pub struct Variant {
 
 /// The @alias directive indicates that aliases of one enum value.
 #[derive(
+    Default,
     Serialize,
     Deserialize,
     Clone,
