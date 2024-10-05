@@ -16,3 +16,4 @@ node_modules/
 tailcall-/cloudflare/build
 
 *.snap.new
+flamegraph.svg
