@@ -70,7 +70,7 @@ pub fn compile_http(
                 .or(config_module.upstream.on_request.clone())
                 .map(|on_request| HttpFilter { on_request });
 
-            if !http.batch_key.is_empty() && http.method == Method::GET {
+            let io = if !http.batch_key.is_empty() && http.method == Method::GET {
                 // Find a query parameter that contains a reference to the {{.value}} key
                 let key = http.query.iter().find_map(|q| {
                     Mustache::parse(&q.value)
@@ -94,8 +94,10 @@ pub fn compile_http(
                     is_list,
                     dedupe,
                 })
-            }
+            };
+            (io, &http.select)
         })
+        .and_then(apply_select)
 }
 
 pub fn update_http<'a>(
