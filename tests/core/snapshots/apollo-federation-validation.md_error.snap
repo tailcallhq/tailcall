@@ -1,0 +1,33 @@
+---
+source: tests/core/spec.rs
+expression: errors
+---
+[
+  {
+    "message": "Invalid key at index 0: 'blogId' is not a field of 'Blog'",
+    "trace": [
+      "Query",
+      "_entities",
+      "_entities"
+    ],
+    "description": null
+  },
+  {
+    "message": "Invalid key at index 1: 'blogId' is not a field of 'Blog'",
+    "trace": [
+      "Query",
+      "_entities",
+      "_entities"
+    ],
+    "description": null
+  },
+  {
+    "message": "Invalid key at index 1: 'userId' is not a field of 'Blog'",
+    "trace": [
+      "Query",
+      "_entities",
+      "_entities"
+    ],
+    "description": null
+  }
+]
