@@ -21,28 +21,28 @@ use crate::core::Transform;
 /// A specialized executor that executes with async_graphql::Value
 pub struct ConstValueExecutor {
     pub plan: OperationPlan<Value>,
+    pub response: Option<Response<ConstValue, Error>>,
 }
 
 impl From<OperationPlan<Value>> for ConstValueExecutor {
     fn from(plan: OperationPlan<Value>) -> Self {
-        Self { plan }
+        Self { plan, response: None }
     }
 }
 
 impl ConstValueExecutor {
     pub fn try_new(request: &Request<ConstValue>, app_ctx: &Arc<AppContext>) -> Result<Self> {
-        // Create a new plan
         let plan = request.create_plan(&app_ctx.blueprint)?;
-
-        Ok(Self { plan })
+        Ok(Self::from(plan))
     }
 
     pub async fn execute(
-        self,
+        mut self,
         req_ctx: &RequestContext,
         request: &Request<ConstValue>,
     ) -> Response<ConstValue, Error> {
         let variables = &request.variables;
+        let is_const = self.plan.is_const;
 
         // Attempt to skip unnecessary fields
         let plan = transform::Skip::new(variables)
@@ -77,7 +77,14 @@ impl ConstValueExecutor {
         let exe = Executor::new(plan.clone(), exec);
         let store = exe.store().await;
         let synth = Synth::new(plan, store, vars);
-        exe.execute(synth).await
+        let response = exe.execute(synth).await;
+
+        // Cache the response if we know the output is always the same
+        if is_const {
+            self.response = Some(response.clone());
+        }
+
+        response
     }
 }
 

@@ -362,6 +362,7 @@ pub struct OperationPlan<Input> {
     pub index: Arc<Index>,
     pub is_introspection_query: bool,
     pub dedupe: bool,
+    pub is_const: bool,
 }
 
 impl<Input> std::fmt::Debug for OperationPlan<Input> {
@@ -397,6 +398,7 @@ impl<Input> OperationPlan<Input> {
             index: self.index,
             is_introspection_query: self.is_introspection_query,
             dedupe: self.dedupe,
+            is_const: self.is_const,
         })
     }
 }
@@ -439,6 +441,7 @@ impl<Input> OperationPlan<Input> {
             index,
             is_introspection_query,
             dedupe,
+            is_const: false,
         }
     }
 
