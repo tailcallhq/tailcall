@@ -30,7 +30,7 @@ where
     Value: JsonLike<'a> + Clone + std::fmt::Debug,
 {
     #[inline(always)]
-    fn include<T>(&self, field: &Field<T, Value>) -> bool {
+    fn include(&self, field: &Field<Value>) -> bool {
         !field.skip(&self.variables)
     }
 
@@ -57,7 +57,7 @@ where
     #[inline(always)]
     fn iter(
         &'a self,
-        node: &'a Field<Nested<Value>, Value>,
+        node: &'a Field<Value>,
         value: Option<&'a Value>,
         data_path: &DataPath,
         path: &mut Vec<PathSegment>,
@@ -96,7 +96,7 @@ where
     /// case it does not it throws an Error
     fn node_nullable_guard(
         &'a self,
-        node: &'a Field<Nested<Value>, Value>,
+        node: &'a Field<Value>,
         path: &[PathSegment],
         root_name: Option<&'a str>,
     ) -> Result<Value, Positioned<Error>> {
@@ -118,7 +118,7 @@ where
     #[inline(always)]
     fn iter_inner(
         &'a self,
-        node: &'a Field<Nested<Value>, Value>,
+        node: &'a Field<Value>,
         value: &'a Value,
         data_path: &DataPath,
         path: &mut Vec<PathSegment>,
@@ -182,7 +182,7 @@ where
                     let mut ans = Value::JsonObject::new();
 
                     for child in node
-                        .iter()
+                        .iter_dfs()
                         .filter(|field| self.plan.field_is_part_of_value(field, value))
                     {
                         // all checks for skip must occur in `iter_inner`
@@ -221,7 +221,7 @@ where
     fn to_location_error(
         &'a self,
         error: Error,
-        node: &'a Field<Nested<Value>, Value>,
+        node: &'a Field<Value>,
         path: &[PathSegment],
     ) -> Positioned<Error> {
         Positioned::new(error, node.pos).with_path(path.to_vec())

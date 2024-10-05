@@ -16,7 +16,7 @@ impl<A> Transform for CheckConst<A> {
     type Error = ();
 
     fn transform(&self, mut plan: Self::Value) -> Valid<Self::Value, Self::Error> {
-        let is_const = plan.flat.iter().all(|field| match field.ir {
+        let is_const = plan.as_flat().iter().all(|field| match field.ir {
             Some(ref ir) => ir.is_const(),
             None => true,
         });

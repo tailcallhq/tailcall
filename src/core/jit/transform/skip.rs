@@ -24,17 +24,19 @@ where
 
     type Error = Error;
 
-    fn transform(&self, mut value: Self::Value) -> Valid<Self::Value, Self::Error> {
+    fn transform(&self, mut plan: Self::Value) -> Valid<Self::Value, Self::Error> {
         // Drop all the fields that are not needed
-        value.flat.retain(|f| !f.skip(self.variables));
+        plan.flat.retain(|f| !f.skip(self.variables));
+
+        
 
         // Recreate a plan with the new fields
         let plan = OperationPlan::new(
-            &value.root_name,
-            value.flat,
-            value.operation_type,
-            value.index,
-            value.is_introspection_query,
+            &plan.root_name,
+            plan.flat,
+            plan.operation_type,
+            plan.index,
+            plan.is_introspection_query,
         );
 
         Valid::succeed(plan)

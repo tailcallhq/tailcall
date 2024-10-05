@@ -85,20 +85,20 @@ impl From<async_graphql::SelectionField<'_>> for SelectionField {
     }
 }
 
-impl<'a> From<&'a crate::core::jit::Field<Nested<ConstValue>, ConstValue>> for SelectionField {
-    fn from(value: &'a crate::core::jit::Field<Nested<ConstValue>, ConstValue>) -> Self {
+impl<'a> From<&'a crate::core::jit::Field<ConstValue>> for SelectionField {
+    fn from(value: &'a crate::core::jit::Field<ConstValue>) -> Self {
         Self::from_jit_field(value)
     }
 }
 
 impl SelectionField {
     fn from_jit_field(
-        field: &crate::core::jit::Field<Nested<ConstValue>, ConstValue>,
+        field: &crate::core::jit::Field<ConstValue>,
     ) -> SelectionField {
         let name = field.output_name.to_string();
         let type_name = field.type_of.name();
         let selection_set = field
-            .iter()
+            .iter_dfs()
             .filter(|field| match &field.type_condition {
                 Some(type_condition) => type_condition == type_name,
                 None => true,

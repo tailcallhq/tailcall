@@ -55,7 +55,7 @@ where
     ) -> Result<OperationPlan<Output>, ResolveInputError> {
         let new_fields = self
             .plan
-            .as_parent()
+            .as_flat()
             .iter()
             .map(|field| field.clone().try_map(|value| value.resolve(variables)))
             .map(|field| match field {

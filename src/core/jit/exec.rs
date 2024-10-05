@@ -88,7 +88,7 @@ where
         let field = ctx.field();
         // TODO: Validate if the value is an Object
         // Has to be an Object, we don't do anything while executing if its a Scalar
-        join_all(field.iter().map(|child| {
+        join_all(field.iter_dfs().map(|child| {
             let ctx = ctx.with_value_and_field(value, child);
             async move { self.execute(&ctx).await }
         }))

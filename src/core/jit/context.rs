@@ -36,11 +36,11 @@ pub struct Context<'a, Input, Output> {
     args: Option<indexmap::IndexMap<Name, Input>>,
     // TODO: remove the args, since they're already present inside the fields and add support for
     // default values.
-    field: &'a Field<Nested<Input>, Input>,
+    field: &'a Field<Input>,
     request: &'a RequestContext<Input>,
 }
 impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
-    pub fn new(field: &'a Field<Nested<Input>, Input>, request: &'a RequestContext<Input>) -> Self {
+    pub fn new(field: &'a Field<Input>, request: &'a RequestContext<Input>) -> Self {
         Self { request, value: None, args: Self::build_args(field), field }
     }
 
@@ -57,7 +57,7 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
     pub fn with_value_and_field(
         &self,
         value: &'a Output,
-        field: &'a Field<Nested<Input>, Input>,
+        field: &'a Field<Input>,
     ) -> Self {
         Self {
             request: self.request,
@@ -71,11 +71,11 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
         self.value
     }
 
-    pub fn field(&self) -> &Field<Nested<Input>, Input> {
+    pub fn field(&self) -> &Field<Input> {
         self.field
     }
 
-    fn build_args(field: &Field<Nested<Input>, Input>) -> Option<IndexMap<Name, Input>> {
+    fn build_args(field: &Field<Input>) -> Option<IndexMap<Name, Input>> {
         let mut arg_map = IndexMap::new();
 
         for arg in field.args.iter() {

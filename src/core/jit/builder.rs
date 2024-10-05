@@ -131,9 +131,9 @@ impl Builder {
         &self,
         selection: &SelectionSet,
         type_condition: &str,
-        exts: Option<Flat>,
+        children: Option<Vec<Field<Value>>>,
         fragments: &HashMap<&str, &FragmentDefinition>,
-    ) -> Vec<Field<Flat, Value>> {
+    ) -> Vec<Field<Value>> {
         let mut fields = vec![];
         for selection in &selection.items {
             match &selection.node {
@@ -225,7 +225,7 @@ impl Builder {
                             include,
                             args,
                             pos: selection.pos.into(),
-                            extensions: exts.clone(),
+                            selection: children.clone(),
                             directives,
                         };
 
@@ -245,7 +245,7 @@ impl Builder {
                             include,
                             args: Vec::new(),
                             pos: selection.pos.into(),
-                            extensions: exts.clone(),
+                            selection: children.clone(),
                             directives,
                         };
 
@@ -259,7 +259,7 @@ impl Builder {
                         fields.extend(self.iter(
                             &fragment.selection_set.node,
                             fragment.type_condition.node.on.node.as_str(),
-                            exts.clone(),
+                            children.clone(),
                             fragments,
                         ));
                     }
@@ -274,7 +274,7 @@ impl Builder {
                     fields.extend(self.iter(
                         &fragment.selection_set.node,
                         type_of,
-                        exts.clone(),
+                        children.clone(),
                         fragments,
                     ));
                 }
