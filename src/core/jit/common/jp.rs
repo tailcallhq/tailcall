@@ -5,7 +5,7 @@ use serde::Deserialize;
 use crate::core::blueprint::Blueprint;
 use crate::core::config::{Config, ConfigModule};
 use crate::core::jit::builder::Builder;
-use crate::core::jit::input_resolver::InputResolver;
+use crate::core::jit::transform::InputResolver;
 use crate::core::jit::store::Store;
 use crate::core::jit::synth::Synth;
 use crate::core::jit::{OperationPlan, Variables};

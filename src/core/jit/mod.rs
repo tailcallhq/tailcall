@@ -9,7 +9,6 @@ use store::*;
 mod context;
 mod error;
 mod exec_const;
-mod input_resolver;
 mod request;
 mod response;
 

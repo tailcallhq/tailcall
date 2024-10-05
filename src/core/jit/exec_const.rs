@@ -10,8 +10,8 @@ use crate::core::app_context::AppContext;
 use crate::core::http::RequestContext;
 use crate::core::ir::model::IR;
 use crate::core::ir::{self, EvalContext};
-use crate::core::jit::input_resolver::InputResolver;
 use crate::core::jit::synth::Synth;
+use crate::core::jit::transform::InputResolver;
 use crate::core::json::{JsonLike, JsonLikeList};
 
 /// A specialized executor that executes with async_graphql::Value
