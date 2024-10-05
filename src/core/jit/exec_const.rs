@@ -10,6 +10,7 @@ use crate::core::app_context::AppContext;
 use crate::core::http::RequestContext;
 use crate::core::ir::model::IR;
 use crate::core::ir::{self, EvalContext};
+use crate::core::jit::input_resolver::InputResolver;
 use crate::core::jit::synth::Synth;
 use crate::core::json::{JsonLike, JsonLikeList};
 
@@ -26,7 +27,27 @@ impl From<OperationPlan<ConstValue>> for ConstValueExecutor {
 
 impl ConstValueExecutor {
     pub fn new(request: &Request<ConstValue>, app_ctx: &Arc<AppContext>) -> Result<Self> {
-        Ok(Self { plan: request.create_plan(&app_ctx.blueprint)? })
+        let variables = &request.variables;
+        // Create a new plan
+        let mut plan = request.create_plan(&app_ctx.blueprint)?;
+        plan.flat.retain(|f| !f.skip(variables));
+        let plan = OperationPlan::new(
+            &plan.root_name,
+            plan.flat,
+            plan.operation_type,
+            plan.index,
+            plan.is_introspection_query,
+        );
+
+        // TODO: operation from [ExecutableDocument] could contain definitions for
+        // default values of arguments. That info should be passed to
+        // [InputResolver] to resolve defaults properly
+        let input_resolver = InputResolver::new(plan);
+        let plan = input_resolver.resolve_input(variables).map_err(|err| {
+            super::Error::ServerError(async_graphql::ServerError::new(err.to_string(), None))
+        })?;
+
+        Ok(Self { plan })
     }
 
     pub async fn execute(

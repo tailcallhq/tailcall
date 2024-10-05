@@ -169,10 +169,7 @@ mod tests {
 
         match executor.run(request).await {
             Ok(_) => panic!("Should fail with unresolved variable"),
-            Err(err) => assert_eq!(
-                err.to_string(),
-                "Build error: ResolveInputError: Variable `id` is not defined"
-            ),
+            Err(err) => assert_eq!(err.to_string(), "Variable `id` is not defined"),
         };
 
         let request = Request::new(query);

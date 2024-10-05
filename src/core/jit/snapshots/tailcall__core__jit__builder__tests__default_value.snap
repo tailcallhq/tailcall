@@ -35,11 +35,6 @@ expression: plan.into_nested()
                             ): String(
                                 "tailcall test",
                             ),
-                            Name(
-                                "id",
-                            ): Number(
-                                Number(101),
-                            ),
                         },
                     ),
                 ),

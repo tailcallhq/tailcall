@@ -120,6 +120,7 @@ mod test {
     use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
     use crate::core::ir::ResolverContextLike;
+    use crate::core::jit::input_resolver::InputResolver;
     use crate::core::jit::{OperationPlan, Request};
     use crate::core::valid::Validator;
 
@@ -129,6 +130,9 @@ mod test {
         let blueprint = Blueprint::try_from(&ConfigModule::from(config))?;
         let request = Request::new(query);
         let plan = request.clone().create_plan(&blueprint)?;
+        let input_resolver = InputResolver::new(plan);
+        let plan = input_resolver.resolve_input(&Default::default()).unwrap();
+
         Ok(plan)
     }
 
