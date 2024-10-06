@@ -93,10 +93,10 @@ impl<'a, Value: Deserialize<'a> + Clone + 'a + JsonLike<'a>> JP<Value> {
         );
 
         let mut plan = builder.build(None).unwrap();
-        plan.flat.retain(|f| !f.skip(variables));
+        plan = plan.filter_skipped(variables);
         let plan = OperationPlan::new(
             &plan.root_name,
-            plan.flat,
+            plan.selection,
             plan.operation_type,
             plan.index,
             plan.is_introspection_query,

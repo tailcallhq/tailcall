@@ -49,7 +49,7 @@ impl<Value> Variables<Value> {
 }
 
 impl<V> FromIterator<(String, V)> for Variables<V> {
-    fn from_iter<T: IntoIterator<Item = (String, V)>>(iter: T) -> Self {
+    fn from_iter<T: IntoIterator<Item=(String, V)>>(iter: T) -> Self {
         Self(iter.into_iter().collect())
     }
 }
@@ -73,8 +73,8 @@ impl<Input> Field<Input> {
 
     /// Returns the __typename of the value related to this field
     pub fn value_type<'a, Output>(&'a self, value: &'a Output) -> &'a str
-    where
-        Output: TypedValue<'a>,
+        where
+            Output: TypedValue<'a>,
     {
         value.get_type_name().unwrap_or(self.type_of.name())
     }
@@ -174,7 +174,7 @@ pub struct Field<Input> {
     pub directives: Vec<Directive<Input>>,
 }
 
-struct DFS<'a, Input> {
+pub struct DFS<'a, Input> {
     stack: Vec<std::slice::Iter<'a, Field<Input>>>,
 }
 
@@ -222,11 +222,17 @@ impl<Input> Field<Input> {
             ir: self.ir,
             type_of: self.type_of,
             type_condition: self.type_condition,
-            selection: self
-                .selection
-                .into_iter()
-                .map(|field| field.try_map(&map))
-                .collect::<Result<_, _>>()?,
+            selection: {
+                /*
+                TODO: for some reason rust compiler panics here
+
+                self
+                    .selection
+                    .into_iter()
+                    .map(|field| field.try_map(&map))
+                    .collect::<Result<_, _>>()?*/
+                vec![]
+            },
             skip: self.skip,
             include: self.include,
             pos: self.pos,
@@ -402,8 +408,8 @@ impl<Input> OperationPlan<Input> {
         index: Arc<Index>,
         is_introspection_query: bool,
     ) -> Self
-    where
-        Input: Clone,
+        where
+            Input: Clone,
     {
         Self {
             root_name: root_name.to_string(),
@@ -414,6 +420,13 @@ impl<Input> OperationPlan<Input> {
             dedupe: false,
             is_const: false,
         }
+    }
+
+    /// Remove fields which are skipped
+    pub fn filter_skipped<Var: for<'b> JsonLike<'b> + Clone>(mut self, variables: &Variables<Var>) -> Self {
+        filter_skipped_fields(&mut self.selection, variables);
+
+        self
     }
 
     /// Returns the name of the root type
@@ -497,8 +510,8 @@ impl<Input> OperationPlan<Input> {
         field: &'a Field<Input>,
         value: &'a Output,
     ) -> bool
-    where
-        Output: TypedValue<'a>,
+        where
+            Output: TypedValue<'a>,
     {
         match &field.type_condition {
             Some(type_condition) => match value.get_type_name() {
@@ -511,6 +524,14 @@ impl<Input> OperationPlan<Input> {
             // if there is no type_condition restriction then use this field
             None => true,
         }
+    }
+}
+
+// TODO: review and rename
+fn filter_skipped_fields<Input, Var: for<'b> JsonLike<'b> + Clone>(fields: &mut Vec<Field<Input>>, vars: &Variables<Var>) {
+    fields.retain(|f| !f.skip(vars));
+    for field in fields {
+        filter_skipped_fields(&mut field.selection, vars);
     }
 }
 
@@ -622,8 +643,8 @@ impl<Value> Positioned<Value> {
 }
 
 impl<Value> Positioned<Value>
-where
-    Value: Clone,
+    where
+        Value: Clone,
 {
     pub fn with_path(&mut self, path: Vec<PathSegment>) -> Self {
         Self { value: self.value.clone(), pos: self.pos, path }

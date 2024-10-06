@@ -131,17 +131,16 @@ impl Builder {
         &self,
         selection: &SelectionSet,
         type_condition: &str,
-        children: Option<Vec<Field<Value>>>,
         fragments: &HashMap<&str, &FragmentDefinition>,
     ) -> Vec<Field<Value>> {
         let mut fields = vec![];
+
         for selection in &selection.items {
             match &selection.node {
                 Selection::Field(Positioned { node: gql_field, .. }) => {
                     let conditions = self.include(&gql_field.directives);
 
-                    // if include is always false xor skip is always true,
-                    // then we can skip the field from the plan
+                    // Skip fields based on GraphQL's skip/include conditions
                     if conditions.is_const_skip() {
                         continue;
                     }
@@ -158,12 +157,13 @@ impl Builder {
                             .map(|(k, v)| (k.node.to_string(), v.node.clone()))
                             .collect::<Vec<_>>();
 
-                        directives
-                            .push(JitDirective { name: directive.name.to_string(), arguments });
+                        directives.push(JitDirective {
+                            name: directive.name.to_string(),
+                            arguments,
+                        });
                     }
 
                     let (include, skip) = conditions.into_variable_tuple();
-
                     let field_name = gql_field.name.node.as_str();
                     let request_args = gql_field
                         .arguments
@@ -171,6 +171,7 @@ impl Builder {
                         .map(|(k, v)| (k.node.as_str().to_string(), v.node.to_owned()))
                         .collect::<HashMap<_, _>>();
 
+                    // Check if the field is present in the schema index
                     if let Some(field_def) = self.index.get_field(type_condition, field_name) {
                         let mut args = Vec::with_capacity(request_args.len());
                         if let QueryField::Field((_, schema_args)) = field_def {
@@ -186,8 +187,6 @@ impl Builder {
                                     id,
                                     name,
                                     type_of,
-                                    // TODO: handle errors for non existing request_args without the
-                                    // default
                                     value: request_args.get(arg_name).cloned(),
                                     default_value,
                                 });
@@ -200,17 +199,21 @@ impl Builder {
                         };
 
                         let id = FieldId::new(self.field_id.next());
+
+                        // Recursively gather child fields for the selection set
                         let child_fields = self.iter(
                             &gql_field.selection_set.node,
                             type_of.name(),
-                            Some(Flat::new(id.clone())),
                             fragments,
                         );
+
                         let ir = match field_def {
                             QueryField::Field((field_def, _)) => field_def.resolver.clone(),
                             _ => None,
                         };
-                        let flat_field = Field {
+
+                        // Create the nested field
+                        let nested_field = Field {
                             id,
                             name: field_name.to_string(),
                             output_name: gql_field
@@ -225,31 +228,28 @@ impl Builder {
                             include,
                             args,
                             pos: selection.pos.into(),
-                            selection: children.clone(),
+                            selection: child_fields,  // Replacing extensions with selection
                             directives,
                         };
 
-                        fields.push(flat_field);
-                        fields = fields.merge_right(child_fields);
+                        fields.push(nested_field);
                     } else if field_name == "__typename" {
-                        let flat_field = Field {
+                        let typename_field = Field {
                             id: FieldId::new(self.field_id.next()),
                             name: field_name.to_string(),
                             output_name: field_name.to_string(),
                             ir: None,
                             type_of: Type::Named { name: "String".to_owned(), non_null: true },
-                            // __typename has a special meaning and could be applied
-                            // to any type
                             type_condition: None,
                             skip,
                             include,
                             args: Vec::new(),
                             pos: selection.pos.into(),
-                            selection: children.clone(),
+                            selection: vec![],  // __typename has no nested selection
                             directives,
                         };
 
-                        fields.push(flat_field);
+                        fields.push(typename_field);
                     }
                 }
                 Selection::FragmentSpread(Positioned { node: fragment_spread, .. }) => {
@@ -259,7 +259,6 @@ impl Builder {
                         fields.extend(self.iter(
                             &fragment.selection_set.node,
                             fragment.type_condition.node.on.node.as_str(),
-                            children.clone(),
                             fragments,
                         ));
                     }
@@ -274,7 +273,6 @@ impl Builder {
                     fields.extend(self.iter(
                         &fragment.selection_set.node,
                         type_of,
-                        children.clone(),
                         fragments,
                     ));
                 }
@@ -283,7 +281,6 @@ impl Builder {
 
         fields
     }
-
     #[inline(always)]
     fn get_type(&self, ty: OperationType) -> Option<&str> {
         match ty {
@@ -334,7 +331,7 @@ impl Builder {
         let name = self
             .get_type(operation.ty)
             .ok_or(BuildError::RootOperationTypeNotDefined { operation: operation.ty })?;
-        fields.extend(self.iter(&operation.selection_set.node, name, None, &fragments));
+        fields.extend(self.iter(&operation.selection_set.node, name, &fragments));
 
         let is_introspection_query = operation.selection_set.node.items.iter().any(|f| {
             if let Selection::Field(Positioned { node: gql_field, .. }) = &f.node {
@@ -384,6 +381,7 @@ mod tests {
             }
         "#,
         );
+        println!("{:#?}", plan.selection);
         assert!(plan.is_query());
         insta::assert_debug_snapshot!(plan.into_nested());
     }

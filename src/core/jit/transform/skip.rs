@@ -24,16 +24,16 @@ where
 
     type Error = Error;
 
-    fn transform(&self, mut plan: Self::Value) -> Valid<Self::Value, Self::Error> {
+    fn transform(&self, plan: Self::Value) -> Valid<Self::Value, Self::Error> {
         // Drop all the fields that are not needed
-        plan.flat.retain(|f| !f.skip(self.variables));
+        let plan = plan.filter_skipped(self.variables);
 
         
 
         // Recreate a plan with the new fields
         let plan = OperationPlan::new(
             &plan.root_name,
-            plan.flat,
+            plan.selection,
             plan.operation_type,
             plan.index,
             plan.is_introspection_query,
