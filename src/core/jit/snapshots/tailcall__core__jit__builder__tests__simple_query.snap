@@ -12,39 +12,31 @@ expression: plan.into_nested()
         type_condition: Some(
             "Query",
         ),
-        extensions: Some(
-            Nested(
-                [
+        selection: [
+            Field {
+                id: 1,
+                name: "user",
+                output_name: "user",
+                ir: "Some(..)",
+                type_of: User,
+                type_condition: Some(
+                    "Post",
+                ),
+                selection: [
                     Field {
-                        id: 1,
-                        name: "user",
-                        output_name: "user",
-                        ir: "Some(..)",
-                        type_of: User,
+                        id: 2,
+                        name: "id",
+                        output_name: "id",
+                        type_of: ID!,
                         type_condition: Some(
-                            "Post",
-                        ),
-                        extensions: Some(
-                            Nested(
-                                [
-                                    Field {
-                                        id: 2,
-                                        name: "id",
-                                        output_name: "id",
-                                        type_of: ID!,
-                                        type_condition: Some(
-                                            "User",
-                                        ),
-                                        directives: [],
-                                    },
-                                ],
-                            ),
+                            "User",
                         ),
                         directives: [],
                     },
                 ],
-            ),
-        ),
+                directives: [],
+            },
+        ],
         directives: [],
     },
 ]

@@ -1,9 +1,8 @@
 use async_graphql_value::{ConstValue, Value};
 
+use super::super::{Arg, Field, OperationPlan, ResolveInputError, Variables};
 use crate::core::json::{JsonLikeOwned, JsonObjectLike};
 use crate::core::Type;
-
-use super::super::{Arg, Field, OperationPlan, ResolveInputError, Variables};
 
 /// Trait to represent conversion from some dynamic type (with variables)
 /// to the resolved variant based on the additional provided info.
@@ -45,7 +44,7 @@ impl<Input> InputResolver<Input> {
 
 impl<Input, Output> InputResolver<Input>
 where
-    Input: Clone,
+    Input: Clone + std::fmt::Debug,
     Output: Clone + JsonLikeOwned + TryFrom<serde_json::Value>,
     Input: InputResolvable<Output = Output>,
     <Output as TryFrom<serde_json::Value>>::Error: std::fmt::Debug,
@@ -57,7 +56,6 @@ where
         let new_fields = self
             .plan
             .as_flat()
-            .into_iter()
             .map(|field| (*field).clone().try_map(|value| value.resolve(variables)))
             .map(|field| match field {
                 Ok(field) => {

@@ -41,22 +41,18 @@ expression: plan.into_nested()
                 default_value: None,
             },
         ],
-        extensions: Some(
-            Nested(
-                [
-                    Field {
-                        id: 1,
-                        name: "id",
-                        output_name: "id",
-                        type_of: ID!,
-                        type_condition: Some(
-                            "Post",
-                        ),
-                        directives: [],
-                    },
-                ],
-            ),
-        ),
+        selection: [
+            Field {
+                id: 1,
+                name: "id",
+                output_name: "id",
+                type_of: ID!,
+                type_condition: Some(
+                    "Post",
+                ),
+                directives: [],
+            },
+        ],
         directives: [],
     },
 ]

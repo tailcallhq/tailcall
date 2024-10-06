@@ -1,4 +1,7 @@
-use crate::core::{ir::model::IR, jit::OperationPlan, valid::Valid, Transform};
+use crate::core::ir::model::IR;
+use crate::core::jit::OperationPlan;
+use crate::core::valid::Valid;
+use crate::core::Transform;
 
 pub struct CheckDedupe<A>(std::marker::PhantomData<A>);
 impl<A> CheckDedupe<A> {

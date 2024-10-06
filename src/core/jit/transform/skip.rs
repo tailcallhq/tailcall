@@ -28,8 +28,6 @@ where
         // Drop all the fields that are not needed
         let plan = plan.filter_skipped(self.variables);
 
-        
-
         // Recreate a plan with the new fields
         let plan = OperationPlan::new(
             &plan.root_name,

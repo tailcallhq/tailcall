@@ -90,9 +90,7 @@ impl<'a> From<&'a crate::core::jit::Field<ConstValue>> for SelectionField {
 }
 
 impl SelectionField {
-    fn from_jit_field(
-        field: &crate::core::jit::Field<ConstValue>,
-    ) -> SelectionField {
+    fn from_jit_field(field: &crate::core::jit::Field<ConstValue>) -> SelectionField {
         let name = field.output_name.to_string();
         let type_name = field.type_of.name();
         let selection_set = field

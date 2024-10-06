@@ -54,11 +54,7 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
         }
     }
 
-    pub fn with_value_and_field(
-        &self,
-        value: &'a Output,
-        field: &'a Field<Input>,
-    ) -> Self {
+    pub fn with_value_and_field(&self, value: &'a Output, field: &'a Field<Input>) -> Self {
         Self {
             request: self.request,
             args: Self::build_args(field),

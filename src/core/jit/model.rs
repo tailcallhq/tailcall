@@ -49,7 +49,7 @@ impl<Value> Variables<Value> {
 }
 
 impl<V> FromIterator<(String, V)> for Variables<V> {
-    fn from_iter<T: IntoIterator<Item=(String, V)>>(iter: T) -> Self {
+    fn from_iter<T: IntoIterator<Item = (String, V)>>(iter: T) -> Self {
         Self(iter.into_iter().collect())
     }
 }
@@ -73,8 +73,8 @@ impl<Input> Field<Input> {
 
     /// Returns the __typename of the value related to this field
     pub fn value_type<'a, Output>(&'a self, value: &'a Output) -> &'a str
-        where
-            Output: TypedValue<'a>,
+    where
+        Output: TypedValue<'a>,
     {
         value.get_type_name().unwrap_or(self.type_of.name())
     }
@@ -183,16 +183,15 @@ impl<'a, Input> Iterator for DFS<'a, Input> {
     type Item = &'a Field<Input>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.stack.pop() {
-            None => None,
-            Some(mut i) => match i.next() {
-                None => self.next(),
-                Some(field) => {
-                    self.stack.push(field.selection.iter());
-                    Some(field)
-                }
-            },
+        while let Some(iter) = self.stack.last_mut() {
+            if let Some(field) = iter.next() {
+                self.stack.push(field.selection.iter());
+                return Some(field);
+            } else {
+                self.stack.pop();
+            }
         }
+        None
     }
 }
 
@@ -267,10 +266,7 @@ impl<Input: Clone> Field<Input> {
                 }
             }
         }
-        Self {
-            selection: children,
-            ..self
-        }
+        Self { selection: children, ..self }
     }
 }
 
@@ -278,6 +274,7 @@ impl<Input: Debug> Debug for Field<Input> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut debug_struct = f.debug_struct("Field");
         debug_struct.field("id", &self.id);
+        debug_struct.field("parent_id", &self.parent_id);
         debug_struct.field("name", &self.name);
         debug_struct.field("output_name", &self.output_name);
         if self.ir.is_some() {
@@ -364,8 +361,8 @@ impl<Input> OperationPlan<Input> {
         index: Arc<Index>,
         is_introspection_query: bool,
     ) -> Self
-        where
-            Input: Clone,
+    where
+        Input: Clone,
     {
         Self {
             root_name: root_name.to_string(),
@@ -379,7 +376,10 @@ impl<Input> OperationPlan<Input> {
     }
 
     /// Remove fields which are skipped
-    pub fn filter_skipped<Var: for<'b> JsonLike<'b> + Clone>(mut self, variables: &Variables<Var>) -> Self {
+    pub fn filter_skipped<Var: for<'b> JsonLike<'b> + Clone>(
+        mut self,
+        variables: &Variables<Var>,
+    ) -> Self {
         filter_skipped_fields(&mut self.selection, variables);
 
         self
@@ -403,6 +403,11 @@ impl<Input> OperationPlan<Input> {
     /// Returns a nested [Field] representation
     pub fn as_nested(&self) -> &[Field<Input>] {
         &self.selection
+    }
+
+    /// Returns a nested [Field] representation
+    pub fn into_nested(self) -> Vec<Field<Input>> {
+        self.selection
     }
 
     /// Returns a flat [Field] representation
@@ -456,8 +461,8 @@ impl<Input> OperationPlan<Input> {
         field: &'a Field<Input>,
         value: &'a Output,
     ) -> bool
-        where
-            Output: TypedValue<'a>,
+    where
+        Output: TypedValue<'a>,
     {
         match &field.type_condition {
             Some(type_condition) => match value.get_type_name() {
@@ -474,7 +479,10 @@ impl<Input> OperationPlan<Input> {
 }
 
 // TODO: review and rename
-fn filter_skipped_fields<Input, Var: for<'b> JsonLike<'b> + Clone>(fields: &mut Vec<Field<Input>>, vars: &Variables<Var>) {
+fn filter_skipped_fields<Input, Var: for<'b> JsonLike<'b> + Clone>(
+    fields: &mut Vec<Field<Input>>,
+    vars: &Variables<Var>,
+) {
     fields.retain(|f| !f.skip(vars));
     for field in fields {
         filter_skipped_fields(&mut field.selection, vars);
@@ -589,8 +597,8 @@ impl<Value> Positioned<Value> {
 }
 
 impl<Value> Positioned<Value>
-    where
-        Value: Clone,
+where
+    Value: Clone,
 {
     pub fn with_path(&mut self, path: Vec<PathSegment>) -> Self {
         Self { value: self.value.clone(), pos: self.pos, path }

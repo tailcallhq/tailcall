@@ -157,10 +157,8 @@ impl Builder {
                             .map(|(k, v)| (k.node.to_string(), v.node.clone()))
                             .collect::<Vec<_>>();
 
-                        directives.push(JitDirective {
-                            name: directive.name.to_string(),
-                            arguments,
-                        });
+                        directives
+                            .push(JitDirective { name: directive.name.to_string(), arguments });
                     }
 
                     let (include, skip) = conditions.into_variable_tuple();
@@ -248,7 +246,7 @@ impl Builder {
                             include,
                             args: Vec::new(),
                             pos: selection.pos.into(),
-                            selection: vec![],  // __typename has no child selection
+                            selection: vec![], // __typename has no child selection
                             directives,
                         };
 

@@ -25,32 +25,28 @@ expression: plan.into_nested()
                 default_value: None,
             },
         ],
-        extensions: Some(
-            Nested(
-                [
-                    Field {
-                        id: 1,
-                        name: "id",
-                        output_name: "id",
-                        type_of: ID!,
-                        type_condition: Some(
-                            "UserId",
-                        ),
-                        directives: [],
-                    },
-                    Field {
-                        id: 2,
-                        name: "email",
-                        output_name: "email",
-                        type_of: String!,
-                        type_condition: Some(
-                            "UserEmail",
-                        ),
-                        directives: [],
-                    },
-                ],
-            ),
-        ),
+        selection: [
+            Field {
+                id: 1,
+                name: "id",
+                output_name: "id",
+                type_of: ID!,
+                type_condition: Some(
+                    "UserId",
+                ),
+                directives: [],
+            },
+            Field {
+                id: 2,
+                name: "email",
+                output_name: "email",
+                type_of: String!,
+                type_condition: Some(
+                    "UserEmail",
+                ),
+                directives: [],
+            },
+        ],
         directives: [],
     },
 ]
