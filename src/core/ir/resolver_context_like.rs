@@ -5,8 +5,6 @@ use async_graphql::{Name, ServerError, Value};
 use async_graphql_value::ConstValue;
 use indexmap::IndexMap;
 
-use crate::core::jit::Nested;
-
 pub trait ResolverContextLike: Clone {
     fn value(&self) -> Option<&Value>;
     fn args(&self) -> Option<&IndexMap<Name, Value>>;

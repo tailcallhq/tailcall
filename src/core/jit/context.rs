@@ -5,7 +5,7 @@ use async_graphql_value::ConstValue;
 use indexmap::IndexMap;
 
 use super::error::*;
-use super::{Field, Nested, OperationPlan, Positioned};
+use super::{Field, OperationPlan, Positioned};
 use crate::core::ir::{ResolverContextLike, SelectionField};
 
 #[derive(Debug, Clone)]

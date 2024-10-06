@@ -331,22 +331,6 @@ impl<Input: Debug> Debug for Field<Input> {
     }
 }
 
-/// Stores field relationships in a flat structure where each field links to its
-/// parent.
-#[derive(Clone, Debug)]
-pub struct Flat(FieldId);
-
-impl Flat {
-    pub fn new(parent_id: FieldId) -> Self {
-        Flat(parent_id)
-    }
-}
-
-/// Store field relationships in a nested structure like a tree where each field
-/// links to its children.
-#[derive(Clone, Debug)]
-pub struct Nested<Input>(Vec<Field<Input>>);
-
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub struct OPHash(u64);
 
@@ -446,22 +430,17 @@ impl<Input> OperationPlan<Input> {
 
     /// Returns a nested [Field] representation
     pub fn as_nested(&self) -> &[Field<Input>] {
-        todo!("Implement on Selection")
+        &self.selection
     }
 
     /// Returns an owned version of [Field] representation
     pub fn into_nested(self) -> Vec<Field<Input>> {
-        todo!("Implement on Selection")
+        self.selection
     }
 
     /// Returns a flat [Field] representation
-    pub fn as_flat(&self) -> &[Field<Input>] {
-        todo!("Implement on Selection")
-    }
-
-    /// Search for a field with a specified [FieldId]
-    pub fn find_field(&self, id: FieldId) -> Option<&Field<Input>> {
-        todo!("Implement on Selection")
+    pub fn as_flat(&self) -> DFS<Input> {
+        DFS { stack: vec![self.selection.iter()] }
     }
 
     /// Search for a field by specified path of nested fields

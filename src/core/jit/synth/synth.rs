@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use crate::core::jit::model::{Field, Nested, OperationPlan, Variables};
+use crate::core::jit::model::{Field, OperationPlan, Variables};
 use crate::core::jit::store::{DataPath, Store};
 use crate::core::jit::{Error, PathSegment, Positioned, ValidationError};
 use crate::core::json::{JsonLike, JsonObjectLike};
