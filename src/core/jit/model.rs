@@ -154,6 +154,7 @@ impl FieldId {
 #[derive(Clone)]
 pub struct Field<Input> {
     pub id: FieldId,
+    pub parent_id: Option<FieldId>,
     /// Name of key in the value object for this field
     pub name: String,
     /// Output name (i.e. with alias) that should be used for the result value
@@ -217,6 +218,7 @@ impl<Input> Field<Input> {
     ) -> Result<Field<Output>, Error> {
         Ok(Field {
             id: self.id,
+            parent_id: self.parent_id,
             name: self.name,
             output_name: self.output_name,
             ir: self.ir,
@@ -250,57 +252,27 @@ impl<Input> Field<Input> {
     }
 }
 
-// impl<Input> Field<Input> {
-//     /// iters over children fields
-//     pub fn iter(&self) -> impl Iterator<Item = &Field<Input>> {
-//         self.selection
-//             .iter()
-//             .map(move |nested| nested.0.iter())
-//             .into_iter()
-//             .flatten()
-//     }
-// }
+impl<Input: Clone> Field<Input> {
+    pub fn parent(&self) -> Option<&FieldId> {
+        self.parent_id.as_ref()
+    }
 
-// impl<Input> Field<Input> {
-//     pub fn parent(&self) -> Option<&FieldId> {
-//         self.selection.as_ref().map(|flat| &flat.0)
-//     }
-
-//     fn into_nested(self, fields: &[Field<Input>]) -> Field<Input>
-//     where
-//         Input: Clone,
-//     {
-//         let mut children = Vec::new();
-//         for field in fields.iter() {
-//             if let Some(id) = field.parent() {
-//                 if *id == self.id {
-//                     children.push(field.to_owned().into_nested(fields));
-//                 }
-//             }
-//         }
-
-//         let selection = if children.is_empty() {
-//             None
-//         } else {
-//             Some(Nested(children))
-//         };
-
-//         Field {
-//             id: self.id,
-//             name: self.name,
-//             output_name: self.output_name,
-//             ir: self.ir,
-//             type_of: self.type_of,
-//             type_condition: self.type_condition,
-//             skip: self.skip,
-//             include: self.include,
-//             args: self.args,
-//             pos: self.pos,
-//             selection,
-//             directives: self.directives,
-//         }
-//     }
-// }
+    #[inline(always)]
+    pub fn into_nested(self, fields: &[Field<Input>]) -> Self {
+        let mut children = Vec::new();
+        for field in fields.iter() {
+            if let Some(id) = field.parent() {
+                if *id == self.id {
+                    children.push(field.to_owned().into_nested(fields));
+                }
+            }
+        }
+        Self {
+            selection: children,
+            ..self
+        }
+    }
+}
 
 impl<Input: Debug> Debug for Field<Input> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -431,11 +403,6 @@ impl<Input> OperationPlan<Input> {
     /// Returns a nested [Field] representation
     pub fn as_nested(&self) -> &[Field<Input>] {
         &self.selection
-    }
-
-    /// Returns an owned version of [Field] representation
-    pub fn into_nested(self) -> Vec<Field<Input>> {
-        self.selection
     }
 
     /// Returns a flat [Field] representation

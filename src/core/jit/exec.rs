@@ -30,7 +30,7 @@ where
     Exec: IRExecutor<Input = Input, Output = Output, Error = jit::Error>,
 {
     pub fn new(plan: OperationPlan<Input>, exec: Exec) -> Self {
-        Self { exec, ctx: RequestContext::new(plan.clone()) }
+        Self { exec, ctx: RequestContext::new(plan) }
     }
 
     pub async fn store(&self) -> Store<Result<Output, Positioned<jit::Error>>> {

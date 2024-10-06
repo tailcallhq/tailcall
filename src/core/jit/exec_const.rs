@@ -54,7 +54,7 @@ impl ConstValueExecutor {
         // TODO: operation from [ExecutableDocument] could contain definitions for
         // default values of arguments. That info should be passed to
         // [InputResolver] to resolve defaults properly
-        let result = InputResolver::new(plan.clone()).resolve_input(variables);
+        let result = InputResolver::new(plan).resolve_input(variables);
 
         let plan = match result {
             Ok(plan) => plan,

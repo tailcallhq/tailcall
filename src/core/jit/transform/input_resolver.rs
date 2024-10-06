@@ -1,8 +1,9 @@
 use async_graphql_value::{ConstValue, Value};
 
-use super::super::{Arg, Field, OperationPlan, ResolveInputError, Variables};
 use crate::core::json::{JsonLikeOwned, JsonObjectLike};
 use crate::core::Type;
+
+use super::super::{Arg, Field, OperationPlan, ResolveInputError, Variables};
 
 /// Trait to represent conversion from some dynamic type (with variables)
 /// to the resolved variant based on the additional provided info.
@@ -80,10 +81,15 @@ where
                 Err(err) => Err(err),
             })
             .collect::<Result<Vec<_>, _>>()?;
+        let fields = new_fields.clone();
 
         Ok(OperationPlan::new(
             self.plan.root_name(),
-            new_fields,
+            new_fields
+                .into_iter()
+                .filter(|v| v.parent_id.is_none())
+                .map(|v| v.into_nested(&fields))
+                .collect::<Vec<_>>(),
             self.plan.operation_type(),
             self.plan.index.clone(),
             self.plan.is_introspection_query,

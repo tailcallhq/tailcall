@@ -131,6 +131,7 @@ impl Builder {
         selection: &SelectionSet,
         type_condition: &str,
         fragments: &HashMap<&str, &FragmentDefinition>,
+        parent_id: Option<FieldId>,
     ) -> Vec<Field<Value>> {
         let mut fields = vec![];
 
@@ -204,6 +205,7 @@ impl Builder {
                             &gql_field.selection_set.node,
                             type_of.name(),
                             fragments,
+                            Some(id.clone()),
                         );
 
                         let ir = match field_def {
@@ -211,9 +213,11 @@ impl Builder {
                             _ => None,
                         };
 
-                        // Create the nested field
-                        let nested_field = Field {
+                        // Create the field with its child fields in `selection`
+                        let field = Field {
                             id,
+                            parent_id: parent_id.clone(),
+                            selection: child_fields,
                             name: field_name.to_string(),
                             output_name: gql_field
                                 .alias
@@ -227,14 +231,14 @@ impl Builder {
                             include,
                             args,
                             pos: selection.pos.into(),
-                            selection: child_fields,  // Replacing extensions with selection
                             directives,
                         };
 
-                        fields.push(nested_field);
+                        fields.push(field);
                     } else if field_name == "__typename" {
                         let typename_field = Field {
                             id: FieldId::new(self.field_id.next()),
+                            parent_id: parent_id.clone(),
                             name: field_name.to_string(),
                             output_name: field_name.to_string(),
                             ir: None,
@@ -244,7 +248,7 @@ impl Builder {
                             include,
                             args: Vec::new(),
                             pos: selection.pos.into(),
-                            selection: vec![],  // __typename has no nested selection
+                            selection: vec![],  // __typename has no child selection
                             directives,
                         };
 
@@ -259,6 +263,7 @@ impl Builder {
                             &fragment.selection_set.node,
                             fragment.type_condition.node.on.node.as_str(),
                             fragments,
+                            parent_id.clone(),
                         ));
                     }
                 }
@@ -273,6 +278,7 @@ impl Builder {
                         &fragment.selection_set.node,
                         type_of,
                         fragments,
+                        parent_id.clone(),
                     ));
                 }
             }
@@ -318,7 +324,6 @@ impl Builder {
 
     #[inline(always)]
     pub fn build(&self, operation_name: Option<&str>) -> Result<OperationPlan<Value>, BuildError> {
-        let mut fields = Vec::new();
         let mut fragments: HashMap<&str, &FragmentDefinition> = HashMap::new();
 
         for (name, fragment) in self.document.fragments.iter() {
@@ -330,7 +335,7 @@ impl Builder {
         let name = self
             .get_type(operation.ty)
             .ok_or(BuildError::RootOperationTypeNotDefined { operation: operation.ty })?;
-        fields.extend(self.iter(&operation.selection_set.node, name, &fragments));
+        let fields = self.iter(&operation.selection_set.node, name, &fragments, None);
 
         let is_introspection_query = operation.selection_set.node.items.iter().any(|f| {
             if let Selection::Field(Positioned { node: gql_field, .. }) = &f.node {
