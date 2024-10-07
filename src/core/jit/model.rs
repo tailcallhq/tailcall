@@ -212,8 +212,13 @@ impl Variable {
 impl<Input> Field<Input> {
     pub fn try_map<Output, Error>(
         self,
-        map: impl Fn(Input) -> Result<Output, Error>,
+        map: &impl Fn(Input) -> Result<Output, Error>,
     ) -> Result<Field<Output>, Error> {
+        let mut selection = vec![];
+        for i in self.selection {
+            selection.push(i.try_map(map)?);
+        }
+
         Ok(Field {
             id: self.id,
             parent_id: self.parent_id,
@@ -222,29 +227,19 @@ impl<Input> Field<Input> {
             ir: self.ir,
             type_of: self.type_of,
             type_condition: self.type_condition,
-            selection: {
-                /*
-                TODO: for some reason rust compiler panics here
-
-                self
-                    .selection
-                    .into_iter()
-                    .map(|field| field.try_map(&map))
-                    .collect::<Result<_, _>>()?*/
-                vec![]
-            },
+            selection,
             skip: self.skip,
             include: self.include,
             pos: self.pos,
             args: self
                 .args
                 .into_iter()
-                .map(|arg| arg.try_map(&map))
+                .map(|arg| arg.try_map(map))
                 .collect::<Result<_, _>>()?,
             directives: self
                 .directives
                 .into_iter()
-                .map(|directive| directive.try_map(&map))
+                .map(|directive| directive.try_map(map))
                 .collect::<Result<_, _>>()?,
         })
     }
@@ -419,10 +414,7 @@ impl<Input> OperationPlan<Input> {
         match path.split_first() {
             None => None,
             Some((name, path)) => {
-                let field = self
-                    .selection
-                    .iter()
-                    .find(|field| field.name == name.as_ref())?;
+                let field = self.as_flat().find(|field| field.name == name.as_ref())?;
                 if path.is_empty() {
                     Some(field)
                 } else {

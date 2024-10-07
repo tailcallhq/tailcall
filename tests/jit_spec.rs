@@ -11,6 +11,7 @@ mod tests {
     use tailcall::core::jit::{
         BuildError, ConstValueExecutor, Error, Positioned, Request, ResolveInputError, Response,
     };
+    use tailcall::core::json::{JsonLike, JsonObjectLike};
     use tailcall::core::rest::EndpointSet;
     use tailcall::core::valid::Validator;
 
@@ -185,6 +186,51 @@ mod tests {
         let data = response.data;
 
         insta::assert_json_snapshot!(data);
+    }
+
+    #[tokio::test]
+    async fn test_operation_plan_cache() {
+        fn get_id_value(data: ConstValue) -> Option<i64> {
+            data.as_object()
+                .and_then(|v| v.get_key("user"))
+                .and_then(|v| v.get_key("id"))
+                .and_then(|u| u.as_i64())
+        }
+
+        //  NOTE: This test makes a real HTTP call
+        let query = r#"
+            query user($id: Int!) {
+              user(id: $id) {
+                id
+                name
+              }
+            }
+        "#;
+        let request = Request::new(query);
+        let executor = TestExecutor::try_new().await.unwrap();
+
+        let resp = executor.run(request).await.unwrap();
+        let errs = vec![Positioned::new(
+            Error::BuildError(BuildError::ResolveInputError(
+                ResolveInputError::VariableIsNotFound("id".to_string()),
+            )),
+            Pos::default().into(),
+        )];
+        assert_eq!(format!("{:?}", resp.errors), format!("{:?}", errs));
+
+        let request = Request::new(query);
+        let request = request.variables([("id".into(), ConstValue::from(1))]);
+        let response = executor.run(request).await.unwrap();
+        let data = response.data;
+
+        assert_eq!(data.and_then(get_id_value).unwrap(), 1);
+
+        let request = Request::new(query);
+        let request = request.variables([("id".into(), ConstValue::from(2))]);
+        let response = executor.run(request).await.unwrap();
+        let data = response.data;
+
+        assert_eq!(data.and_then(get_id_value).unwrap(), 2);
     }
 
     #[tokio::test]

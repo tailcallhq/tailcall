@@ -56,7 +56,7 @@ where
         let new_fields = self
             .plan
             .as_flat()
-            .map(|field| (*field).clone().try_map(|value| value.resolve(variables)))
+            .map(|field| (*field).clone().try_map(&|value| value.resolve(variables)))
             .map(|field| match field {
                 Ok(field) => {
                     let args = field
