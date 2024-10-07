@@ -833,18 +833,6 @@
       "title": "JSON",
       "description": "Field whose value conforms to the standard JSON format as specified in RFC 8259 (https://datatracker.ietf.org/doc/html/rfc8259)."
     },
-    "Key": {
-      "description": "Directive `@key` for Apollo Federation",
-      "type": "object",
-      "required": [
-        "fields"
-      ],
-      "properties": {
-        "fields": {
-          "type": "string"
-        }
-      }
-    },
     "KeyValue": {
       "type": "object",
       "required": [
@@ -1447,18 +1435,6 @@
             "type": "string"
           },
           "uniqueItems": true
-        },
-        "key": {
-          "description": "Apollo federation key directive. skip since it's set automatically by config transformer",
-          "writeOnly": true,
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Key"
-            },
-            {
-              "type": "null"
-            }
-          ]
         },
         "protected": {
           "description": "Marks field as protected by auth providers",
