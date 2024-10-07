@@ -10,7 +10,7 @@ expression: response
   "body": {
     "data": {
       "_service": {
-        "sdl": "schema {\n  query: Query\n}\n\nscalar _Any\n\nunion _Entity = Post | User\n\ntype Post {\n  id: Int!\n  title: String!\n}\n\ntype Query {\n  _entities(representations: [_Any!]!): [_Entity]!\n  _service: _Service!\n  user(id: Int!): User\n}\n\ntype User {\n  id: Int!\n  name: String!\n}\n\ntype _Service {\n  sdl: String\n}\nextend schema @link(\n\turl: \"https://specs.apollo.dev/federation/v2.3\",\n\timport: [\"@key\", \"@tag\", \"@shareable\", \"@inaccessible\", \"@override\", \"@external\", \"@provides\", \"@requires\", \"@composeDirective\", \"@interfaceObject\"]\n)\n"
+        "sdl": "schema {\n  query: Query\n}\n\nscalar _Any\n\nunion _Entity = Post | User\n\ntype Post @key(fields: \"id\") {\n  id: Int!\n  title: String!\n}\n\ntype Query {\n  _entities(representations: [_Any!]!): [_Entity]!\n  _service: _Service!\n  user(id: Int!): User\n}\n\ntype User @key(fields: \"id\") {\n  id: Int!\n  name: String!\n}\n\ntype _Service {\n  sdl: String\n}\nextend schema @link(\n\turl: \"https://specs.apollo.dev/federation/v2.3\",\n\timport: [\"@key\", \"@tag\", \"@shareable\", \"@inaccessible\", \"@override\", \"@external\", \"@provides\", \"@requires\", \"@composeDirective\", \"@interfaceObject\"]\n)\n"
       }
     }
   }

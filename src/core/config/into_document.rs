@@ -256,7 +256,6 @@ fn type_directives(type_def: &crate::core::config::Type) -> Vec<Positioned<Const
                 .and_then(|resolver| resolver.to_directive())
                 .map(pos),
         )
-        .chain(type_def.key.as_ref().map(|key| pos(key.to_directive())))
         .chain(into_directives(&type_def.directives))
         .collect::<Vec<_>>()
 }

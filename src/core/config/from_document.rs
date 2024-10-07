@@ -346,7 +346,6 @@ where
                     cache,
                     protected,
                     resolver,
-                    key: None,
                     directives: unknown_directives,
                 }
             },
