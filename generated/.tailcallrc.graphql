@@ -36,6 +36,13 @@ Provides the ability to refer to multiple fields in the Query or Mutation root.
 """
 directive @call(
   """
+  Enables deduplication of IO operations to enhance performance.This flag prevents 
+  duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
+  May lead to issues with APIs that expect unique results for identical inputs, such 
+  as nonce-based APIs.
+  """
+  dedupe: Boolean
+  """
   Steps are composed together to form a call. If you have multiple steps, the output 
   of the previous step is passed as input to the next step.
   """
@@ -70,6 +77,13 @@ directive @graphQL(
   also specified batch settings to the `@upstream` and to the `@graphQL` operator.
   """
   batch: Boolean!
+  """
+  Enables deduplication of IO operations to enhance performance.This flag prevents 
+  duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
+  May lead to issues with APIs that expect unique results for identical inputs, such 
+  as nonce-based APIs.
+  """
+  dedupe: Boolean
   """
   The headers parameter allows you to customize the headers of the GraphQL request 
   made by the `@graphQL` operator. It is used by specifying a key-value map of header 
@@ -111,6 +125,13 @@ directive @grpc(
   """
   body: JSON
   """
+  Enables deduplication of IO operations to enhance performance.This flag prevents 
+  duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
+  May lead to issues with APIs that expect unique results for identical inputs, such 
+  as nonce-based APIs.
+  """
+  dedupe: Boolean
+  """
   The `headers` parameter allows you to customize the headers of the HTTP request made 
   by the `@grpc` operator. It is used by specifying a key-value map of header names 
   and their values. Note: content-type is automatically set to application/grpc
@@ -120,6 +141,16 @@ directive @grpc(
   This refers to the gRPC method you're going to call. For instance `GetAllNews`.
   """
   method: String!
+  """
+  You can use `select` with mustache syntax to re-construct the directives response 
+  to the desired format. This is useful when data are deeply nested or want to keep 
+  specific fields only from the response.* EXAMPLE 1: if we have a call that returns 
+  `{ "user": { "items": [...], ... } ... }` we can use `"{{.user.items}}"`, to extract 
+  the `items`. * EXAMPLE 2: if we have a call that returns `{ "foo": "bar", "fizz": 
+  { "buzz": "eggs", ... }, ... }` we can use { foo: "{{.foo}}", buzz: "{{.fizz.buzz}}" 
+  }`
+  """
+  select: JSON
 ) on FIELD_DEFINITION | OBJECT
 
 """
@@ -147,6 +178,13 @@ directive @http(
   variables from the GraphQL variables.
   """
   body: String
+  """
+  Enables deduplication of IO operations to enhance performance.This flag prevents 
+  duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
+  May lead to issues with APIs that expect unique results for identical inputs, such 
+  as nonce-based APIs.
+  """
+  dedupe: Boolean
   """
   The `encoding` parameter specifies the encoding of the request body. It can be `ApplicationJson` 
   or `ApplicationXWwwFormUrlEncoded`. @default `ApplicationJson`.
@@ -190,6 +228,16 @@ directive @http(
   is automatically selected as the batching parameter.
   """
   query: [URLQuery]
+  """
+  You can use `select` with mustache syntax to re-construct the directives response 
+  to the desired format. This is useful when data are deeply nested or want to keep 
+  specific fields only from the response.* EXAMPLE 1: if we have a call that returns 
+  `{ "user": { "items": [...], ... } ... }` we can use `"{{.user.items}}"`, to extract 
+  the `items`. * EXAMPLE 2: if we have a call that returns `{ "foo": "bar", "fizz": 
+  { "buzz": "eggs", ... }, ... }` we can use { foo: "{{.foo}}", buzz: "{{.fizz.buzz}}" 
+  }`
+  """
+  select: JSON
 ) on FIELD_DEFINITION | OBJECT
 
 directive @js(
@@ -202,6 +250,10 @@ The @link directive allows you to import external resources, such as configurati
  will be later used by `@grpc` directive –.
 """
 directive @link(
+  """
+  Custom headers for gRPC reflection server.
+  """
+  headers: [KeyValue]
   """
   The id of the link. It is used to reference the link in the schema.
   """
@@ -250,12 +302,10 @@ directive @server(
   """
   batchRequests: Boolean
   """
-  Enables deduplication of IO operations to enhance performance.This flag prevents 
-  duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
-  May lead to issues with APIs that expect unique results for identical inputs, such 
-  as nonce-based APIs.
+  `enableFederation` enables functionality to Tailcall server to act as a federation 
+  subgraph.
   """
-  dedupe: Boolean
+  enableFederation: Boolean
   enableJIT: Boolean
   """
   `globalResponseTimeout` sets the maximum query duration before termination, acting 
@@ -427,6 +477,13 @@ directive @upstream(
   The User-Agent header value to be used in HTTP requests. @default `Tailcall/1.0`
   """
   userAgent: String
+  """
+  A boolean value that determines whether to verify certificates. Setting this as `false` 
+  will make tailcall accept self-signed certificates. NOTE: use this *only* during 
+  development or testing. It is highly recommended to keep this enabled (`true`) in 
+  production.
+  """
+  verifySSL: Boolean
 ) on SCHEMA
 
 """
@@ -736,6 +793,13 @@ input GraphQL {
   """
   batch: Boolean!
   """
+  Enables deduplication of IO operations to enhance performance.This flag prevents 
+  duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
+  May lead to issues with APIs that expect unique results for identical inputs, such 
+  as nonce-based APIs.
+  """
+  dedupe: Boolean
+  """
   The headers parameter allows you to customize the headers of the GraphQL request 
   made by the `@graphQL` operator. It is used by specifying a key-value map of header 
   names and their values.
@@ -776,6 +840,13 @@ input Grpc {
   """
   body: JSON
   """
+  Enables deduplication of IO operations to enhance performance.This flag prevents 
+  duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
+  May lead to issues with APIs that expect unique results for identical inputs, such 
+  as nonce-based APIs.
+  """
+  dedupe: Boolean
+  """
   The `headers` parameter allows you to customize the headers of the HTTP request made 
   by the `@grpc` operator. It is used by specifying a key-value map of header names 
   and their values. Note: content-type is automatically set to application/grpc
@@ -785,6 +856,16 @@ input Grpc {
   This refers to the gRPC method you're going to call. For instance `GetAllNews`.
   """
   method: String!
+  """
+  You can use `select` with mustache syntax to re-construct the directives response 
+  to the desired format. This is useful when data are deeply nested or want to keep 
+  specific fields only from the response.* EXAMPLE 1: if we have a call that returns 
+  `{ "user": { "items": [...], ... } ... }` we can use `"{{.user.items}}"`, to extract 
+  the `items`. * EXAMPLE 2: if we have a call that returns `{ "foo": "bar", "fizz": 
+  { "buzz": "eggs", ... }, ... }` we can use { foo: "{{.foo}}", buzz: "{{.fizz.buzz}}" 
+  }`
+  """
+  select: JSON
 }
 
 """
@@ -812,6 +893,13 @@ input Http {
   variables from the GraphQL variables.
   """
   body: String
+  """
+  Enables deduplication of IO operations to enhance performance.This flag prevents 
+  duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
+  May lead to issues with APIs that expect unique results for identical inputs, such 
+  as nonce-based APIs.
+  """
+  dedupe: Boolean
   """
   The `encoding` parameter specifies the encoding of the request body. It can be `ApplicationJson` 
   or `ApplicationXWwwFormUrlEncoded`. @default `ApplicationJson`.
@@ -855,6 +943,16 @@ input Http {
   is automatically selected as the batching parameter.
   """
   query: [URLQuery]
+  """
+  You can use `select` with mustache syntax to re-construct the directives response 
+  to the desired format. This is useful when data are deeply nested or want to keep 
+  specific fields only from the response.* EXAMPLE 1: if we have a call that returns 
+  `{ "user": { "items": [...], ... } ... }` we can use `"{{.user.items}}"`, to extract 
+  the `items`. * EXAMPLE 2: if we have a call that returns `{ "foo": "bar", "fizz": 
+  { "buzz": "eggs", ... }, ... }` we can use { foo: "{{.foo}}", buzz: "{{.fizz.buzz}}" 
+  }`
+  """
+  select: JSON
 }
 
 """

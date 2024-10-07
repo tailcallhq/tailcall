@@ -1,27 +1,11 @@
 use async_graphql::parser::types::ConstDirective;
-use async_graphql::{Name, Pos, Positioned};
+use async_graphql::{Name, Positioned};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use serde_path_to_error::deserialize;
 
-use crate::core::blueprint;
+use super::pos;
 use crate::core::valid::{Valid, ValidationError, Validator};
-
-fn pos<A>(a: A) -> Positioned<A> {
-    Positioned::new(a, Pos::default())
-}
-
-#[allow(dead_code)]
-fn to_const_directive(directive: &blueprint::Directive) -> Valid<ConstDirective, String> {
-    Valid::from_iter(directive.arguments.iter(), |(k, v)| {
-        let name = pos(Name::new(k.clone()));
-        Valid::from(serde_json::from_value(v.clone()).map(pos).map_err(|e| {
-            ValidationError::new(e.to_string()).trace(format!("@{}", directive.name).as_str())
-        }))
-        .map(|value| (name, value))
-    })
-    .map(|arguments| ConstDirective { name: pos(Name::new(directive.name.clone())), arguments })
-}
 
 pub trait DirectiveCodec: Sized {
     fn directive_name() -> String;
@@ -98,41 +82,5 @@ impl<'a, A: Deserialize<'a> + Serialize + 'a> DirectiveCodec for A {
         }
 
         ConstDirective { name: pos(Name::new(name)), arguments }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-
-    use async_graphql::parser::types::ConstDirective;
-    use async_graphql_value::Name;
-    use pretty_assertions::assert_eq;
-
-    use crate::core::blueprint::Directive;
-    use crate::core::directive::{pos, to_const_directive};
-    use crate::core::valid::Validator;
-
-    #[test]
-    fn test_to_const_directive() {
-        let directive = Directive {
-            name: "test".to_string(),
-            arguments: vec![("a".to_string(), serde_json::json!(1.0))]
-                .into_iter()
-                .collect(),
-            index: 0,
-        };
-
-        let const_directive: ConstDirective = to_const_directive(&directive).to_result().unwrap();
-        let expected_directive: ConstDirective = ConstDirective {
-            name: pos(Name::new("test")),
-            arguments: vec![(pos(Name::new("a")), pos(async_graphql::Value::from(1.0)))]
-                .into_iter()
-                .collect(),
-        };
-
-        assert_eq!(
-            format!("{:?}", const_directive),
-            format!("{:?}", expected_directive)
-        );
     }
 }

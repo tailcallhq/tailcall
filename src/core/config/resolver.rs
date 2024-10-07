@@ -5,7 +5,6 @@ use tailcall_macros::{CustomResolver, MergeRight};
 
 use super::{Call, EntityResolver, Expr, GraphQL, Grpc, Http, JS};
 use crate::core::directive::DirectiveCodec;
-use crate::core::merge_right::MergeRight;
 use crate::core::valid::{Valid, Validator};
 
 #[derive(Clone, Debug, PartialEq, Eq)]

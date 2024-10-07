@@ -3,6 +3,7 @@ use std::fmt::Display;
 use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::FieldDescriptor;
 
+use super::apply_select;
 use crate::core::blueprint::FieldDefinition;
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::{Config, ConfigModule, Field, GraphQLOperationType, Grpc, Resolver};
@@ -160,6 +161,7 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
     let field = inputs.field;
     let grpc = inputs.grpc;
     let validate_with_schema = inputs.validate_with_schema;
+    let dedupe = grpc.dedupe.unwrap_or_default();
 
     Valid::from(GrpcMethod::try_from(grpc.method.as_str()))
         .and_then(|method| {
@@ -196,16 +198,20 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
                 body,
                 operation_type: operation_type.clone(),
             };
-            if !grpc.batch_key.is_empty() {
+            let io = if !grpc.batch_key.is_empty() {
                 IR::IO(IO::Grpc {
                     req_template,
                     group_by: Some(GroupBy::new(grpc.batch_key.clone(), None)),
                     dl_id: None,
+                    dedupe,
                 })
             } else {
-                IR::IO(IO::Grpc { req_template, group_by: None, dl_id: None })
-            }
+                IR::IO(IO::Grpc { req_template, group_by: None, dl_id: None, dedupe })
+            };
+
+            (io, &grpc.select)
         })
+        .and_then(apply_select)
 }
 
 pub fn update_grpc<'a>(

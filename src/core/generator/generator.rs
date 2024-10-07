@@ -90,6 +90,7 @@ impl Generator {
             id: None,
             src: metadata.path.to_owned(),
             type_of: LinkType::Protobuf,
+            headers: None,
             meta: None,
         });
         Ok(config)

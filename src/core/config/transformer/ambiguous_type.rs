@@ -73,8 +73,8 @@ impl Transform for AmbiguousType {
                 .trace(current_name)
             } else {
                 let mut resolution_map = HashMap::new();
-                resolution_map = insert_resolution(resolution_map, current_name, resolution);
                 if let Some(ty) = config.types.get(current_name) {
+                    resolution_map = insert_resolution(resolution_map, current_name, resolution);
                     for field in ty.fields.values() {
                         for args in field.args.values() {
                             // if arg is of output type then it should be changed to that of

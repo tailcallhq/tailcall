@@ -6,6 +6,7 @@ use std::ops::Deref;
 
 use tailcall_macros::MergeRight;
 
+use crate::core::config::directive::to_directive;
 use crate::core::config::{
     self, ApolloFederation, Arg, Call, Config, Field, GraphQL, Grpc, Http, Key, KeyValue, Resolver,
     Union,
@@ -34,19 +35,29 @@ impl Transform for Subgraph {
     type Error = String;
 
     fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
+        if !config.server.get_enable_federation() {
+            // if federation is disabled don't process the config
+            return Valid::succeed(config);
+        }
+
         let mut resolver_by_type = BTreeMap::new();
 
         let valid = Valid::from_iter(config.types.iter_mut(), |(type_name, ty)| {
             if let Some(resolver) = &ty.resolver {
                 resolver_by_type.insert(type_name.clone(), resolver.clone());
 
-                KeysExtractor::extract_keys(resolver).map(|fields| {
-                    fields.map(|fields| {
-                        ty.key = Some(Key { fields });
-                    })
+                KeysExtractor::extract_keys(resolver).and_then(|fields| match fields {
+                    Some(fields) => {
+                        let key = Key { fields };
+
+                        to_directive(key.to_directive()).map(|directive| {
+                            ty.directives.push(directive);
+                        })
+                    }
+                    None => Valid::succeed(()),
                 })
             } else {
-                Valid::succeed(None)
+                Valid::succeed(())
             }
             .trace(type_name)
         });
@@ -54,26 +65,6 @@ impl Transform for Subgraph {
         if valid.is_fail() {
             return valid.map_to(config);
         }
-
-        if resolver_by_type.is_empty() {
-            return Valid::succeed(config);
-        }
-
-        let entity_union = Union {
-            types: resolver_by_type.keys().cloned().collect(),
-            ..Default::default()
-        };
-
-        let entity_resolver = config::EntityResolver { resolver_by_type };
-
-        // union that wraps any possible types for entities
-        config
-            .unions
-            .insert(UNION_ENTITIES_NAME.to_owned(), entity_union);
-        // any scalar for argument `representations`
-        config
-            .types
-            .insert(ENTITIES_TYPE_NAME.to_owned(), config::Type::default());
 
         let service_field = Field { type_of: "String".to_string().into(), ..Default::default() };
 
@@ -87,7 +78,7 @@ impl Transform for Subgraph {
             .types
             .insert(SERVICE_TYPE_NAME.to_owned(), service_type);
 
-        let query_type = match config.schema.query.as_ref() {
+        let query_type_name = match config.schema.query.as_ref() {
             Some(name) => name,
             None => {
                 config.schema.query = Some("Query".to_string());
@@ -95,30 +86,7 @@ impl Transform for Subgraph {
             }
         };
 
-        let query_type = config.types.entry(query_type.to_owned()).or_default();
-
-        let arg = Arg {
-            type_of: Type::from(ENTITIES_TYPE_NAME.to_string())
-                .into_required()
-                .into_list()
-                .into_required(),
-            ..Default::default()
-        };
-
-        query_type.fields.insert(
-            ENTITIES_FIELD_NAME.to_string(),
-            Field {
-                type_of: Type::from(UNION_ENTITIES_NAME.to_owned())
-                    .into_list()
-                    .into_required(),
-                args: [(ENTITIES_ARG_NAME.to_owned(), arg)].into_iter().collect(),
-                doc: Some("Apollo federation Query._entities resolver".to_string()),
-                resolver: Some(Resolver::ApolloFederation(
-                    ApolloFederation::EntityResolver(entity_resolver),
-                )),
-                ..Default::default()
-            },
-        );
+        let query_type = config.types.entry(query_type_name.to_owned()).or_default();
 
         query_type.fields.insert(
             SERVICE_FIELD_NAME.to_string(),
@@ -129,6 +97,49 @@ impl Transform for Subgraph {
                 ..Default::default()
             },
         );
+
+        if !resolver_by_type.is_empty() {
+            let entity_union = Union {
+                types: resolver_by_type.keys().cloned().collect(),
+                ..Default::default()
+            };
+
+            let entity_resolver = config::EntityResolver { resolver_by_type };
+
+            // union that wraps any possible types for entities
+            config
+                .unions
+                .insert(UNION_ENTITIES_NAME.to_owned(), entity_union);
+            // any scalar for argument `representations`
+            config
+                .types
+                .insert(ENTITIES_TYPE_NAME.to_owned(), config::Type::default());
+
+            let query_type = config.types.entry(query_type_name.to_owned()).or_default();
+
+            let arg = Arg {
+                type_of: Type::from(ENTITIES_TYPE_NAME.to_string())
+                    .into_required()
+                    .into_list()
+                    .into_required(),
+                ..Default::default()
+            };
+
+            query_type.fields.insert(
+                ENTITIES_FIELD_NAME.to_string(),
+                Field {
+                    type_of: Type::from(UNION_ENTITIES_NAME.to_owned())
+                        .into_list()
+                        .into_required(),
+                    args: [(ENTITIES_ARG_NAME.to_owned(), arg)].into_iter().collect(),
+                    doc: Some("Apollo federation Query._entities resolver".to_string()),
+                    resolver: Some(Resolver::ApolloFederation(
+                        ApolloFederation::EntityResolver(entity_resolver),
+                    )),
+                    ..Default::default()
+                },
+            );
+        }
 
         Valid::succeed(config)
     }
@@ -470,6 +481,7 @@ mod tests {
                     .collect(),
                     ..Default::default()
                 }],
+                dedupe: None,
             };
 
             let resolver = Resolver::Call(call);

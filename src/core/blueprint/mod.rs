@@ -3,9 +3,11 @@ mod blueprint;
 mod compress;
 mod cors;
 mod definitions;
+mod directive;
 mod dynamic_value;
 mod from_config;
 mod index;
+mod into_document;
 mod into_schema;
 mod links;
 mod mustache;
@@ -16,7 +18,6 @@ pub mod telemetry;
 mod timeout;
 mod union_resolver;
 mod upstream;
-mod wrapping_type;
 
 pub use auth::*;
 pub use blueprint::*;
@@ -31,7 +32,6 @@ pub use schema::*;
 pub use server::*;
 pub use timeout::GlobalTimeout;
 pub use upstream::*;
-pub use wrapping_type::Type;
 
 use crate::core::config::ConfigModule;
 use crate::core::try_fold::TryFold;

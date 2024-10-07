@@ -1,0 +1,61 @@
+---
+source: src/core/config/config_module/merge.rs
+expression: merged.to_sdl()
+---
+schema @server(port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com", batch: {delay: 100, headers: []}, httpCache: 42) {
+  query: Query
+}
+
+input CommentInput {
+  body: String!
+  userId: Int!
+}
+
+interface Post {
+  body: String
+  id: Int!
+  user: User @http(path: "/users/{{.value.userId}}")
+  userId: Int!
+}
+
+enum CommentSearch {
+  MONTH
+  WEEK
+}
+
+enum Role {
+  ADMIN
+  EMPLOYEE
+  USER
+}
+
+type Comment {
+  body: String
+}
+
+type Query {
+  addComment(postId: Int!, comment: CommentInput!): Boolean @http(method: "POST", path: "/add-comment")
+  posts: [UserPost] @http(path: "/posts")
+  searchComments(type: CommentSearch): [Comment] @http(path: "/comment")
+  user(id: Int!): User @http(path: "/users/{{.args.id}}")
+  users: [User] @http(path: "/users")
+  version: String @expr(body: "test")
+}
+
+type User {
+  email: String!
+  id: Int!
+  name: String!
+  phone: String
+  role: Role
+  username: String!
+  website: String
+}
+
+type UserPost implements Post {
+  body: String
+  id: Int!
+  title: String
+  user: User @http(path: "/users/{{.value.userId}}")
+  userId: Int!
+}

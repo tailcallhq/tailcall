@@ -40,15 +40,17 @@ pub mod tracing;
 mod transform;
 pub mod try_fold;
 pub mod valid;
+pub mod variance;
 pub mod worker;
+pub mod wrapping_type;
 
 // Re-export everything from `tailcall_macros` as `macros`
 use std::borrow::Cow;
 use std::hash::Hash;
 use std::num::NonZeroU64;
 
+use async_graphql::{Pos, Positioned};
 use async_graphql_value::ConstValue;
-pub use blueprint::Type;
 pub use errata::Errata;
 pub use error::{Error, Result};
 use http::Response;
@@ -56,6 +58,12 @@ use ir::model::IoId;
 pub use mustache::Mustache;
 pub use tailcall_macros as macros;
 pub use transform::Transform;
+pub use wrapping_type::Type;
+
+const DEFAULT_VERIFY_SSL: bool = true;
+pub const fn default_verify_ssl() -> Option<bool> {
+    Some(DEFAULT_VERIFY_SSL)
+}
 
 pub trait EnvIO: Send + Sync + 'static {
     fn get(&self, key: &str) -> Option<Cow<'_, str>>;
@@ -100,6 +108,14 @@ pub trait WorkerIO<In, Out>: Send + Sync + 'static {
 
 pub fn is_default<T: Default + Eq>(val: &T) -> bool {
     *val == T::default()
+}
+
+pub fn pos<A>(a: A) -> Positioned<A> {
+    Positioned::new(a, Pos::default())
+}
+
+pub fn verify_ssl_is_default(val: &Option<bool>) -> bool {
+    val.is_none() || val.unwrap()
 }
 
 #[cfg(test)]

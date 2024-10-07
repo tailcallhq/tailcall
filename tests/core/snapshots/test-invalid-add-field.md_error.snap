@@ -1,0 +1,15 @@
+---
+source: tests/core/spec.rs
+expression: errors
+---
+[
+  {
+    "message": "Parsing failed because of invalid type: string \"{{.value.user.username}}\", expected a sequence",
+    "trace": [
+      "PostUser",
+      "@addField",
+      "path"
+    ],
+    "description": null
+  }
+]

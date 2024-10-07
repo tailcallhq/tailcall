@@ -4,7 +4,29 @@ use serde::{Deserialize, Serialize};
 use tailcall_macros::MergeRight;
 
 use crate::core::config::Resolver;
-use crate::core::merge_right::MergeRight;
+
+// from the Apollo spec https://specs.apollo.dev/#sec-federation-v2-9
+pub static FEDERATION_DIRECTIVES: &[&str] = &[
+    "authenticated",
+    "context",
+    "cost",
+    "fromContext",
+    "link",
+    "key",
+    "tag",
+    "shareable",
+    "inaccessible",
+    "override",
+    "extends",
+    "external",
+    "provides",
+    "requires",
+    "requiresScope",
+    "composeDirective",
+    "interfaceObject",
+    "listSize",
+    "policy",
+];
 
 /// Directive `@key` for Apollo Federation
 #[derive(

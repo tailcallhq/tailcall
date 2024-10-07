@@ -13,6 +13,8 @@ pub fn compile_http(
     http: &config::Http,
     is_list: bool,
 ) -> Valid<IR, String> {
+    let dedupe = http.dedupe.unwrap_or_default();
+
     Valid::<(), String>::fail("GroupBy is only supported for GET requests".to_string())
         .when(|| !http.batch_key.is_empty() && http.method != Method::GET)
         .and(
@@ -68,7 +70,7 @@ pub fn compile_http(
                 .or(config_module.upstream.on_request.clone())
                 .map(|on_request| HttpFilter { on_request });
 
-            if !http.batch_key.is_empty() && http.method == Method::GET {
+            let io = if !http.batch_key.is_empty() && http.method == Method::GET {
                 // Find a query parameter that contains a reference to the {{.value}} key
                 let key = http.query.iter().find_map(|q| {
                     Mustache::parse(&q.value)
@@ -81,6 +83,7 @@ pub fn compile_http(
                     dl_id: None,
                     http_filter,
                     is_list,
+                    dedupe,
                 })
             } else {
                 IR::IO(IO::Http {
@@ -89,9 +92,12 @@ pub fn compile_http(
                     dl_id: None,
                     http_filter,
                     is_list,
+                    dedupe,
                 })
-            }
+            };
+            (io, &http.select)
         })
+        .and_then(apply_select)
 }
 
 pub fn update_http<'a>(
