@@ -69,6 +69,11 @@ pub struct Config {
     pub unions: BTreeMap<String, Union>,
 
     ///
+    /// A map of all the interface types in the schema.
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub interfaces: BTreeMap<String, Interface>,
+
+    ///
     /// A map of all the enum types in the schema
     #[serde(default, skip_serializing_if = "is_default")]
     pub enums: BTreeMap<String, Enum>,
@@ -311,6 +316,13 @@ pub struct Union {
     pub doc: Option<String>,
 }
 
+#[derive(
+    Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight,
+)]
+pub struct Interface {
+    pub types: BTreeSet<String>,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
 /// Definition of GraphQL enum type
 pub struct Enum {
@@ -378,6 +390,10 @@ impl Config {
 
     pub fn find_union(&self, name: &str) -> Option<&Union> {
         self.unions.get(name)
+    }
+
+    pub fn find_interface(&self, name: &str) -> Option<&Interface> {
+        self.interfaces.get(name)
     }
 
     pub fn find_enum(&self, name: &str) -> Option<&Enum> {

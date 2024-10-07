@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use async_graphql_value::ConstValue;
 use directive::Directive;
+use interface_resolver::update_interface_resolver;
 use regex::Regex;
 use union_resolver::update_union_resolver;
 
@@ -510,6 +511,7 @@ pub fn to_field_definition(
         .and(update_protected(object_name).trace(Protected::trace_name().as_str()))
         .and(update_enum_alias())
         .and(update_union_resolver())
+        .and(update_interface_resolver())
         .try_fold(
             &(config_module, field, type_of, name),
             FieldDefinition::default(),
