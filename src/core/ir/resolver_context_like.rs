@@ -94,7 +94,8 @@ impl SelectionField {
         let name = field.output_name.to_string();
         let type_name = field.type_of.name();
         let selection_set = field
-            .iter_dfs()
+            .selection
+            .iter()
             .filter(|field| match &field.type_condition {
                 Some(type_condition) => type_condition == type_name,
                 None => true,
