@@ -182,7 +182,8 @@ where
                     let mut ans = Value::JsonObject::new();
 
                     for child in node
-                        .iter_dfs()
+                        .selection
+                        .iter()
                         .filter(|field| self.plan.field_is_part_of_value(field, value))
                     {
                         // all checks for skip must occur in `iter_inner`
@@ -240,7 +241,6 @@ mod tests {
     use crate::core::jit::model::{FieldId, Variables};
     use crate::core::jit::store::Store;
     use crate::core::jit::synth::Synth;
-    use crate::core::jit::transform::InputResolver;
     use crate::core::json::JsonLike;
     use crate::core::valid::Validator;
 
@@ -324,10 +324,10 @@ mod tests {
 
         let builder = Builder::new(&Blueprint::try_from(&config).unwrap(), doc);
         let plan = builder.build(None).unwrap();
-        let input_resolver = InputResolver::new(plan);
-        let plan = input_resolver.resolve_input(&Variables::new()).unwrap();
-
-        let plan = plan.try_map(Deserialize::deserialize).unwrap();
+        let plan = plan.try_map(|v| {
+            let serde = v.into_json().unwrap();
+            serde_json::from_value(serde).unwrap()
+        }).unwrap();
 
         let store = store
             .into_iter()
