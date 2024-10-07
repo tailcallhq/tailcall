@@ -5,6 +5,7 @@ expression: plan.into_nested()
 [
     Field {
         id: 0,
+        parent_id: None,
         name: "posts",
         output_name: "articles",
         ir: "Some(..)",
@@ -15,6 +16,9 @@ expression: plan.into_nested()
         selection: [
             Field {
                 id: 1,
+                parent_id: Some(
+                    0,
+                ),
                 name: "user",
                 output_name: "author",
                 ir: "Some(..)",
@@ -25,6 +29,9 @@ expression: plan.into_nested()
                 selection: [
                     Field {
                         id: 2,
+                        parent_id: Some(
+                            1,
+                        ),
                         name: "id",
                         output_name: "identifier",
                         type_of: ID!,

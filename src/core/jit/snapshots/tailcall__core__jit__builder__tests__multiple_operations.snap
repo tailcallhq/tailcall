@@ -5,6 +5,7 @@ expression: plan.into_nested()
 [
     Field {
         id: 0,
+        parent_id: None,
         name: "user",
         output_name: "user",
         ir: "Some(..)",
@@ -28,6 +29,9 @@ expression: plan.into_nested()
         selection: [
             Field {
                 id: 1,
+                parent_id: Some(
+                    0,
+                ),
                 name: "id",
                 output_name: "id",
                 type_of: ID!,
@@ -38,6 +42,9 @@ expression: plan.into_nested()
             },
             Field {
                 id: 2,
+                parent_id: Some(
+                    0,
+                ),
                 name: "username",
                 output_name: "username",
                 type_of: String!,
@@ -51,6 +58,7 @@ expression: plan.into_nested()
     },
     Field {
         id: 3,
+        parent_id: None,
         name: "posts",
         output_name: "posts",
         ir: "Some(..)",
@@ -61,6 +69,9 @@ expression: plan.into_nested()
         selection: [
             Field {
                 id: 4,
+                parent_id: Some(
+                    3,
+                ),
                 name: "id",
                 output_name: "id",
                 type_of: ID!,
@@ -71,6 +82,9 @@ expression: plan.into_nested()
             },
             Field {
                 id: 5,
+                parent_id: Some(
+                    3,
+                ),
                 name: "title",
                 output_name: "title",
                 type_of: String!,
