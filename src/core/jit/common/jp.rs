@@ -104,8 +104,6 @@ impl<'a, Value: Deserialize<'a> + Clone + 'a + JsonLike<'a> + std::fmt::Debug> J
         let input_resolver = InputResolver::new(plan);
         let plan = input_resolver.resolve_input(variables).unwrap();
 
-        
-
         plan.try_map(Deserialize::deserialize).unwrap()
     }
 

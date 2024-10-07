@@ -214,11 +214,6 @@ impl<Input> Field<Input> {
         self,
         map: &impl Fn(Input) -> Result<Output, Error>,
     ) -> Result<Field<Output>, Error> {
-        let mut selection = vec![];
-        for i in self.selection {
-            selection.push(i.try_map(map)?);
-        }
-
         Ok(Field {
             id: self.id,
             parent_id: self.parent_id,
@@ -227,7 +222,11 @@ impl<Input> Field<Input> {
             ir: self.ir,
             type_of: self.type_of,
             type_condition: self.type_condition,
-            selection,
+            selection: self
+                .selection
+                .into_iter()
+                .map(|f| f.try_map(map))
+                .collect::<Result<_, _>>()?,
             skip: self.skip,
             include: self.include,
             pos: self.pos,
