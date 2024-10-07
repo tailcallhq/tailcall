@@ -182,7 +182,6 @@ where
                     let mut ans = Value::JsonObject::new();
 
                     for child in node
-                        .selection
                         .iter()
                         .filter(|field| self.plan.field_is_part_of_value(field, value))
                     {
@@ -324,10 +323,12 @@ mod tests {
 
         let builder = Builder::new(&Blueprint::try_from(&config).unwrap(), doc);
         let plan = builder.build(None).unwrap();
-        let plan = plan.try_map(|v| {
-            let serde = v.into_json().unwrap();
-            serde_json::from_value(serde).unwrap()
-        }).unwrap();
+        let plan = plan
+            .try_map(|v| {
+                let serde = v.into_json().unwrap();
+                Deserialize::deserialize(serde)
+            })
+            .unwrap();
 
         let store = store
             .into_iter()

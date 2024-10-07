@@ -79,10 +79,9 @@ impl<Input> Field<Input> {
         value.get_type_name().unwrap_or(self.type_of.name())
     }
 
-    pub fn iter_dfs(&self) -> DFS<Input> {
-        DFS { stack: vec![self.selection.iter()] }
+    pub fn iter(&self) -> impl Iterator<Item = &Field<Input>> {
+        self.selection.iter()
     }
-
     pub fn modify(&self, ff: &impl Fn(&Field<Input>) -> Field<Input>) -> Field<Input> {
         let mut field = ff(self);
         field.selection = field
