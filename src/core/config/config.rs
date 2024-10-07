@@ -14,7 +14,7 @@ use tailcall_typedefs_common::ServiceDocumentBuilder;
 use super::directive::Directive;
 use super::from_document::from_document;
 use super::{
-    AddField, Alias, Cache, Call, Expr, GraphQL, Grpc, Http, Key, Link, Modify, Omit, Protected,
+    AddField, Alias, Cache, Call, Expr, GraphQL, Grpc, Http, Link, Modify, Omit, Protected,
     Resolver, Server, Telemetry, Upstream, JS,
 };
 use crate::core::config::npo::QueryPath;
@@ -118,12 +118,6 @@ pub struct Type {
     /// Apollo federation entity resolver.
     #[serde(flatten, default, skip_serializing_if = "is_default")]
     pub resolver: Option<Resolver>,
-
-    ///
-    /// Apollo federation key directive.
-    /// skip since it's set automatically by config transformer
-    #[serde(skip_serializing)]
-    pub key: Option<Key>,
 
     ///
     /// Any additional directives
