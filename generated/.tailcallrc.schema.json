@@ -13,13 +13,6 @@
         "$ref": "#/definitions/Enum"
       }
     },
-    "interfaces": {
-      "description": "A map of all the interface types in the schema.",
-      "type": "object",
-      "additionalProperties": {
-        "$ref": "#/definitions/Interface"
-      }
-    },
     "links": {
       "description": "A list of all links in the schema.",
       "type": "array",
@@ -824,21 +817,6 @@
     "Int8": {
       "title": "Int8",
       "description": "Field whose value is an 8-bit signed integer."
-    },
-    "Interface": {
-      "type": "object",
-      "required": [
-        "types"
-      ],
-      "properties": {
-        "types": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "uniqueItems": true
-        }
-      }
     },
     "JS": {
       "type": "object",

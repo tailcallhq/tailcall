@@ -273,13 +273,14 @@ impl Invariant for Cache {
             enums.extend(merged_enums);
 
             let config = Config {
-                types, enums, unions: self.config.unions.merge_right(other.config.unions), interfaces: self.config.interfaces.merge_right(other.config.interfaces), server: self.config.server.merge_right(other.config.server), upstream: self.config.upstream.merge_right(other.config.upstream), schema: self.config.schema.merge_right(other.config.schema), links: self.config.links.merge_right(other.config.links), telemetry: self.config.telemetry.merge_right(other.config.telemetry)  };
+                types, enums, unions: self.config.unions.merge_right(other.config.unions), server: self.config.server.merge_right(other.config.server), upstream: self.config.upstream.merge_right(other.config.upstream), schema: self.config.schema.merge_right(other.config.schema), links: self.config.links.merge_right(other.config.links), telemetry: self.config.telemetry.merge_right(other.config.telemetry)  };
 
             Cache {
                 config,
                 input_types: self.input_types.merge_right(other.input_types),
                 output_types: self.output_types.merge_right(other.output_types),
                 interface_types: self.interface_types.merge_right(other.interface_types),
+                interfaces_types_map: self.interfaces_types_map.merge_right(other.interfaces_types_map),
             }
         })
     }

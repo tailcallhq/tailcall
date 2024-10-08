@@ -31,6 +31,7 @@ struct Cache {
     input_types: HashSet<String>,
     output_types: HashSet<String>,
     interface_types: HashSet<String>,
+    interfaces_types_map: HashMap<String, HashSet<String>>,
 }
 
 impl From<Config> for Cache {
@@ -38,12 +39,14 @@ impl From<Config> for Cache {
         let input_types = value.input_types();
         let output_types = value.output_types();
         let interface_types = value.interface_types();
+        let interfaces_types_map = value.interfaces_types_map();
 
         Cache {
             config: value,
-            input_types: input_types.clone(),
-            output_types: output_types.clone(),
-            interface_types: interface_types.clone(),
+            input_types,
+            output_types,
+            interface_types,
+            interfaces_types_map,
         }
     }
 }
@@ -81,6 +84,10 @@ impl ConfigModule {
 
     pub fn interface_types(&self) -> &HashSet<String> {
         &self.cache.interface_types
+    }
+
+    pub fn interfaces_types_map(&self) -> &HashMap<String, HashSet<String>> {
+        &self.cache.interfaces_types_map
     }
 
     pub fn transform<T: Transform<Value = Config>>(self, transformer: T) -> Valid<Self, T::Error> {

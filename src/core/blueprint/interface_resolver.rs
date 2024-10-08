@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::core::blueprint::FieldDefinition;
 use crate::core::config;
 use crate::core::config::{ConfigModule, Field};
@@ -9,9 +11,9 @@ use crate::core::valid::{Valid, Validator};
 fn compile_interface_resolver(
     config: &ConfigModule,
     interface_name: &str,
-    interface_: &config::Interface,
+    interface_types: HashSet<String>,
 ) -> Valid<Discriminator, String> {
-    Valid::from_iter(&interface_.types, |type_name| {
+    Valid::from_iter(&interface_types, |type_name| {
         Valid::from_option(
             config
                 .find_type(type_name)
@@ -31,11 +33,12 @@ pub fn update_interface_resolver<'a>(
 {
     TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
         |(config, field, _, _), mut b_field| {
-            let Some(interface_) = config.find_interface(field.type_of.name()) else {
+            let Some(interface_types) = config.interfaces_types_map().get(field.type_of.name())
+            else {
                 return Valid::succeed(b_field);
             };
 
-            compile_interface_resolver(config, field.type_of.name(), interface_).map(
+            compile_interface_resolver(config, field.type_of.name(), interface_types.clone()).map(
                 |discriminator| {
                     b_field.resolver = Some(
                         b_field

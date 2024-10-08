@@ -11,7 +11,7 @@ use async_graphql_value::ConstValue;
 use indexmap::IndexMap;
 
 use super::directive::{to_directive, Directive};
-use super::{Alias, Interface, Resolver, Telemetry, FEDERATION_DIRECTIVES};
+use super::{Alias, Resolver, Telemetry, FEDERATION_DIRECTIVES};
 use crate::core::config::{
     self, Cache, Config, Enum, Link, Modify, Omit, Protected, RootSchema, Server, Union, Upstream,
     Variant,
@@ -41,30 +41,25 @@ pub fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
     let unions = to_union_types(&type_definitions);
     let enums = to_enum_types(&type_definitions);
     let schema = schema_definition(&doc).map(to_root_schema);
-    let interfaces = to_interface_types(&type_definitions);
     schema_definition(&doc).and_then(|sd| {
         server(sd)
             .fuse(upstream(sd))
             .fuse(types)
             .fuse(unions)
-            .fuse(interfaces)
             .fuse(enums)
             .fuse(schema)
             .fuse(links(sd))
             .fuse(telemetry(sd))
             .map(
-                |(server, upstream, types, unions, interfaces, enums, schema, links, telemetry)| {
-                    Config {
-                        server,
-                        upstream,
-                        types,
-                        unions,
-                        interfaces,
-                        enums,
-                        schema,
-                        links,
-                        telemetry,
-                    }
+                |(server, upstream, types, unions, enums, schema, links, telemetry)| Config {
+                    server,
+                    upstream,
+                    types,
+                    unions,
+                    enums,
+                    schema,
+                    links,
+                    telemetry,
                 },
             )
     })
@@ -212,86 +207,6 @@ fn to_union_types(
                 };
                 Some((type_name, type_opt))
             })
-            .collect(),
-    )
-}
-fn to_interface_types(
-    type_definitions: &[&Positioned<TypeDefinition>],
-) -> Valid<BTreeMap<String, Interface>, String> {
-    let mut interfaces_types: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
-    let mut interfaces_implements: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
-
-    // Step: In this loop we have to main goals
-    // 1. To collect all the ObjectType implementations for an Interface
-    // 2. To collect all Interface implementations for an Interface
-    for type_definition in type_definitions.iter() {
-        let type_name = pos_name_to_string(&type_definition.node.name);
-        match type_definition.node.kind.clone() {
-            TypeKind::Interface(interface_type) => {
-                for Positioned { node: name, .. } in interface_type.implements.iter() {
-                    let interface_name = name.to_string();
-
-                    match interfaces_implements.get_mut(&interface_name) {
-                        Some(names) => {
-                            names.insert(type_name.clone());
-                        }
-                        None => {
-                            let mut set = BTreeSet::new();
-                            set.insert(type_name.clone());
-                            interfaces_implements.insert(interface_name, set);
-                        }
-                    }
-                }
-            }
-            TypeKind::Object(object_type) => {
-                for Positioned { node: name, .. } in object_type.implements.iter() {
-                    let interface_name = name.to_string();
-
-                    match interfaces_types.get_mut(&interface_name) {
-                        Some(names) => {
-                            names.insert(type_name.clone());
-                        }
-                        None => {
-                            let mut set = BTreeSet::new();
-                            set.insert(type_name.clone());
-                            interfaces_types.insert(interface_name, set);
-                        }
-                    }
-                }
-            }
-            _ => (),
-        };
-    }
-
-    // Step: In this step we merge the collected data into the final product
-    // Interface Name => Concrete types that implement an interface
-    // To simplify this logic, think of interfaces as union types (but they follow a
-    // contract form with similar fields)
-    for (nested_interface_name, nested_interface_implementations) in
-        interfaces_implements.into_iter()
-    {
-        for interface_name in nested_interface_implementations {
-            if let Some(types_to_merge) = interfaces_types.get(&nested_interface_name).cloned() {
-                for nested_type_name in types_to_merge {
-                    match interfaces_types.get_mut(&interface_name) {
-                        Some(names) => {
-                            names.insert(nested_type_name);
-                        }
-                        None => {
-                            let mut set = BTreeSet::new();
-                            set.insert(nested_type_name);
-                            interfaces_types.insert(interface_name.clone(), set);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    Valid::succeed(
-        interfaces_types
-            .into_iter()
-            .map(|(name, types)| (name, Interface { types }))
             .collect(),
     )
 }

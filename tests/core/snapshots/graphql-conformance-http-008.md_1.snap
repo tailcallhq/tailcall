@@ -14,14 +14,14 @@ expression: response
         "message": "internal: non-null types require a return value",
         "locations": [
           {
-            "line": 5,
+            "line": 10,
             "column": 7
           }
         ],
         "path": [
           "profiles",
           2,
-          "friends"
+          "likers"
         ]
       }
     ]
