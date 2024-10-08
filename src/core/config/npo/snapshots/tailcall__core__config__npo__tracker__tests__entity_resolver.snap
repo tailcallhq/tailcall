@@ -2,13 +2,13 @@
 source: src/core/config/npo/tracker.rs
 expression: actual
 ---
-query { __entity(T4) { t4 { n } } }
-query { __entity(T3) { t3 } }
-query { t4_ls { t4 { n } } }
-query { t4 { t4 { n } } }
-query { t3_ls { t3 } }
-query { t3 { t3 { n } } }
-query { t2_ls { t2 } }
-query { t2 { t2 { n } } }
-query { __entity(T1) }
 query { __entity(T2) }
+query { __entity(T1) }
+query { t2 { t2 { n } } }
+query { t2_ls { t2 } }
+query { t3 { t3 { n } } }
+query { t3_ls { t3 } }
+query { t4 { t4 { n } } }
+query { t4_ls { t4 { n } } }
+query { __entity(T3) { t3 } }
+query { __entity(T4) { t4 { n } } }

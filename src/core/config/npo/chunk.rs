@@ -45,6 +45,14 @@ impl<A> Chunk<A> {
         vec
     }
 
+    pub fn map(&self, f: &mut impl FnMut(&A) -> A) -> Self {
+        match self {
+            Chunk::Empty => Chunk::Empty,
+            Chunk::Append(a, rc) => Chunk::Append(f(a), Rc::new(rc.map(f))),
+            Chunk::Concat(a, b) => Chunk::Concat(Rc::new(a.map(f)), Rc::new(b.map(f))),
+        }
+    }
+
     pub fn as_vec_mut<'a>(&'a self, buf: &mut Vec<&'a A>) {
         match self {
             Chunk::Empty => {}

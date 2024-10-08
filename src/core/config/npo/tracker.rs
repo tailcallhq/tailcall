@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 
 use super::chunk::Chunk;
@@ -43,7 +43,7 @@ impl Display for QueryPath {
                 path.push_str(
                     query_path
                         .iter()
-                        .rfold("".to_string(), |s, field_name| {
+                        .fold("".to_string(), |s, field_name| {
                             if s.is_empty() {
                                 field_name.to_string()
                             } else {
@@ -57,7 +57,7 @@ impl Display for QueryPath {
             })
             .collect();
 
-        let val = query_data.iter().rfold("".to_string(), |s, query| {
+        let val = query_data.iter().fold("".to_string(), |s, query| {
             if s.is_empty() {
                 query.to_string()
             } else {
@@ -117,6 +117,8 @@ impl Display for ChunkName<'_> {
 /// upstream.
 pub struct PathTracker<'a> {
     config: &'a Config,
+    // Caches resolved chunks for the specific type
+    // with is_list info since the result is different depending on this flag
     cache: HashMap<(TypeName<'a>, bool), Chunk<Chunk<ChunkName<'a>>>>,
 }
 
@@ -125,57 +127,51 @@ impl<'a> PathTracker<'a> {
         PathTracker { config, cache: Default::default() }
     }
 
-    #[allow(clippy::too_many_arguments)]
     fn iter(
         &mut self,
         path: Chunk<ChunkName<'a>>,
         type_name: TypeName<'a>,
         is_list: bool,
-        visited: HashSet<(TypeName<'a>, ChunkName<'a>)>,
     ) -> Chunk<Chunk<ChunkName<'a>>> {
-        if let Some(chunks) = self.cache.get(&(type_name, is_list)) {
-            return chunks.clone();
-        }
+        let chunks = if let Some(chunks) = self.cache.get(&(type_name, is_list)) {
+            chunks.clone()
+        } else {
+            // set empty value in the cache to prevent infinity recursion
+            self.cache.insert((type_name, is_list), Chunk::new());
 
-        let mut chunks = Chunk::new();
-        if let Some(type_of) = self.config.find_type(type_name.as_str()) {
-            for (name, field) in type_of.fields.iter() {
-                let chunk_name = ChunkName::Field(FieldName::new(name));
-                let path = path.clone().append(chunk_name);
-                if !visited.contains(&(type_name, chunk_name)) {
+            let mut chunks = Chunk::new();
+            if let Some(type_of) = self.config.find_type(type_name.as_str()) {
+                for (name, field) in type_of.fields.iter() {
+                    let chunk_name = ChunkName::Field(FieldName::new(name));
+                    let path = Chunk::new().append(chunk_name);
+
                     if is_list && field.has_resolver() && !field.has_batched_resolver() {
                         chunks = chunks.append(path);
                     } else {
-                        let mut visited = visited.clone();
-
-                        visited.insert((type_name, chunk_name));
                         let is_list = is_list | field.type_of.is_list();
                         chunks = chunks.concat(self.iter(
                             path,
                             TypeName::new(field.type_of.name()),
                             is_list,
-                            visited,
                         ))
                     }
                 }
             }
-        }
 
-        // self.cache.insert((type_name, is_list), chunks.clone());
-        chunks
+            self.cache.insert((type_name, is_list), chunks.clone());
+
+            chunks
+        };
+
+        // chunks contains only paths from the current type.
+        // Prepend every subpath with parent path
+        chunks.map(&mut |chunk| path.clone().concat(chunk.clone()))
     }
 
     fn find_chunks(&mut self) -> Chunk<Chunk<ChunkName<'a>>> {
-        // let mut visited = HashSet::new();
-
         let mut chunks = match &self.config.schema.query {
             None => Chunk::new(),
-            Some(query) => self.iter(
-                Chunk::new(),
-                TypeName::new(query.as_str()),
-                false,
-                HashSet::new(),
-            ),
+            Some(query) => self.iter(Chunk::new(), TypeName::new(query.as_str()), false),
         };
 
         for (type_name, type_of) in &self.config.types {
@@ -191,7 +187,6 @@ impl<'a> PathTracker<'a> {
                         TypeName::new(type_name.as_str()),
                         // entities are basically returning list of data
                         true,
-                        HashSet::new(),
                     ));
                 } else {
                     chunks = chunks.append(chunk);
@@ -278,6 +273,13 @@ mod tests {
     #[test]
     fn test_multiple_keys() {
         let config = include_config!("fixtures/multiple-keys.graphql").unwrap();
+
+        assert_n_plus_one!(config);
+    }
+
+    #[test]
+    fn test_multiple_type_usage() {
+        let config = include_config!("fixtures/multiple-type-usage.graphql").unwrap();
 
         assert_n_plus_one!(config);
     }
