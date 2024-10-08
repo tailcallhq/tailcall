@@ -42,13 +42,14 @@ pub mod try_fold;
 pub mod valid;
 pub mod variance;
 pub mod worker;
-mod wrapping_type;
+pub mod wrapping_type;
 
 // Re-export everything from `tailcall_macros` as `macros`
 use std::borrow::Cow;
 use std::hash::Hash;
 use std::num::NonZeroU64;
 
+use async_graphql::{Pos, Positioned};
 use async_graphql_value::ConstValue;
 pub use errata::Errata;
 pub use error::{Error, Result};
@@ -107,6 +108,10 @@ pub trait WorkerIO<In, Out>: Send + Sync + 'static {
 
 pub fn is_default<T: Default + Eq>(val: &T) -> bool {
     *val == T::default()
+}
+
+pub fn pos<A>(a: A) -> Positioned<A> {
+    Positioned::new(a, Pos::default())
 }
 
 pub fn verify_ssl_is_default(val: &Option<bool>) -> bool {

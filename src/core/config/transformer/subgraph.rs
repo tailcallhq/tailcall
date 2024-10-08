@@ -6,6 +6,7 @@ use std::ops::Deref;
 
 use tailcall_macros::MergeRight;
 
+use crate::core::config::directive::to_directive;
 use crate::core::config::{
     self, ApolloFederation, Arg, Call, Config, Field, GraphQL, Grpc, Http, Key, KeyValue, Resolver,
     Union,
@@ -45,13 +46,18 @@ impl Transform for Subgraph {
             if let Some(resolver) = &ty.resolver {
                 resolver_by_type.insert(type_name.clone(), resolver.clone());
 
-                KeysExtractor::extract_keys(resolver).map(|fields| {
-                    fields.map(|fields| {
-                        ty.key = Some(Key { fields });
-                    })
+                KeysExtractor::extract_keys(resolver).and_then(|fields| match fields {
+                    Some(fields) => {
+                        let key = Key { fields };
+
+                        to_directive(key.to_directive()).map(|directive| {
+                            ty.directives.push(directive);
+                        })
+                    }
+                    None => Valid::succeed(()),
                 })
             } else {
-                Valid::succeed(None)
+                Valid::succeed(())
             }
             .trace(type_name)
         });

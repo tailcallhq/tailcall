@@ -322,6 +322,21 @@
       "title": "DateTime",
       "description": "Field whose value conforms to the standard datetime format as specified in RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339\")."
     },
+    "Directive": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "arguments": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
     "Email": {
       "title": "Email",
       "description": "Field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address."
@@ -468,6 +483,13 @@
         },
         "default_value": {
           "description": "Stores the default value for the field"
+        },
+        "directives": {
+          "description": "Any additional directives",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Directive"
+          }
         },
         "doc": {
           "description": "Publicly visible documentation for the field.",
@@ -810,18 +832,6 @@
     "JSON": {
       "title": "JSON",
       "description": "Field whose value conforms to the standard JSON format as specified in RFC 8259 (https://datatracker.ietf.org/doc/html/rfc8259)."
-    },
-    "Key": {
-      "description": "Directive `@key` for Apollo Federation",
-      "type": "object",
-      "required": [
-        "fields"
-      ],
-      "properties": {
-        "fields": {
-          "type": "string"
-        }
-      }
     },
     "KeyValue": {
       "type": "object",
@@ -1397,6 +1407,13 @@
             }
           ]
         },
+        "directives": {
+          "description": "Any additional directives",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Directive"
+          }
+        },
         "doc": {
           "description": "Documentation for the type that is publicly visible.",
           "type": [
@@ -1418,18 +1435,6 @@
             "type": "string"
           },
           "uniqueItems": true
-        },
-        "key": {
-          "description": "Apollo federation key directive. skip since it's set automatically by config transformer",
-          "writeOnly": true,
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Key"
-            },
-            {
-              "type": "null"
-            }
-          ]
         },
         "protected": {
           "description": "Marks field as protected by auth providers",

@@ -101,6 +101,7 @@ impl Contravariant for Field {
                 default_value: self.default_value.or(other.default_value),
                 protected: self.protected.merge_right(other.protected),
                 resolver: self.resolver.merge_right(other.resolver),
+                directives: self.directives.merge_right(other.directives),
             })
     }
 }
@@ -121,6 +122,7 @@ impl Covariant for Field {
                 default_value: self.default_value.or(other.default_value),
                 protected: self.protected.merge_right(other.protected),
                 resolver: self.resolver.merge_right(other.resolver),
+                directives: self.directives.merge_right(other.directives),
             })
     }
 }
@@ -136,7 +138,7 @@ impl Contravariant for Type {
             cache: self.cache.merge_right(other.cache),
             protected: self.protected.merge_right(other.protected),
             resolver: self.resolver.merge_right(other.resolver),
-            key: self.key.merge_right(other.key),
+            directives: self.directives.merge_right(other.directives),
         })
     }
 }
@@ -152,7 +154,7 @@ impl Covariant for Type {
             cache: self.cache.merge_right(other.cache),
             protected: self.protected.merge_right(other.protected),
             resolver: self.resolver.merge_right(other.resolver),
-            key: self.key.merge_right(other.key),
+            directives: self.directives.merge_right(other.directives),
         })
     }
 }
