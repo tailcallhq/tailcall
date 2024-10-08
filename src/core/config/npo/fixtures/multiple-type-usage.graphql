@@ -2,11 +2,11 @@ schema @server @upstream {
   query: Query
 }
 
-type T1  {
+type T1 {
   t1: Int
 }
 
-type T2  {
+type T2 {
   t2: [N] @http(path: "")
 }
 
