@@ -1,7 +1,6 @@
 use std::collections::BTreeMap;
 use std::future::Future;
 use std::hash::{Hash, Hasher};
-use std::num::NonZeroU64;
 use std::sync::Arc;
 
 use async_graphql::{Data, Executor, Response, ServerError, Value};
@@ -12,9 +11,8 @@ use tailcall_hasher::TailcallHasher;
 use crate::core::app_context::AppContext;
 use crate::core::async_graphql_hyper::OperationId;
 use crate::core::http::RequestContext;
-use crate::core::jit::{ConstValueExecutor, OPHash};
+use crate::core::jit::{self, ConstValueExecutor, OPHash};
 use crate::core::merge_right::MergeRight;
-use crate::core::{jit, Cache};
 
 #[derive(Clone)]
 pub struct JITExecutor {
@@ -108,25 +106,16 @@ impl Executor for JITExecutor {
 
         async move {
             let jit_request = jit::Request::from(request);
-            let exec =
-                if let Some(op) = self.app_ctx.operation_plans.get(&hash).await.ok().flatten() {
-                    ConstValueExecutor::from(op)
-                } else {
-                    let exec = match ConstValueExecutor::try_new(&jit_request, &self.app_ctx) {
-                        Ok(exec) => exec,
-                        Err(error) => return Response::from_errors(vec![error.into()]),
-                    };
-                    self.app_ctx
-                        .operation_plans
-                        .set(
-                            hash,
-                            exec.plan.clone(),
-                            NonZeroU64::new(60 * 60 * 24 * 1000).unwrap(),
-                        )
-                        .await
-                        .unwrap_or_default();
-                    exec
+            let exec = if let Some(op) = self.app_ctx.operation_plans.get(&hash) {
+                ConstValueExecutor::from(op.value().clone())
+            } else {
+                let exec = match ConstValueExecutor::try_new(&jit_request, &self.app_ctx) {
+                    Ok(exec) => exec,
+                    Err(error) => return Response::from_errors(vec![error.into()]),
                 };
+                self.app_ctx.operation_plans.insert(hash, exec.plan.clone());
+                exec
+            };
 
             if let Some(ref response) = exec.response {
                 response.clone().into_async_graphql()

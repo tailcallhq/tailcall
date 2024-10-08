@@ -2,11 +2,11 @@ use std::sync::Arc;
 
 use async_graphql::dynamic::{self, DynamicRequest};
 use async_graphql_value::ConstValue;
+use dashmap::DashMap;
 
 use crate::core::async_graphql_hyper::OperationId;
 use crate::core::auth::context::GlobalAuthContext;
 use crate::core::blueprint::{Blueprint, Definition, SchemaModifiers};
-use crate::core::cache::InMemoryCache;
 use crate::core::data_loader::{DataLoader, DedupeResult};
 use crate::core::graphql::GraphqlDataLoader;
 use crate::core::grpc;
@@ -29,7 +29,7 @@ pub struct AppContext {
     pub auth_ctx: Arc<GlobalAuthContext>,
     pub dedupe_handler: Arc<DedupeResult<IoId, ConstValue, Error>>,
     pub dedupe_operation_handler: DedupeResult<OperationId, Arc<async_graphql::Response>, Error>,
-    pub operation_plans: InMemoryCache<OPHash, OperationPlan<async_graphql_value::Value>>,
+    pub operation_plans: DashMap<OPHash, OperationPlan<async_graphql_value::Value>>,
 }
 
 impl AppContext {
@@ -150,7 +150,7 @@ impl AppContext {
             auth_ctx: Arc::new(auth_ctx),
             dedupe_handler: Arc::new(DedupeResult::new(false)),
             dedupe_operation_handler: DedupeResult::new(false),
-            operation_plans: InMemoryCache::new(100),
+            operation_plans: DashMap::new(),
         }
     }
 
