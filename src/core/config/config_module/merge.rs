@@ -193,9 +193,9 @@ impl Invariant for Cache {
                     let is_self_input = self.input_types.contains(&type_name);
                     let is_other_input = other.input_types.contains(&type_name);
                     let is_self_output = self.output_types.contains(&type_name)
-                        || self.interface_types.contains(&type_name);
+                        || self.interfaces_types_map.contains_key(&type_name);
                     let is_other_output = other.output_types.contains(&type_name)
-                        || other.interface_types.contains(&type_name);
+                        || other.interfaces_types_map.contains_key(&type_name);
 
                     match (
                         is_self_input,
@@ -279,7 +279,6 @@ impl Invariant for Cache {
                 config,
                 input_types: self.input_types.merge_right(other.input_types),
                 output_types: self.output_types.merge_right(other.output_types),
-                interface_types: self.interface_types.merge_right(other.interface_types),
                 interfaces_types_map: self.interfaces_types_map.merge_right(other.interfaces_types_map),
             }
         })

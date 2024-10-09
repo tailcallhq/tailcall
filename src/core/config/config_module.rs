@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::ops::Deref;
 
 use jsonwebtoken::jwk::JwkSet;
@@ -30,22 +30,19 @@ struct Cache {
     config: Config,
     input_types: HashSet<String>,
     output_types: HashSet<String>,
-    interface_types: HashSet<String>,
-    interfaces_types_map: HashMap<String, HashSet<String>>,
+    interfaces_types_map: BTreeMap<String, BTreeSet<String>>,
 }
 
 impl From<Config> for Cache {
     fn from(value: Config) -> Self {
         let input_types = value.input_types();
         let output_types = value.output_types();
-        let interface_types = value.interface_types();
         let interfaces_types_map = value.interfaces_types_map();
 
         Cache {
             config: value,
             input_types,
             output_types,
-            interface_types,
             interfaces_types_map,
         }
     }
@@ -82,11 +79,7 @@ impl ConfigModule {
         &self.cache.output_types
     }
 
-    pub fn interface_types(&self) -> &HashSet<String> {
-        &self.cache.interface_types
-    }
-
-    pub fn interfaces_types_map(&self) -> &HashMap<String, HashSet<String>> {
+    pub fn interfaces_types_map(&self) -> &BTreeMap<String, BTreeSet<String>> {
         &self.cache.interfaces_types_map
     }
 

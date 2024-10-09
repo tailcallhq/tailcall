@@ -56,10 +56,10 @@ fn config_document(config: &Config) -> ServiceDocument {
             .map(|name| pos(Name::new(name))),
     };
     definitions.push(TypeSystemDefinition::Schema(pos(schema_definition)));
-    let interface_types = config.interface_types();
+    let interface_types = config.interfaces_types_map();
     let input_types = config.input_types();
     for (type_name, type_def) in config.types.iter() {
-        let kind = if interface_types.contains(type_name) {
+        let kind = if interface_types.contains_key(type_name) {
             TypeKind::Interface(InterfaceType {
                 implements: type_def
                     .implements

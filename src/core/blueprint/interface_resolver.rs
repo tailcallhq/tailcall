@@ -38,17 +38,20 @@ pub fn update_interface_resolver<'a>(
                 return Valid::succeed(b_field);
             };
 
-            compile_interface_resolver(config, field.type_of.name(), interface_types.clone()).map(
-                |discriminator| {
-                    b_field.resolver = Some(
-                        b_field
-                            .resolver
-                            .unwrap_or(IR::ContextPath(vec![b_field.name.clone()])),
-                    );
-                    b_field.map_expr(move |expr| IR::Discriminate(discriminator, expr.into()));
-                    b_field
-                },
+            compile_interface_resolver(
+                config,
+                field.type_of.name(),
+                interface_types.iter().cloned().collect(),
             )
+            .map(|discriminator| {
+                b_field.resolver = Some(
+                    b_field
+                        .resolver
+                        .unwrap_or(IR::ContextPath(vec![b_field.name.clone()])),
+                );
+                b_field.map_expr(move |expr| IR::Discriminate(discriminator, expr.into()));
+                b_field
+            })
         },
     )
 }
