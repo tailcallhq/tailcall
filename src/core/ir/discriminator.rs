@@ -36,10 +36,14 @@ where
         if let Some(obj) = self.as_object_mut() {
             obj.insert_key(TYPENAME_FIELD, T::string(type_name.into()));
 
-            Ok(())
-        } else {
-            bail!("Expected object")
+            return Ok(());
         }
+
+        if self.is_null() {
+            return Ok(());
+        }
+
+        bail!("Value expected to be object")
     }
 }
 
@@ -70,6 +74,8 @@ pub struct Discriminator {
     /// Set of all fields that are part of types with
     /// the [FieldInfo] about their relations to types.
     fields_info: IndexMap<String, FieldInfo>,
+    /// The name of parent type
+    name: String,
 }
 
 impl std::fmt::Debug for Discriminator {
@@ -227,7 +233,7 @@ impl Discriminator {
                 .collect()
         };
 
-        let discriminator = Self { fields_info, types };
+        let discriminator = Self { fields_info, types, name: union_name.to_string() };
 
         tracing::debug!(
             "Generated discriminator for union type '{union_name}':\n{discriminator:?}",
@@ -238,7 +244,7 @@ impl Discriminator {
 
     pub fn resolve_type(&self, value: &Value) -> Result<&str> {
         let Value::Object(obj) = value else {
-            bail!("Value expected to be object");
+            return Ok(&self.name);
         };
 
         let mut possible_types = Repr::all_covered(self.types.len());
