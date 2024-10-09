@@ -1,0 +1,21 @@
+schema {
+  query: Query
+}
+
+type Query {
+  a: A
+}
+
+enum enumInput {
+  A
+  B
+}
+
+enum enumOutput {
+  A
+  B
+}
+
+type A {
+  a(x: enumInput): enumOutput
+}

@@ -1,6 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::fmt::{self, Display};
-use std::num::NonZeroU64;
 
 use anyhow::Result;
 use async_graphql::parser::types::ServiceDocument;
@@ -8,15 +7,16 @@ use derive_setters::Setters;
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tailcall_macros::{DirectiveDefinition, InputDefinition};
 use tailcall_typedefs_common::directive_definition::DirectiveDefinition;
 use tailcall_typedefs_common::input_definition::InputDefinition;
 use tailcall_typedefs_common::ServiceDocumentBuilder;
 
-use super::directives::{Call, Expr, GraphQL, Grpc, Http, Key, JS};
+use super::directive::Directive;
 use super::from_document::from_document;
-use super::telemetry::Telemetry;
-use super::{Link, Resolver, Server, Upstream};
+use super::{
+    AddField, Alias, Cache, Call, Expr, GraphQL, Grpc, Http, Link, Modify, Omit, Protected,
+    Resolver, Server, Telemetry, Upstream, JS,
+};
 use crate::core::config::npo::QueryPath;
 use crate::core::config::source::Source;
 use crate::core::is_default;
@@ -77,8 +77,9 @@ pub struct Config {
     /// A list of all links in the schema.
     #[serde(default, skip_serializing_if = "is_default")]
     pub links: Vec<Link>,
-    #[serde(default, skip_serializing_if = "is_default")]
+
     /// Enable [opentelemetry](https://opentelemetry.io) support
+    #[serde(default, skip_serializing_if = "is_default")]
     pub telemetry: Telemetry,
 }
 
@@ -119,10 +120,9 @@ pub struct Type {
     pub resolver: Option<Resolver>,
 
     ///
-    /// Apollo federation key directive.
-    /// skip since it's set automatically by config transformer
-    #[serde(skip_serializing)]
-    pub key: Option<Key>,
+    /// Any additional directives
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub directives: Vec<Directive>,
 }
 
 impl Display for Type {
@@ -152,44 +152,6 @@ impl Type {
 }
 
 #[derive(
-    Clone,
-    Debug,
-    PartialEq,
-    Deserialize,
-    Serialize,
-    Eq,
-    schemars::JsonSchema,
-    MergeRight,
-    DirectiveDefinition,
-    InputDefinition,
-)]
-#[directive_definition(locations = "Object,FieldDefinition")]
-/// The @cache operator enables caching for the query, field or type it is
-/// applied to.
-#[serde(rename_all = "camelCase")]
-#[serde(deny_unknown_fields)]
-pub struct Cache {
-    /// Specifies the duration, in milliseconds, of how long the value has to be
-    /// stored in the cache.
-    pub max_age: NonZeroU64,
-}
-
-#[derive(
-    Clone,
-    Debug,
-    Deserialize,
-    Serialize,
-    PartialEq,
-    Eq,
-    Default,
-    schemars::JsonSchema,
-    MergeRight,
-    DirectiveDefinition,
-)]
-#[directive_definition(locations = "Object,FieldDefinition")]
-pub struct Protected {}
-
-#[derive(
     Serialize,
     Deserialize,
     Clone,
@@ -209,14 +171,6 @@ pub struct RootSchema {
     #[serde(default, skip_serializing_if = "is_default")]
     pub subscription: Option<String>,
 }
-
-#[derive(
-    Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, DirectiveDefinition,
-)]
-#[directive_definition(locations = "FieldDefinition")]
-#[serde(deny_unknown_fields)]
-/// Used to omit a field from public consumption.
-pub struct Omit {}
 
 ///
 /// A field definition containing all the metadata information about resolving a
@@ -270,6 +224,11 @@ pub struct Field {
     /// Resolver for the field
     #[serde(flatten, default, skip_serializing_if = "is_default")]
     pub resolver: Option<Resolver>,
+
+    ///
+    /// Any additional directives
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub directives: Vec<Directive>,
 }
 
 // It's a terminal implementation of MergeRight
@@ -319,26 +278,6 @@ impl Field {
                 .and_then(|m| m.omit)
                 .unwrap_or_default()
     }
-}
-
-#[derive(
-    Serialize,
-    Deserialize,
-    Clone,
-    Debug,
-    PartialEq,
-    Eq,
-    schemars::JsonSchema,
-    DirectiveDefinition,
-    InputDefinition,
-)]
-#[directive_definition(locations = "FieldDefinition")]
-#[serde(deny_unknown_fields)]
-pub struct Modify {
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub name: Option<String>,
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub omit: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -392,25 +331,6 @@ pub struct Variant {
     pub alias: Option<Alias>,
 }
 
-/// The @alias directive indicates that aliases of one enum value.
-#[derive(
-    Serialize,
-    Deserialize,
-    Clone,
-    Debug,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    schemars::JsonSchema,
-    MergeRight,
-    DirectiveDefinition,
-)]
-#[directive_definition(locations = "EnumValue")]
-pub struct Alias {
-    pub options: BTreeSet<String>,
-}
-
 #[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum GraphQLOperationType {
@@ -426,19 +346,6 @@ impl Display for GraphQLOperationType {
             Self::Mutation => "mutation",
         })
     }
-}
-
-#[derive(
-    Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, DirectiveDefinition,
-)]
-#[directive_definition(repeatable, locations = "Object")]
-#[serde(deny_unknown_fields)]
-/// The @addField operator simplifies data structures and queries by adding a field that inlines or flattens a nested field or node within your schema. more info [here](https://tailcall.run/docs/guides/operators/#addfield)
-pub struct AddField {
-    /// Name of the new field to be added
-    pub name: String,
-    /// Path of the data where the field should point to
-    pub path: Vec<String>,
 }
 
 impl Config {
@@ -553,6 +460,8 @@ impl Config {
                     types = self.find_connections(field.type_of.name(), types);
                 }
             }
+        } else if self.find_enum(type_of).is_some() {
+            types.insert(type_of.into());
         }
         types
     }

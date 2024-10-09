@@ -19,7 +19,7 @@ pub enum Error {
     RequestCloneFailed,
 
     #[debug(fmt = "Hyper Header To Str Error: {}", _0)]
-    HyperHeaderStr(Arc<hyper::header::ToStrError>),
+    HyperHeaderStr(Arc<http::header::ToStrError>),
 
     #[debug(fmt = "JS Runtime Stopped Error")]
     JsRuntimeStopped,
@@ -66,8 +66,8 @@ impl From<serde_json::Error> for Error {
     }
 }
 
-impl From<hyper::header::ToStrError> for Error {
-    fn from(error: hyper::header::ToStrError) -> Self {
+impl From<http::header::ToStrError> for Error {
+    fn from(error: http::header::ToStrError) -> Self {
         Error::HyperHeaderStr(Arc::new(error))
     }
 }

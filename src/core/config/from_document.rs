@@ -10,8 +10,8 @@ use async_graphql::Name;
 use async_graphql_value::ConstValue;
 use indexmap::IndexMap;
 
-use super::telemetry::Telemetry;
-use super::{Alias, Resolver};
+use super::directive::{to_directive, Directive};
+use super::{Alias, Resolver, Telemetry, FEDERATION_DIRECTIVES};
 use crate::core::config::{
     self, Cache, Config, Enum, Link, Modify, Omit, Protected, RootSchema, Server, Union, Upstream,
     Variant,
@@ -125,7 +125,7 @@ fn links(schema_definition: &SchemaDefinition) -> Valid<Vec<Link>, String> {
 fn telemetry(schema_definition: &SchemaDefinition) -> Valid<Telemetry, String> {
     process_schema_directives(
         schema_definition,
-        config::telemetry::Telemetry::directive_name().as_str(),
+        super::Telemetry::directive_name().as_str(),
     )
 }
 
@@ -247,20 +247,23 @@ where
         .fuse(to_fields(fields))
         .fuse(Protected::from_directives(directives.iter()))
         .fuse(to_add_fields_from_directives(directives))
-        .map(|(resolver, cache, fields, protected, added_fields)| {
-            let doc = description.to_owned().map(|pos| pos.node);
-            let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
-            config::Type {
-                fields,
-                added_fields,
-                doc,
-                implements,
-                cache,
-                protected,
-                resolver,
-                key: None,
-            }
-        })
+        .fuse(to_federation_directives(directives))
+        .map(
+            |(resolver, cache, fields, protected, added_fields, unknown_directives)| {
+                let doc = description.to_owned().map(|pos| pos.node);
+                let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
+                config::Type {
+                    fields,
+                    added_fields,
+                    doc,
+                    implements,
+                    cache,
+                    protected,
+                    resolver,
+                    directives: unknown_directives,
+                }
+            },
+        )
 }
 fn to_input_object(
     input_object_type: InputObjectType,
@@ -336,8 +339,9 @@ where
         .fuse(Modify::from_directives(directives.iter()))
         .fuse(Protected::from_directives(directives.iter()))
         .fuse(default_value)
+        .fuse(to_federation_directives(directives))
         .map(
-            |(resolver, cache, omit, modify, protected, default_value)| config::Field {
+            |(resolver, cache, omit, modify, protected, default_value, directives)| config::Field {
                 type_of: type_of.into(),
                 args,
                 doc,
@@ -347,6 +351,7 @@ where
                 protected,
                 default_value,
                 resolver,
+                directives,
             },
         )
         .trace(pos_name_to_string(field.name()).as_str())
@@ -420,6 +425,22 @@ fn to_add_fields_from_directives(
             Valid::from(val)
         },
     )
+}
+
+fn to_federation_directives(
+    directives: &[Positioned<ConstDirective>],
+) -> Valid<Vec<Directive>, String> {
+    Valid::from_iter(directives.iter(), |directive| {
+        if FEDERATION_DIRECTIVES
+            .iter()
+            .any(|&known| known == directive.node.name.node.as_str())
+        {
+            to_directive(directive.node.clone()).map(Some)
+        } else {
+            Valid::succeed(None)
+        }
+    })
+    .map(|directives| directives.into_iter().flatten().collect())
 }
 
 trait HasName {

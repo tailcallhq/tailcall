@@ -1,0 +1,13 @@
+enum enumInput {
+  B
+  C
+}
+
+enum enumOutput {
+  B
+  C
+}
+
+type A {
+  b(x: enumOutput): enumInput
+}

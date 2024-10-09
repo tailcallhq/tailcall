@@ -1,0 +1,19 @@
+---
+source: src/core/config/config_module/merge.rs
+expression: merged.to_sdl()
+---
+schema @server @upstream {
+  query: Query
+}
+
+type A {
+  a: String
+  b: Int
+  c: Boolean
+  d: Float!
+  e: String
+}
+
+type Query {
+  a: A
+}

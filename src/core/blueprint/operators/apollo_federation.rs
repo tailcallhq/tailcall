@@ -1,26 +1,24 @@
 use std::collections::HashMap;
 use std::fmt::Write;
 
-use async_graphql::parser::types::{SchemaDefinition, ServiceDocument, TypeSystemDefinition};
+use async_graphql::parser::types::ServiceDocument;
 
 use super::{compile_call, compile_expr, compile_graphql, compile_grpc, compile_http, compile_js};
-use crate::core::blueprint::FieldDefinition;
+use crate::core::blueprint::{Blueprint, Definition, TryFoldConfig};
 use crate::core::config::{
     ApolloFederation, ConfigModule, EntityResolver, Field, GraphQLOperationType, Resolver,
 };
 use crate::core::ir::model::IR;
-use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, Validator};
-use crate::core::{config, Type};
+use crate::core::Type;
 
 pub struct CompileEntityResolver<'a> {
     config_module: &'a ConfigModule,
     entity_resolver: &'a EntityResolver,
-    operation_type: &'a GraphQLOperationType,
 }
 
 pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, String> {
-    let CompileEntityResolver { config_module, entity_resolver, operation_type } = inputs;
+    let CompileEntityResolver { config_module, entity_resolver } = inputs;
     let mut resolver_by_type = HashMap::new();
 
     Valid::from_iter(
@@ -43,16 +41,19 @@ pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, S
                 ),
                 Resolver::Grpc(grpc) => compile_grpc(super::CompileGrpc {
                     config_module,
-                    operation_type,
+                    operation_type: &GraphQLOperationType::Query,
                     field,
                     grpc,
                     validate_with_schema: true,
                 }),
-                Resolver::Graphql(graphql) => {
-                    compile_graphql(config_module, operation_type, type_name, graphql)
-                }
+                Resolver::Graphql(graphql) => compile_graphql(
+                    config_module,
+                    &GraphQLOperationType::Query,
+                    type_name,
+                    graphql,
+                ),
                 Resolver::Call(call) => {
-                    compile_call(config_module, call, operation_type, type_name)
+                    compile_call(config_module, call, &GraphQLOperationType::Query, type_name)
                 }
                 Resolver::Js(js) => {
                     compile_js(super::CompileJs { js, script: &config_module.extensions().script })
@@ -79,9 +80,7 @@ pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, S
     .map_to(IR::Entity(resolver_by_type))
 }
 
-pub fn compile_service(config: &ConfigModule) -> Valid<IR, String> {
-    let mut sdl =
-        crate::core::document::print(filter_conflicting_directives(config.config().into()));
+pub fn compile_service(mut sdl: String) -> Valid<IR, String> {
     writeln!(sdl).ok();
 
     // Mark subgraph as Apollo federation v2 compatible according to [docs](https://www.apollographql.com/docs/apollo-server/using-federation/apollo-subgraph-setup/#2-opt-in-to-federation-2)
@@ -94,62 +93,61 @@ pub fn compile_service(config: &ConfigModule) -> Valid<IR, String> {
     Valid::succeed(IR::Service(sdl))
 }
 
-fn filter_conflicting_directives(sd: ServiceDocument) -> ServiceDocument {
-    fn filter_directive(directive_name: &str) -> bool {
-        directive_name != "link"
-    }
-
-    fn filter_map(def: TypeSystemDefinition) -> Option<TypeSystemDefinition> {
-        match def {
-            TypeSystemDefinition::Schema(schema) => {
-                Some(TypeSystemDefinition::Schema(schema.map(|schema| {
-                    SchemaDefinition {
-                        directives: schema
-                            .directives
-                            .into_iter()
-                            .filter(|d| filter_directive(d.node.name.node.as_str()))
-                            .collect(),
-                        ..schema
-                    }
-                })))
-            }
-            TypeSystemDefinition::Directive(directive) => {
-                if filter_directive(directive.node.name.node.as_str()) {
-                    Some(TypeSystemDefinition::Directive(directive))
-                } else {
-                    None
-                }
-            }
-            ty => Some(ty),
+pub fn update_federation<'a>() -> TryFoldConfig<'a, Blueprint> {
+    TryFoldConfig::<Blueprint>::new(|config_module, mut blueprint| {
+        if !config_module.server.get_enable_federation() {
+            return Valid::succeed(blueprint);
         }
-    }
 
-    ServiceDocument {
-        definitions: sd.definitions.into_iter().filter_map(filter_map).collect(),
-    }
-}
+        // first convert to sdl with definitions in place
+        let mut sdl = crate::core::document::print(ServiceDocument::from(&blueprint));
+        // take definitions to update it below
+        let definitions = std::mem::take(&mut blueprint.definitions);
+        let query_name = blueprint.query();
 
-pub fn update_apollo_federation<'a>(
-    operation_type: &'a GraphQLOperationType,
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
-        |(config_module, field, _, _), b_field| {
-            let Some(Resolver::ApolloFederation(federation)) = &field.resolver else {
-                return Valid::succeed(b_field);
+        Valid::from_iter(definitions, |def| {
+            if def.name() != query_name {
+                return Valid::succeed(def);
+            }
+
+            let Definition::Object(mut obj) = def else {
+                return Valid::fail("Query type is not an object inside the blueprint".to_string());
             };
 
-            match federation {
-                ApolloFederation::EntityResolver(entity_resolver) => {
-                    compile_entity_resolver(CompileEntityResolver {
-                        config_module,
-                        entity_resolver,
-                        operation_type,
-                    })
-                }
-                ApolloFederation::Service => compile_service(config_module),
-            }
-            .map(|resolver| b_field.resolver(Some(resolver)))
-        },
-    )
+            let Some(config_type) = config_module.types.get(&query_name) else {
+                return Valid::fail(format!("Cannot find type {query_name} in the config"));
+            };
+
+            Valid::from_iter(obj.fields.iter_mut(), |b_field| {
+                let b_field = std::mem::take(b_field);
+                let name = &b_field.name;
+                Valid::from_option(
+                    config_type.fields.get(name),
+                    format!("Cannot find field {name} in the type"),
+                )
+                .and_then(|field| {
+                    let Some(Resolver::ApolloFederation(federation)) = &field.resolver else {
+                        return Valid::succeed(b_field);
+                    };
+
+                    match federation {
+                        ApolloFederation::EntityResolver(entity_resolver) => {
+                            compile_entity_resolver(CompileEntityResolver {
+                                config_module,
+                                entity_resolver,
+                            })
+                        }
+                        ApolloFederation::Service => compile_service(std::mem::take(&mut sdl)),
+                    }
+                    .map(|resolver| b_field.resolver(Some(resolver)))
+                })
+            })
+            .map(|fields| {
+                obj.fields = fields;
+
+                Definition::Object(obj)
+            })
+        })
+        .map(|definitions| blueprint.definitions(definitions))
+    })
 }

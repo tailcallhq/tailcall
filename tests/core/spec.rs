@@ -8,7 +8,8 @@ use std::{fs, panic};
 use anyhow::Context;
 use colored::Colorize;
 use futures_util::future::join_all;
-use hyper::{Body, Request};
+use http::Request;
+use hyper::Body;
 use serde::{Deserialize, Serialize};
 use tailcall::core::app_context::AppContext;
 use tailcall::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
@@ -17,9 +18,9 @@ use tailcall::core::config::reader::ConfigReader;
 use tailcall::core::config::transformer::Required;
 use tailcall::core::config::{Config, ConfigModule, Source};
 use tailcall::core::http::handle_request;
-use tailcall::core::merge_right::MergeRight;
 use tailcall::core::print_schema::print_schema;
-use tailcall::core::valid::{Cause, ValidationError, Validator};
+use tailcall::core::valid::{Cause, Valid, ValidationError, Validator};
+use tailcall::core::variance::Invariant;
 use tailcall_prettier::Parser;
 
 use super::file::File;
@@ -55,27 +56,12 @@ impl From<Cause<String>> for SDLError {
     }
 }
 
-async fn is_sdl_error(spec: ExecutionSpec, mock_http_client: Arc<Http>) -> bool {
+async fn is_sdl_error(spec: &ExecutionSpec, config_module: Valid<ConfigModule, String>) -> bool {
     if spec.sdl_error {
         // errors: errors are expected, make sure they match
-        let (source, content) = &spec.server[0];
+        let blueprint = config_module.and_then(|cfg| Valid::from(Blueprint::try_from(&cfg)));
 
-        let config = source.decode(content);
-
-        let config = match config {
-            Ok(config) => {
-                let mut runtime = runtime::create_runtime(mock_http_client, spec.env.clone(), None);
-                runtime.file = Arc::new(File::new(spec.clone()));
-                let reader = ConfigReader::init(runtime);
-                match reader.resolve(config, spec.path.parent()).await {
-                    Ok(config) => Blueprint::try_from(&config),
-                    Err(e) => Err(ValidationError::new(e.to_string())),
-                }
-            }
-            Err(e) => Err(e),
-        };
-
-        match config {
+        match blueprint.to_result() {
             Ok(_) => {
                 tracing::error!("\terror FAIL");
                 panic!(
@@ -83,9 +69,9 @@ async fn is_sdl_error(spec: ExecutionSpec, mock_http_client: Arc<Http>) -> bool 
                     spec.name, spec.path
                 );
             }
-            Err(cause) => {
+            Err(error) => {
                 let errors: Vec<SDLError> =
-                    cause.as_vec().iter().map(|e| e.to_owned().into()).collect();
+                    error.as_vec().iter().map(|e| e.to_owned().into()).collect();
 
                 let snapshot_name = format!("{}_error", spec.safe_name);
 
@@ -98,29 +84,17 @@ async fn is_sdl_error(spec: ExecutionSpec, mock_http_client: Arc<Http>) -> bool 
     false
 }
 
-async fn check_server_config(spec: ExecutionSpec) -> Vec<Config> {
-    let mut server: Vec<Config> = Vec::with_capacity(spec.server.len());
-
-    for (i, (source, content)) in spec.server.iter().enumerate() {
-        let config = Config::from_source(source.to_owned(), content).unwrap_or_else(|e| {
-            panic!(
-                "Couldn't parse GraphQL in server definition #{} of {:#?}: {}",
-                i + 1,
-                spec.path,
-                e
-            )
-        });
-
-        let config = Config::default().merge_right(config);
-
-        // TODO: we should probably figure out a way to do this for every test
-        // but GraphQL identity checking is very hard, since a lot depends on the code
-        // style the re-serializing check gives us some of the advantages of the
-        // identity check too, but we are missing out on some by having it only
-        // enabled for either new tests that request it or old graphql_spec
-        // tests that were explicitly written with it in mind
-        if spec.check_identity {
+async fn check_identity(spec: &ExecutionSpec) {
+    // TODO: we should probably figure out a way to do this for every test
+    // but GraphQL identity checking is very hard, since a lot depends on the code
+    // style the re-serializing check gives us some of the advantages of the
+    // identity check too, but we are missing out on some by having it only
+    // enabled for either new tests that request it or old graphql_spec
+    // tests that were explicitly written with it in mind
+    if spec.check_identity {
+        for (source, content) in spec.server.iter() {
             if matches!(source, Source::GraphQL) {
+                let config = Config::from_source(source.to_owned(), content).unwrap();
                 let actual = config.to_sdl();
 
                 // \r is added automatically in windows, it's safe to replace it with \n
@@ -152,10 +126,7 @@ async fn check_server_config(spec: ExecutionSpec) -> Vec<Config> {
                 );
             }
         }
-
-        server.push(config);
     }
-    server
 }
 
 async fn run_query_tests_on_spec(
@@ -214,48 +185,41 @@ async fn test_spec(spec: ExecutionSpec) {
 
     let mock_http_client = Arc::new(Http::new(&spec));
 
-    // check sdl error if any
-    if is_sdl_error(spec.clone(), mock_http_client.clone()).await {
-        return;
-    }
-
-    // Parse and validate all server configs + check for identity
-    let server = check_server_config(spec.clone()).await;
-
-    // Resolve all configs
     let mut runtime = runtime::create_runtime(mock_http_client.clone(), spec.env.clone(), None);
     runtime.file = Arc::new(File::new(spec.clone()));
     let reader = ConfigReader::init(runtime);
 
-    let server: Vec<ConfigModule> = join_all(
-        server
-            .into_iter()
-            .map(|config| reader.resolve(config, spec.path.parent())),
-    )
-    .await
-    .into_iter()
-    .enumerate()
-    .map(|(i, result)| {
-        result.unwrap_or_else(|e| {
-            panic!(
-                "Couldn't resolve GraphQL in server definition #{} of {:#?}: {}",
-                i + 1,
-                spec.path,
-                e
-            )
-        })
-    })
-    .collect();
+    // Resolve all configs
+    let config_modules = join_all(spec.server.iter().map(|(source, content)| async {
+        let config = Config::from_source(source.to_owned(), content)?;
 
-    // merged: Run merged specs
-    let merged = server
-        .iter()
-        .fold(ConfigModule::default(), |acc, c| acc.merge_right(c.clone()))
-        // Apply required transformers to the configuration
-        .transform(Required)
-        .to_result()
-        .unwrap()
-        .to_sdl();
+        reader.resolve(config, spec.path.parent()).await
+    }))
+    .await;
+
+    let config_module = Valid::from_iter(config_modules.iter(), |config_module| {
+        Valid::from(config_module.as_ref().map_err(|e| {
+            match e.downcast_ref::<ValidationError<String>>() {
+                Some(err) => err.clone(),
+                None => ValidationError::new(e.to_string()),
+            }
+        }))
+    })
+    .and_then(|cfgs| {
+        cfgs.into_iter()
+            .fold(Valid::succeed(ConfigModule::default()), |acc, c| {
+                acc.and_then(|acc| acc.unify(c.clone()))
+            })
+    })
+    // Apply required transformers to the configuration
+    .and_then(|cfg| cfg.transform(Required));
+
+    // check sdl error if any
+    if is_sdl_error(&spec, config_module.clone()).await {
+        return;
+    }
+
+    let merged = config_module.to_result().unwrap().to_sdl();
 
     let formatter = tailcall_prettier::format(merged, &Parser::Gql)
         .await
@@ -265,9 +229,16 @@ async fn test_spec(spec: ExecutionSpec) {
 
     insta::assert_snapshot!(snapshot_name, formatter);
 
+    let config_modules = config_modules
+        .into_iter()
+        .collect::<Result<Vec<_>, _>>()
+        .unwrap();
+
+    check_identity(&spec).await;
+
     // client: Check if client spec matches snapshot
-    if server.len() == 1 {
-        let config = &server[0];
+    if config_modules.len() == 1 {
+        let config = &config_modules[0];
 
         let client = print_schema(
             (Blueprint::try_from(config)
@@ -285,7 +256,7 @@ async fn test_spec(spec: ExecutionSpec) {
     }
 
     // run query tests
-    run_query_tests_on_spec(spec, server, mock_http_client).await;
+    run_query_tests_on_spec(spec, config_modules, mock_http_client).await;
 }
 
 pub async fn load_and_test_execution_spec(path: &Path) -> anyhow::Result<()> {
@@ -307,7 +278,7 @@ pub async fn load_and_test_execution_spec(path: &Path) -> anyhow::Result<()> {
 async fn run_test(
     app_ctx: Arc<AppContext>,
     request: &APIRequest,
-) -> anyhow::Result<hyper::Response<Body>> {
+) -> anyhow::Result<http::Response<Body>> {
     let body = request
         .body
         .as_ref()

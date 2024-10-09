@@ -150,6 +150,7 @@ Index {
                     ],
                     description: None,
                     implements: {},
+                    directives: [],
                 },
             ),
             {
@@ -351,6 +352,8 @@ Index {
                         },
                     ],
                     description: None,
+                    implements: {},
+                    directives: [],
                 },
             ),
             {
@@ -462,6 +465,7 @@ Index {
                     implements: {
                         "Node",
                     },
+                    directives: [],
                 },
             ),
             {
@@ -576,6 +580,7 @@ Index {
                         },
                     ],
                     description: None,
+                    directives: [],
                 },
             ),
             {
@@ -768,6 +773,7 @@ Index {
                     ],
                     description: None,
                     implements: {},
+                    directives: [],
                 },
             ),
             {
@@ -1016,6 +1022,7 @@ Index {
                     implements: {
                         "Node",
                     },
+                    directives: [],
                 },
             ),
             {
@@ -1130,6 +1137,7 @@ Index {
                         },
                     ],
                     description: None,
+                    directives: [],
                 },
             ),
             {
@@ -1184,16 +1192,19 @@ Index {
                             description: None,
                             name: "ACTIVE",
                             directives: [],
+                            alias: {},
                         },
                         EnumValueDefinition {
                             description: None,
                             name: "INACTIVE",
                             directives: [],
+                            alias: {},
                         },
                         EnumValueDefinition {
                             description: None,
                             name: "PENDING",
                             directives: [],
+                            alias: {},
                         },
                     ],
                 },
@@ -1212,7 +1223,6 @@ Index {
                 arguments: {
                     "port": Number(8000),
                 },
-                index: 0,
             },
         ],
     },

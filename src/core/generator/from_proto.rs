@@ -373,6 +373,7 @@ impl Context {
                     headers: vec![],
                     method: field_name.id(),
                     dedupe: None,
+                    select: None,
                 }));
 
                 let method_path =

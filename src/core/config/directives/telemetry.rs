@@ -2,8 +2,7 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use tailcall_macros::{DirectiveDefinition, InputDefinition};
 
-use super::KeyValue;
-use crate::core::config::{Apollo, ConfigReaderContext};
+use crate::core::config::{Apollo, ConfigReaderContext, KeyValue};
 use crate::core::helpers::headers::to_mustache_headers;
 use crate::core::is_default;
 use crate::core::macros::MergeRight;

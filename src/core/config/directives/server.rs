@@ -5,12 +5,10 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use tailcall_macros::DirectiveDefinition;
 
-use super::merge_key_value_vecs;
 use crate::core::config::headers::Headers;
-use crate::core::config::KeyValue;
+use crate::core::config::{merge_key_value_vecs, KeyValue};
 use crate::core::is_default;
 use crate::core::macros::MergeRight;
-use crate::core::merge_right::MergeRight;
 
 #[derive(
     Serialize,
@@ -68,6 +66,11 @@ pub struct Server {
     /// aiding tools and applications in understanding available types, fields,
     /// and operations. @default `true`.
     pub introspection: Option<bool>,
+
+    /// `enableFederation` enables functionality to Tailcall server to act
+    /// as a federation subgraph.
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub enable_federation: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// `pipelineFlush` allows to control flushing behavior of the server
@@ -266,12 +269,17 @@ impl Server {
     pub fn get_routes(&self) -> Routes {
         self.routes.clone().unwrap_or_default()
     }
+
+    pub fn get_enable_federation(&self) -> bool {
+        self.enable_federation.unwrap_or(false)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::core::config::ScriptOptions;
+    use crate::core::merge_right::MergeRight;
 
     fn server_with_script_options(so: ScriptOptions) -> Server {
         Server { script: Some(so), ..Default::default() }

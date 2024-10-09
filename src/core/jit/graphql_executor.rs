@@ -30,6 +30,7 @@ impl JITExecutor {
     ) -> Self {
         Self { app_ctx, req_ctx, is_query, operation_id }
     }
+    #[inline(always)]
     async fn exec(
         &self,
         exec: ConstValueExecutor,
@@ -50,6 +51,27 @@ impl JITExecutor {
         } else {
             jit_resp
         }
+    }
+    #[inline(always)]
+    async fn dedupe_and_exec(
+        &self,
+        exec: ConstValueExecutor,
+        jit_request: jit::Request<ConstValue>,
+    ) -> Response {
+        let out = self
+            .app_ctx
+            .dedupe_operation_handler
+            .dedupe(&self.operation_id, || {
+                Box::pin(async move {
+                    let resp = self.exec(exec, jit_request).await;
+                    Ok(Arc::new(resp))
+                })
+            })
+            .await;
+        let val = out.unwrap_or_default();
+        Arc::into_inner(val).unwrap_or_else(|| {
+            Response::from_errors(vec![ServerError::new("Deduplication failed", None)])
+        })
     }
 }
 
@@ -78,23 +100,7 @@ impl Executor for JITExecutor {
             match ConstValueExecutor::new(&jit_request, &self.app_ctx) {
                 Ok(exec) => {
                     if self.is_query && exec.plan.dedupe {
-                        let out = self
-                            .app_ctx
-                            .dedupe_operation_handler
-                            .dedupe(&self.operation_id, || {
-                                Box::pin(async move {
-                                    let resp = self.exec(exec, jit_request).await;
-                                    Ok(Arc::new(resp))
-                                })
-                            })
-                            .await;
-                        let val = out.unwrap_or_default();
-                        Arc::into_inner(val).unwrap_or_else(|| {
-                            Response::from_errors(vec![ServerError::new(
-                                "Deduplication failed",
-                                None,
-                            )])
-                        })
+                        self.dedupe_and_exec(exec, jit_request).await
                     } else {
                         self.exec(exec, jit_request).await
                     }

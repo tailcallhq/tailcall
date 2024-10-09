@@ -1,0 +1,6 @@
+type A {
+  a: Int
+  b: [Int]
+  c: Boolean
+  d: Float
+}

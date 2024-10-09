@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 use tailcall_macros::{DirectiveDefinition, InputDefinition};
 
 use crate::core::macros::MergeRight;
-use crate::core::merge_right::MergeRight;
 use crate::core::{default_verify_ssl, is_default, verify_ssl_is_default};
 
 const DEFAULT_MAX_SIZE: usize = 100;
@@ -218,6 +217,7 @@ impl Upstream {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::core::merge_right::MergeRight;
 
     fn setup_upstream_with_headers(headers: &[&str]) -> Upstream {
         Upstream {
