@@ -1234,17 +1234,15 @@ mod tests {
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!("string")).unwrap())
-                .unwrap_err()
-                .to_string(),
-            "Value expected to be object"
+                .unwrap(),
+            "Test"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!(25)).unwrap())
-                .unwrap_err()
-                .to_string(),
-            "Value expected to be object"
+                .unwrap(),
+            "Test"
         );
     }
 }
