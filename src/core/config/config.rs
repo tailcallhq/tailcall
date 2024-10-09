@@ -528,16 +528,7 @@ impl Config {
 
         for (type_name, type_definition) in self.types.iter() {
             for implement_name in type_definition.implements.clone() {
-                match interfaces_types.get_mut(&implement_name) {
-                    Some(types_set) => {
-                        types_set.insert(type_name.clone());
-                    }
-                    None => {
-                        let mut types_set = HashSet::new();
-                        types_set.insert(type_name.clone());
-                        interfaces_types.insert(implement_name, types_set);
-                    }
-                }
+                interfaces_types.entry(implement_name).or_default().insert(type_name.clone());
             }
         }
 
