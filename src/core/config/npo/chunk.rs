@@ -45,7 +45,7 @@ impl<A> Chunk<A> {
         vec
     }
 
-    pub fn map(&self, f: &mut impl FnMut(&A) -> A) -> Self {
+    pub fn map<B>(&self, f: &mut impl FnMut(&A) -> B) -> Chunk<B> {
         match self {
             Chunk::Empty => Chunk::Empty,
             Chunk::Append(a, rc) => Chunk::Append(f(a), Rc::new(rc.map(f))),

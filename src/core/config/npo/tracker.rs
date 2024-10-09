@@ -15,8 +15,8 @@ impl QueryPath {
     }
 }
 
-impl<'a> From<Chunk<Chunk<ChunkName<'a>>>> for QueryPath {
-    fn from(chunk: Chunk<Chunk<ChunkName<'a>>>) -> Self {
+impl<'a> From<Chunk<Chunk<Name<'a>>>> for QueryPath {
+    fn from(chunk: Chunk<Chunk<Name<'a>>>) -> Self {
         QueryPath(
             chunk
                 .as_vec()
@@ -99,16 +99,20 @@ impl Display for FieldName<'_> {
 }
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
-enum ChunkName<'a> {
+enum Name<'a> {
     Field(FieldName<'a>),
     Entity(TypeName<'a>),
 }
 
-impl Display for ChunkName<'_> {
+impl Display for Name<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ChunkName::Field(field_name) => write!(f, "{}", field_name),
-            ChunkName::Entity(type_name) => write!(f, "__entity({})", type_name),
+            Name::Field(field_name) => write!(f, "{}", field_name),
+            Name::Entity(type_name) => write!(
+                f,
+                "__entities(representations: [{{ __typename: \"{}\"}}])",
+                type_name
+            ),
         }
     }
 }
@@ -119,7 +123,7 @@ pub struct PathTracker<'a> {
     config: &'a Config,
     // Caches resolved chunks for the specific type
     // with is_list info since the result is different depending on this flag
-    cache: HashMap<(TypeName<'a>, bool), Chunk<Chunk<ChunkName<'a>>>>,
+    cache: HashMap<(TypeName<'a>, bool), Chunk<Chunk<Name<'a>>>>,
 }
 
 impl<'a> PathTracker<'a> {
@@ -129,10 +133,10 @@ impl<'a> PathTracker<'a> {
 
     fn iter(
         &mut self,
-        path: Chunk<ChunkName<'a>>,
+        path: Chunk<Name<'a>>,
         type_name: TypeName<'a>,
         is_list: bool,
-    ) -> Chunk<Chunk<ChunkName<'a>>> {
+    ) -> Chunk<Chunk<Name<'a>>> {
         let chunks = if let Some(chunks) = self.cache.get(&(type_name, is_list)) {
             chunks.clone()
         } else {
@@ -142,7 +146,7 @@ impl<'a> PathTracker<'a> {
             let mut chunks = Chunk::new();
             if let Some(type_of) = self.config.find_type(type_name.as_str()) {
                 for (name, field) in type_of.fields.iter() {
-                    let chunk_name = ChunkName::Field(FieldName::new(name));
+                    let chunk_name = Name::Field(FieldName::new(name));
                     let path = Chunk::new().append(chunk_name);
 
                     if is_list && field.has_resolver() && !field.has_batched_resolver() {
@@ -168,7 +172,7 @@ impl<'a> PathTracker<'a> {
         chunks.map(&mut |chunk| path.clone().concat(chunk.clone()))
     }
 
-    fn find_chunks(&mut self) -> Chunk<Chunk<ChunkName<'a>>> {
+    fn find_chunks(&mut self) -> Chunk<Chunk<Name<'a>>> {
         let mut chunks = match &self.config.schema.query {
             None => Chunk::new(),
             Some(query) => self.iter(Chunk::new(), TypeName::new(query.as_str()), false),
@@ -176,7 +180,7 @@ impl<'a> PathTracker<'a> {
 
         for (type_name, type_of) in &self.config.types {
             if type_of.has_resolver() {
-                let chunk_name = ChunkName::Entity(TypeName(type_name.as_str()));
+                let chunk_name = Name::Entity(TypeName(type_name.as_str()));
                 let chunk = Chunk::new().append(chunk_name);
                 // entity resolver are used to fetch multiple instances at once
                 // and therefore the resolver itself should be batched to avoid n + 1

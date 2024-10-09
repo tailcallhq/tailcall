@@ -10,7 +10,7 @@ type Query {
   user(id: Int!): User @http(path: "/users/{{.args.id}}")
 }
 
-type User {
+type User @http(path: "/users/{{.value.id}}") {
   id: Int!
   name: String!
   username: String!
