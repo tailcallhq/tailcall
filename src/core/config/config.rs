@@ -566,7 +566,7 @@ impl Config {
             interfaces_types_map.insert(interface_name.clone(), types_set);
         }
 
-        interfaces_types
+        interfaces_types_map
     }
 
     /// Returns a list of all the arguments in the configuration
@@ -820,5 +820,55 @@ mod tests {
             .map(String::from)
             .collect();
         assert_eq!(union_types, expected_union_types);
+    }
+
+    #[test]
+    fn test_interfaces_types_map() {
+        let sdl = std::fs::read_to_string(tailcall_fixtures::configs::INTERFACE_CONFIG).unwrap();
+        let config = Config::from_sdl(&sdl).to_result().unwrap();
+        let interfaces_types_map = config.interfaces_types_map();
+
+        let mut expected_union_types = BTreeMap::new();
+
+        {
+            let mut set = BTreeSet::new();
+            set.insert("E".to_string());
+            set.insert("F".to_string());
+            expected_union_types.insert("T0".to_string(), set);
+        }
+
+        {
+            let mut set = BTreeSet::new();
+            set.insert("A".to_string());
+            set.insert("E".to_string());
+            set.insert("B".to_string());
+            set.insert("C".to_string());
+            set.insert("D".to_string());
+            expected_union_types.insert("T1".to_string(), set);
+        }
+
+        {
+            let mut set = BTreeSet::new();
+            set.insert("B".to_string());
+            set.insert("E".to_string());
+            set.insert("D".to_string());
+            expected_union_types.insert("T2".to_string(), set);
+        }
+
+        {
+            let mut set = BTreeSet::new();
+            set.insert("C".to_string());
+            set.insert("E".to_string());
+            set.insert("D".to_string());
+            expected_union_types.insert("T3".to_string(), set);
+        }
+
+        {
+            let mut set = BTreeSet::new();
+            set.insert("D".to_string());
+            expected_union_types.insert("T4".to_string(), set);
+        }
+
+        assert_eq!(interfaces_types_map, expected_union_types);
     }
 }
