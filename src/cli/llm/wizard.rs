@@ -1,10 +1,12 @@
+use super::error::{Error, Result, WebcError};
 use derive_setters::Setters;
 use genai::adapter::AdapterKind;
 use genai::chat::{ChatOptions, ChatRequest, ChatResponse};
 use genai::resolver::AuthResolver;
 use genai::Client;
-
-use super::Result;
+use reqwest::StatusCode;
+use tokio_retry::strategy::{jitter, ExponentialBackoff};
+use tokio_retry::RetryIf;
 
 #[derive(Setters, Clone)]
 pub struct Wizard<Q, A> {
@@ -40,13 +42,23 @@ impl<Q, A> Wizard<Q, A> {
 
     pub async fn ask(&self, q: Q) -> Result<A>
     where
-        Q: TryInto<ChatRequest, Error = super::Error>,
-        A: TryFrom<ChatResponse, Error = super::Error>,
+        Q: TryInto<ChatRequest, Error = Error> + Clone,
+        A: TryFrom<ChatResponse, Error = Error>,
     {
-        let response = self
-            .client
-            .exec_chat(self.model.as_str(), q.try_into()?, None)
-            .await?;
-        A::try_from(response)
+        let retry_strategy = ExponentialBackoff::from_millis(1000).map(jitter).take(5);
+
+        RetryIf::spawn(
+            retry_strategy,
+            || async {
+                let request = q.clone().try_into()?;
+                self.client
+                    .exec_chat(self.model.as_str(), request, None)
+                    .await
+                    .map_err(Error::from)
+                    .and_then(A::try_from)
+            },
+            |err: &Error| matches!(err, Error::Webc(WebcError::ResponseFailedStatus { status, .. }) if *status == StatusCode::TOO_MANY_REQUESTS)
+        )
+        .await
     }
 }
