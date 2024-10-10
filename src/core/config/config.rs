@@ -137,6 +137,17 @@ impl Display for Type {
 }
 
 impl Type {
+    pub fn has_resolver(&self) -> bool {
+        self.resolver.is_some()
+    }
+
+    pub fn has_batched_resolver(&self) -> bool {
+        self.resolver
+            .as_ref()
+            .map(Resolver::is_batched)
+            .unwrap_or(false)
+    }
+
     pub fn fields(mut self, fields: Vec<(&str, Field)>) -> Self {
         let mut graphql_fields = BTreeMap::new();
         for (name, field) in fields {
