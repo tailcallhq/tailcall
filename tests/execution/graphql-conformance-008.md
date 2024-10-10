@@ -55,12 +55,12 @@ type Counter {
             handle: user-1
             __typename: User
             friends:
-              counter: 2
+              count: 2
           - id: 2
             handle: user-2
             __typename: Page
             likers:
-              counter: 4
+              count: 4
 - request:
     method: POST
     url: http://upstream/graphql

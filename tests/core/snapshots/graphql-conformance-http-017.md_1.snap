@@ -1,0 +1,28 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "edibleAnimals": [
+        {
+          "id": "salmon-1"
+        },
+        {
+          "id": "salmon-2"
+        },
+        {
+          "id": "pig-1"
+        },
+        {
+          "id": "pig-2"
+        }
+      ]
+    }
+  }
+}

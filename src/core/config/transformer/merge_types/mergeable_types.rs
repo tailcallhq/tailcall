@@ -20,7 +20,7 @@ impl MergeableTypes {
             input_types: config.input_types(),
             union_types: config.union_types(),
             output_types: config.output_types(),
-            interface_types: config.interface_types(),
+            interface_types: config.interfaces_types_map().keys().cloned().collect(),
             threshold,
         }
     }

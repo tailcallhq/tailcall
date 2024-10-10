@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::future::Future;
 use std::ops::Deref;
 
@@ -69,18 +70,32 @@ impl IR {
                     }
                 }
                 IR::Map(Map { input, map }) => {
-                    let value = input.eval(ctx).await?;
-                    if let ConstValue::String(key) = value {
-                        if let Some(value) = map.get(&key) {
-                            Ok(ConstValue::String(value.to_owned()))
-                        } else {
-                            Err(Error::ExprEval(format!("Can't find mapped key: {}.", key)))
+                    fn recursive_map_enum(
+                        val: Result<ConstValue, Error>,
+                        map: &HashMap<String, String>,
+                    ) -> Result<ConstValue, Error> {
+                        match val? {
+                            ConstValue::Null => Ok(ConstValue::Null),
+                            ConstValue::String(key) => {
+                                if let Some(value) = map.get(&key) {
+                                    Ok(ConstValue::String(value.to_owned()))
+                                } else {
+                                    Err(Error::ExprEval(format!("Can't find mapped key: {}.", key)))
+                                }
+                            }
+                            ConstValue::List(vec) => {
+                                let vec = vec
+                                    .into_iter()
+                                    .map(|value| recursive_map_enum(Ok(value), map))
+                                    .collect::<Result<Vec<_>, _>>()?;
+                                Ok(ConstValue::List(vec))
+                            }
+                            _ => Err(Error::ExprEval(
+                                "Mapped key must be either string or array value.".to_owned(),
+                            )),
                         }
-                    } else {
-                        Err(Error::ExprEval(
-                            "Mapped key must be string value.".to_owned(),
-                        ))
                     }
+                    recursive_map_enum(input.eval(ctx).await, map)
                 }
                 IR::Pipe(first, second) => {
                     let args = first.eval(&mut ctx.clone()).await?;
@@ -115,7 +130,6 @@ impl IR {
                         ))?;
 
                     let mut tasks = Vec::with_capacity(representations.len());
-
                     for repr in representations {
                         // TODO: combine errors, instead of fail fast?
                         let type_name = repr.get_type_name().ok_or(Error::Entity(

@@ -510,17 +510,63 @@ impl Config {
         types
     }
 
-    /// Returns a list of all the types that are used as interface
-    pub fn interface_types(&self) -> HashSet<String> {
-        let mut types = HashSet::new();
+    pub fn interfaces_types_map(&self) -> BTreeMap<String, BTreeSet<String>> {
+        let mut interfaces_types: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
 
-        for ty in self.types.values() {
-            for interface in ty.implements.iter() {
-                types.insert(interface.clone());
+        for (type_name, type_definition) in self.types.iter() {
+            for implement_name in type_definition.implements.clone() {
+                interfaces_types
+                    .entry(implement_name)
+                    .or_default()
+                    .insert(type_name.clone());
             }
         }
 
-        types
+        fn recursive_interface_type_merging(
+            types_set: &BTreeSet<String>,
+            interfaces_types: &BTreeMap<String, BTreeSet<String>>,
+            temp_interface_types: &mut BTreeMap<String, BTreeSet<String>>,
+        ) -> BTreeSet<String> {
+            let mut types_set_local = BTreeSet::new();
+
+            for type_name in types_set.iter() {
+                match (
+                    interfaces_types.get(type_name),
+                    temp_interface_types.get(type_name),
+                ) {
+                    (Some(types_set_inner), None) => {
+                        let types_set_inner = recursive_interface_type_merging(
+                            types_set_inner,
+                            interfaces_types,
+                            temp_interface_types,
+                        );
+                        temp_interface_types.insert(type_name.to_string(), types_set_inner.clone());
+                        types_set_local = types_set_local.merge_right(types_set_inner);
+                    }
+                    (Some(_), Some(types_set_inner)) => {
+                        types_set_local = types_set_local.merge_right(types_set_inner.clone());
+                    }
+                    _ => {
+                        types_set_local.insert(type_name.to_string());
+                    }
+                }
+            }
+
+            types_set_local
+        }
+
+        let mut interfaces_types_map: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+        let mut temp_interface_types: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+        for (interface_name, types_set) in interfaces_types.iter() {
+            let types_set = recursive_interface_type_merging(
+                types_set,
+                &interfaces_types,
+                &mut temp_interface_types,
+            );
+            interfaces_types_map.insert(interface_name.clone(), types_set);
+        }
+
+        interfaces_types
     }
 
     /// Returns a list of all the arguments in the configuration

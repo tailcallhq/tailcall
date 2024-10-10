@@ -185,6 +185,7 @@ fn to_types(
 fn to_scalar_type() -> config::Type {
     config::Type { ..Default::default() }
 }
+
 fn to_union_types(
     type_definitions: &[&Positioned<TypeDefinition>],
 ) -> Valid<BTreeMap<String, Union>, String> {

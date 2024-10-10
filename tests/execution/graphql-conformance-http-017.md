@@ -1,10 +1,4 @@
----
-skip: true
----
-
 # Complex fragments.
-
-TODO: Skipped because there is a pending case to improve the discriminator.
 
 ```graphql @config
 schema
@@ -14,8 +8,8 @@ schema
 }
 
 type Query {
-  edibleAnimals: EdibleAnimals @http(path: "/edible-animals")
-  allAnimals: Animal @http(path: "/all-animals")
+  edibleAnimals: [EdibleAnimals] @http(path: "/edible-animals")
+  allAnimals: [Animal] @http(path: "/all-animals")
 }
 
 interface Animal {
@@ -55,6 +49,7 @@ type Cow implements Animal & DomesticAnimal {
   legs: Int!
   sound: String!
   weight: Int!
+  canProduceMilk: Boolean!
 }
 
 type Chicken implements Animal & Bird {
@@ -76,6 +71,7 @@ type Pig implements Animal & DomesticAnimal {
   legs: Int!
   sound: String!
   weight: Int!
+  isForBacon: Boolean!
 }
 
 type Boar implements Animal & WildAnimal {
@@ -83,6 +79,7 @@ type Boar implements Animal & WildAnimal {
   legs: Int!
   sound: String!
   dangerous: Boolean!
+  blackBoar: Boolean!
 }
 
 type Deer implements Animal & WildAnimal {
@@ -90,6 +87,7 @@ type Deer implements Animal & WildAnimal {
   legs: Int!
   sound: String!
   dangerous: Boolean!
+  hasAntlers: Boolean!
 }
 
 type Dog implements Animal & DomesticAnimal & Pet {
@@ -98,6 +96,7 @@ type Dog implements Animal & DomesticAnimal & Pet {
   sound: String!
   weight: Int!
   owner: String!
+  size: Int!
 }
 
 type Cat implements Animal & DomesticAnimal & Pet {
@@ -106,6 +105,7 @@ type Cat implements Animal & DomesticAnimal & Pet {
   sound: String!
   weight: Int!
   owner: String!
+  hasFur: Boolean!
 }
 ```
 
@@ -122,11 +122,13 @@ type Cat implements Animal & DomesticAnimal & Pet {
         sound: meow
         weight: 2
         owner: John
+        hasFur: true
       - id: dog-2
         legs: 4
         sound: woof
         weight: 2
         owner: Steve
+        size: 12
       - id: salmon-1
         legs: 0
         sound: ...
@@ -139,10 +141,12 @@ type Cat implements Animal & DomesticAnimal & Pet {
         legs: 4
         sound: oik
         weight: 24
+        isForBacon: false
       - id: pig-2
         legs: 4
         sound: oik
         weight: 41
+        isForBacon: true
 - request:
     method: GET
     url: http://upstream/edible-animals
@@ -166,6 +170,7 @@ type Cat implements Animal & DomesticAnimal & Pet {
         legs: 4
         sound: oik
         weight: 41
+        isForBacon: false
 ```
 
 ```yml @test
