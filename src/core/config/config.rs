@@ -149,6 +149,16 @@ impl Type {
     pub fn scalar(&self) -> bool {
         self.fields.is_empty()
     }
+    pub fn has_resolver(&self) -> bool {
+        self.resolver.is_some()
+    }
+
+    pub fn has_batched_resolver(&self) -> bool {
+        self.resolver
+            .as_ref()
+            .map(Resolver::is_batched)
+            .unwrap_or(false)
+    }
 }
 
 #[derive(
