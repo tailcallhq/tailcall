@@ -1,0 +1,19 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema
+  @server(hostname: "0.0.0.0", port: 8001, queryValidation: false)
+  @upstream(baseURL: "http://upstream/graphql", httpCache: 42) {
+  query: Query
+}
+
+type Query {
+  user(id: ID!): User! @graphQL(args: [{key: "id", value: "{{.args.id}}"}], name: "user")
+}
+
+type User {
+  city: String
+  id: ID!
+  name: String! @modify(name: "newName")
+}
