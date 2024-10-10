@@ -1,5 +1,4 @@
-
-# Basic queries with modify field check
+# Basic queries with field modify check
 
 ```graphql @config
 schema
@@ -14,7 +13,7 @@ type Query {
 
 type User {
   id: ID!
-  name: String!
+  name: String! @modify(name: "newName")
   city: String
 }
 ```
@@ -23,7 +22,7 @@ type User {
 - request:
     method: POST
     url: http://upstream/graphql
-    textBody: '{ "query": "query { user(id: 4) {  city name } }" }'
+    textBody: '{ "query": "query { user(id: 4) { city name } }" }'
   expectedHits: 1
   response:
     status: 200
@@ -31,19 +30,20 @@ type User {
       data:
         user:
           city: Globe
-          newName: Tailcall
+          name: Tailcall
+
 ```
 
 ```yml @test
-# Positive: basic 1
 - method: POST
-  url: http://localhost:8001/graphql
+  url: http://localhost:8080/graphql
   body:
     query: |
-      {
+      query getUser {
         user(id: 4) {
+          city 
           newName
-          email 
         }
       }
+
 ```
