@@ -4,13 +4,11 @@ use async_graphql::dynamic::{self, FieldFuture, FieldValue, SchemaBuilder, TypeR
 use async_graphql::ErrorExtensions;
 use async_graphql_value::ConstValue;
 use futures_util::TryFutureExt;
-use strum::IntoEnumIterator;
 use tracing::Instrument;
 
 use crate::core::blueprint::{Blueprint, Definition};
 use crate::core::http::RequestContext;
 use crate::core::ir::{EvalContext, ResolverContext, TypedValue};
-use crate::core::scalar;
 
 /// We set the default value for an `InputValue` by reading it from the
 /// blueprint and assigning it to the provided `InputValue` during the
@@ -198,13 +196,6 @@ impl From<&Blueprint> for SchemaBuilder {
         let query = blueprint.query();
         let mutation = blueprint.mutation();
         let mut schema = dynamic::Schema::build(query.as_str(), mutation.as_deref(), None);
-
-        for scalar in scalar::Scalar::iter() {
-            let k = scalar.name();
-            schema = schema.register(dynamic::Type::Scalar(
-                dynamic::Scalar::new(k.clone()).validator(move |val| scalar.validate(val)),
-            ));
-        }
 
         for def in blueprint.definitions.iter() {
             schema = schema.register(to_type(def));
