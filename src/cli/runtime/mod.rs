@@ -66,7 +66,7 @@ fn init_http2_only(blueprint: &Blueprint) -> Arc<dyn HttpIO> {
 }
 
 fn init_in_memory_cache<K: Hash + Eq, V: Clone>() -> InMemoryCache<K, V> {
-    InMemoryCache::new()
+    InMemoryCache::default()
 }
 
 pub fn init(blueprint: &Blueprint) -> TargetRuntime {

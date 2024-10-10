@@ -11,7 +11,13 @@ expression: response
     "data": null,
     "errors": [
       {
-        "message": "Build error: ResolveInputError: Argument `height` for field `featuredVideoPreview.video` is required"
+        "message": "Build error: ResolveInputError: Argument `height` for field `featuredVideoPreview.video` is required",
+        "locations": [
+          {
+            "line": 0,
+            "column": 0
+          }
+        ]
       }
     ]
   }

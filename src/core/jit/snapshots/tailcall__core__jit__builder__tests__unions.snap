@@ -5,6 +5,7 @@ expression: plan.into_nested()
 [
     Field {
         id: 0,
+        parent_id: None,
         name: "getUserIdOrEmail",
         output_name: "getUserIdOrEmail",
         ir: "Some(..)",
@@ -25,32 +26,34 @@ expression: plan.into_nested()
                 default_value: None,
             },
         ],
-        extensions: Some(
-            Nested(
-                [
-                    Field {
-                        id: 1,
-                        name: "id",
-                        output_name: "id",
-                        type_of: ID!,
-                        type_condition: Some(
-                            "UserId",
-                        ),
-                        directives: [],
-                    },
-                    Field {
-                        id: 2,
-                        name: "email",
-                        output_name: "email",
-                        type_of: String!,
-                        type_condition: Some(
-                            "UserEmail",
-                        ),
-                        directives: [],
-                    },
-                ],
-            ),
-        ),
+        selection: [
+            Field {
+                id: 1,
+                parent_id: Some(
+                    0,
+                ),
+                name: "id",
+                output_name: "id",
+                type_of: ID!,
+                type_condition: Some(
+                    "UserId",
+                ),
+                directives: [],
+            },
+            Field {
+                id: 2,
+                parent_id: Some(
+                    0,
+                ),
+                name: "email",
+                output_name: "email",
+                type_of: String!,
+                type_condition: Some(
+                    "UserEmail",
+                ),
+                directives: [],
+            },
+        ],
         directives: [],
     },
 ]

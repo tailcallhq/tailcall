@@ -4,8 +4,11 @@ use std::ops::DerefMut;
 use async_graphql_value::ConstValue;
 use serde::Deserialize;
 
-use super::{Builder, OperationPlan, Result, Variables};
+use super::{transform, Builder, OperationPlan, Result, Variables};
 use crate::core::blueprint::Blueprint;
+use crate::core::transform::TransformerOps;
+use crate::core::valid::Validator;
+use crate::core::Transform;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Request<V> {
@@ -34,10 +37,19 @@ impl From<async_graphql::Request> for Request<ConstValue> {
 }
 
 impl Request<ConstValue> {
-    pub fn create_plan(&self, blueprint: &Blueprint) -> Result<OperationPlan<ConstValue>> {
+    pub fn create_plan(
+        &self,
+        blueprint: &Blueprint,
+    ) -> Result<OperationPlan<async_graphql_value::Value>> {
         let doc = async_graphql::parser::parse_query(&self.query)?;
         let builder = Builder::new(blueprint, doc);
-        let plan = builder.build(&self.variables, self.operation_name.as_deref())?;
+        let plan = builder.build(self.operation_name.as_deref())?;
+
+        let plan = transform::CheckConst::new()
+            .pipe(transform::CheckDedupe::new())
+            .transform(plan.clone())
+            .to_result()
+            .unwrap_or(plan);
 
         Ok(plan)
     }

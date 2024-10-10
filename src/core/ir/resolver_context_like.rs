@@ -5,8 +5,6 @@ use async_graphql::{Name, ServerError, Value};
 use async_graphql_value::ConstValue;
 use indexmap::IndexMap;
 
-use crate::core::jit::Nested;
-
 pub trait ResolverContextLike: Clone {
     fn value(&self) -> Option<&Value>;
     fn args(&self) -> Option<&IndexMap<Name, Value>>;
@@ -85,16 +83,14 @@ impl From<async_graphql::SelectionField<'_>> for SelectionField {
     }
 }
 
-impl<'a> From<&'a crate::core::jit::Field<Nested<ConstValue>, ConstValue>> for SelectionField {
-    fn from(value: &'a crate::core::jit::Field<Nested<ConstValue>, ConstValue>) -> Self {
+impl<'a> From<&'a crate::core::jit::Field<ConstValue>> for SelectionField {
+    fn from(value: &'a crate::core::jit::Field<ConstValue>) -> Self {
         Self::from_jit_field(value)
     }
 }
 
 impl SelectionField {
-    fn from_jit_field(
-        field: &crate::core::jit::Field<Nested<ConstValue>, ConstValue>,
-    ) -> SelectionField {
+    fn from_jit_field(field: &crate::core::jit::Field<ConstValue>) -> SelectionField {
         let name = field.output_name.to_string();
         let type_name = field.type_of.name();
         let selection_set = field

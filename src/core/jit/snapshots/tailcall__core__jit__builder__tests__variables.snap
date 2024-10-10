@@ -5,6 +5,7 @@ expression: plan.into_nested()
 [
     Field {
         id: 0,
+        parent_id: None,
         name: "user",
         output_name: "user",
         ir: "Some(..)",
@@ -18,39 +19,43 @@ expression: plan.into_nested()
                 name: "id",
                 type_of: ID!,
                 value: Some(
-                    Number(
-                        Number(1),
+                    Variable(
+                        Name(
+                            "id",
+                        ),
                     ),
                 ),
                 default_value: None,
             },
         ],
-        extensions: Some(
-            Nested(
-                [
-                    Field {
-                        id: 1,
-                        name: "id",
-                        output_name: "id",
-                        type_of: ID!,
-                        type_condition: Some(
-                            "User",
-                        ),
-                        directives: [],
-                    },
-                    Field {
-                        id: 2,
-                        name: "name",
-                        output_name: "name",
-                        type_of: String!,
-                        type_condition: Some(
-                            "User",
-                        ),
-                        directives: [],
-                    },
-                ],
-            ),
-        ),
+        selection: [
+            Field {
+                id: 1,
+                parent_id: Some(
+                    0,
+                ),
+                name: "id",
+                output_name: "id",
+                type_of: ID!,
+                type_condition: Some(
+                    "User",
+                ),
+                directives: [],
+            },
+            Field {
+                id: 2,
+                parent_id: Some(
+                    0,
+                ),
+                name: "name",
+                output_name: "name",
+                type_of: String!,
+                type_condition: Some(
+                    "User",
+                ),
+                directives: [],
+            },
+        ],
         directives: [],
     },
 ]

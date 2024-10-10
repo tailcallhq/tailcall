@@ -1,6 +1,6 @@
 use async_graphql_value::{ConstValue, Value};
 
-use super::{Arg, Field, OperationPlan, ResolveInputError, Variables};
+use super::super::{Arg, Field, OperationPlan, ResolveInputError, Variables};
 use crate::core::json::{JsonLikeOwned, JsonObjectLike};
 use crate::core::Type;
 
@@ -44,7 +44,7 @@ impl<Input> InputResolver<Input> {
 
 impl<Input, Output> InputResolver<Input>
 where
-    Input: Clone,
+    Input: Clone + std::fmt::Debug,
     Output: Clone + JsonLikeOwned + TryFrom<serde_json::Value>,
     Input: InputResolvable<Output = Output>,
     <Output as TryFrom<serde_json::Value>>::Error: std::fmt::Debug,
@@ -55,9 +55,8 @@ where
     ) -> Result<OperationPlan<Output>, ResolveInputError> {
         let new_fields = self
             .plan
-            .as_parent()
-            .iter()
-            .map(|field| field.clone().try_map(|value| value.resolve(variables)))
+            .as_flat()
+            .map(|field| (*field).clone().try_map(&|value| value.resolve(variables)))
             .map(|field| match field {
                 Ok(field) => {
                     let args = field
@@ -80,10 +79,15 @@ where
                 Err(err) => Err(err),
             })
             .collect::<Result<Vec<_>, _>>()?;
+        let fields = new_fields.clone();
 
         Ok(OperationPlan::new(
             self.plan.root_name(),
-            new_fields,
+            new_fields
+                .into_iter()
+                .filter(|v| v.parent_id.is_none())
+                .map(|v| v.into_nested(&fields))
+                .collect::<Vec<_>>(),
             self.plan.operation_type(),
             self.plan.index.clone(),
             self.plan.is_introspection_query,

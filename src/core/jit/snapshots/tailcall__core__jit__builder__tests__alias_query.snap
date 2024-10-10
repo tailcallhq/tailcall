@@ -5,6 +5,7 @@ expression: plan.into_nested()
 [
     Field {
         id: 0,
+        parent_id: None,
         name: "posts",
         output_name: "articles",
         ir: "Some(..)",
@@ -12,39 +13,37 @@ expression: plan.into_nested()
         type_condition: Some(
             "Query",
         ),
-        extensions: Some(
-            Nested(
-                [
+        selection: [
+            Field {
+                id: 1,
+                parent_id: Some(
+                    0,
+                ),
+                name: "user",
+                output_name: "author",
+                ir: "Some(..)",
+                type_of: User,
+                type_condition: Some(
+                    "Post",
+                ),
+                selection: [
                     Field {
-                        id: 1,
-                        name: "user",
-                        output_name: "author",
-                        ir: "Some(..)",
-                        type_of: User,
-                        type_condition: Some(
-                            "Post",
+                        id: 2,
+                        parent_id: Some(
+                            1,
                         ),
-                        extensions: Some(
-                            Nested(
-                                [
-                                    Field {
-                                        id: 2,
-                                        name: "id",
-                                        output_name: "identifier",
-                                        type_of: ID!,
-                                        type_condition: Some(
-                                            "User",
-                                        ),
-                                        directives: [],
-                                    },
-                                ],
-                            ),
+                        name: "id",
+                        output_name: "identifier",
+                        type_of: ID!,
+                        type_condition: Some(
+                            "User",
                         ),
                         directives: [],
                     },
                 ],
-            ),
-        ),
+                directives: [],
+            },
+        ],
         directives: [],
     },
 ]
