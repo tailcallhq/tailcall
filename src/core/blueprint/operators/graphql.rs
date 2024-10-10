@@ -25,14 +25,16 @@ fn create_related_fields(
     if let Some(type_) = config.find_type(type_name) {
         for (name, field) in &type_.fields {
             if !field.has_resolver() {
-                if field.modify.is_some() {
-                    map.insert(
-                        field.modify.clone().unwrap().name.unwrap(),
-                        (
-                            name.clone(),
-                            create_related_fields(config, field.type_of.name(), visited),
-                        ),
-                    );
+                if let Some(modify) = &field.modify {
+                    if let Some(modified_name) = &modify.name {
+                        map.insert(
+                            modified_name.clone(),
+                            (
+                                name.clone(),
+                                create_related_fields(config, field.type_of.name(), visited),
+                            ),
+                        );
+                    }
                 } else {
                     map.insert(
                         name.clone(),
