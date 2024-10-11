@@ -622,6 +622,7 @@ impl Config {
             .add_input(Telemetry::input_definition())
             .add_scalar(Scalar::Bytes.scalar_definition())
             .add_scalar(Scalar::Date.scalar_definition())
+            .add_scalar(Scalar::DateTime.scalar_definition())
             .add_scalar(Scalar::Email.scalar_definition())
             .add_scalar(Scalar::Empty.scalar_definition())
             .add_scalar(Scalar::Int128.scalar_definition())
