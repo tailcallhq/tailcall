@@ -20,8 +20,6 @@ type Boar implements Animal & WildAnimal {
   sound: String!
 }
 
-scalar Bytes
-
 type Cat implements Animal & DomesticAnimal & Pet {
   hasFur: Boolean!
   id: ID!
@@ -46,10 +44,6 @@ type Cow implements Animal & DomesticAnimal {
   weight: Int!
 }
 
-scalar Date
-
-scalar DateTime
-
 type Deer implements Animal & WildAnimal {
   dangerous: Boolean!
   hasAntlers: Boolean!
@@ -73,31 +67,13 @@ interface DomesticAnimal {
 
 union EdibleAnimals = Boar | Chicken | Pig | Salmon
 
-scalar Email
-
-scalar Empty
-
 interface Fish {
   length: Int!
 }
 
-scalar Int128
-
-scalar Int16
-
-scalar Int32
-
-scalar Int64
-
-scalar Int8
-
-scalar JSON
-
 interface Pet {
   owner: String!
 }
-
-scalar PhoneNumber
 
 type Pig implements Animal & DomesticAnimal {
   id: ID!
@@ -118,18 +94,6 @@ type Salmon implements Animal & Fish {
   length: Int!
   sound: String!
 }
-
-scalar UInt128
-
-scalar UInt16
-
-scalar UInt32
-
-scalar UInt64
-
-scalar UInt8
-
-scalar Url
 
 interface WildAnimal {
   dangerous: Boolean!
