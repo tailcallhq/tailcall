@@ -1,0 +1,34 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "qBytes": "1",
+      "qDate": "2023-10-05T00:00:00Z",
+      "qDateTime": "2023-10-05T00:00:00Z",
+      "qEmail": "funny@not.com",
+      "qInt128": "7",
+      "qInt16": 8,
+      "qInt32": 9,
+      "qInt64": "10",
+      "qInt8": 11,
+      "qJSON": {
+        "a": 1,
+        "b": 2
+      },
+      "qPhoneNumber": "+1234567890",
+      "qUInt128": "2",
+      "qUInt16": 3,
+      "qUInt32": 4,
+      "qUInt64": "5",
+      "qUInt8": 6,
+      "qUrl": "http://example.com"
+    }
+  }
+}

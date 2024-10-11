@@ -2,30 +2,6 @@
 source: tests/core/spec.rs
 expression: formatted
 ---
-scalar Bytes
-
-scalar Date
-
-scalar DateTime
-
-scalar Email
-
-scalar Empty
-
-scalar Int128
-
-scalar Int16
-
-scalar Int32
-
-scalar Int64
-
-scalar Int8
-
-scalar JSON
-
-scalar PhoneNumber
-
 type Query {
   testVar0(u: T1Input!): U
   testVar1(u: T2Input!): U
@@ -77,18 +53,6 @@ input T5Input {
 }
 
 union U = T1 | T2 | T3 | T4 | T5
-
-scalar UInt128
-
-scalar UInt16
-
-scalar UInt32
-
-scalar UInt64
-
-scalar UInt8
-
-scalar Url
 
 schema {
   query: Query
