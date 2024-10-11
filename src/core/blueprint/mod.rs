@@ -7,6 +7,7 @@ mod directive;
 mod dynamic_value;
 mod from_config;
 mod index;
+mod interface_resolver;
 mod into_document;
 mod into_schema;
 mod links;
