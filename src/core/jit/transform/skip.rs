@@ -1,6 +1,6 @@
-use std::marker::PhantomData;
+use std::{convert::Infallible, marker::PhantomData};
 
-use crate::core::jit::{Error, OperationPlan, Variables};
+use crate::core::jit::{OperationPlan, Variables};
 use crate::core::json::JsonLike;
 use crate::core::valid::Valid;
 use crate::core::Transform;
@@ -22,7 +22,7 @@ where
 {
     type Value = OperationPlan<Value>;
 
-    type Error = Error;
+    type Error = Infallible;
 
     fn transform(&self, plan: Self::Value) -> Valid<Self::Value, Self::Error> {
         // Drop all the fields that are not needed

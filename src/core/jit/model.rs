@@ -244,25 +244,6 @@ impl<Input> Field<Input> {
     }
 }
 
-impl<Input: Clone> Field<Input> {
-    pub fn parent(&self) -> Option<&FieldId> {
-        self.parent_id.as_ref()
-    }
-
-    #[inline(always)]
-    pub fn into_nested(self, fields: &[Field<Input>]) -> Self {
-        let mut children = Vec::new();
-        for field in fields.iter() {
-            if let Some(id) = field.parent() {
-                if *id == self.id {
-                    children.push(field.to_owned().into_nested(fields));
-                }
-            }
-        }
-        Self { selection: children, ..self }
-    }
-}
-
 impl<Input: Debug> Debug for Field<Input> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut debug_struct = f.debug_struct("Field");
@@ -425,10 +406,10 @@ impl<Input> OperationPlan<Input> {
 
     /// Returns number of fields in plan
     pub fn size(&self) -> usize {
-        fn count<A>(field: &Field<A>, len: usize) -> usize {
-            field.selection.iter().fold(len, |acc, f| count(f, acc + 1))
+        fn count<A>(field: &Field<A>) -> usize {
+            1 + field.selection.iter().map(count).sum::<usize>()
         }
-        self.selection.iter().fold(0, |acc, f| count(f, acc + 1))
+        self.selection.iter().map(count).sum()
     }
 
     /// Check if the field is of scalar type

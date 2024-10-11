@@ -51,6 +51,8 @@ pub enum Error {
     Validation(#[from] ValidationError),
     #[error("{0}")]
     ServerError(async_graphql::ServerError),
+    #[error("Unexpected error")]
+    Unknown,
 }
 
 impl ErrorExtensions for Error {
@@ -61,6 +63,7 @@ impl ErrorExtensions for Error {
             Error::IR(error) => error.extend(),
             Error::Validation(error) => error.extend(),
             Error::ServerError(error) => error.extend(),
+            Error::Unknown => async_graphql::Error::new(self.to_string()),
         }
     }
 }

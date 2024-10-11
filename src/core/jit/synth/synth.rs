@@ -8,16 +8,16 @@ use crate::core::scalar;
 
 type ValueStore<Value> = Store<Result<Value, Positioned<Error>>>;
 
-pub struct Synth<Value> {
-    plan: OperationPlan<Value>,
+pub struct Synth<'a, Value> {
+    plan: &'a OperationPlan<Value>,
     store: ValueStore<Value>,
     variables: Variables<Value>,
 }
 
-impl<Value> Synth<Value> {
+impl<'a, Value> Synth<'a, Value> {
     #[inline(always)]
     pub fn new(
-        plan: OperationPlan<Value>,
+        plan: &'a OperationPlan<Value>,
         store: ValueStore<Value>,
         variables: Variables<Value>,
     ) -> Self {
@@ -25,7 +25,7 @@ impl<Value> Synth<Value> {
     }
 }
 
-impl<'a, Value> Synth<Value>
+impl<'a, Value> Synth<'a, Value>
 where
     Value: JsonLike<'a> + Clone + std::fmt::Debug,
 {
@@ -233,15 +233,17 @@ mod tests {
     use async_graphql_value::ConstValue;
     use serde::{Deserialize, Serialize};
 
-    use crate::core::blueprint::Blueprint;
+    use crate::core::{blueprint::Blueprint, jit::OperationPlan};
     use crate::core::config::{Config, ConfigModule};
     use crate::core::jit::builder::Builder;
-    use crate::core::jit::common::JP;
+    use crate::core::jit::fixtures::JP;
     use crate::core::jit::model::{FieldId, Variables};
     use crate::core::jit::store::Store;
     use crate::core::jit::synth::Synth;
     use crate::core::json::JsonLike;
     use crate::core::valid::Validator;
+
+    use super::ValueStore;
 
     const POSTS: &str = r#"
         [
@@ -308,7 +310,10 @@ mod tests {
 
     const CONFIG: &str = include_str!("../fixtures/jsonplaceholder-mutation.graphql");
 
-    fn make_store<'a, Value>(query: &str, store: Vec<(FieldId, TestData)>) -> Synth<Value>
+    fn make_store<'a, Value>(
+        query: &str,
+        store: Vec<(FieldId, TestData)>,
+    ) -> (OperationPlan<Value>, ValueStore<Value>, Variables<Value>)
     where
         Value: Deserialize<'a> + JsonLike<'a> + Serialize + Clone + std::fmt::Debug,
     {
@@ -324,6 +329,7 @@ mod tests {
         let builder = Builder::new(&Blueprint::try_from(&config).unwrap(), doc);
         let plan = builder.build(None).unwrap();
         let plan = plan
+            // TODO: change?
             .try_map(|v| {
                 let serde = v.into_json().unwrap();
                 Deserialize::deserialize(serde)
@@ -338,27 +344,20 @@ mod tests {
             });
         let vars = Variables::new();
 
-        super::Synth::new(plan, store, vars)
+        (plan, store, vars)
     }
 
-    struct Synths<'a> {
-        synth_const: Synth<async_graphql::Value>,
-        synth_borrow: Synth<serde_json_borrow::Value<'a>>,
-    }
+    fn assert_synths(query: &str, store: Vec<(FieldId, TestData)>) {
+        let (plan, value_store, vars) = make_store::<ConstValue>(query, store.clone());
+        let synth_const = Synth::new(&plan, value_store, vars);
+        let (plan, value_store, vars) = make_store::<serde_json_borrow::Value>(query, store.clone());
+        let synth_borrow = Synth::new(&plan, value_store, vars);
 
-    impl<'a> Synths<'a> {
-        fn init(query: &str, store: Vec<(FieldId, TestData)>) -> Self {
-            let synth_const = make_store::<ConstValue>(query, store.clone());
-            let synth_borrow = make_store::<serde_json_borrow::Value>(query, store.clone());
-            Self { synth_const, synth_borrow }
-        }
-        fn assert(self) {
-            let val_const = self.synth_const.synthesize().unwrap();
-            let val_const = serde_json::to_string_pretty(&val_const).unwrap();
-            let val_borrow = self.synth_borrow.synthesize().unwrap();
-            let val_borrow = serde_json::to_string_pretty(&val_borrow).unwrap();
-            assert_eq!(val_const, val_borrow);
-        }
+        let val_const = synth_const.synthesize().unwrap();
+        let val_const = serde_json::to_string_pretty(&val_const).unwrap();
+        let val_borrow = synth_borrow.synthesize().unwrap();
+        let val_borrow = serde_json::to_string_pretty(&val_borrow).unwrap();
+        assert_eq!(val_const, val_borrow);
     }
 
     #[test]
@@ -370,8 +369,7 @@ mod tests {
             }
         "#;
 
-        let synths = Synths::init(query, store);
-        synths.assert();
+        assert_synths(query, store);
     }
 
     #[test]
@@ -383,8 +381,7 @@ mod tests {
                 }
             "#;
 
-        let synths = Synths::init(query, store);
-        synths.assert();
+        assert_synths(query, store);
     }
 
     #[test]
@@ -398,8 +395,7 @@ mod tests {
                     posts { id title user { id name } }
                 }
             "#;
-        let synths = Synths::init(query, store);
-        synths.assert();
+        assert_synths(query, store);
     }
 
     #[test]
@@ -415,8 +411,7 @@ mod tests {
                     users { id name }
                 }
             "#;
-        let synths = Synths::init(query, store);
-        synths.assert();
+        assert_synths(query, store);
     }
 
     #[test]

@@ -14,7 +14,8 @@ mod response;
 
 // NOTE: Only used in tests and benchmarks
 mod builder;
-pub mod common;
+#[cfg(test)]
+pub mod fixtures;
 mod graphql_executor;
 
 // Public Exports

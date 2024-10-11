@@ -8,14 +8,14 @@ use super::error::*;
 use super::{Field, OperationPlan, Positioned};
 use crate::core::ir::{ResolverContextLike, SelectionField};
 
-#[derive(Debug, Clone)]
-pub struct RequestContext<Input> {
-    plan: OperationPlan<Input>,
+#[derive(Debug)]
+pub struct RequestContext<'a, Input> {
+    plan: &'a OperationPlan<Input>,
     errors: Arc<Mutex<Vec<Positioned<Error>>>>,
 }
 
-impl<Input> RequestContext<Input> {
-    pub fn new(plan: OperationPlan<Input>) -> Self {
+impl<'a, Input> RequestContext<'a, Input> {
+    pub fn new(plan: &'a OperationPlan<Input>) -> Self {
         Self { plan, errors: Arc::new(Mutex::new(vec![])) }
     }
     pub fn add_error(&self, new_error: Positioned<Error>) {
@@ -37,7 +37,7 @@ pub struct Context<'a, Input, Output> {
     // TODO: remove the args, since they're already present inside the fields and add support for
     // default values.
     field: &'a Field<Input>,
-    request: &'a RequestContext<Input>,
+    request: &'a RequestContext<'a, Input>,
 }
 impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
     pub fn new(field: &'a Field<Input>, request: &'a RequestContext<Input>) -> Self {
@@ -136,7 +136,7 @@ mod test {
     fn test_field() {
         let plan = setup("query {posts {id title}}").unwrap();
         let field = plan.as_nested();
-        let env = RequestContext::new(plan.clone());
+        let env = RequestContext::new(&plan);
         let ctx = Context::<ConstValue, ConstValue>::new(&field[0], &env);
         let expected = <Context<_, _> as ResolverContextLike>::field(&ctx).unwrap();
         insta::assert_debug_snapshot!(expected);
@@ -145,7 +145,7 @@ mod test {
     #[test]
     fn test_is_query() {
         let plan = setup("query {posts {id title}}").unwrap();
-        let env = RequestContext::new(plan.clone());
+        let env = RequestContext::new(&plan);
         let ctx = Context::new(&plan.as_nested()[0], &env);
         assert!(ctx.is_query());
     }
