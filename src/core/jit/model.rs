@@ -226,7 +226,7 @@ impl<Input> Field<Input> {
                 .selection
                 .into_iter()
                 .map(|f| f.try_map(map))
-                .collect::<Result<_, _>>()?,
+                .collect::<Result<Vec<Field<Output>>, Error>>()?,
             skip: self.skip,
             include: self.include,
             pos: self.pos,
