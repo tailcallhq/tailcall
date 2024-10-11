@@ -2,8 +2,6 @@
 source: tests/core/spec.rs
 expression: formatted
 ---
-scalar Bytes
-
 type Connection {
   type: String
   user: User
@@ -14,47 +12,13 @@ input ConnectionInput {
   user: UserInput
 }
 
-scalar Date
-
-scalar DateTime
-
-scalar Email
-
-scalar Empty
-
-scalar Int128
-
-scalar Int16
-
-scalar Int32
-
-scalar Int64
-
-scalar Int8
-
-scalar JSON
-
 type Mutation {
   createUser(user: UserInput): User
 }
 
-scalar PhoneNumber
-
 type Query {
   user: User
 }
-
-scalar UInt128
-
-scalar UInt16
-
-scalar UInt32
-
-scalar UInt64
-
-scalar UInt8
-
-scalar Url
 
 type User {
   connections: [Connection]

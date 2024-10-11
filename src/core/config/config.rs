@@ -7,6 +7,7 @@ use derive_setters::Setters;
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use strum::IntoEnumIterator;
 use tailcall_typedefs_common::directive_definition::DirectiveDefinition;
 use tailcall_typedefs_common::input_definition::InputDefinition;
 use tailcall_typedefs_common::ServiceDocumentBuilder;
@@ -641,7 +642,7 @@ impl Config {
         let generated_types = &mut generated_types;
 
         let builder = ServiceDocumentBuilder::new();
-        builder
+        let mut builder = builder
             .add_directive(AddField::directive_definition(generated_types))
             .add_directive(Alias::directive_definition(generated_types))
             .add_directive(Cache::directive_definition(generated_types))
@@ -665,25 +666,13 @@ impl Config {
             .add_input(JS::input_definition())
             .add_input(Modify::input_definition())
             .add_input(Cache::input_definition())
-            .add_input(Telemetry::input_definition())
-            .add_scalar(Scalar::Bytes.scalar_definition())
-            .add_scalar(Scalar::Date.scalar_definition())
-            .add_scalar(Scalar::Email.scalar_definition())
-            .add_scalar(Scalar::Empty.scalar_definition())
-            .add_scalar(Scalar::Int128.scalar_definition())
-            .add_scalar(Scalar::Int16.scalar_definition())
-            .add_scalar(Scalar::Int32.scalar_definition())
-            .add_scalar(Scalar::Int64.scalar_definition())
-            .add_scalar(Scalar::Int8.scalar_definition())
-            .add_scalar(Scalar::JSON.scalar_definition())
-            .add_scalar(Scalar::PhoneNumber.scalar_definition())
-            .add_scalar(Scalar::UInt128.scalar_definition())
-            .add_scalar(Scalar::UInt16.scalar_definition())
-            .add_scalar(Scalar::UInt32.scalar_definition())
-            .add_scalar(Scalar::UInt64.scalar_definition())
-            .add_scalar(Scalar::UInt8.scalar_definition())
-            .add_scalar(Scalar::Url.scalar_definition())
-            .build()
+            .add_input(Telemetry::input_definition());
+
+        for scalar in Scalar::iter() {
+            builder = builder.add_scalar(scalar.scalar_definition());
+        }
+
+        builder.build()
     }
 }
 
