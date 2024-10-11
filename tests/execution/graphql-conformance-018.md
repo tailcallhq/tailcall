@@ -31,7 +31,6 @@ type User {
         user:
           city: Globe
           name: Tailcall
-
 ```
 
 ```yml @test
@@ -45,5 +44,4 @@ type User {
           newName
         }
       }
-
 ```
