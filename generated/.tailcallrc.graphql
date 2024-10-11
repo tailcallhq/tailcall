@@ -487,9 +487,21 @@ directive @upstream(
 ) on SCHEMA
 
 """
-Field whose value is a sequence of bytes.
+Empty scalar type represents an empty value.
 """
-scalar Bytes
+scalar Empty
+
+"""
+Field whose value conforms to the standard internet email address format as specified 
+in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.
+"""
+scalar Email
+
+"""
+Field whose value conforms to the standard E.164 format as specified in E.164 specification 
+(https://en.wikipedia.org/wiki/E.164).
+"""
+scalar PhoneNumber
 
 """
 Field whose value conforms to the standard date format as specified in RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339).
@@ -503,20 +515,19 @@ Field whose value conforms to the standard datetime format as specified in RFC 3
 scalar DateTime
 
 """
-Field whose value conforms to the standard internet email address format as specified 
-in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.
+Field whose value conforms to the standard URL format as specified in RFC 3986 (https://datatracker.ietf.org/doc/html/rfc3986).
 """
-scalar Email
+scalar Url
 
 """
-Empty scalar type represents an empty value.
+Field whose value conforms to the standard JSON format as specified in RFC 8259 (https://datatracker.ietf.org/doc/html/rfc8259).
 """
-scalar Empty
+scalar JSON
 
 """
-Field whose value is a 128-bit signed integer.
+Field whose value is an 8-bit signed integer.
 """
-scalar Int128
+scalar Int8
 
 """
 Field whose value is a 16-bit signed integer.
@@ -534,25 +545,14 @@ Field whose value is a 64-bit signed integer.
 scalar Int64
 
 """
-Field whose value is an 8-bit signed integer.
+Field whose value is a 128-bit signed integer.
 """
-scalar Int8
+scalar Int128
 
 """
-Field whose value conforms to the standard JSON format as specified in RFC 8259 (https://datatracker.ietf.org/doc/html/rfc8259).
+Field whose value is an 8-bit unsigned integer.
 """
-scalar JSON
-
-"""
-Field whose value conforms to the standard E.164 format as specified in E.164 specification 
-(https://en.wikipedia.org/wiki/E.164).
-"""
-scalar PhoneNumber
-
-"""
-Field whose value is a 128-bit unsigned integer.
-"""
-scalar UInt128
+scalar UInt8
 
 """
 Field whose value is a 16-bit unsigned integer.
@@ -570,14 +570,14 @@ Field whose value is a 64-bit unsigned integer.
 scalar UInt64
 
 """
-Field whose value is an 8-bit unsigned integer.
+Field whose value is a 128-bit unsigned integer.
 """
-scalar UInt8
+scalar UInt128
 
 """
-Field whose value conforms to the standard URL format as specified in RFC 3986 (https://datatracker.ietf.org/doc/html/rfc3986).
+Field whose value is a sequence of bytes.
 """
-scalar Url
+scalar Bytes
 
 """
 Provides the ability to refer to a field defined in the root Query or Mutation.
