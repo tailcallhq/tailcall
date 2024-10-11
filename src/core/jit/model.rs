@@ -105,14 +105,14 @@ pub struct Arg<Input> {
 impl<Input> Arg<Input> {
     pub fn try_map<Output, Error>(
         self,
-        map: impl Fn(Input) -> Result<Output, Error>,
+        map: &impl Fn(Input) -> Result<Output, Error>,
     ) -> Result<Arg<Output>, Error> {
         Ok(Arg {
             id: self.id,
             name: self.name,
             type_of: self.type_of,
-            value: self.value.map(&map).transpose()?,
-            default_value: self.default_value.map(&map).transpose()?,
+            value: self.value.map(map).transpose()?,
+            default_value: self.default_value.map(map).transpose()?,
         })
     }
 }
@@ -488,7 +488,7 @@ pub struct Directive<Input> {
 impl<Input> Directive<Input> {
     pub fn try_map<Output, Error>(
         self,
-        map: impl Fn(Input) -> Result<Output, Error>,
+        map: &impl Fn(Input) -> Result<Output, Error>,
     ) -> Result<Directive<Output>, Error> {
         Ok(Directive {
             name: self.name,
