@@ -1,9 +1,9 @@
-use crate::core::config::Type;
-use crate::core::valid::Valid;
 use anyhow::{bail, Result};
 use async_graphql::Value;
 
 use super::TypedValue;
+use crate::core::config::Type;
+use crate::core::valid::Valid;
 
 /// Resolver for type member of a union or interface.
 #[derive(Debug, Clone)]

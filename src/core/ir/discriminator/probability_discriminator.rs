@@ -1,16 +1,15 @@
+use std::collections::HashSet;
+use std::fmt::Write;
+
 use anyhow::{bail, Result};
 use async_graphql::Value;
 use derive_more::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not};
 use indenter::indented;
 use indexmap::IndexMap;
 
-use std::collections::HashSet;
-use std::fmt::Write;
-
+use super::TypedValue;
 use crate::core::config::Type;
 use crate::core::valid::{Cause, Valid, Validator};
-
-use super::TypedValue;
 
 /// Resolver for type member of a union or interface.
 /// Based on type definitions and the provided value, it can
@@ -321,7 +320,9 @@ mod tests {
         let bar = config::Type::default().fields(vec![("bar", Field::default())]);
         let types = vec![("Foo", &foo), ("Bar", &bar)];
 
-        let discriminator = ProbabilityDiscriminator::new("Test", &types).to_result().unwrap();
+        let discriminator = ProbabilityDiscriminator::new("Test", &types)
+            .to_result()
+            .unwrap();
 
         assert_eq!(
             discriminator
@@ -372,7 +373,9 @@ mod tests {
         )]);
         let types = vec![("Foo", &foo), ("Bar", &bar)];
 
-        let discriminator = ProbabilityDiscriminator::new("Test", &types).to_result().unwrap();
+        let discriminator = ProbabilityDiscriminator::new("Test", &types)
+            .to_result()
+            .unwrap();
 
         assert_eq!(
             discriminator
@@ -457,7 +460,9 @@ mod tests {
         ]);
         let types = vec![("A", &a), ("B", &b), ("C", &c)];
 
-        let discriminator = ProbabilityDiscriminator::new("Test", &types).to_result().unwrap();
+        let discriminator = ProbabilityDiscriminator::new("Test", &types)
+            .to_result()
+            .unwrap();
 
         assert_eq!(
             discriminator
@@ -517,7 +522,9 @@ mod tests {
         ]);
         let types = vec![("Foo", &foo), ("Bar", &bar)];
 
-        let discriminator = ProbabilityDiscriminator::new("Test", &types).to_result().unwrap();
+        let discriminator = ProbabilityDiscriminator::new("Test", &types)
+            .to_result()
+            .unwrap();
 
         assert_eq!(
             discriminator
@@ -590,7 +597,9 @@ mod tests {
         let bar = config::Type::default().fields(vec![("bar", Field::default())]);
         let types = vec![("Foo", &foo), ("Bar", &bar)];
 
-        let discriminator = ProbabilityDiscriminator::new("Test", &types).to_result().unwrap();
+        let discriminator = ProbabilityDiscriminator::new("Test", &types)
+            .to_result()
+            .unwrap();
 
         assert_eq!(
             discriminator
@@ -658,7 +667,9 @@ mod tests {
         ]);
         let types = vec![("A", &a), ("B", &b), ("C", &c)];
 
-        let discriminator = ProbabilityDiscriminator::new("Test", &types).to_result().unwrap();
+        let discriminator = ProbabilityDiscriminator::new("Test", &types)
+            .to_result()
+            .unwrap();
 
         assert_eq!(
             discriminator
@@ -793,7 +804,9 @@ mod tests {
             ("Var1_Var1", &var1_var1),
         ];
 
-        let discriminator = ProbabilityDiscriminator::new("Test", &types).to_result().unwrap();
+        let discriminator = ProbabilityDiscriminator::new("Test", &types)
+            .to_result()
+            .unwrap();
 
         assert_eq!(
             discriminator
@@ -932,7 +945,9 @@ mod tests {
             ("TypeD", &type_d),
         ];
 
-        let discriminator = ProbabilityDiscriminator::new("Test", &types).to_result().unwrap();
+        let discriminator = ProbabilityDiscriminator::new("Test", &types)
+            .to_result()
+            .unwrap();
 
         assert_eq!(
             discriminator
@@ -1030,7 +1045,9 @@ mod tests {
             ("TypeD", &type_d),
         ];
 
-        let discriminator = ProbabilityDiscriminator::new("Test", &types).to_result().unwrap();
+        let discriminator = ProbabilityDiscriminator::new("Test", &types)
+            .to_result()
+            .unwrap();
 
         assert_eq!(
             discriminator
@@ -1182,7 +1199,9 @@ mod tests {
         let bar = config::Type::default().fields(vec![("bar", Field::default())]);
         let types = vec![("Foo", &foo), ("Bar", &bar)];
 
-        let discriminator = ProbabilityDiscriminator::new("Test", &types).to_result().unwrap();
+        let discriminator = ProbabilityDiscriminator::new("Test", &types)
+            .to_result()
+            .unwrap();
 
         assert_eq!(
             discriminator

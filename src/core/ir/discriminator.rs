@@ -3,26 +3,27 @@ mod probability_discriminator;
 mod type_field_discriminator;
 
 use anyhow::{bail, Result};
+use async_graphql::Value;
 use keyed_discriminator::KeyedDiscriminator;
 use probability_discriminator::ProbabilityDiscriminator;
-use async_graphql::Value;
+use type_field_discriminator::TypeFieldDiscriminator;
 
-use crate::core::{
-    config::Type,
-    json::{JsonLike, JsonObjectLike},
-    valid::{Valid, Validator},
-};
+use crate::core::config::Type;
+use crate::core::json::{JsonLike, JsonObjectLike};
+use crate::core::valid::{Valid, Validator};
 
 /// Resolver for type member of a union or interface.
 #[derive(Debug, Clone)]
 pub enum Discriminator {
     Probability(ProbabilityDiscriminator),
-    Keyed(KeyedDiscriminator)
+    Keyed(KeyedDiscriminator),
+    TypeField(TypeFieldDiscriminator),
 }
 
 pub enum DiscriminatorMode {
     Probability,
-    Keyed
+    Keyed,
+    TypeField,
 }
 
 impl Discriminator {
@@ -30,13 +31,20 @@ impl Discriminator {
         union_name: &str,
         union_types: &[(&str, &Type)],
         mode: DiscriminatorMode,
+        typename_field: Option<String>,
     ) -> Valid<Self, String> {
+        let typename_field = typename_field.unwrap_or_else(|| "__typename".to_string());
+
         match mode {
             DiscriminatorMode::Probability => {
-                ProbabilityDiscriminator::new(union_name, union_types).map(|d| Self::Probability(d))
+                ProbabilityDiscriminator::new(union_name, union_types).map(Self::Probability)
             }
-            DiscriminatorMode::Keyed  => {
-                KeyedDiscriminator::new(union_name, union_types).map(|d| Self::Keyed(d))
+            DiscriminatorMode::Keyed => {
+                KeyedDiscriminator::new(union_name, union_types).map(Self::Keyed)
+            }
+            DiscriminatorMode::TypeField => {
+                TypeFieldDiscriminator::new(union_name, union_types, typename_field)
+                    .map(Self::TypeField)
             }
         }
     }
@@ -44,12 +52,19 @@ impl Discriminator {
     pub fn resolve_type(&self, value: Value) -> Result<Value> {
         // if typename is already present we return it
         if value.get_type_name().is_some() {
-            return Ok(value)
+            return Ok(value);
         }
 
         match self {
-            Discriminator::Probability(probability_discriminator) => probability_discriminator.resolve_and_set_type(value),
-            Discriminator::Keyed(keyed_discriminator) => keyed_discriminator.resolve_and_set_type(value),
+            Discriminator::Probability(probability_discriminator) => {
+                probability_discriminator.resolve_and_set_type(value)
+            }
+            Discriminator::Keyed(keyed_discriminator) => {
+                keyed_discriminator.resolve_and_set_type(value)
+            }
+            Discriminator::TypeField(type_field_discriminator) => {
+                type_field_discriminator.resolve_and_set_type(value)
+            }
         }
     }
 }

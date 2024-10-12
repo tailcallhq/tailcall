@@ -102,9 +102,10 @@ impl IR {
                     let ctx = &mut ctx.with_args(args);
                     second.eval(ctx).await
                 }
-                IR::Discriminate(discriminator, expr) => expr.eval(ctx).await.and_then(|value| {
-                    Ok(discriminator.resolve_type(value)?)
-                }),
+                IR::Discriminate(discriminator, expr) => expr
+                    .eval(ctx)
+                    .await
+                    .and_then(|value| Ok(discriminator.resolve_type(value)?)),
                 IR::Entity(map) => {
                     let representations = ctx.path_arg(&["representations"]);
 
