@@ -1,0 +1,16 @@
+---
+source: tests/core/spec.rs
+expression: errors
+---
+[
+  {
+    "message": "Invalid query parameter type. Expected 'criteria' to be a Scalar but received an Object.",
+    "trace": [
+      "Query",
+      "findEmployees",
+      "@http",
+      "query"
+    ],
+    "description": null
+  }
+]
