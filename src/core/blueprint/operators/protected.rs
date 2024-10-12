@@ -2,7 +2,7 @@ use crate::core::blueprint::FieldDefinition;
 use crate::core::config::{self, ConfigModule, Field};
 use crate::core::ir::model::IR;
 use crate::core::try_fold::TryFold;
-use crate::core::valid::Valid;
+use tailcall_valid::Valid;
 
 pub fn update_protected<'a>(
     type_name: &'a str,

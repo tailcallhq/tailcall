@@ -5,7 +5,7 @@ use tailcall_macros::{CustomResolver, MergeRight};
 
 use super::{Call, EntityResolver, Expr, GraphQL, Grpc, Http, JS};
 use crate::core::directive::DirectiveCodec;
-use crate::core::valid::{Valid, Validator};
+use tailcall_valid::{Valid, Validator};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ApolloFederation {

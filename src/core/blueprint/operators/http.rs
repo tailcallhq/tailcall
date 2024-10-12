@@ -5,7 +5,7 @@ use crate::core::endpoint::Endpoint;
 use crate::core::http::{HttpFilter, Method, RequestTemplate};
 use crate::core::ir::model::{IO, IR};
 use crate::core::try_fold::TryFold;
-use crate::core::valid::{Valid, ValidationError, Validator};
+use tailcall_valid::{Valid, ValidationError, Validator};
 use crate::core::{config, helpers, Mustache};
 
 pub fn compile_http(

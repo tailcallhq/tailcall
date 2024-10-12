@@ -4,7 +4,7 @@ use convert_case::{Case, Casing};
 
 use crate::core::config::{Config, GraphQLOperationType};
 use crate::core::transform::Transform;
-use crate::core::valid::Valid;
+use tailcall_valid::Valid;
 
 pub struct SchemaGenerator<'a> {
     operation_type: &'a GraphQLOperationType,
@@ -55,7 +55,7 @@ mod test {
     use super::SchemaGenerator;
     use crate::core::config::GraphQLOperationType;
     use crate::core::transform::Transform;
-    use crate::core::valid::Validator;
+    use tailcall_valid::Validator;
 
     #[test]
     fn test_schema_generator_with_mutation() {

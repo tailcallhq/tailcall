@@ -24,7 +24,7 @@ use crate::core::is_default;
 use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
 use crate::core::scalar::Scalar;
-use crate::core::valid::{Valid, Validator};
+use tailcall_valid::{Valid, Validator};
 
 #[derive(
     Serialize,

@@ -10,7 +10,7 @@ use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoMetadata;
 use crate::core::rest::{EndpointSet, Unchecked};
-use crate::core::valid::{Valid, Validator};
+use tailcall_valid::{Valid, Validator};
 use crate::core::Transform;
 
 mod merge;

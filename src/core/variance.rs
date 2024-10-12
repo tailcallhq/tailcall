@@ -1,6 +1,6 @@
 use crate::core::merge_right::MergeRight;
 use crate::core::primitive::Primitive;
-use crate::core::valid::Valid;
+use tailcall_valid::Valid;
 
 /// A trait representing types that are **invariant** with respect to merging
 /// operations.

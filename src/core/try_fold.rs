@@ -1,4 +1,4 @@
-use crate::core::valid::{Valid, Validator};
+use tailcall_valid::{Valid, Validator};
 
 /// Trait for types that support a "try fold" operation.
 ///
@@ -141,7 +141,7 @@ mod tests {
     use std::cell::RefCell;
 
     use super::TryFold;
-    use crate::core::valid::{Valid, ValidationError, Validator};
+    use tailcall_valid::{Valid, ValidationError, Validator};
 
     impl<'a, I, O: Clone + 'a, E> TryFold<'a, I, O, E> {
         /// Create a `TryFold` that always succeeds with the provided state.

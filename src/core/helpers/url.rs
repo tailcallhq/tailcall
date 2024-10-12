@@ -1,5 +1,5 @@
 use crate::core::mustache::Mustache;
-use crate::core::valid::Valid;
+use tailcall_valid::Valid;
 
 pub fn to_url(url: &str) -> Valid<Mustache, String> {
     Valid::succeed(Mustache::parse(url))
@@ -12,7 +12,7 @@ mod tests {
     #[test]
     fn parse_url() {
         use crate::core::mustache::Mustache;
-        use crate::core::valid::Valid;
+        use tailcall_valid::Valid;
 
         let url = to_url("http://localhost:3000");
 

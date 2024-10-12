@@ -4,7 +4,7 @@ use url::Url;
 use super::url_utils::extract_base_url;
 use crate::core::config::{Config, GraphQLOperationType, Resolver};
 use crate::core::transform::Transform;
-use crate::core::valid::Valid;
+use tailcall_valid::Valid;
 
 pub struct FieldBaseUrlGenerator<'a> {
     url: &'a Url,
@@ -53,7 +53,7 @@ mod test {
     use super::FieldBaseUrlGenerator;
     use crate::core::config::{Config, Field, GraphQLOperationType, Http, Resolver, Type};
     use crate::core::transform::Transform;
-    use crate::core::valid::Validator;
+    use tailcall_valid::Validator;
 
     #[test]
     fn should_add_base_url_for_http_fields() {

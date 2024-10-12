@@ -6,7 +6,7 @@ use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::core::valid::{Valid, ValidationError, Validator};
+use tailcall_valid::{Valid, ValidationError, Validator};
 use crate::core::{is_default, pos};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
@@ -51,7 +51,7 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     use super::*;
-    use crate::core::valid::Validator;
+    use tailcall_valid::Validator;
 
     #[test]
     fn test_to_const_directive() {

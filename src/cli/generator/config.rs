@@ -12,7 +12,7 @@ use url::Url;
 use crate::core::config::transformer::Preset;
 use crate::core::config::{self};
 use crate::core::http::Method;
-use crate::core::valid::{Valid, ValidateFrom, Validator};
+use tailcall_valid::{Valid, ValidateFrom, Validator};
 
 #[derive(Deserialize, Serialize, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]
@@ -277,7 +277,7 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     use super::*;
-    use crate::core::valid::{ValidateInto, ValidationError, Validator};
+    use tailcall_valid::{ValidateInto, ValidationError, Validator};
 
     fn location<S: AsRef<str>>(s: S) -> Location<UnResolved> {
         Location(s.as_ref().to_string(), PhantomData)

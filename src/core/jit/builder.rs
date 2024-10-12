@@ -378,7 +378,7 @@ mod tests {
     use crate::core::blueprint::Blueprint;
     use crate::core::config::Config;
     use crate::core::jit::builder::Builder;
-    use crate::core::valid::Validator;
+    use tailcall_valid::Validator;
 
     const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
 

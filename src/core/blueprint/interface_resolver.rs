@@ -6,7 +6,7 @@ use crate::core::config::{ConfigModule, Field};
 use crate::core::ir::model::IR;
 use crate::core::ir::Discriminator;
 use crate::core::try_fold::TryFold;
-use crate::core::valid::{Valid, Validator};
+use tailcall_valid::{Valid, Validator};
 
 fn compile_interface_resolver(
     config: &ConfigModule,

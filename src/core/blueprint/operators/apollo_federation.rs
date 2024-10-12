@@ -9,7 +9,7 @@ use crate::core::config::{
     ApolloFederation, ConfigModule, EntityResolver, Field, GraphQLOperationType, Resolver,
 };
 use crate::core::ir::model::IR;
-use crate::core::valid::{Valid, Validator};
+use tailcall_valid::{Valid, Validator};
 use crate::core::Type;
 
 pub struct CompileEntityResolver<'a> {

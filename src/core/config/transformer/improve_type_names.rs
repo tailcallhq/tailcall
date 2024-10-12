@@ -6,7 +6,7 @@ use super::RenameTypes;
 use crate::core::config::Config;
 use crate::core::generator::PREFIX;
 use crate::core::transform::Transform;
-use crate::core::valid::Valid;
+use tailcall_valid::Valid;
 
 #[derive(Debug, Default)]
 struct CandidateStats {
@@ -136,7 +136,7 @@ mod test {
     use super::ImproveTypeNames;
     use crate::core::config::Config;
     use crate::core::transform::Transform;
-    use crate::core::valid::Validator;
+    use tailcall_valid::Validator;
 
     fn read_fixture(path: &str) -> String {
         fs::read_to_string(path).unwrap()

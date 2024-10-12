@@ -7,7 +7,7 @@ use tailcall::core::config::ConfigModule;
 use tailcall::core::merge_right::MergeRight;
 use tailcall::core::rest::EndpointSet;
 use tailcall::core::runtime::TargetRuntime;
-use tailcall::core::valid::Validator;
+use tailcall_valid::Validator;
 use tailcall::core::variance::Invariant;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;

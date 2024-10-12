@@ -3,7 +3,7 @@ use crate::core::config;
 use crate::core::config::{ConfigModule, Field, Resolver, JS};
 use crate::core::ir::model::{IO, IR};
 use crate::core::try_fold::TryFold;
-use crate::core::valid::{Valid, Validator};
+use tailcall_valid::{Valid, Validator};
 
 pub struct CompileJs<'a> {
     pub js: &'a JS,

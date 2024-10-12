@@ -6,7 +6,7 @@ use super::{Error, Result};
 use crate::core::async_graphql_hyper::{GraphQLRequest, GraphQLRequestLike};
 use crate::core::blueprint::{Blueprint, SchemaModifiers};
 use crate::core::http::RequestContext;
-use crate::core::valid::{Cause, Valid, Validator};
+use tailcall_valid::{Cause, Valid, Validator};
 
 #[derive(Debug)]
 pub struct OperationQuery {

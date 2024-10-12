@@ -10,7 +10,7 @@ use rustls_pki_types::CertificateDer;
 use super::Auth;
 use crate::core::blueprint::Cors;
 use crate::core::config::{self, ConfigModule, HttpVersion, PrivateKey, Routes};
-use crate::core::valid::{Valid, ValidationError, Validator};
+use tailcall_valid::{Valid, ValidationError, Validator};
 
 #[derive(Clone, Debug, Setters)]
 pub struct Server {

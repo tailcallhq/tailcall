@@ -1,6 +1,6 @@
 use crate::core::config::Config;
 use crate::core::transform::Transform;
-use crate::core::valid::Valid;
+use tailcall_valid::Valid;
 
 /// `RemoveUnused` is responsible for removing unused types from a
 /// configuration.

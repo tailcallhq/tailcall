@@ -8,7 +8,7 @@ use crate::core::http::RequestContext;
 use crate::core::macros::MergeRight;
 use crate::core::rest::operation::OperationQuery;
 use crate::core::runtime::TargetRuntime;
-use crate::core::valid::Validator;
+use tailcall_valid::Validator;
 
 /// Collection of endpoints
 #[derive(Default, Clone, Debug, MergeRight)]

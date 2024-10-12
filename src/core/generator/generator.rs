@@ -13,7 +13,7 @@ use crate::core::http::Method;
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoMetadata;
 use crate::core::transform::{Transform, TransformerOps};
-use crate::core::valid::Validator;
+use tailcall_valid::Validator;
 
 /// Generator offers an abstraction over the actual config generators and allows
 /// to generate the single config from multiple sources. i.e (Protobuf and Json)

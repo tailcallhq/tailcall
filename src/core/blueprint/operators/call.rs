@@ -5,7 +5,7 @@ use crate::core::config;
 use crate::core::config::{Field, GraphQLOperationType, Resolver};
 use crate::core::ir::model::IR;
 use crate::core::try_fold::TryFold;
-use crate::core::valid::{Valid, ValidationError, Validator};
+use tailcall_valid::{Valid, ValidationError, Validator};
 
 pub fn update_call<'a>(
     operation_type: &'a GraphQLOperationType,

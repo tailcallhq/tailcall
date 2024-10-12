@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::core::config::Config;
 use crate::core::transform::Transform;
-use crate::core::valid::{Valid, Validator};
+use tailcall_valid::{Valid, Validator};
 
 /// Resolves the ambiguous types by renaming the input and
 /// output types. The resolver function is called whenever is a conflict is
@@ -160,7 +160,7 @@ mod tests {
     use crate::core::generator::{Generator, Input};
     use crate::core::proto_reader::ProtoMetadata;
     use crate::core::transform::Transform;
-    use crate::core::valid::Validator;
+    use tailcall_valid::Validator;
     use crate::core::Type;
 
     fn build_qry(mut config: Config) -> Config {

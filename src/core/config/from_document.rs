@@ -17,7 +17,7 @@ use crate::core::config::{
     Variant,
 };
 use crate::core::directive::DirectiveCodec;
-use crate::core::valid::{Valid, ValidationError, Validator};
+use tailcall_valid::{Valid, ValidationError, Validator};
 
 const DEFAULT_SCHEMA_DEFINITION: &SchemaDefinition = &SchemaDefinition {
     extend: false,

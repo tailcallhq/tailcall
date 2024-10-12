@@ -4,7 +4,7 @@ use colored::Colorize;
 use derive_setters::Setters;
 
 use crate::core::error::Error as CoreError;
-use crate::core::valid::ValidationError;
+use tailcall_valid::ValidationError;
 
 /// The moral equivalent of a serde_json::Value but for errors.
 /// It's a data structure like Value that can hold any error in an untyped
@@ -237,7 +237,7 @@ mod tests {
     use stripmargin::StripMargin;
 
     use super::*;
-    use crate::core::valid::Cause;
+    use tailcall_valid::Cause;
 
     #[test]
     fn test_no_newline() {

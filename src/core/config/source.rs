@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use super::Config;
-use crate::core::valid::{ValidationError, Validator};
+use tailcall_valid::{ValidationError, Validator};
 
 #[derive(Clone, Default, Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]

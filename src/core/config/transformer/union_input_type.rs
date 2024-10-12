@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use crate::core::config::{Arg, Config, Field, Type};
 use crate::core::transform::Transform;
-use crate::core::valid::Valid;
+use tailcall_valid::Valid;
 
 /// Transforms unions inside the input types by replacing actual unions
 /// with multiple variants of the parent type, with each field resolved
@@ -285,7 +285,7 @@ mod tests {
     use super::UnionInputType;
     use crate::core::config::Config;
     use crate::core::transform::Transform;
-    use crate::core::valid::Validator;
+    use tailcall_valid::Validator;
 
     #[test]
     fn test_union() {

@@ -2,7 +2,7 @@ use http::header::HeaderName;
 
 use crate::core::config::KeyValue;
 use crate::core::mustache::Mustache;
-use crate::core::valid::{Valid, ValidationError, Validator};
+use tailcall_valid::{Valid, ValidationError, Validator};
 
 pub type MustacheHeaders = Vec<(HeaderName, Mustache)>;
 
@@ -29,7 +29,7 @@ mod tests {
     use super::to_mustache_headers;
     use crate::core::config::KeyValue;
     use crate::core::mustache::Mustache;
-    use crate::core::valid::Validator;
+    use tailcall_valid::Validator;
 
     #[test]
     fn valid_headers() -> Result<()> {

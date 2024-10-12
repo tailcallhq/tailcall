@@ -6,7 +6,7 @@ use crate::core::config::{Expr, Field, Resolver};
 use crate::core::ir::model::IR;
 use crate::core::ir::model::IR::Dynamic;
 use crate::core::try_fold::TryFold;
-use crate::core::valid::{Valid, ValidationError, Validator};
+use tailcall_valid::{Valid, ValidationError, Validator};
 
 fn validate_data_with_schema(
     config: &config::Config,

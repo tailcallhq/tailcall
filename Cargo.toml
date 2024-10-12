@@ -169,6 +169,7 @@ num = "0.4.3"
 indenter = "0.3.3"
 derive_more = { workspace = true }
 strum = "0.26.2"
+tailcall-valid = {git = "https://github.com/tailcallhq/valid.git"}
 
 [dev-dependencies]
 datatest-stable = "0.2.9"

@@ -11,7 +11,7 @@ use crate::core::config::{Config, GraphQLOperationType};
 use crate::core::http::Method;
 use crate::core::merge_right::MergeRight;
 use crate::core::transform::{Transform, TransformerOps};
-use crate::core::valid::{Valid, Validator};
+use tailcall_valid::{Valid, Validator};
 
 pub struct RequestSample {
     pub url: Url,
@@ -146,7 +146,7 @@ mod tests {
     use crate::core::generator::generator::test::JsonFixture;
     use crate::core::generator::{FromJsonGenerator, NameGenerator, RequestSample};
     use crate::core::transform::TransformerOps;
-    use crate::core::valid::Validator;
+    use tailcall_valid::Validator;
 
     #[tokio::test]
     async fn generate_config_from_json() -> anyhow::Result<()> {

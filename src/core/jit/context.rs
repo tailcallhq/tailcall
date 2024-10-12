@@ -121,7 +121,7 @@ mod test {
     use crate::core::config::{Config, ConfigModule};
     use crate::core::ir::ResolverContextLike;
     use crate::core::jit::{OperationPlan, Request};
-    use crate::core::valid::Validator;
+    use tailcall_valid::Validator;
 
     fn setup(query: &str) -> anyhow::Result<OperationPlan<ConstValue>> {
         let sdl = std::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER)?;

@@ -9,7 +9,7 @@ use crate::core::generator::PREFIX;
 use crate::core::merge_right::MergeRight;
 use crate::core::scalar::Scalar;
 use crate::core::transform::Transform;
-use crate::core::valid::{Valid, Validator};
+use tailcall_valid::{Valid, Validator};
 
 pub struct TypeMerger {
     /// threshold required for the merging process.
@@ -249,7 +249,7 @@ mod test {
     use super::TypeMerger;
     use crate::core::config::{Config, Field, Type};
     use crate::core::transform::Transform;
-    use crate::core::valid::Validator;
+    use tailcall_valid::Validator;
 
     #[test]
     fn test_cyclic_merge_case() -> anyhow::Result<()> {

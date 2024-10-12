@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use crate::core::config::{AddField, Config, Omit};
 use crate::core::transform::Transform;
-use crate::core::valid::Valid;
+use tailcall_valid::Valid;
 
 /// Flat single field type and inline to Query directly by addField
 #[derive(Default)]
@@ -87,7 +87,7 @@ mod test {
     use super::FlattenSingleField;
     use crate::core::config::Config;
     use crate::core::transform::Transform;
-    use crate::core::valid::Validator;
+    use tailcall_valid::Validator;
 
     fn read_fixture(path: &str) -> String {
         fs::read_to_string(path).unwrap()

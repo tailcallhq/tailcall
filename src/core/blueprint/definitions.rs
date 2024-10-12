@@ -11,7 +11,7 @@ use crate::core::config::{Config, Enum, Field, GraphQLOperationType, Protected, 
 use crate::core::directive::DirectiveCodec;
 use crate::core::ir::model::{Cache, IR};
 use crate::core::try_fold::TryFold;
-use crate::core::valid::{Valid, Validator};
+use tailcall_valid::{Valid, Validator};
 use crate::core::{config, scalar, Type};
 
 pub fn to_scalar_type_definition(name: &str) -> Valid<Definition, String> {

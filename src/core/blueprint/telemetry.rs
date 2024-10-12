@@ -9,7 +9,7 @@ use crate::core::config::{
 };
 use crate::core::directive::DirectiveCodec;
 use crate::core::try_fold::TryFold;
-use crate::core::valid::{Valid, ValidationError, Validator};
+use tailcall_valid::{Valid, ValidationError, Validator};
 
 #[derive(Debug, Clone)]
 pub struct OtlpExporter {
@@ -100,7 +100,7 @@ fn validate_graph_ref(graph_ref: &str) -> Valid<(), String> {
 #[cfg(test)]
 mod tests {
     use super::validate_graph_ref;
-    use crate::core::valid::Valid;
+    use tailcall_valid::Valid;
 
     #[test]
     fn test_validate_graph_ref() {

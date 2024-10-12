@@ -15,7 +15,7 @@ use super::proto::path_field::PathField;
 use crate::core::config::transformer::{AmbiguousType, TreeShake};
 use crate::core::config::{self, Arg, Config, Enum, Field, Grpc, Resolver, Union, Variant};
 use crate::core::transform::{Transform, TransformerOps};
-use crate::core::valid::Validator;
+use tailcall_valid::Validator;
 use crate::core::Type;
 
 /// Assists in the mapping and retrieval of proto type names to custom formatted

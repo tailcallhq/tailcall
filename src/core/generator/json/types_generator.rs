@@ -6,7 +6,7 @@ use crate::core::generator::{NameGenerator, RequestSample};
 use crate::core::helpers::gql_type::{is_primitive, is_valid_field_name, to_gql_type};
 use crate::core::scalar::Scalar;
 use crate::core::transform::Transform;
-use crate::core::valid::Valid;
+use tailcall_valid::Valid;
 
 struct JSONValidator;
 

@@ -5,7 +5,7 @@ use crate::core::config;
 use crate::core::config::Field;
 use crate::core::ir::model::{Map, IR};
 use crate::core::try_fold::TryFold;
-use crate::core::valid::Valid;
+use tailcall_valid::Valid;
 
 pub fn update_enum_alias<'a>(
 ) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>

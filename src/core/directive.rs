@@ -5,7 +5,7 @@ use serde_json::{Map, Value};
 use serde_path_to_error::deserialize;
 
 use super::pos;
-use crate::core::valid::{Valid, ValidationError, Validator};
+use tailcall_valid::{Valid, ValidationError, Validator};
 
 pub trait DirectiveCodec: Sized {
     fn directive_name() -> String;

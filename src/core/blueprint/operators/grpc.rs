@@ -13,7 +13,7 @@ use crate::core::ir::model::{IO, IR};
 use crate::core::json::JsonSchema;
 use crate::core::mustache::Mustache;
 use crate::core::try_fold::TryFold;
-use crate::core::valid::{Valid, ValidationError, Validator};
+use tailcall_valid::{Valid, ValidationError, Validator};
 use crate::core::{config, helpers};
 
 fn to_url(grpc: &Grpc, method: &GrpcMethod, config: &Config) -> Valid<Mustache, String> {
@@ -246,7 +246,7 @@ mod tests {
     use std::convert::TryFrom;
 
     use super::GrpcMethod;
-    use crate::core::valid::ValidationError;
+    use tailcall_valid::ValidationError;
 
     #[test]
     fn try_from_grpc_method() {

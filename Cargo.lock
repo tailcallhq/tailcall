@@ -5478,6 +5478,7 @@ dependencies = [
  "tailcall-prettier",
  "tailcall-tracker",
  "tailcall-typedefs-common",
+ "tailcall-valid",
  "tailcall-version",
  "tempfile",
  "test-log",
@@ -5667,6 +5668,20 @@ dependencies = [
  "tracing",
  "tracing-opentelemetry",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "tailcall-valid"
+version = "0.1.0"
+source = "git+https://github.com/tailcallhq/valid.git#ee31814b5435377e9eb1e8fb7446703043b6e631"
+dependencies = [
+ "derive_setters",
+ "http 1.1.0",
+ "regex",
+ "serde",
+ "serde_json",
+ "serde_path_to_error",
+ "thiserror",
 ]
 
 [[package]]

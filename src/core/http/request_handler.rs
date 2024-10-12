@@ -387,7 +387,7 @@ mod test {
     use crate::core::config::{Config, ConfigModule, Routes};
     use crate::core::rest::EndpointSet;
     use crate::core::runtime::test::init;
-    use crate::core::valid::Validator;
+    use tailcall_valid::Validator;
 
     #[tokio::test]
     async fn test_health_endpoint() -> anyhow::Result<()> {

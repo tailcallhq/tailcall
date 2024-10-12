@@ -2,7 +2,7 @@ use serde_json::Value;
 
 use crate::core::grpc::request_template::RequestBody;
 use crate::core::mustache::Mustache;
-use crate::core::valid::Valid;
+use tailcall_valid::Valid;
 
 pub fn to_body(body: Option<&Value>) -> Valid<Option<RequestBody>, String> {
     let Some(body) = body else {
@@ -24,7 +24,7 @@ mod tests {
     use super::to_body;
     use crate::core::grpc::request_template::RequestBody;
     use crate::core::mustache::Mustache;
-    use crate::core::valid::Valid;
+    use tailcall_valid::Valid;
 
     #[test]
     fn no_body() {

@@ -33,7 +33,7 @@ impl Transform for Preset {
     fn transform(
         &self,
         config: Self::Value,
-    ) -> crate::core::valid::Valid<Self::Value, Self::Error> {
+    ) -> tailcall_valid::Valid<Self::Value, Self::Error> {
         transform::default()
             .pipe(super::Required)
             .pipe(super::TreeShake.when(self.tree_shake))

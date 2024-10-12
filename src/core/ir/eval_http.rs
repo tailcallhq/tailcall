@@ -14,7 +14,7 @@ use crate::core::http::{
 };
 use crate::core::ir::Error;
 use crate::core::json::JsonLike;
-use crate::core::valid::Validator;
+use tailcall_valid::Validator;
 use crate::core::{grpc, http, worker, WorkerIO};
 
 ///

@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet, HashSet};
 
 use crate::core::config::{Config, Union};
 use crate::core::transform::Transform;
-use crate::core::valid::{Valid, Validator};
+use tailcall_valid::{Valid, Validator};
 
 /// Transforms unions by replacing each nested union in union definition
 /// recursively by their actual types
@@ -75,7 +75,7 @@ mod tests {
     use super::NestedUnions;
     use crate::core::config::Config;
     use crate::core::transform::Transform;
-    use crate::core::valid::Validator;
+    use tailcall_valid::Validator;
 
     #[test]
     fn test_nested_unions() {

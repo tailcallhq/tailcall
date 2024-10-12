@@ -9,7 +9,7 @@ use indexmap::IndexMap;
 
 use crate::core::config::Type;
 use crate::core::json::{JsonLike, JsonObjectLike};
-use crate::core::valid::{Cause, Valid, Validator};
+use tailcall_valid::{Cause, Valid, Validator};
 
 pub trait TypedValue<'a> {
     type Error;
@@ -353,7 +353,7 @@ mod tests {
 
     use super::Discriminator;
     use crate::core::config::Field;
-    use crate::core::valid::Validator;
+    use tailcall_valid::Validator;
     use crate::core::{config, Type};
 
     #[test]

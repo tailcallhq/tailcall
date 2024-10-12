@@ -9,7 +9,7 @@ use crate::core::helpers;
 use crate::core::ir::model::{IO, IR};
 use crate::core::ir::RelatedFields;
 use crate::core::try_fold::TryFold;
-use crate::core::valid::{Valid, ValidationError, Validator};
+use tailcall_valid::{Valid, ValidationError, Validator};
 
 fn create_related_fields(
     config: &Config,

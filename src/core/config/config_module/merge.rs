@@ -6,7 +6,7 @@ use super::{Cache, ConfigModule};
 use crate::core;
 use crate::core::config::{Arg, Config, Enum, Field, Type};
 use crate::core::merge_right::MergeRight;
-use crate::core::valid::{Valid, Validator};
+use tailcall_valid::{Valid, Validator};
 use crate::core::variance::{Contravariant, Covariant, Invariant};
 
 impl core::Type {
@@ -397,7 +397,7 @@ mod tests {
 
     use super::*;
     use crate::core::config::ConfigModule;
-    use crate::core::valid::Validator;
+    use tailcall_valid::Validator;
     use crate::include_config;
 
     #[test]

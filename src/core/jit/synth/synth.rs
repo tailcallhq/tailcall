@@ -241,7 +241,7 @@ mod tests {
     use crate::core::jit::store::Store;
     use crate::core::jit::synth::Synth;
     use crate::core::json::JsonLike;
-    use crate::core::valid::Validator;
+    use tailcall_valid::Validator;
 
     const POSTS: &str = r#"
         [

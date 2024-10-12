@@ -8,7 +8,7 @@ use crate::core::is_default;
 use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
 use crate::core::mustache::Mustache;
-use crate::core::valid::Validator;
+use tailcall_valid::Validator;
 
 mod defaults {
     pub mod prometheus {
