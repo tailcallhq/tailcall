@@ -1,0 +1,21 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+---
+type Query {
+  user(id: Int!, test: Test): User
+}
+
+enum Test {
+  A
+  B
+}
+
+type User {
+  id: Int!
+  name: String!
+}
+
+schema {
+  query: Query
+}
