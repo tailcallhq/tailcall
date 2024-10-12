@@ -115,13 +115,13 @@ impl<'a> ResolverContextLike for Context<'a, ConstValue, ConstValue> {
 #[cfg(test)]
 mod test {
     use async_graphql_value::ConstValue;
+    use tailcall_valid::Validator;
 
     use super::{Context, RequestContext};
     use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
     use crate::core::ir::ResolverContextLike;
     use crate::core::jit::{OperationPlan, Request};
-    use tailcall_valid::Validator;
 
     fn setup(query: &str) -> anyhow::Result<OperationPlan<ConstValue>> {
         let sdl = std::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER)?;

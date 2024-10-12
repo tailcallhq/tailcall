@@ -1,12 +1,12 @@
 use std::collections::BTreeMap;
 
 use indexmap::IndexMap;
+use tailcall_valid::{Valid, Validator};
 
 use super::{Cache, ConfigModule};
 use crate::core;
 use crate::core::config::{Arg, Config, Enum, Field, Type};
 use crate::core::merge_right::MergeRight;
-use tailcall_valid::{Valid, Validator};
 use crate::core::variance::{Contravariant, Covariant, Invariant};
 
 impl core::Type {
@@ -394,10 +394,10 @@ where
 mod tests {
     use anyhow::Result;
     use insta::assert_snapshot;
+    use tailcall_valid::Validator;
 
     use super::*;
     use crate::core::config::ConfigModule;
-    use tailcall_valid::Validator;
     use crate::include_config;
 
     #[test]

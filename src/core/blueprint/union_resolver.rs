@@ -1,10 +1,11 @@
+use tailcall_valid::{Valid, Validator};
+
 use crate::core::blueprint::FieldDefinition;
 use crate::core::config;
 use crate::core::config::{ConfigModule, Field};
 use crate::core::ir::model::IR;
 use crate::core::ir::Discriminator;
 use crate::core::try_fold::TryFold;
-use tailcall_valid::{Valid, Validator};
 
 fn compile_union_resolver(
     config: &ConfigModule,

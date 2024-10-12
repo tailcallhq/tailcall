@@ -1,3 +1,5 @@
+use tailcall_valid::{Valid, ValidationError, Validator};
+
 use crate::core::blueprint::*;
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::{Field, Resolver};
@@ -5,7 +7,6 @@ use crate::core::endpoint::Endpoint;
 use crate::core::http::{HttpFilter, Method, RequestTemplate};
 use crate::core::ir::model::{IO, IR};
 use crate::core::try_fold::TryFold;
-use tailcall_valid::{Valid, ValidationError, Validator};
 use crate::core::{config, helpers, Mustache};
 
 pub fn compile_http(

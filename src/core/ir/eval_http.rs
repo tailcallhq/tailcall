@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use async_graphql::from_value;
 use reqwest::Request;
+use tailcall_valid::Validator;
 
 use super::model::DataLoaderId;
 use super::{EvalContext, ResolverContextLike};
@@ -14,7 +15,6 @@ use crate::core::http::{
 };
 use crate::core::ir::Error;
 use crate::core::json::JsonLike;
-use tailcall_valid::Validator;
 use crate::core::{grpc, http, worker, WorkerIO};
 
 ///

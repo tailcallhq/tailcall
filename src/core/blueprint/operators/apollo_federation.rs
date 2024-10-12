@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::fmt::Write;
 
 use async_graphql::parser::types::ServiceDocument;
+use tailcall_valid::{Valid, Validator};
 
 use super::{compile_call, compile_expr, compile_graphql, compile_grpc, compile_http, compile_js};
 use crate::core::blueprint::{Blueprint, Definition, TryFoldConfig};
@@ -9,7 +10,6 @@ use crate::core::config::{
     ApolloFederation, ConfigModule, EntityResolver, Field, GraphQLOperationType, Resolver,
 };
 use crate::core::ir::model::IR;
-use tailcall_valid::{Valid, Validator};
 use crate::core::Type;
 
 pub struct CompileEntityResolver<'a> {

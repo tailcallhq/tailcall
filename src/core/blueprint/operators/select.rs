@@ -1,8 +1,8 @@
 use serde_json::Value;
+use tailcall_valid::Valid;
 
 use crate::core::blueprint::DynamicValue;
 use crate::core::ir::model::IR;
-use tailcall_valid::Valid;
 
 pub fn apply_select(input: (IR, &Option<Value>)) -> Valid<IR, String> {
     let (mut ir, select) = input;

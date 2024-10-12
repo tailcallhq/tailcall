@@ -274,11 +274,12 @@ pub mod test {
     mod generator_spec {
         use std::path::Path;
         use std::sync::Arc;
-        use tailcall_valid::{ValidateInto, Validator};
+
         use tailcall::cli::generator::Generator;
         use tailcall::core::blueprint::Blueprint;
         use tailcall::core::config::{self, ConfigModule};
         use tailcall::core::generator::Generator as ConfigGenerator;
+        use tailcall_valid::{ValidateInto, Validator};
 
         use super::http::NativeHttpTest;
         use crate::env::Env;

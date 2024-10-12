@@ -1,8 +1,9 @@
+use tailcall_valid::{Valid, Validator};
+
 use super::FieldDefinition;
 use crate::core::config::{self, Config};
 use crate::core::ir::model::{IO, IR};
 use crate::core::scalar;
-use tailcall_valid::{Valid, Validator};
 
 struct MustachePartsValidator<'a> {
     type_of: &'a config::Type,
@@ -179,10 +180,11 @@ impl FieldDefinition {
 
 #[cfg(test)]
 mod test {
+    use tailcall_valid::Validator;
+
     use super::MustachePartsValidator;
     use crate::core::blueprint::{FieldDefinition, InputFieldDefinition};
     use crate::core::config::{self, Config, Field};
-    use tailcall_valid::Validator;
     use crate::core::Type;
 
     fn initialize_test_config_and_field() -> (Config, FieldDefinition) {

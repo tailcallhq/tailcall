@@ -9,6 +9,7 @@ use async_graphql::parser::Positioned;
 use async_graphql::Name;
 use async_graphql_value::ConstValue;
 use indexmap::IndexMap;
+use tailcall_valid::{Valid, ValidationError, Validator};
 
 use super::directive::{to_directive, Directive};
 use super::{Alias, Resolver, Telemetry, FEDERATION_DIRECTIVES};
@@ -17,7 +18,6 @@ use crate::core::config::{
     Variant,
 };
 use crate::core::directive::DirectiveCodec;
-use tailcall_valid::{Valid, ValidationError, Validator};
 
 const DEFAULT_SCHEMA_DEFINITION: &SchemaDefinition = &SchemaDefinition {
     extend: false,

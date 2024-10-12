@@ -1,11 +1,11 @@
 use std::collections::{BTreeMap, HashSet};
 
 use directive::to_directive;
+use tailcall_valid::{Valid, Validator};
 
 use crate::core::blueprint::*;
 use crate::core::config::{Config, Field, Type};
 use crate::core::directive::DirectiveCodec;
-use tailcall_valid::{Valid, Validator};
 
 fn validate_query(config: &Config) -> Valid<(), String> {
     Valid::from_option(

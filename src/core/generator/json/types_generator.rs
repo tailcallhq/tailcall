@@ -1,4 +1,5 @@
 use serde_json::{Map, Value};
+use tailcall_valid::Valid;
 
 use super::OperationTypeGenerator;
 use crate::core::config::{Config, Field, Type};
@@ -6,7 +7,6 @@ use crate::core::generator::{NameGenerator, RequestSample};
 use crate::core::helpers::gql_type::{is_primitive, is_valid_field_name, to_gql_type};
 use crate::core::scalar::Scalar;
 use crate::core::transform::Transform;
-use tailcall_valid::Valid;
 
 struct JSONValidator;
 

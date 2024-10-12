@@ -1,11 +1,12 @@
 use std::fmt::Display;
+
 use derive_setters::Setters;
 use http::header;
 use http::header::{HeaderName, HeaderValue};
 use http::request::Parts;
+use tailcall_valid::ValidationError;
 
 use crate::core::config;
-use tailcall_valid::ValidationError;
 
 #[derive(Clone, Debug, Setters, Default)]
 pub struct Cors {
@@ -166,8 +167,13 @@ impl TryFrom<config::cors::Cors> for Cors {
     fn try_from(value: config::cors::Cors) -> Result<Self, ValidationError<String>> {
         let cors = Cors {
             allow_credentials: value.allow_credentials.unwrap_or_default(),
-            allow_headers: (!value.allow_headers.is_empty())
-                .then_some(value.allow_headers.join(", ").parse().map_err(to_validation_err)?),
+            allow_headers: (!value.allow_headers.is_empty()).then_some(
+                value
+                    .allow_headers
+                    .join(", ")
+                    .parse()
+                    .map_err(to_validation_err)?,
+            ),
             allow_methods: {
                 Some(if value.allow_methods.is_empty() {
                     "*".parse().map_err(to_validation_err)?
@@ -178,21 +184,28 @@ impl TryFrom<config::cors::Cors> for Cors {
                         .map(|val| val.to_string())
                         .collect::<Vec<String>>()
                         .join(", ")
-                        .parse().map_err(to_validation_err)?
+                        .parse()
+                        .map_err(to_validation_err)?
                 })
             },
             allow_origins: value
                 .allow_origins
                 .into_iter()
-                .map(|val| Ok(val.parse().map_err(to_validation_err)?))
+                .map(|val| val.parse().map_err(to_validation_err))
                 .collect::<Result<_, ValidationError<String>>>()?,
             allow_private_network: value.allow_private_network.unwrap_or_default(),
-            expose_headers: Some(value.expose_headers.join(", ").parse().map_err(to_validation_err)?),
+            expose_headers: Some(
+                value
+                    .expose_headers
+                    .join(", ")
+                    .parse()
+                    .map_err(to_validation_err)?,
+            ),
             max_age: value.max_age.map(|val| val.into()),
             vary: value
                 .vary
                 .iter()
-                .map(|val| Ok(val.parse().map_err(to_validation_err)?))
+                .map(|val| val.parse().map_err(to_validation_err))
                 .collect::<Result<_, ValidationError<String>>>()?,
         };
         ensure_usable_cors_rules(&cors)?;

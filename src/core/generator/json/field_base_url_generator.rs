@@ -1,10 +1,10 @@
 use convert_case::{Case, Casing};
+use tailcall_valid::Valid;
 use url::Url;
 
 use super::url_utils::extract_base_url;
 use crate::core::config::{Config, GraphQLOperationType, Resolver};
 use crate::core::transform::Transform;
-use tailcall_valid::Valid;
 
 pub struct FieldBaseUrlGenerator<'a> {
     url: &'a Url,
@@ -48,12 +48,12 @@ impl Transform for FieldBaseUrlGenerator<'_> {
 
 #[cfg(test)]
 mod test {
+    use tailcall_valid::Validator;
     use url::Url;
 
     use super::FieldBaseUrlGenerator;
     use crate::core::config::{Config, Field, GraphQLOperationType, Http, Resolver, Type};
     use crate::core::transform::Transform;
-    use tailcall_valid::Validator;
 
     #[test]
     fn should_add_base_url_for_http_fields() {

@@ -1,10 +1,10 @@
 use convert_case::{Case, Casing};
+use tailcall_valid::Valid;
 
 use super::http_directive_generator::HttpDirectiveGenerator;
 use crate::core::config::{Arg, Config, Field, GraphQLOperationType, Resolver};
 use crate::core::generator::json::types_generator::TypeGenerator;
 use crate::core::generator::{NameGenerator, RequestSample, PREFIX};
-use tailcall_valid::Valid;
 use crate::core::{config, Type};
 
 pub struct OperationTypeGenerator;
@@ -76,11 +76,12 @@ impl OperationTypeGenerator {
 mod test {
     use std::collections::BTreeMap;
 
+    use tailcall_valid::Validator;
+
     use super::OperationTypeGenerator;
     use crate::core::config::{Config, Field, Type};
     use crate::core::generator::{NameGenerator, RequestSample};
     use crate::core::http::Method;
-    use tailcall_valid::Validator;
 
     #[test]
     fn test_query() {

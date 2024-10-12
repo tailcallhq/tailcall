@@ -6,10 +6,10 @@ use async_graphql::Value;
 use derive_more::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not};
 use indenter::indented;
 use indexmap::IndexMap;
+use tailcall_valid::{Cause, Valid, Validator};
 
 use crate::core::config::Type;
 use crate::core::json::{JsonLike, JsonObjectLike};
-use tailcall_valid::{Cause, Valid, Validator};
 
 pub trait TypedValue<'a> {
     type Error;
@@ -349,11 +349,11 @@ impl Repr {
 mod tests {
     use async_graphql::Value;
     use serde_json::json;
+    use tailcall_valid::Validator;
     use test_log::test;
 
     use super::Discriminator;
     use crate::core::config::Field;
-    use tailcall_valid::Validator;
     use crate::core::{config, Type};
 
     #[test]

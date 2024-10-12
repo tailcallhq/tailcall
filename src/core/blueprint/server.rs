@@ -6,11 +6,11 @@ use std::time::Duration;
 use derive_setters::Setters;
 use http::header::{HeaderMap, HeaderName, HeaderValue};
 use rustls_pki_types::CertificateDer;
+use tailcall_valid::{Valid, ValidationError, Validator};
 
 use super::Auth;
 use crate::core::blueprint::Cors;
 use crate::core::config::{self, ConfigModule, HttpVersion, PrivateKey, Routes};
-use tailcall_valid::{Valid, ValidationError, Validator};
 
 #[derive(Clone, Debug, Setters)]
 pub struct Server {

@@ -5,8 +5,8 @@ use async_graphql::Name;
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-
 use tailcall_valid::{Valid, ValidationError, Validator};
+
 use crate::core::{is_default, pos};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
@@ -49,9 +49,9 @@ mod tests {
     use async_graphql::parser::types::ConstDirective;
     use async_graphql_value::Name;
     use pretty_assertions::assert_eq;
+    use tailcall_valid::Validator;
 
     use super::*;
-    use tailcall_valid::Validator;
 
     #[test]
     fn test_to_const_directive() {

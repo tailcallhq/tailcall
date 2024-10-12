@@ -1,9 +1,9 @@
 use std::collections::HashSet;
 
 use indexmap::IndexMap;
+use tailcall_valid::{Valid, Validator};
 
 use crate::core::config::Config;
-use tailcall_valid::{Valid, Validator};
 use crate::core::Transform;
 
 /// A transformer that renames existing types by replacing them with suggested
@@ -142,11 +142,11 @@ impl Transform for RenameTypes {
 mod test {
     use indexmap::IndexMap;
     use maplit::hashmap;
+    use tailcall_valid::{ValidationError, Validator};
 
     use super::RenameTypes;
     use crate::core::config::Config;
     use crate::core::transform::Transform;
-    use tailcall_valid::{ValidationError, Validator};
 
     #[test]
     fn test_rename_type() {

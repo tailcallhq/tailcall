@@ -2,6 +2,7 @@ use std::fmt::Display;
 
 use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::FieldDescriptor;
+use tailcall_valid::{Valid, ValidationError, Validator};
 
 use super::apply_select;
 use crate::core::blueprint::FieldDefinition;
@@ -13,7 +14,6 @@ use crate::core::ir::model::{IO, IR};
 use crate::core::json::JsonSchema;
 use crate::core::mustache::Mustache;
 use crate::core::try_fold::TryFold;
-use tailcall_valid::{Valid, ValidationError, Validator};
 use crate::core::{config, helpers};
 
 fn to_url(grpc: &Grpc, method: &GrpcMethod, config: &Config) -> Valid<Mustache, String> {
@@ -245,8 +245,9 @@ pub fn update_grpc<'a>(
 mod tests {
     use std::convert::TryFrom;
 
-    use super::GrpcMethod;
     use tailcall_valid::ValidationError;
+
+    use super::GrpcMethod;
 
     #[test]
     fn try_from_grpc_method() {

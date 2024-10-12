@@ -1,10 +1,10 @@
 use std::collections::BTreeSet;
 
 use convert_case::{Case, Casing};
+use tailcall_valid::Valid;
 
 use crate::core::config::{Config, GraphQLOperationType};
 use crate::core::transform::Transform;
-use tailcall_valid::Valid;
 
 pub struct SchemaGenerator<'a> {
     operation_type: &'a GraphQLOperationType,
@@ -52,10 +52,11 @@ impl Transform for SchemaGenerator<'_> {
 mod test {
     use std::collections::BTreeSet;
 
+    use tailcall_valid::Validator;
+
     use super::SchemaGenerator;
     use crate::core::config::GraphQLOperationType;
     use crate::core::transform::Transform;
-    use tailcall_valid::Validator;
 
     #[test]
     fn test_schema_generator_with_mutation() {

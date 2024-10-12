@@ -1,9 +1,9 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use tailcall_valid::{ValidationError, Validator};
 use thiserror::Error;
 
 use super::Config;
-use tailcall_valid::{ValidationError, Validator};
 
 #[derive(Clone, Default, Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]

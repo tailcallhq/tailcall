@@ -5,6 +5,7 @@ use std::fmt::{Display, Write};
 use std::ops::Deref;
 
 use tailcall_macros::MergeRight;
+use tailcall_valid::{Valid, Validator};
 
 use crate::core::config::directive::to_directive;
 use crate::core::config::{
@@ -14,7 +15,6 @@ use crate::core::config::{
 use crate::core::directive::DirectiveCodec;
 use crate::core::merge_right::MergeRight;
 use crate::core::mustache::Segment;
-use tailcall_valid::{Valid, Validator};
 use crate::core::{Mustache, Transform, Type};
 
 const ENTITIES_FIELD_NAME: &str = "_entities";

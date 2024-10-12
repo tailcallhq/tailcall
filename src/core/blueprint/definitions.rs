@@ -4,6 +4,7 @@ use async_graphql_value::ConstValue;
 use directive::Directive;
 use interface_resolver::update_interface_resolver;
 use regex::Regex;
+use tailcall_valid::{Valid, Validator};
 use union_resolver::update_union_resolver;
 
 use crate::core::blueprint::*;
@@ -11,7 +12,6 @@ use crate::core::config::{Config, Enum, Field, GraphQLOperationType, Protected, 
 use crate::core::directive::DirectiveCodec;
 use crate::core::ir::model::{Cache, IR};
 use crate::core::try_fold::TryFold;
-use tailcall_valid::{Valid, Validator};
 use crate::core::{config, scalar, Type};
 
 pub fn to_scalar_type_definition(name: &str) -> Valid<Definition, String> {

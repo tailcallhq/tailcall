@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
 use async_graphql::dynamic::Schema;
+use tailcall_valid::{Cause, Valid, Validator};
 
 use super::{Error, Result};
 use crate::core::async_graphql_hyper::{GraphQLRequest, GraphQLRequestLike};
 use crate::core::blueprint::{Blueprint, SchemaModifiers};
 use crate::core::http::RequestContext;
-use tailcall_valid::{Cause, Valid, Validator};
 
 #[derive(Debug)]
 pub struct OperationQuery {

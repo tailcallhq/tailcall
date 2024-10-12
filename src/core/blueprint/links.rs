@@ -1,6 +1,7 @@
+use tailcall_valid::{Valid, ValidationError, Validator};
+
 use crate::core::config::{Link, LinkType};
 use crate::core::directive::DirectiveCodec;
-use tailcall_valid::{Valid, ValidationError, Validator};
 
 pub struct Links;
 

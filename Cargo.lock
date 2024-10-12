@@ -5703,6 +5703,7 @@ dependencies = [
  "reqwest 0.11.27",
  "serde_json",
  "tailcall",
+ "tailcall-valid",
  "tracing",
  "tracing-subscriber",
  "tracing-subscriber-wasm",

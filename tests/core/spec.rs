@@ -19,9 +19,9 @@ use tailcall::core::config::transformer::Required;
 use tailcall::core::config::{Config, ConfigModule, Source};
 use tailcall::core::http::handle_request;
 use tailcall::core::print_schema::print_schema;
-use tailcall_valid::{Cause, Valid, ValidationError, Validator};
 use tailcall::core::variance::Invariant;
 use tailcall_prettier::Parser;
+use tailcall_valid::{Cause, Valid, ValidationError, Validator};
 
 use super::file::File;
 use super::http::Http;

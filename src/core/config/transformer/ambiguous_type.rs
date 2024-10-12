@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
+use tailcall_valid::{Valid, Validator};
+
 use crate::core::config::Config;
 use crate::core::transform::Transform;
-use tailcall_valid::{Valid, Validator};
 
 /// Resolves the ambiguous types by renaming the input and
 /// output types. The resolver function is called whenever is a conflict is
@@ -154,13 +155,13 @@ mod tests {
     use insta::assert_snapshot;
     use prost_reflect::prost_types::FileDescriptorSet;
     use tailcall_fixtures::protobuf;
+    use tailcall_valid::Validator;
 
     use crate::core::config::transformer::AmbiguousType;
     use crate::core::config::{self, Config};
     use crate::core::generator::{Generator, Input};
     use crate::core::proto_reader::ProtoMetadata;
     use crate::core::transform::Transform;
-    use tailcall_valid::Validator;
     use crate::core::Type;
 
     fn build_qry(mut config: Config) -> Config {

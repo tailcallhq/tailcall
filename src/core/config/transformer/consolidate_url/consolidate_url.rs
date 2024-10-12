@@ -1,9 +1,10 @@
 use std::collections::HashSet;
 
+use tailcall_valid::Valid;
+
 use super::max_value_map::MaxValueMap;
 use crate::core::config::{Config, Resolver};
 use crate::core::transform::Transform;
-use tailcall_valid::Valid;
 
 struct UrlTypeMapping {
     /// maintains the url to it's frequency mapping.
@@ -102,11 +103,11 @@ mod test {
     use std::fs;
 
     use tailcall_fixtures::configs;
+    use tailcall_valid::Validator;
 
     use super::*;
     use crate::core::config::Config;
     use crate::core::transform::Transform;
-    use tailcall_valid::Validator;
 
     fn read_fixture(path: &str) -> String {
         fs::read_to_string(path).unwrap()

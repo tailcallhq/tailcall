@@ -11,6 +11,7 @@ use strum::IntoEnumIterator;
 use tailcall_typedefs_common::directive_definition::DirectiveDefinition;
 use tailcall_typedefs_common::input_definition::InputDefinition;
 use tailcall_typedefs_common::ServiceDocumentBuilder;
+use tailcall_valid::{Valid, Validator};
 
 use super::directive::Directive;
 use super::from_document::from_document;
@@ -24,7 +25,6 @@ use crate::core::is_default;
 use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
 use crate::core::scalar::Scalar;
-use tailcall_valid::{Valid, Validator};
 
 #[derive(
     Serialize,

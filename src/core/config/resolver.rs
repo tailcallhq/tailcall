@@ -2,10 +2,10 @@ use async_graphql::parser::types::ConstDirective;
 use async_graphql::Positioned;
 use serde::{Deserialize, Serialize};
 use tailcall_macros::{CustomResolver, MergeRight};
+use tailcall_valid::{Valid, Validator};
 
 use super::{Call, EntityResolver, Expr, GraphQL, Grpc, Http, JS};
 use crate::core::directive::DirectiveCodec;
-use tailcall_valid::{Valid, Validator};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ApolloFederation {

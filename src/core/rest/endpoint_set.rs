@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use tailcall_valid::Validator;
+
 use super::endpoint::Endpoint;
 use super::partial_request::PartialRequest;
 use super::{Request, Result};
@@ -8,7 +10,6 @@ use crate::core::http::RequestContext;
 use crate::core::macros::MergeRight;
 use crate::core::rest::operation::OperationQuery;
 use crate::core::runtime::TargetRuntime;
-use tailcall_valid::Validator;
 
 /// Collection of endpoints
 #[derive(Default, Clone, Debug, MergeRight)]

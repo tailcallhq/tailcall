@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use http::header::{HeaderMap, HeaderName, HeaderValue};
+use tailcall_valid::{Valid, ValidationError, Validator};
 use url::Url;
 
 use super::TryFoldConfig;
@@ -9,7 +10,6 @@ use crate::core::config::{
 };
 use crate::core::directive::DirectiveCodec;
 use crate::core::try_fold::TryFold;
-use tailcall_valid::{Valid, ValidationError, Validator};
 
 #[derive(Debug, Clone)]
 pub struct OtlpExporter {
@@ -99,8 +99,9 @@ fn validate_graph_ref(graph_ref: &str) -> Valid<(), String> {
 
 #[cfg(test)]
 mod tests {
-    use super::validate_graph_ref;
     use tailcall_valid::Valid;
+
+    use super::validate_graph_ref;
 
     #[test]
     fn test_validate_graph_ref() {

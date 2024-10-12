@@ -1,8 +1,9 @@
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 
+use tailcall_valid::{Valid, Validator};
+
 use crate::core::config::{Config, Union};
 use crate::core::transform::Transform;
-use tailcall_valid::{Valid, Validator};
 
 /// Transforms unions by replacing each nested union in union definition
 /// recursively by their actual types
@@ -71,11 +72,11 @@ impl<'cfg> Visitor<'cfg> {
 #[cfg(test)]
 mod tests {
     use insta::assert_snapshot;
+    use tailcall_valid::Validator;
 
     use super::NestedUnions;
     use crate::core::config::Config;
     use crate::core::transform::Transform;
-    use tailcall_valid::Validator;
 
     #[test]
     fn test_nested_unions() {

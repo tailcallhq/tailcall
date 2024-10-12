@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 
+use tailcall_valid::Valid;
+
 use crate::core::blueprint::*;
 use crate::core::config;
 use crate::core::config::Field;
 use crate::core::ir::model::{Map, IR};
 use crate::core::try_fold::TryFold;
-use tailcall_valid::Valid;
 
 pub fn update_enum_alias<'a>(
 ) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>

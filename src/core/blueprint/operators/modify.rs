@@ -1,9 +1,10 @@
+use tailcall_valid::Valid;
+
 use crate::core::blueprint::*;
 use crate::core::config;
 use crate::core::config::Field;
 use crate::core::ir::model::IR;
 use crate::core::try_fold::TryFold;
-use tailcall_valid::Valid;
 
 pub fn update_modify<'a>(
 ) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>

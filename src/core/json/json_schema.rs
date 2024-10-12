@@ -4,7 +4,6 @@ use std::fmt::Display;
 use convert_case::{Case, Casing};
 use prost_reflect::{EnumDescriptor, FieldDescriptor, Kind, MessageDescriptor};
 use serde::{Deserialize, Serialize};
-
 use tailcall_valid::{Valid, Validator};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
@@ -331,12 +330,12 @@ mod tests {
     use indexmap::IndexMap;
     use pretty_assertions::assert_eq;
     use tailcall_fixtures::protobuf;
+    use tailcall_valid::{Valid, Validator};
 
     use crate::core::blueprint::GrpcMethod;
     use crate::core::grpc::protobuf::tests::get_proto_file;
     use crate::core::grpc::protobuf::ProtobufSet;
     use crate::core::json::JsonSchema;
-    use tailcall_valid::{Valid, Validator};
 
     #[test]
     fn test_validate_string() {

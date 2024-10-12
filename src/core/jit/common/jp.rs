@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use serde::Deserialize;
+use tailcall_valid::Validator;
 
 use crate::core::blueprint::Blueprint;
 use crate::core::config::{Config, ConfigModule};
@@ -9,7 +10,6 @@ use crate::core::jit::store::Store;
 use crate::core::jit::synth::Synth;
 use crate::core::jit::{OperationPlan, Variables};
 use crate::core::json::{JsonLike, JsonObjectLike};
-use tailcall_valid::Validator;
 
 /// NOTE: This is a bit of a boilerplate reducing module that is used in tests
 /// and benchmarks.

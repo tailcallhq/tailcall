@@ -232,6 +232,7 @@ where
 mod tests {
     use async_graphql_value::ConstValue;
     use serde::{Deserialize, Serialize};
+    use tailcall_valid::Validator;
 
     use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
@@ -241,7 +242,6 @@ mod tests {
     use crate::core::jit::store::Store;
     use crate::core::jit::synth::Synth;
     use crate::core::json::JsonLike;
-    use tailcall_valid::Validator;
 
     const POSTS: &str = r#"
         [
