@@ -1,7 +1,3 @@
----
-identity: true
----
-
 # Test union type resolve
 
 ```graphql @config
@@ -9,7 +5,7 @@ schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
 
-union FooBar @discriminator(field: "type") = Bar | Foo
+union FooBar @discriminate(field: "type") = Bar | Foo
 
 type Bar {
   bar: String!
