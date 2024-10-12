@@ -1,12 +1,13 @@
 mod keyed_discriminator;
 mod type_field_discriminator;
 
+use std::collections::BTreeSet;
+
 use anyhow::{bail, Result};
 use async_graphql::Value;
 use keyed_discriminator::KeyedDiscriminator;
 use type_field_discriminator::TypeFieldDiscriminator;
 
-use crate::core::config::Type;
 use crate::core::json::{JsonLike, JsonObjectLike};
 use crate::core::valid::{Valid, Validator};
 
@@ -17,28 +18,16 @@ pub enum Discriminator {
     TypeField(TypeFieldDiscriminator),
 }
 
-pub enum DiscriminatorMode {
-    Keyed,
-    TypeField,
-}
-
 impl Discriminator {
     pub fn new(
-        union_name: &str,
-        union_types: &[(&str, &Type)],
-        mode: DiscriminatorMode,
+        type_name: String,
+        types: BTreeSet<String>,
         typename_field: Option<String>,
     ) -> Valid<Self, String> {
-        let typename_field = typename_field.unwrap_or_else(|| "__typename".to_string());
-
-        match mode {
-            DiscriminatorMode::Keyed => {
-                KeyedDiscriminator::new(union_name, union_types).map(Self::Keyed)
-            }
-            DiscriminatorMode::TypeField => {
-                TypeFieldDiscriminator::new(union_name, union_types, typename_field)
-                    .map(Self::TypeField)
-            }
+        if let Some(typename_field) = typename_field {
+            TypeFieldDiscriminator::new(type_name, types, typename_field).map(Self::TypeField)
+        } else {
+            KeyedDiscriminator::new(type_name, types).map(Self::Keyed)
         }
     }
 

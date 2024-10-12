@@ -337,6 +337,16 @@
         }
       }
     },
+    "Discriminate": {
+      "description": "The `@discriminate` directive is used to drive Tailcall discriminator to use a field of an object. For example with the directive applied on a Union or Interface `@discriminate(field: \"type\")` and the given value `{\"foo\": \"bar\", \"type\": \"Buzz\"}` the resolved type of the object will be `Buzz`.",
+      "type": "object",
+      "properties": {
+        "field": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
     "Email": {
       "title": "Email",
       "description": "Field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address."
@@ -1413,6 +1423,17 @@
           "items": {
             "$ref": "#/definitions/Directive"
           }
+        },
+        "discriminate": {
+          "description": "Used to overwrite the default discrimination strategy",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Discriminate"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "doc": {
           "description": "Documentation for the type that is publicly visible.",

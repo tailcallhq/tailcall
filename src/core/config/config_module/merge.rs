@@ -137,6 +137,7 @@ impl Contravariant for Type {
             implements: self.implements.merge_right(other.implements),
             cache: self.cache.merge_right(other.cache),
             protected: self.protected.merge_right(other.protected),
+            discriminate: self.discriminate.merge_right(other.discriminate),
             resolver: self.resolver.merge_right(other.resolver),
             directives: self.directives.merge_right(other.directives),
         })
@@ -153,6 +154,7 @@ impl Covariant for Type {
             implements: self.implements.merge_right(other.implements),
             cache: self.cache.merge_right(other.cache),
             protected: self.protected.merge_right(other.protected),
+            discriminate: self.discriminate.merge_right(other.discriminate),
             resolver: self.resolver.merge_right(other.resolver),
             directives: self.directives.merge_right(other.directives),
         })

@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 
 use crate::core::blueprint::FieldDefinition;
 use crate::core::config;
@@ -9,28 +9,16 @@ use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, Validator};
 
 fn compile_interface_resolver(
-    config: &ConfigModule,
     interface_name: &str,
-    interface_types: HashSet<String>,
+    interface_types: BTreeSet<String>,
+    interface_type: &config::Type,
 ) -> Valid<Discriminator, String> {
-    Valid::from_iter(&interface_types, |type_name| {
-        Valid::from_option(
-            config
-                .find_type(type_name)
-                .map(|type_| (type_name.as_str(), type_)),
-            "Can't find a type that is member of interface type".to_string(),
-        )
-    })
-    .and_then(|types| {
-        let types: Vec<_> = types.into_iter().collect();
+    let typename_field = interface_type
+        .discriminate
+        .as_ref()
+        .map(|d| d.field.clone());
 
-        Discriminator::new(
-            interface_name,
-            &types,
-            crate::core::ir::DiscriminatorMode::Keyed,
-            None,
-        )
-    })
+    Discriminator::new(interface_name.to_string(), interface_types, typename_field)
 }
 
 pub fn update_interface_resolver<'a>(
@@ -43,10 +31,14 @@ pub fn update_interface_resolver<'a>(
                 return Valid::succeed(b_field);
             };
 
+            let Some(interface_type) = config.find_type(field.type_of.name()) else {
+                return Valid::succeed(b_field);
+            };
+
             compile_interface_resolver(
-                config,
                 field.type_of.name(),
-                interface_types.iter().cloned().collect(),
+                interface_types.clone(),
+                interface_type,
             )
             .map(|discriminator| {
                 b_field.resolver = Some(

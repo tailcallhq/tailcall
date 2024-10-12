@@ -1,8 +1,9 @@
+use std::collections::BTreeSet;
+
 use anyhow::{bail, Result};
 use async_graphql::{Name, Value};
 
 use super::TypedValue;
-use crate::core::config::Type;
 use crate::core::json::JsonLike;
 use crate::core::valid::Valid;
 
@@ -11,31 +12,18 @@ use crate::core::valid::Valid;
 pub struct TypeFieldDiscriminator {
     typename_field: Name,
     /// List of all types that are members of the union or interface.
-    types: Vec<String>,
+    types: BTreeSet<String>,
     /// The name of TypeFieldDiscriminator is used for error reporting
-    name: String,
+    type_name: String,
 }
 
 impl TypeFieldDiscriminator {
     pub fn new(
-        union_name: &str,
-        union_types: &[(&str, &Type)],
+        type_name: String,
+        types: BTreeSet<String>,
         typename_field: String,
     ) -> Valid<Self, String> {
-        let types: Vec<_> = union_types
-            .iter()
-            .map(|(name, _)| name.to_string())
-            .collect();
-
-        let discriminator = Self {
-            name: union_name.to_string(),
-            types,
-            typename_field: Name::new(typename_field),
-        };
-
-        tracing::debug!(
-            "Generated TypeFieldDiscriminator for type '{union_name}':\n{discriminator:?}",
-        );
+        let discriminator = Self { type_name, types, typename_field: Name::new(typename_field) };
 
         Valid::succeed(discriminator)
     }
@@ -46,21 +34,21 @@ impl TypeFieldDiscriminator {
         }
 
         let Some(index_map) = value.as_object() else {
-            bail!("The TypeFieldDiscriminator(type=\"{}\") uses object values to discriminate, but got `{}` instead", self.name, value.to_string())
+            bail!("The TypeFieldDiscriminator(type=\"{}\") uses object values to discriminate, but got `{}` instead", self.type_name, value.to_string())
         };
 
         let Some(value) = index_map.get(&self.typename_field) else {
-            bail!("The TypeFieldDiscriminator(type=\"{}\") cannot discriminate the Value `{}` because it does not contain the type name field `{}`", self.name, value.to_string(), self.typename_field.to_string())
+            bail!("The TypeFieldDiscriminator(type=\"{}\") cannot discriminate the Value `{}` because it does not contain the type name field `{}`", self.type_name, value.to_string(), self.typename_field.to_string())
         };
 
         let Value::String(type_name) = value else {
-            bail!("The TypeFieldDiscriminator(type=\"{}\") uses a string type name field to discriminate, but got `{}` instead", self.name, value.to_string())
+            bail!("The TypeFieldDiscriminator(type=\"{}\") uses a string type name field to discriminate, but got `{}` instead", self.type_name, value.to_string())
         };
 
         if self.types.contains(type_name) {
             Ok(type_name.to_string())
         } else {
-            bail!("The type `{}` is not in the list of acceptable types {:?} of TypeFieldDiscriminator(type=\"{}\")", type_name, self.types, self.name)
+            bail!("The type `{}` is not in the list of acceptable types {:?} of TypeFieldDiscriminator(type=\"{}\")", type_name, self.types, self.type_name)
         }
     }
 
@@ -78,19 +66,18 @@ mod tests {
     use test_log::test;
 
     use super::TypeFieldDiscriminator;
-    use crate::core::config;
-    use crate::core::config::Field;
     use crate::core::valid::Validator;
 
     #[test]
     fn test_type_field_positive() {
-        let foo = config::Type::default().fields(vec![("foo", Field::default())]);
-        let bar = config::Type::default().fields(vec![("bar", Field::default())]);
-        let types = vec![("Foo", &foo), ("Bar", &bar)];
-
-        let discriminator = TypeFieldDiscriminator::new("Test", &types, "type".to_string())
-            .to_result()
-            .unwrap();
+        let types = vec!["Foo".to_string(), "Bar".to_string()];
+        let discriminator = TypeFieldDiscriminator::new(
+            "Test".to_string(),
+            types.into_iter().collect(),
+            "type".to_string(),
+        )
+        .to_result()
+        .unwrap();
 
         assert_eq!(
             discriminator
@@ -116,13 +103,14 @@ mod tests {
 
     #[test]
     fn test_type_field_negative() {
-        let foo = config::Type::default().fields(vec![("foo", Field::default())]);
-        let bar = config::Type::default().fields(vec![("bar", Field::default())]);
-        let types = vec![("Foo", &foo), ("Bar", &bar)];
-
-        let discriminator = TypeFieldDiscriminator::new("Test", &types, "type".to_string())
-            .to_result()
-            .unwrap();
+        let types = vec!["Foo".to_string(), "Bar".to_string()];
+        let discriminator = TypeFieldDiscriminator::new(
+            "Test".to_string(),
+            types.into_iter().collect(),
+            "type".to_string(),
+        )
+        .to_result()
+        .unwrap();
 
         assert_eq!(
             discriminator

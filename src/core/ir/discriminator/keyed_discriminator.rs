@@ -1,29 +1,23 @@
+use std::collections::BTreeSet;
+
 use anyhow::{bail, Result};
 use async_graphql::Value;
 
 use super::TypedValue;
-use crate::core::config::Type;
 use crate::core::valid::Valid;
 
 /// Resolver for type member of a union or interface.
 #[derive(Debug, Clone)]
 pub struct KeyedDiscriminator {
     /// List of all types that are members of the union or interface.
-    types: Vec<String>,
+    types: BTreeSet<String>,
     /// The name of KeyedDiscriminator is used for error reporting
-    name: String,
+    type_name: String,
 }
 
 impl KeyedDiscriminator {
-    pub fn new(union_name: &str, union_types: &[(&str, &Type)]) -> Valid<Self, String> {
-        let types: Vec<_> = union_types
-            .iter()
-            .map(|(name, _)| name.to_string())
-            .collect();
-
-        let discriminator = Self { name: union_name.to_string(), types };
-
-        tracing::debug!("Generated KeyedDiscriminator for type '{union_name}':\n{discriminator:?}",);
+    pub fn new(type_name: String, types: BTreeSet<String>) -> Valid<Self, String> {
+        let discriminator = Self { type_name, types };
 
         Valid::succeed(discriminator)
     }
@@ -40,15 +34,15 @@ impl KeyedDiscriminator {
                     if self.types.contains(&type_name) {
                         Ok(type_name)
                     } else {
-                        bail!("The type `{}` is not in the list of acceptable types {:?} of KeyedDiscriminator(type=\"{}\")", type_name, self.types, self.name)
+                        bail!("The type `{}` is not in the list of acceptable types {:?} of KeyedDiscriminator(type=\"{}\")", type_name, self.types, self.type_name)
                     }
                 } else if index_map_len == 0 {
-                    bail!("The KeyedDiscriminator(type=\"{}\") cannot discriminate the Value `{}` because it contains no keys.", self.name, value.to_string())
+                    bail!("The KeyedDiscriminator(type=\"{}\") cannot discriminate the Value `{}` because it contains no keys.", self.type_name, value.to_string())
                 } else {
-                    bail!("The KeyedDiscriminator(type=\"{}\") cannot discriminate the Value `{}` because it contains more than one keys.", self.name, value.to_string())
+                    bail!("The KeyedDiscriminator(type=\"{}\") cannot discriminate the Value `{}` because it contains more than one keys.", self.type_name, value.to_string())
                 }
             },
-            _ => bail!("The KeyedDiscriminator(type=\"{}\") uses object values to discriminate, but got `{}` instead", self.name, value.to_string())
+            _ => bail!("The KeyedDiscriminator(type=\"{}\") uses object values to discriminate, but got `{}` instead", self.type_name, value.to_string())
         }
     }
 
@@ -60,7 +54,7 @@ impl KeyedDiscriminator {
                 let (_, value) = index_map.into_iter().next().unwrap();
                 value
             },
-            _ => bail!("The KeyedDiscriminator(type=\"{}\") uses object values to discriminate, but got `{}` instead", self.name, value.to_string())
+            _ => bail!("The KeyedDiscriminator(type=\"{}\") uses object values to discriminate, but got `{}` instead", self.type_name, value.to_string())
         };
         value.set_type_name(type_name)?;
         Ok(value)
@@ -74,17 +68,15 @@ mod tests {
     use test_log::test;
 
     use super::KeyedDiscriminator;
-    use crate::core::config;
-    use crate::core::config::Field;
     use crate::core::valid::Validator;
 
     #[test]
     fn test_keyed_discriminator_positive() {
-        let foo = config::Type::default().fields(vec![("foo", Field::default())]);
-        let bar = config::Type::default().fields(vec![("bar", Field::default())]);
-        let types = vec![("Foo", &foo), ("Bar", &bar)];
-
-        let discriminator = KeyedDiscriminator::new("Test", &types).to_result().unwrap();
+        let types = vec!["Foo".to_string(), "Bar".to_string()];
+        let discriminator =
+            KeyedDiscriminator::new("Test".to_string(), types.into_iter().collect())
+                .to_result()
+                .unwrap();
 
         assert_eq!(
             discriminator
@@ -110,11 +102,11 @@ mod tests {
 
     #[test]
     fn test_keyed_discriminator_negative() {
-        let foo = config::Type::default().fields(vec![("foo", Field::default())]);
-        let bar = config::Type::default().fields(vec![("bar", Field::default())]);
-        let types = vec![("Foo", &foo), ("Bar", &bar)];
-
-        let discriminator = KeyedDiscriminator::new("Test", &types).to_result().unwrap();
+        let types = vec!["Foo".to_string(), "Bar".to_string()];
+        let discriminator =
+            KeyedDiscriminator::new("Test".to_string(), types.into_iter().collect())
+                .to_result()
+                .unwrap();
 
         assert_eq!(
             discriminator

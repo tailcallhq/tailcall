@@ -11,7 +11,7 @@ use async_graphql_value::ConstValue;
 use indexmap::IndexMap;
 
 use super::directive::{to_directive, Directive};
-use super::{Alias, Resolver, Telemetry, FEDERATION_DIRECTIVES};
+use super::{Alias, Discriminate, Resolver, Telemetry, FEDERATION_DIRECTIVES};
 use crate::core::config::{
     self, Cache, Config, Enum, Link, Modify, Omit, Protected, RootSchema, Server, Union, Upstream,
     Variant,
@@ -247,10 +247,19 @@ where
         .fuse(Cache::from_directives(directives.iter()))
         .fuse(to_fields(fields))
         .fuse(Protected::from_directives(directives.iter()))
+        .fuse(Discriminate::from_directives(directives.iter()))
         .fuse(to_add_fields_from_directives(directives))
         .fuse(to_federation_directives(directives))
         .map(
-            |(resolver, cache, fields, protected, added_fields, unknown_directives)| {
+            |(
+                resolver,
+                cache,
+                fields,
+                protected,
+                discriminate,
+                added_fields,
+                unknown_directives,
+            )| {
                 let doc = description.to_owned().map(|pos| pos.node);
                 let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
                 config::Type {
@@ -260,6 +269,7 @@ where
                     implements,
                     cache,
                     protected,
+                    discriminate,
                     resolver,
                     directives: unknown_directives,
                 }
