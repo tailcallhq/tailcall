@@ -1,0 +1,17 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+---
+type Query {
+  user(id: ID!): User!
+}
+
+type User {
+  city: String
+  id: ID!
+  newName: String!
+}
+
+schema {
+  query: Query
+}
