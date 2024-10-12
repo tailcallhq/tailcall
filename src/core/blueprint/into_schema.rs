@@ -4,13 +4,12 @@ use async_graphql::dynamic::{self, FieldFuture, FieldValue, SchemaBuilder, TypeR
 use async_graphql::ErrorExtensions;
 use async_graphql_value::ConstValue;
 use futures_util::TryFutureExt;
-use strum::IntoEnumIterator;
 use tracing::Instrument;
 
 use crate::core::blueprint::{Blueprint, Definition};
 use crate::core::http::RequestContext;
 use crate::core::ir::{EvalContext, ResolverContext, TypedValue};
-use crate::core::scalar;
+use crate::core::scalar::Scalar;
 
 /// We set the default value for an `InputValue` by reading it from the
 /// blueprint and assigning it to the provided `InputValue` during the
@@ -199,12 +198,7 @@ impl From<&Blueprint> for SchemaBuilder {
         let mutation = blueprint.mutation();
         let mut schema = dynamic::Schema::build(query.as_str(), mutation.as_deref(), None);
 
-        for scalar in scalar::Scalar::iter() {
-            let k = scalar.name();
-            schema = schema.register(dynamic::Type::Scalar(
-                dynamic::Scalar::new(k.clone()).validator(move |val| scalar.validate(val)),
-            ));
-        }
+        schema = inject_custom_scalars(schema, blueprint);
 
         for def in blueprint.definitions.iter() {
             schema = schema.register(to_type(def));
@@ -212,4 +206,42 @@ impl From<&Blueprint> for SchemaBuilder {
 
         schema
     }
+}
+
+fn inject_custom_scalars(mut schema: SchemaBuilder, blueprint: &Blueprint) -> SchemaBuilder {
+    fn inject_scalar(schema: SchemaBuilder, type_name: &str) -> SchemaBuilder {
+        if let Some(scalar) = Scalar::find(type_name) {
+            let scalar = scalar.clone();
+            schema.register(dynamic::Type::Scalar(
+                dynamic::Scalar::new(scalar.name()).validator(move |val| scalar.validate(val)),
+            ))
+        } else {
+            schema
+        }
+    }
+
+    for ty in blueprint.definitions.clone() {
+        match ty {
+            Definition::Interface(interface_type_definition) => {
+                for field in interface_type_definition.fields {
+                    let type_name = field.of_type.name();
+                    schema = inject_scalar(schema, type_name);
+                }
+            }
+            Definition::Object(object_type_definition) => {
+                for field in object_type_definition.fields {
+                    let type_name = field.of_type.name();
+                    schema = inject_scalar(schema, type_name);
+                }
+            }
+            Definition::InputObject(input_object_type_definition) => {
+                for field in input_object_type_definition.fields {
+                    let type_name = field.of_type.name();
+                    schema = inject_scalar(schema, type_name);
+                }
+            }
+            _ => (),
+        }
+    }
+    schema
 }
