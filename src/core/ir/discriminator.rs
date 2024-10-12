@@ -3,6 +3,7 @@ mod probability_discriminator;
 mod type_field_discriminator;
 
 use anyhow::{bail, Result};
+use keyed_discriminator::KeyedDiscriminator;
 use probability_discriminator::ProbabilityDiscriminator;
 use async_graphql::Value;
 
@@ -16,6 +17,12 @@ use crate::core::{
 #[derive(Debug, Clone)]
 pub enum Discriminator {
     Probability(ProbabilityDiscriminator),
+    Keyed(KeyedDiscriminator)
+}
+
+pub enum DiscriminatorMode {
+    Probability,
+    Keyed
 }
 
 impl Discriminator {
@@ -28,18 +35,23 @@ impl Discriminator {
             DiscriminatorMode::Probability => {
                 ProbabilityDiscriminator::new(union_name, union_types).map(|d| Self::Probability(d))
             }
+            DiscriminatorMode::Keyed  => {
+                KeyedDiscriminator::new(union_name, union_types).map(|d| Self::Keyed(d))
+            }
         }
     }
 
-    pub fn resolve_type(&self, value: &Value) -> Result<&str> {
+    pub fn resolve_type(&self, value: Value) -> Result<Value> {
+        // if typename is already present we return it
+        if value.get_type_name().is_some() {
+            return Ok(value)
+        }
+
         match self {
-            Discriminator::Probability(probability_discriminator) => probability_discriminator.resolve_type(value),
+            Discriminator::Probability(probability_discriminator) => probability_discriminator.resolve_and_set_type(value),
+            Discriminator::Keyed(keyed_discriminator) => keyed_discriminator.resolve_and_set_type(value),
         }
     }
-}
-
-pub enum DiscriminatorMode {
-    Probability,
 }
 
 pub trait TypedValue<'a> {

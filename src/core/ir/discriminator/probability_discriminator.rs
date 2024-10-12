@@ -10,6 +10,8 @@ use std::fmt::Write;
 use crate::core::config::Type;
 use crate::core::valid::{Cause, Valid, Validator};
 
+use super::TypedValue;
+
 /// Resolver for type member of a union or interface.
 /// Based on type definitions and the provided value, it can
 /// resolve the type of the value.
@@ -131,13 +133,13 @@ impl ProbabilityDiscriminator {
         let discriminator = Self { fields_info, types };
 
         tracing::debug!(
-            "Generated discriminator for union type '{union_name}':\n{discriminator:?}",
+            "Generated ProbabilityDiscriminator for type '{union_name}':\n{discriminator:?}",
         );
 
         Valid::succeed(discriminator)
     }
 
-    pub fn resolve_type(&self, value: &Value) -> Result<&str> {
+    pub fn resolve_type(&self, value: &Value) -> Result<String> {
         let Value::Object(obj) = value else {
             bail!("Value expected to be object");
         };
@@ -161,13 +163,19 @@ impl ProbabilityDiscriminator {
                 // even though the value could be completely wrong if we check other fields.
                 // We want to cover positive cases and do it as soon as possible,
                 // and the wrong value will likely be incorrect to use later anyway.
-                return Ok(possible_types.first_covered_type(&self.types));
+                return Ok(possible_types.first_covered_type(&self.types).to_string());
             }
         }
 
         // We have multiple possible types. Return the first one
         // that is defined earlier in the config.
-        Ok(possible_types.first_covered_type(&self.types))
+        Ok(possible_types.first_covered_type(&self.types).to_string())
+    }
+
+    pub fn resolve_and_set_type(&self, mut value: Value) -> Result<Value> {
+        let type_name = self.resolve_type(&value)?;
+        value.set_type_name(type_name)?;
+        Ok(value)
     }
 }
 

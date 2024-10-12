@@ -9,7 +9,7 @@ use indexmap::IndexMap;
 use super::eval_io::eval_io;
 use super::model::{Cache, CacheKey, Map, IR};
 use super::{Error, EvalContext, ResolverContextLike, TypedValue};
-use crate::core::json::{JsonLike, JsonLikeList, JsonObjectLike};
+use crate::core::json::{JsonLike, JsonObjectLike};
 use crate::core::serde_value_ext::ValueExt;
 
 // Fake trait to capture proper lifetimes.
@@ -103,21 +103,7 @@ impl IR {
                     second.eval(ctx).await
                 }
                 IR::Discriminate(discriminator, expr) => expr.eval(ctx).await.and_then(|value| {
-                    let value = value.map(&mut |mut value| {
-                        if value.get_type_name().is_some() {
-                            // if typename is already present in value just reuse it instead
-                            // of recalculating from scratch
-                            return Ok(value);
-                        }
-
-                        let type_name = discriminator.resolve_type(&value)?;
-
-                        value.set_type_name(type_name.to_string())?;
-
-                        anyhow::Ok(value)
-                    })?;
-
-                    Ok(value)
+                    Ok(discriminator.resolve_type(value)?)
                 }),
                 IR::Entity(map) => {
                     let representations = ctx.path_arg(&["representations"]);
