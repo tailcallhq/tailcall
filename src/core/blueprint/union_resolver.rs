@@ -9,9 +9,11 @@ use crate::core::valid::{Valid, Validator};
 fn compile_union_resolver(
     union_name: &str,
     union_definition: &config::Union,
-    union_type: &config::Type,
 ) -> Valid<Discriminator, String> {
-    let typename_field = union_type.discriminate.as_ref().map(|d| d.field.clone());
+    let typename_field = union_definition
+        .discriminate
+        .as_ref()
+        .map(|d| d.field.clone());
 
     Discriminator::new(
         union_name.to_string(),
@@ -29,21 +31,15 @@ pub fn update_union_resolver<'a>(
                 return Valid::succeed(b_field);
             };
 
-            let Some(union_type) = config.find_type(field.type_of.name()) else {
-                return Valid::succeed(b_field);
-            };
-
-            compile_union_resolver(field.type_of.name(), union_definition, union_type).map(
-                |discriminator| {
-                    b_field.resolver = Some(
-                        b_field
-                            .resolver
-                            .unwrap_or(IR::ContextPath(vec![b_field.name.clone()])),
-                    );
-                    b_field.map_expr(move |expr| IR::Discriminate(discriminator, expr.into()));
+            compile_union_resolver(field.type_of.name(), union_definition).map(|discriminator| {
+                b_field.resolver = Some(
                     b_field
-                },
-            )
+                        .resolver
+                        .unwrap_or(IR::ContextPath(vec![b_field.name.clone()])),
+                );
+                b_field.map_expr(move |expr| IR::Discriminate(discriminator, expr.into()));
+                b_field
+            })
         },
     )
 }

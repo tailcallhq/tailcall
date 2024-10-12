@@ -37,13 +37,23 @@ impl Discriminator {
             return Ok(value);
         }
 
-        match self {
-            Discriminator::Keyed(keyed_discriminator) => {
-                keyed_discriminator.resolve_and_set_type(value)
-            }
-            Discriminator::TypeField(type_field_discriminator) => {
-                type_field_discriminator.resolve_and_set_type(value)
-            }
+        match value {
+            Value::Null => Ok(value),
+            Value::List(arr) => {
+                let arr = arr.into_iter().map(|i| self.resolve_type(i)).collect::<Result<Vec<_>>>()?;
+                Ok(Value::array(arr))
+            },
+            Value::Object(_) => {
+                match self {
+                    Discriminator::Keyed(keyed_discriminator) => {
+                        keyed_discriminator.resolve_and_set_type(value)
+                    }
+                    Discriminator::TypeField(type_field_discriminator) => {
+                        type_field_discriminator.resolve_and_set_type(value)
+                    }
+                }
+            },
+            _ => bail!("Discriminator can only determine the types of arrays or objects but got `{:?}` instead.", value.to_string())
         }
     }
 }
@@ -70,12 +80,13 @@ where
     }
 
     fn set_type_name(&'json mut self, type_name: String) -> Result<(), Self::Error> {
-        if let Some(obj) = self.as_object_mut() {
+        if self.is_null() {
+            Ok(())
+        } else if let Some(obj) = self.as_object_mut() {
             obj.insert_key(TYPENAME_FIELD, T::string(type_name.into()));
-
             Ok(())
         } else {
-            bail!("Expected object")
+            bail!("Cannot discriminate the type of a non object type.")
         }
     }
 }

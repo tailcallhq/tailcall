@@ -185,30 +185,26 @@ fn to_types(
 fn to_scalar_type() -> config::Type {
     config::Type { ..Default::default() }
 }
-
 fn to_union_types(
     type_definitions: &[&Positioned<TypeDefinition>],
 ) -> Valid<BTreeMap<String, Union>, String> {
-    Valid::succeed(
-        type_definitions
-            .iter()
-            .filter_map(|type_definition| {
-                let type_name = pos_name_to_string(&type_definition.node.name);
-                let type_opt = match type_definition.node.kind.clone() {
-                    TypeKind::Union(union_type) => to_union(
-                        union_type,
-                        &type_definition
-                            .node
-                            .description
-                            .to_owned()
-                            .map(|pos| pos.node),
-                    ),
-                    _ => return None,
-                };
-                Some((type_name, type_opt))
-            })
-            .collect(),
-    )
+    Valid::from_iter(type_definitions.iter(), |type_definition| {
+        let type_name = pos_name_to_string(&type_definition.node.name);
+        let type_opt = match type_definition.node.kind.clone() {
+            TypeKind::Union(union_type) => to_union(
+                union_type,
+                &type_definition
+                    .node
+                    .description
+                    .to_owned()
+                    .map(|pos| pos.node),
+                &type_definition.node.directives,
+            ),
+            _ => return Valid::succeed(None),
+        };
+        type_opt.map(|type_opt| Some((type_name, type_opt)))
+    })
+    .map(|values| values.into_iter().flatten().collect())
 }
 
 fn to_enum_types(
@@ -398,13 +394,30 @@ fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
     config::Arg { type_of: type_of.into(), doc, modify, default_value }
 }
 
-fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {
+fn to_union(
+    union_type: UnionType,
+    doc: &Option<String>,
+    directives: &[Positioned<ConstDirective>],
+) -> Valid<Union, String> {
     let types = union_type
         .members
         .iter()
         .map(|member| member.node.to_string())
         .collect();
-    Union { types, doc: doc.clone() }
+
+    let discriminate = directives
+        .iter()
+        .find(|d| d.node.name.node.as_str() == Discriminate::directive_name());
+
+    if let Some(discriminate) = discriminate {
+        Discriminate::from_directive(&discriminate.node).map(|discriminate| Union {
+            types,
+            doc: doc.clone(),
+            discriminate: Some(discriminate),
+        })
+    } else {
+        Valid::succeed(Union { types, doc: doc.clone(), discriminate: None })
+    }
 }
 
 fn to_enum(enum_type: EnumType, doc: Option<String>) -> Valid<Enum, String> {

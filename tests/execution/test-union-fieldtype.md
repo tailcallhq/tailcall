@@ -1,40 +1,35 @@
-# Test union types in ambiguous case
+---
+identity: true
+---
 
-In some cases, when the resolved data shape does not strongly correspond to GraphQL types, the discriminator may return the first possible type or no possible types at all.
+# Test union type resolve
 
 ```graphql @config
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
 
-union FooBarBaz = Bar | Foo | Baz
+union FooBar @discriminator(field: "type") = Bar | Foo
 
 type Bar {
-  bar: String
-}
-
-type Baz {
-  bar: String
-  baz: String
+  bar: String!
 }
 
 type Foo {
-  foo: String
+  foo: String!
 }
 
 type Nested {
-  bar: FooBarBaz
-  foo: FooBarBaz
+  bar: FooBar
+  foo: FooBar
 }
 
 type Query {
-  arr: [FooBarBaz] @http(path: "/arr")
-  bar: FooBarBaz @http(path: "/bar")
-  foo: FooBarBaz @http(path: "/foo")
+  arr: [FooBar] @http(path: "/arr")
+  bar: FooBar @http(path: "/bar")
+  foo: FooBar @http(path: "/foo")
   nested: Nested @http(path: "/nested")
-  unknown: FooBarBaz @http(path: "/unknown")
-  wrong: FooBarBaz @http(path: "/wrong")
-  string: FooBarBaz @http(path: "/string")
+  unknown: FooBar @http(path: "/unknown")
 }
 ```
 
@@ -42,50 +37,54 @@ type Query {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/foo
+  expectedHits: 2
   response:
     status: 200
     body:
-      Foo:
-        foo: test-foo
+      foo: test-foo
+      type: "Foo"
 
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/bar
+  expectedHits: 2
   response:
     status: 200
     body:
-      Bar:
-        bar: test-bar
+      bar: test-bar
+      type: "Bar"
 
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/nested
+  expectedHits: 2
   response:
     status: 200
     body:
       foo:
-        Foo:
-          foo: nested-foo
+        foo: nested-foo
+        type: "Foo"
       bar:
-        Bar:
-          bar: nested-bar
+        bar: nested-bar
+        type: "Bar"
 
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/arr
+  expectedHits: 2
   response:
     status: 200
     body:
-      - Foo:
-          foo: foo1
-      - Bar:
-          bar: bar2
-      - Foo:
-          foo: foo3
-      - Foo:
-          foo: foo4
-      - Bar:
-          bar: bar5
+      - foo: foo1
+        type: "Foo"
+      - bar: bar2
+        type: "Bar"
+      - foo: foo3
+        type: "Foo"
+      - foo: foo4
+        type: "Foo"
+      - bar: bar5
+        type: "Bar"
 
 - request:
     method: GET
@@ -93,26 +92,8 @@ type Query {
   response:
     status: 200
     body:
-      Bar:
-        unknown: baz
-
-- request:
-    method: GET
-    url: http://jsonplaceholder.typicode.com/wrong
-  response:
-    status: 200
-    body:
-      Baz:
-        foo: test-foo
-        bar: test-bar
-
-- request:
-    method: GET
-    url: http://jsonplaceholder.typicode.com/string
-  response:
-    status: 200
-    body:
-      Foo: "test-string"
+      unknown: baz
+      type: "Unknown"
 ```
 
 ```yml @test
@@ -194,20 +175,22 @@ type Query {
   body:
     query: >
       query {
-        wrong {
-          foo
+        foo {
           __typename
         }
-      }
-
-- method: POST
-  url: http://localhost:8080/graphql
-  body:
-    query: >
-      query {
-        string {
-          foo
+        bar {
           __typename
+        }
+        arr {
+          __typename
+        }
+        nested {
+          foo {
+            __typename
+          }
+          bar {
+            __typename
+          }
         }
       }
 ```

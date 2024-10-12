@@ -305,6 +305,7 @@ pub struct Arg {
 pub struct Union {
     pub types: BTreeSet<String>,
     pub doc: Option<String>,
+    pub discriminate: Option<Discriminate>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]

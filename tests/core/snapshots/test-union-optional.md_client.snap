@@ -1,0 +1,24 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+---
+union Node = Page | User
+
+type Page {
+  id: ID!
+  slug: String!
+}
+
+type Query {
+  node: Node
+  nodes: [Node]!
+}
+
+type User {
+  id: ID!
+  username: String!
+}
+
+schema {
+  query: Query
+}

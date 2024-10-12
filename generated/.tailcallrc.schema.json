@@ -1563,6 +1563,16 @@
         "types"
       ],
       "properties": {
+        "discriminate": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Discriminate"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "doc": {
           "type": [
             "string",
