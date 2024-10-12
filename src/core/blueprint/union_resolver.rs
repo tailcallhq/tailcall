@@ -25,7 +25,7 @@ fn compile_union_resolver(
         Discriminator::new(
             union_name,
             &types,
-            crate::core::ir::DiscriminatorMode::Probability,
+            crate::core::ir::DiscriminatorMode::Keyed,
             None,
         )
     })

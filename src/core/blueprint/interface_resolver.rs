@@ -27,7 +27,7 @@ fn compile_interface_resolver(
         Discriminator::new(
             interface_name,
             &types,
-            crate::core::ir::DiscriminatorMode::Probability,
+            crate::core::ir::DiscriminatorMode::Keyed,
             None,
         )
     })
