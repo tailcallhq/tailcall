@@ -22,7 +22,7 @@ fn compile_union_resolver(
     .and_then(|types| {
         let types: Vec<_> = types.into_iter().collect();
 
-        Discriminator::new(union_name, &types)
+        Discriminator::new(union_name, &types, crate::core::ir::DiscriminatorMode::Probability)
     })
 }
 
