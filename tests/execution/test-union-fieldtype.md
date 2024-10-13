@@ -5,7 +5,7 @@ schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
 
-union FooBar @discriminate(field: "type") = Bar | Foo
+union FooBar = Bar | Foo
 
 type Bar {
   bar: String!
@@ -16,16 +16,16 @@ type Foo {
 }
 
 type Nested {
-  bar: FooBar
-  foo: FooBar
+  bar: FooBar @discriminate(field: "type")
+  foo: FooBar @discriminate(field: "type")
 }
 
 type Query {
-  arr: [FooBar] @http(path: "/arr")
-  bar: FooBar @http(path: "/bar")
-  foo: FooBar @http(path: "/foo")
+  arr: [FooBar] @http(path: "/arr") @discriminate(field: "type")
+  bar: FooBar @http(path: "/bar") @discriminate(field: "type")
+  foo: FooBar @http(path: "/foo") @discriminate(field: "type")
   nested: Nested @http(path: "/nested")
-  unknown: FooBar @http(path: "/unknown")
+  unknown: FooBar @http(path: "/unknown") @discriminate(field: "type")
 }
 ```
 

@@ -1,7 +1,6 @@
-use std::collections::BTreeSet;
-
 use anyhow::{bail, Result};
 use async_graphql::{Name, Value};
+use indexmap::IndexSet;
 
 use super::TypedValue;
 use crate::core::json::JsonLike;
@@ -12,7 +11,7 @@ use crate::core::valid::Valid;
 pub struct TypeFieldDiscriminator {
     typename_field: Name,
     /// List of all types that are members of the union or interface.
-    types: BTreeSet<String>,
+    types: IndexSet<String>,
     /// The name of TypeFieldDiscriminator is used for error reporting
     type_name: String,
 }
@@ -20,7 +19,7 @@ pub struct TypeFieldDiscriminator {
 impl TypeFieldDiscriminator {
     pub fn new(
         type_name: String,
-        types: BTreeSet<String>,
+        types: IndexSet<String>,
         typename_field: String,
     ) -> Valid<Self, String> {
         let discriminator = Self { type_name, types, typename_field: Name::new(typename_field) };

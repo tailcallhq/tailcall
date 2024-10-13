@@ -1,10 +1,9 @@
 mod keyed_discriminator;
 mod type_field_discriminator;
 
-use std::collections::BTreeSet;
-
 use anyhow::{bail, Result};
 use async_graphql::Value;
+use indexmap::IndexSet;
 use keyed_discriminator::KeyedDiscriminator;
 use type_field_discriminator::TypeFieldDiscriminator;
 
@@ -21,7 +20,7 @@ pub enum Discriminator {
 impl Discriminator {
     pub fn new(
         type_name: String,
-        types: BTreeSet<String>,
+        types: IndexSet<String>,
         typename_field: Option<String>,
     ) -> Valid<Self, String> {
         if let Some(typename_field) = typename_field {

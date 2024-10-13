@@ -115,9 +115,6 @@ pub struct Type {
     #[serde(default)]
     pub protected: Option<Protected>,
     ///
-    /// Used to overwrite the default discrimination strategy
-    pub discriminate: Option<Discriminate>,
-    ///
     /// Apollo federation entity resolver.
     #[serde(flatten, default, skip_serializing_if = "is_default")]
     pub resolver: Option<Resolver>,
@@ -223,6 +220,10 @@ pub struct Field {
     pub protected: Option<Protected>,
 
     ///
+    /// Used to overwrite the default discrimination strategy
+    pub discriminate: Option<Discriminate>,
+
+    ///
     /// Resolver for the field
     #[serde(flatten, default, skip_serializing_if = "is_default")]
     pub resolver: Option<Resolver>,
@@ -305,7 +306,6 @@ pub struct Arg {
 pub struct Union {
     pub types: BTreeSet<String>,
     pub doc: Option<String>,
-    pub discriminate: Option<Discriminate>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]

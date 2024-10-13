@@ -338,7 +338,7 @@
       }
     },
     "Discriminate": {
-      "description": "The `@discriminate` directive is used to drive Tailcall discriminator to use a field of an object. For example with the directive applied on a Union or Interface `@discriminate(field: \"type\")` and the given value `{\"foo\": \"bar\", \"type\": \"Buzz\"}` the resolved type of the object will be `Buzz`.",
+      "description": "The `@discriminate` directive is used to drive Tailcall discriminator to use a field of an object to resolve the type. For example with the directive applied on a field `@discriminate(field: \"type\")` and the given value `{\"foo\": \"bar\", \"type\": \"Buzz\"}` the resolved type of the object will be `Buzz`.",
       "type": "object",
       "properties": {
         "field": {
@@ -500,6 +500,17 @@
           "items": {
             "$ref": "#/definitions/Directive"
           }
+        },
+        "discriminate": {
+          "description": "Used to overwrite the default discrimination strategy",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Discriminate"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "doc": {
           "description": "Publicly visible documentation for the field.",
@@ -1424,17 +1435,6 @@
             "$ref": "#/definitions/Directive"
           }
         },
-        "discriminate": {
-          "description": "Used to overwrite the default discrimination strategy",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Discriminate"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
         "doc": {
           "description": "Documentation for the type that is publicly visible.",
           "type": [
@@ -1563,16 +1563,6 @@
         "types"
       ],
       "properties": {
-        "discriminate": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Discriminate"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
         "doc": {
           "type": [
             "string",

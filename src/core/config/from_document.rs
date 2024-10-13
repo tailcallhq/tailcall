@@ -198,7 +198,6 @@ fn to_union_types(
                     .description
                     .to_owned()
                     .map(|pos| pos.node),
-                &type_definition.node.directives,
             ),
             _ => return Valid::succeed(None),
         };
@@ -243,19 +242,10 @@ where
         .fuse(Cache::from_directives(directives.iter()))
         .fuse(to_fields(fields))
         .fuse(Protected::from_directives(directives.iter()))
-        .fuse(Discriminate::from_directives(directives.iter()))
         .fuse(to_add_fields_from_directives(directives))
         .fuse(to_federation_directives(directives))
         .map(
-            |(
-                resolver,
-                cache,
-                fields,
-                protected,
-                discriminate,
-                added_fields,
-                unknown_directives,
-            )| {
+            |(resolver, cache, fields, protected, added_fields, unknown_directives)| {
                 let doc = description.to_owned().map(|pos| pos.node);
                 let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
                 config::Type {
@@ -265,7 +255,6 @@ where
                     implements,
                     cache,
                     protected,
-                    discriminate,
                     resolver,
                     directives: unknown_directives,
                 }
@@ -345,10 +334,20 @@ where
         .fuse(Omit::from_directives(directives.iter()))
         .fuse(Modify::from_directives(directives.iter()))
         .fuse(Protected::from_directives(directives.iter()))
+        .fuse(Discriminate::from_directives(directives.iter()))
         .fuse(default_value)
         .fuse(to_federation_directives(directives))
         .map(
-            |(resolver, cache, omit, modify, protected, default_value, directives)| config::Field {
+            |(
+                resolver,
+                cache,
+                omit,
+                modify,
+                protected,
+                discriminate,
+                default_value,
+                directives,
+            )| config::Field {
                 type_of: type_of.into(),
                 args,
                 doc,
@@ -356,6 +355,7 @@ where
                 omit,
                 cache,
                 protected,
+                discriminate,
                 default_value,
                 resolver,
                 directives,
@@ -394,30 +394,14 @@ fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
     config::Arg { type_of: type_of.into(), doc, modify, default_value }
 }
 
-fn to_union(
-    union_type: UnionType,
-    doc: &Option<String>,
-    directives: &[Positioned<ConstDirective>],
-) -> Valid<Union, String> {
+fn to_union(union_type: UnionType, doc: &Option<String>) -> Valid<Union, String> {
     let types = union_type
         .members
         .iter()
         .map(|member| member.node.to_string())
         .collect();
 
-    let discriminate = directives
-        .iter()
-        .find(|d| d.node.name.node.as_str() == Discriminate::directive_name());
-
-    if let Some(discriminate) = discriminate {
-        Discriminate::from_directive(&discriminate.node).map(|discriminate| Union {
-            types,
-            doc: doc.clone(),
-            discriminate: Some(discriminate),
-        })
-    } else {
-        Valid::succeed(Union { types, doc: doc.clone(), discriminate: None })
-    }
+    Valid::succeed(Union { types, doc: doc.clone() })
 }
 
 fn to_enum(enum_type: EnumType, doc: Option<String>) -> Valid<Enum, String> {
