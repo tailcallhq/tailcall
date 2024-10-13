@@ -395,4 +395,25 @@ mod tests {
         let actual = status.lock().unwrap().deref().to_owned();
         assert_eq!(actual, Status { call_1: false, call_2: false })
     }
+
+    #[tokio::test]
+    async fn test_dedupe_when_persist_false() {
+        let cache = Arc::new(Dedupe::<u64, u64>::new(1000, false));
+        let request_executed_count = Arc::new(AtomicUsize::new(0));
+
+        for i in 0..100 {
+            let count = request_executed_count.clone();
+            cache
+                .dedupe(&1, || {
+                    Box::pin(async move {
+                        count.fetch_add(1, Ordering::SeqCst);
+                        i
+                    })
+                })
+                .await;
+        }
+
+        // all the sub-sequents calls should've been de-duped.
+        assert_eq!(request_executed_count.load(Ordering::SeqCst), 1);
+    }
 }
