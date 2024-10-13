@@ -281,7 +281,8 @@ async fn run_test(
 ) -> anyhow::Result<http::Response<Body>> {
     let parallel_count = request.parallel.unwrap_or(1);
 
-    let mut last_response = None;
+    let mut batch_futs = vec![];
+    let mut single_futs = vec![];
 
     for _ in 0..parallel_count {
         let body = request
@@ -304,14 +305,18 @@ async fn run_test(
             .body(body)?;
 
         // TODO: reuse logic from server.rs to select the correct handler
-        let response = if app_ctx.blueprint.server.enable_batch_requests {
-            handle_request::<GraphQLBatchRequest>(req, app_ctx.clone()).await
+        if app_ctx.blueprint.server.enable_batch_requests {
+            batch_futs.push(handle_request::<GraphQLBatchRequest>(req, app_ctx.clone()))
         } else {
-            handle_request::<GraphQLRequest>(req, app_ctx.clone()).await
+            single_futs.push(handle_request::<GraphQLRequest>(req, app_ctx.clone()))
         };
-
-        last_response = Some(response?);
     }
 
-    last_response.ok_or_else(|| anyhow::anyhow!("No response generated"))
+    if !batch_futs.is_empty() {
+        let responses = join_all(batch_futs).await;
+        responses.into_iter().last().unwrap()
+    } else {
+        let responses = join_all(single_futs).await;
+        responses.into_iter().last().unwrap()
+    }
 }
