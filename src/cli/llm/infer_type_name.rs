@@ -87,6 +87,41 @@ impl InferTypeName {
         Self { wizard: Wizard::new(model, secret) }
     }
 
+    fn create_system_message() -> String {
+        let example_input = serde_json::to_string_pretty(&Question {
+            ignore: IndexSet::new(),
+            fields: vec![
+                ("id".to_string(), "String".to_string()),
+                ("name".to_string(), "String".to_string()),
+                ("age".to_string(), "Int".to_string()),
+            ],
+        })
+        .unwrap();
+
+        let example_output = serde_json::to_string_pretty(&Answer {
+            suggestions: vec![
+                "Person".into(),
+                "Profile".into(),
+                "Member".into(),
+                "Individual".into(),
+                "Contact".into(),
+            ],
+        })
+        .unwrap();
+
+        format!(
+            "{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}",
+            "Given the sample schema of a GraphQL type suggest 5 meaningful names for it.",
+            "The name should be concise and preferably a single word.",
+            "Example Input:",
+            example_input,
+            "Example Output:",
+            example_output,
+            "Ensure the output is in valid JSON format.",
+            "Do not add any additional text before or after the json."
+        )
+    }
+
     /// All generated type names starts with PREFIX
     #[inline]
     fn is_auto_generated(type_name: &str) -> bool {
@@ -112,9 +147,11 @@ impl InferTypeName {
             .collect::<IndexSet<_>>();
 
         let total = types_to_be_processed.len();
+        let system_message = Self::create_system_message();
+
         for (i, (type_name, type_)) in types_to_be_processed.into_iter().enumerate() {
             // convert type to sdl format.
-            let question = Question {
+            let mut question = Question {
                 ignore: used_type_names.clone(),
                 fields: type_
                     .fields
@@ -122,6 +159,13 @@ impl InferTypeName {
                     .map(|(k, v)| (k.clone(), v.type_of.name().to_owned()))
                     .collect(),
             };
+
+            // If this is the first message, prepend the system message content
+            if i == 0 {
+                question
+                    .fields
+                    .insert(0, ("system_message".to_string(), system_message.clone()));
+            }
 
             let mut delay = 3;
             loop {
