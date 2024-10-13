@@ -69,7 +69,11 @@ impl JITExecutor {
             })
             .await;
 
-        clone_response(out.unwrap_or_default())
+        // Using Arc it's easy to fool the dedupe, but it can be problematic if the underlying
+        // value isn't cloneable. To ensure deduplication works correctly and to maintain
+        // consistency, we clone the response before sending it out. This approach guarantees
+        // that response value is available to all deduplicated requests.
+        out.map(|val| clone_response(val)).unwrap_or_default()
     }
 }
 
