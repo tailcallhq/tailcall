@@ -279,29 +279,39 @@ async fn run_test(
     app_ctx: Arc<AppContext>,
     request: &APIRequest,
 ) -> anyhow::Result<http::Response<Body>> {
-    let body = request
-        .body
-        .as_ref()
-        .map(|body| Body::from(body.to_bytes()))
-        .unwrap_or_default();
+    let parallel_count = request.parallel.unwrap_or(1);
 
-    let method = request.method.clone();
-    let headers = request.headers.clone();
-    let url = request.url.clone();
-    let req = headers
-        .into_iter()
-        .fold(
-            Request::builder()
-                .method(method.to_hyper())
-                .uri(url.as_str()),
-            |acc, (key, value)| acc.header(key, value),
-        )
-        .body(body)?;
+    let mut last_response = None;
 
-    // TODO: reuse logic from server.rs to select the correct handler
-    if app_ctx.blueprint.server.enable_batch_requests {
-        handle_request::<GraphQLBatchRequest>(req, app_ctx).await
-    } else {
-        handle_request::<GraphQLRequest>(req, app_ctx).await
+    for _ in 0..parallel_count {
+        let body = request
+            .body
+            .as_ref()
+            .map(|body| Body::from(body.to_bytes()))
+            .unwrap_or_default();
+
+        let method = request.method.clone();
+        let headers = request.headers.clone();
+        let url = request.url.clone();
+        let req = headers
+            .into_iter()
+            .fold(
+                Request::builder()
+                    .method(method.to_hyper())
+                    .uri(url.as_str()),
+                |acc, (key, value)| acc.header(key, value),
+            )
+            .body(body)?;
+
+        // TODO: reuse logic from server.rs to select the correct handler
+        let response = if app_ctx.blueprint.server.enable_batch_requests {
+            handle_request::<GraphQLBatchRequest>(req, app_ctx.clone()).await
+        } else {
+            handle_request::<GraphQLRequest>(req, app_ctx.clone()).await
+        };
+
+        last_response = Some(response?);
     }
+
+    last_response.ok_or_else(|| anyhow::anyhow!("No response generated"))
 }
