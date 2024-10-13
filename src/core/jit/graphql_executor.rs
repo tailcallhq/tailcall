@@ -69,11 +69,12 @@ impl JITExecutor {
             })
             .await;
 
-        // Using Arc it's easy to fool the dedupe, but it can be problematic if the underlying
-        // value isn't cloneable. To ensure deduplication works correctly and to maintain
-        // consistency, we clone the response before sending it out. This approach guarantees
-        // that response value is available to all deduplicated requests.
-        out.map(|val| clone_response(val)).unwrap_or_default()
+        // Using Arc it's easy to fool the dedupe, but it can be problematic if the
+        // underlying value isn't cloneable. To ensure deduplication works
+        // correctly and to maintain consistency, we clone the response before
+        // sending it out. This approach guarantees that response value is
+        // available to all deduplicated requests.
+        out.map(clone_response).unwrap_or_default()
     }
 }
 
@@ -97,7 +98,7 @@ impl From<jit::Request<Value>> for async_graphql::Request {
 // responsible for cloning the response
 fn clone_response(val: Arc<Response>) -> Response {
     let mut res = Response::new(val.data.clone())
-        .cache_control(val.cache_control.clone())
+        .cache_control(val.cache_control)
         .http_headers(val.http_headers.clone());
     res.errors = val.errors.clone();
     res.extensions = val.extensions.clone();
