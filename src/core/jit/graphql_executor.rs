@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::future::Future;
 use std::sync::Arc;
 
-use async_graphql::{Data, Executor, Response, ServerError, Value};
+use async_graphql::{Data, Executor, Response, Value};
 use async_graphql_value::{ConstValue, Extensions};
 use futures_util::stream::BoxStream;
 
@@ -68,10 +68,8 @@ impl JITExecutor {
                 })
             })
             .await;
-        let val = out.unwrap_or_default();
-        Arc::into_inner(val).unwrap_or_else(|| {
-            Response::from_errors(vec![ServerError::new("Deduplication failed", None)])
-        })
+
+        clone_response(out.unwrap_or_default())
     }
 }
 
@@ -90,6 +88,16 @@ impl From<jit::Request<Value>> for async_graphql::Request {
         request.operation_name = value.operation_name;
         request
     }
+}
+
+// responsible for cloning the response
+fn clone_response(val: Arc<Response>) -> Response {
+    let mut res = Response::new(val.data.clone())
+        .cache_control(val.cache_control.clone())
+        .http_headers(val.http_headers.clone());
+    res.errors = val.errors.clone();
+    res.extensions = val.extensions.clone();
+    res
 }
 
 impl Executor for JITExecutor {
