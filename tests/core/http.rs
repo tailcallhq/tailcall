@@ -55,6 +55,9 @@ impl Http {
 #[async_trait::async_trait]
 impl HttpIO for Http {
     async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response<Bytes>> {
+        // configure wait to simulate the actual real world request.
+        let _ = tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+
         // Try to find a matching mock for the incoming request.
         let execution_mock = self
             .mocks
