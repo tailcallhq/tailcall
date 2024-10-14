@@ -294,4 +294,11 @@ mod tests {
 
         assert_n_plus_one!(config);
     }
+
+    #[test]
+    fn test_nested_config() {
+        let config = include_config!("fixtures/nested.graphql").unwrap();
+
+        assert_n_plus_one!(config);
+    }
 }

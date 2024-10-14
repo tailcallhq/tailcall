@@ -1,0 +1,26 @@
+schema
+  @link(type: Config, src: "nested/a.graphql")
+  @link(type: Config, src: "nested/b.graphql")
+  @link(type: Config, src: "nested/c.graphql")
+  @server(port: 8030)
+  @upstream(baseURL: "https://example.com") {
+  query: Query
+}
+
+type Query {
+  version: Int! @expr(body: 1)
+  foo: [Foo!]! @expr(body: [{fizz: "buzz"}])
+  bar: [Foo!]! @expr(body: [{fizz: "buzz"}])
+  buzz: [Foo!]! @expr(body: [{fizz: "buzz"}])
+}
+
+type Foo {
+  fizz: String!
+  c: Int
+}
+
+type Foo {
+  fizz: String!
+  c: Int
+  spam: [String!]! @http(path: "/spam", query: [{key: "id", value: "{{.value.fizz}}"}])
+}
