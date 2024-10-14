@@ -1,0 +1,32 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+---
+type Counter {
+  count: Int!
+}
+
+type Page implements Profile {
+  handle: String!
+  id: ID!
+  likers: Counter!
+}
+
+interface Profile {
+  handle: String!
+  id: ID!
+}
+
+type Query {
+  profiles(handles: [ID!]!): [Profile!]!
+}
+
+type User implements Profile {
+  friends: Counter!
+  handle: String!
+  id: ID!
+}
+
+schema {
+  query: Query
+}

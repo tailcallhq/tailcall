@@ -4,7 +4,7 @@ skip: true
 
 # Test variables.
 
-TODO: Skipped because there is a pending case to improve the discriminator.
+TODO: Skipped because we do not check that variables are defined
 
 ```graphql @config
 schema
