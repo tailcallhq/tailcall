@@ -281,10 +281,8 @@ async fn run_test(
 ) -> anyhow::Result<http::Response<Body>> {
     let parallel_count = request.parallel.unwrap_or(1);
 
-    let mut batch_futs = vec![];
-    let mut single_futs = vec![];
-
-    for _ in 0..parallel_count {
+    let futures = (0..parallel_count).map(|_| {
+        let app_ctx = app_ctx.clone();
         let body = request
             .body
             .as_ref()
@@ -294,29 +292,34 @@ async fn run_test(
         let method = request.method.clone();
         let headers = request.headers.clone();
         let url = request.url.clone();
-        let req = headers
-            .into_iter()
-            .fold(
-                Request::builder()
-                    .method(method.to_hyper())
-                    .uri(url.as_str()),
-                |acc, (key, value)| acc.header(key, value),
-            )
-            .body(body)?;
 
-        // TODO: reuse logic from server.rs to select the correct handler
-        if app_ctx.blueprint.server.enable_batch_requests {
-            batch_futs.push(handle_request::<GraphQLBatchRequest>(req, app_ctx.clone()))
-        } else {
-            single_futs.push(handle_request::<GraphQLRequest>(req, app_ctx.clone()))
-        };
-    }
+        tokio::spawn(async move {
+            let req = headers
+                .into_iter()
+                .fold(
+                    Request::builder()
+                        .method(method.to_hyper())
+                        .uri(url.as_str()),
+                    |acc, (key, value)| acc.header(key, value),
+                )
+                .body(body)?;
 
-    if !batch_futs.is_empty() {
-        let responses = join_all(batch_futs).await;
-        responses.into_iter().last().unwrap()
-    } else {
-        let responses = join_all(single_futs).await;
-        responses.into_iter().last().unwrap()
-    }
+            if app_ctx.blueprint.server.enable_batch_requests {
+                handle_request::<GraphQLBatchRequest>(req, app_ctx).await
+            } else {
+                handle_request::<GraphQLRequest>(req, app_ctx).await
+            }
+        })
+    });
+
+    let responses = join_all(futures).await;
+
+    // Unwrap the Result from join_all and the individual task results
+    let responses = responses
+        .into_iter()
+        .map(|res| res.map_err(anyhow::Error::from).and_then(|inner| inner))
+        .collect::<Vec<_>>();
+
+    // Return the last response or propagate an error if any occurred
+    responses.into_iter().last().unwrap()
 }
