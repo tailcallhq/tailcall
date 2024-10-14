@@ -1,6 +1,7 @@
+use std::collections::BTreeSet;
+
 use anyhow::{bail, Result};
 use async_graphql::{Name, Value};
-use indexmap::IndexSet;
 
 use super::TypedValue;
 use crate::core::json::JsonLike;
@@ -11,7 +12,7 @@ use crate::core::valid::Valid;
 pub struct TypeFieldDiscriminator {
     typename_field: Name,
     /// List of all types that are members of the union or interface.
-    types: IndexSet<String>,
+    types: BTreeSet<String>,
     /// The name of TypeFieldDiscriminator is used for error reporting
     type_name: String,
 }
@@ -19,7 +20,7 @@ pub struct TypeFieldDiscriminator {
 impl TypeFieldDiscriminator {
     pub fn new(
         type_name: String,
-        types: IndexSet<String>,
+        types: BTreeSet<String>,
         typename_field: String,
     ) -> Valid<Self, String> {
         let discriminator = Self { type_name, types, typename_field: Name::new(typename_field) };
@@ -47,7 +48,9 @@ impl TypeFieldDiscriminator {
         if self.types.contains(type_name) {
             Ok(type_name.to_string())
         } else {
-            bail!("The type `{}` is not in the list of acceptable types {:?} of TypeFieldDiscriminator(type=\"{}\")", type_name, self.types, self.type_name)
+            let mut types: Vec<_> = self.types.clone().into_iter().collect();
+            types.sort();
+            bail!("The type `{}` is not in the list of acceptable types {:?} of TypeFieldDiscriminator(type=\"{}\")", type_name, types, self.type_name)
         }
     }
 
@@ -140,7 +143,7 @@ mod tests {
                 .resolve_type(&Value::from_json(json!({ "foo": "test", "type": "Buzz" })).unwrap())
                 .unwrap_err()
                 .to_string(),
-            "The type `Buzz` is not in the list of acceptable types [\"Foo\", \"Bar\"] of TypeFieldDiscriminator(type=\"Test\")"
+            "The type `Buzz` is not in the list of acceptable types [\"Bar\", \"Foo\"] of TypeFieldDiscriminator(type=\"Test\")"
         );
     }
 }

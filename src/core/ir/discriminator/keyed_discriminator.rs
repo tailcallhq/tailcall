@@ -1,6 +1,7 @@
+use std::collections::BTreeSet;
+
 use anyhow::{bail, Result};
 use async_graphql::Value;
-use indexmap::IndexSet;
 
 use super::TypedValue;
 use crate::core::valid::Valid;
@@ -9,13 +10,13 @@ use crate::core::valid::Valid;
 #[derive(Debug, Clone)]
 pub struct KeyedDiscriminator {
     /// List of all types that are members of the union or interface.
-    types: IndexSet<String>,
+    types: BTreeSet<String>,
     /// The name of KeyedDiscriminator is used for error reporting
     type_name: String,
 }
 
 impl KeyedDiscriminator {
-    pub fn new(type_name: String, types: IndexSet<String>) -> Valid<Self, String> {
+    pub fn new(type_name: String, types: BTreeSet<String>) -> Valid<Self, String> {
         let discriminator = Self { type_name, types };
 
         Valid::succeed(discriminator)
@@ -33,7 +34,9 @@ impl KeyedDiscriminator {
                     if self.types.contains(&type_name) {
                         Ok(type_name)
                     } else {
-                        bail!("The type `{}` is not in the list of acceptable types {:?} of KeyedDiscriminator(type=\"{}\")", type_name, self.types, self.type_name)
+                        let mut types: Vec<_> = self.types.clone().into_iter().collect();
+                        types.sort();
+                        bail!("The type `{}` is not in the list of acceptable types {:?} of KeyedDiscriminator(type=\"{}\")", type_name, types, self.type_name)
                     }
                 } else if index_map_len == 0 {
                     bail!("The KeyedDiscriminator(type=\"{}\") cannot discriminate the Value `{}` because it contains no keys.", self.type_name, value.to_string())
@@ -112,7 +115,7 @@ mod tests {
                 .resolve_type(&Value::from_json(json!({ "Fizz": { "foo": "test" } })).unwrap())
                 .unwrap_err()
                 .to_string(),
-            "The type `Fizz` is not in the list of acceptable types [\"Foo\", \"Bar\"] of KeyedDiscriminator(type=\"Test\")"
+            "The type `Fizz` is not in the list of acceptable types [\"Bar\", \"Foo\"] of KeyedDiscriminator(type=\"Test\")"
         );
 
         assert_eq!(

@@ -11,7 +11,7 @@ expression: response
     "data": null,
     "errors": [
       {
-        "message": "IOException: The type `Unknown` is not in the list of acceptable types {\"Bar\", \"Foo\"} of TypeFieldDiscriminator(type=\"FooBar\")",
+        "message": "IOException: The type `Unknown` is not in the list of acceptable types [\"Bar\", \"Foo\"] of TypeFieldDiscriminator(type=\"FooBar\")",
         "locations": [
           {
             "line": 2,
