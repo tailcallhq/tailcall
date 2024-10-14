@@ -139,6 +139,7 @@ mod tests {
     use std::time::Duration;
 
     use assert_eq;
+    use futures_util::future::join_all;
     use tokio::join;
     use tokio::time::{sleep, timeout_at, Instant};
 
@@ -396,26 +397,38 @@ mod tests {
         assert_eq!(actual, Status { call_1: false, call_2: false })
     }
 
-    // #[tokio::test]
-    // async fn test_dedupe_when_persist_false() {
-    //     let cache = Arc::new(Dedupe::<u64, u64>::new(1000, false));
-    //     let request_executed_count = Arc::new(AtomicUsize::new(0));
-    //     for i in 0..100 {
-    //         let count = request_executed_count.clone();
-    //         cache
-    //             .dedupe(&1, || {
-    //                 Box::pin(async move {
-    //                     
-    // tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-    //                     count.fetch_add(1, Ordering::SeqCst);
-    //                     i
-    //                 })
-    //             })
-    //             .await;
-    //     }
+    #[tokio::test]
+    async fn test_dedupe_when_persist_false() {
+        let cache = Arc::new(Dedupe::<u64, u64>::new(1, false));
+        let request_executed_count = Arc::new(AtomicUsize::new(0));
 
-    //     // all the sub-sequents calls should've been de-duped.
-    //     println!("[Finder]: count: {:#?}",
-    // request_executed_count.load(Ordering::SeqCst));     assert_eq!
-    // (request_executed_count.load(Ordering::SeqCst), 1); }
+        // Create 100 concurrent requests
+        let futures = (0..100).map(|i| {
+            let cache = cache.clone();
+            let count = request_executed_count.clone();
+            tokio::spawn(async move {
+                cache
+                    .dedupe(&1, || {
+                        Box::pin(async move {
+                            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+                            count.fetch_add(1, Ordering::SeqCst);
+                            i
+                        })
+                    })
+                    .await
+            })
+        });
+
+        // Wait for all requests to complete
+        let results = join_all(futures).await;
+
+        // Check that all requests completed successfully
+        for result in results {
+            assert!(result.is_ok());
+        }
+
+        // The first batch of concurrent requests should be deduped to a single
+        // execution
+        assert_eq!(request_executed_count.load(Ordering::SeqCst), 1);
+    }
 }
