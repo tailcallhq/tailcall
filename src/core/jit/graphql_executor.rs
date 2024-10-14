@@ -74,7 +74,6 @@ impl JITExecutor {
     }
 }
 
-
 impl Clone for Lift<async_graphql::Response> {
     fn clone(&self) -> Self {
         let mut res = async_graphql::Response::new(self.data.clone())

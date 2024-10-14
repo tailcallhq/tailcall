@@ -3,6 +3,7 @@ use std::sync::Arc;
 use async_graphql::dynamic::{self, DynamicRequest};
 use async_graphql_value::ConstValue;
 
+use super::lift::Lift;
 use crate::core::async_graphql_hyper::OperationId;
 use crate::core::auth::context::GlobalAuthContext;
 use crate::core::blueprint::{Blueprint, Definition, SchemaModifiers};
@@ -15,8 +16,6 @@ use crate::core::ir::model::{DataLoaderId, IoId, IO, IR};
 use crate::core::ir::Error;
 use crate::core::rest::{Checked, EndpointSet};
 use crate::core::runtime::TargetRuntime;
-
-use super::lift::Lift;
 
 pub struct AppContext {
     pub schema: dynamic::Schema,
