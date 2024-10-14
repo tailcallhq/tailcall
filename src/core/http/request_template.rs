@@ -62,6 +62,9 @@ impl RequestTemplate {
                 Some(self.query_encoder.encode(key, parsed_value))
             }
         });
+        println!("{:?}", extra_qp.clone().collect::<Vec<_>>());
+
+        let extra_qp = extra_qp.filter(|qp| !qp.is_empty());
 
         let base_qp = url
             .query_pairs()

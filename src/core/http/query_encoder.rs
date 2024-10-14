@@ -16,10 +16,16 @@ impl QueryEncoder {
         if let Some(value) = raw_value {
             match &value {
                 ValueString::Value(val) => self.encode_const_value(key, val),
-                ValueString::String(val) => format!("{}={}", key, val),
+                ValueString::String(val) => {
+                    if val.is_empty() {
+                        val.to_string()
+                    } else {
+                        format!("{}={}", key, val)
+                    }
+                }
             }
         } else {
-            key.to_owned()
+            "".to_owned()
         }
     }
     fn encode_const_value(&self, key: &str, value: &async_graphql::Value) -> String {
