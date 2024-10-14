@@ -57,8 +57,6 @@ pub struct APIRequest {
     pub test_traces: bool,
     #[serde(default)]
     pub test_metrics: bool,
-    #[serde(default)]
-    pub parallel: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
