@@ -16,6 +16,8 @@ use crate::core::ir::Error;
 use crate::core::rest::{Checked, EndpointSet};
 use crate::core::runtime::TargetRuntime;
 
+use super::lift::Lift;
+
 pub struct AppContext {
     pub schema: dynamic::Schema,
     pub runtime: TargetRuntime,
@@ -26,7 +28,7 @@ pub struct AppContext {
     pub endpoints: EndpointSet<Checked>,
     pub auth_ctx: Arc<GlobalAuthContext>,
     pub dedupe_handler: Arc<DedupeResult<IoId, ConstValue, Error>>,
-    pub dedupe_operation_handler: DedupeResult<OperationId, Arc<async_graphql::Response>, Error>,
+    pub dedupe_operation_handler: DedupeResult<OperationId, Lift<async_graphql::Response>, Error>,
 }
 
 impl AppContext {

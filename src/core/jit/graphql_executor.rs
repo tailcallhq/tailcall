@@ -11,6 +11,7 @@ use crate::core::async_graphql_hyper::OperationId;
 use crate::core::http::RequestContext;
 use crate::core::jit;
 use crate::core::jit::ConstValueExecutor;
+use crate::core::lift::{CanLift, Lift};
 use crate::core::merge_right::MergeRight;
 
 #[derive(Clone)]
@@ -64,17 +65,24 @@ impl JITExecutor {
             .dedupe(&self.operation_id, || {
                 Box::pin(async move {
                     let resp = self.exec(exec, jit_request).await;
-                    Ok(Arc::new(resp))
+                    Ok(resp.lift())
                 })
             })
             .await;
 
-        // Using Arc it's easy to fool the dedupe, but it can be problematic if the
-        // underlying value isn't cloneable. To ensure deduplication works
-        // correctly and to maintain consistency, we clone the response before
-        // sending it out. This approach guarantees that response value is
-        // available to all deduplicated requests.
-        out.map(clone_response).unwrap_or_default()
+        out.map(|response| response.take()).unwrap_or_default()
+    }
+}
+
+
+impl Clone for Lift<async_graphql::Response> {
+    fn clone(&self) -> Self {
+        let mut res = async_graphql::Response::new(self.data.clone())
+            .cache_control(self.cache_control)
+            .http_headers(self.http_headers.clone());
+        res.errors = self.errors.clone();
+        res.extensions = self.extensions.clone();
+        res.into()
     }
 }
 
@@ -93,16 +101,6 @@ impl From<jit::Request<Value>> for async_graphql::Request {
         request.operation_name = value.operation_name;
         request
     }
-}
-
-// responsible for cloning the response
-fn clone_response(val: Arc<Response>) -> Response {
-    let mut res = Response::new(val.data.clone())
-        .cache_control(val.cache_control)
-        .http_headers(val.http_headers.clone());
-    res.errors = val.errors.clone();
-    res.extensions = val.extensions.clone();
-    res
 }
 
 impl Executor for JITExecutor {
