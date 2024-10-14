@@ -14,9 +14,13 @@ fn compile_interface_resolver(
 ) -> Valid<Discriminator, String> {
     let typename_field = discriminate.as_ref().map(|d| d.field.clone());
 
+    let mut types: Vec<_> = interface_types.clone().into_iter().collect();
+
+    types.sort();
+
     Discriminator::new(
         interface_name.to_string(),
-        interface_types.clone().into_iter().collect(),
+        types.into_iter().collect(),
         typename_field,
     )
 }

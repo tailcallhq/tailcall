@@ -12,9 +12,13 @@ fn compile_union_resolver(
 ) -> Valid<Discriminator, String> {
     let typename_field = discriminate.as_ref().map(|d| d.field.clone());
 
+    let mut types: Vec<_> = union_definition.types.iter().cloned().collect();
+
+    types.sort();
+
     Discriminator::new(
         union_name.to_string(),
-        union_definition.types.iter().cloned().collect(),
+        types.into_iter().collect(),
         typename_field,
     )
 }
