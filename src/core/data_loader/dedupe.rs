@@ -395,5 +395,4 @@ mod tests {
         let actual = status.lock().unwrap().deref().to_owned();
         assert_eq!(actual, Status { call_1: false, call_2: false })
     }
-
 }
