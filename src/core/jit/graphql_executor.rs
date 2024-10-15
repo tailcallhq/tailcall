@@ -29,6 +29,7 @@ impl JITExecutor {
         Self { app_ctx, req_ctx, operation_id }
     }
 
+    #[inline(always)]
     async fn exec(
         &self,
         exec: ConstValueExecutor,
@@ -46,6 +47,7 @@ impl JITExecutor {
         }
     }
 
+    #[inline(always)]
     async fn dedupe_and_exec(
         &self,
         exec: ConstValueExecutor,
