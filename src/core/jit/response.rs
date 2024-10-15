@@ -1,5 +1,6 @@
 use std::borrow::BorrowMut;
 
+use async_graphql_value::ConstValue;
 use derive_setters::Setters;
 use serde::Serialize;
 
@@ -17,6 +18,13 @@ pub struct Response<Value, Error> {
     pub extensions: Vec<(String, Value)>,
 }
 
+impl<V,E> Default for Response<V,E> {
+    fn default() -> Self {
+        Self { data: Default::default(), errors: Default::default(), extensions: Default::default() }
+    }
+}
+
+
 impl<Value, Error> Response<Value, Error> {
     pub fn new(result: Result<Value, Positioned<Error>>) -> Self {
         match result {
@@ -31,6 +39,19 @@ impl<Value, Error> Response<Value, Error> {
 
     pub fn add_errors(&mut self, new_errors: Vec<Positioned<Error>>) {
         self.errors.extend(new_errors);
+    }
+}
+
+impl Response<ConstValue, jit::Error> {
+    pub fn merge_with_async_response(mut self, other: async_graphql::Response) -> Self {
+        if let async_graphql::Value::Object(other_obj) = other.data {
+            if let Some(async_graphql::Value::Object(self_obj)) = self.data.as_mut() {
+                self_obj.extend(other_obj);
+            } else {
+                self.data = Some(async_graphql::Value::Object(other_obj))
+            }
+        }
+        self
     }
 }
 
