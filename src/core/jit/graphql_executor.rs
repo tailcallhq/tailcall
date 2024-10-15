@@ -64,7 +64,7 @@ impl JITExecutor {
             })
             .await;
 
-        out.map(|response| response).unwrap_or_default()
+        out.unwrap_or_default()
     }
 
     #[inline(always)]
