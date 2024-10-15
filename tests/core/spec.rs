@@ -279,29 +279,47 @@ async fn run_test(
     app_ctx: Arc<AppContext>,
     request: &APIRequest,
 ) -> anyhow::Result<http::Response<Body>> {
-    let body = request
-        .body
-        .as_ref()
-        .map(|body| Body::from(body.to_bytes()))
-        .unwrap_or_default();
+    let request_count = request.repeat;
 
-    let method = request.method.clone();
-    let headers = request.headers.clone();
-    let url = request.url.clone();
-    let req = headers
+    let futures = (0..request_count).map(|_| {
+        let app_ctx = app_ctx.clone();
+        let body = request
+            .body
+            .as_ref()
+            .map(|body| Body::from(body.to_bytes()))
+            .unwrap_or_default();
+
+        let method = request.method.clone();
+        let headers = request.headers.clone();
+        let url = request.url.clone();
+
+        tokio::spawn(async move {
+            let req = headers
+                .into_iter()
+                .fold(
+                    Request::builder()
+                        .method(method.to_hyper())
+                        .uri(url.as_str()),
+                    |acc, (key, value)| acc.header(key, value),
+                )
+                .body(body)?;
+
+            if app_ctx.blueprint.server.enable_batch_requests {
+                handle_request::<GraphQLBatchRequest>(req, app_ctx).await
+            } else {
+                handle_request::<GraphQLRequest>(req, app_ctx).await
+            }
+        })
+    });
+
+    let responses = join_all(futures).await;
+
+    // Unwrap the Result from join_all and the individual task results
+    let responses = responses
         .into_iter()
-        .fold(
-            Request::builder()
-                .method(method.to_hyper())
-                .uri(url.as_str()),
-            |acc, (key, value)| acc.header(key, value),
-        )
-        .body(body)?;
+        .map(|res| res.map_err(anyhow::Error::from).and_then(|inner| inner))
+        .collect::<Vec<_>>();
 
-    // TODO: reuse logic from server.rs to select the correct handler
-    if app_ctx.blueprint.server.enable_batch_requests {
-        handle_request::<GraphQLBatchRequest>(req, app_ctx).await
-    } else {
-        handle_request::<GraphQLRequest>(req, app_ctx).await
-    }
+    // Return the last response or propagate an error if any occurred
+    responses.into_iter().last().unwrap()
 }

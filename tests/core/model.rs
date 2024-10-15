@@ -28,6 +28,10 @@ mod default {
         1
     }
 
+    pub fn repeat() -> usize {
+        1
+    }
+
     pub fn assert_hits() -> bool {
         true
     }
@@ -57,6 +61,8 @@ pub struct APIRequest {
     pub test_traces: bool,
     #[serde(default)]
     pub test_metrics: bool,
+    #[serde(default = "default::repeat")]
+    pub repeat: usize,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
