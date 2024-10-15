@@ -1,45 +1,45 @@
 # testing dedupe functionality
 
- ```graphql @config
- schema @server(port: 8000, queryValidation: false) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
-   query: Query
- }
+```graphql @config
+schema @server(port: 8000, queryValidation: false) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+  query: Query
+}
 
- type Query {
-   posts: [Post] @http(path: "/posts?id=1", dedupe: true)
- }
+type Query {
+  posts: [Post] @http(path: "/posts?id=1", dedupe: true)
+}
 
- type Post {
-   id: Int
-   title: String
-   body: String
-   userId: Int!
- }
+type Post {
+  id: Int
+  title: String
+  body: String
+  userId: Int!
+}
 
- type User {
-   id: Int
-   name: String
- }
- ```
+type User {
+  id: Int
+  name: String
+}
+```
 
- ```yml @mock
- - request:
-     method: GET
-     url: http://jsonplaceholder.typicode.com/posts?id=1
-   expectedHits: 1
-   response:
-     status: 200
-     body:
-       - id: 1
-         userId: 1
-       - id: 2
-         userId: 2
- ```
+```yml @mock
+- request:
+    method: GET
+    url: http://jsonplaceholder.typicode.com/posts?id=1
+  expectedHits: 1
+  response:
+    status: 200
+    body:
+      - id: 1
+        userId: 1
+      - id: 2
+        userId: 2
+```
 
- ```yml @test
- - method: POST
-   url: http://localhost:8080/graphql
-   repeat: 10
-   body:
-     query: query { posts { id, userId } }
- ```
+```yml @test
+- method: POST
+  url: http://localhost:8080/graphql
+  concurrent: 10
+  body:
+    query: query { posts { id, userId } }
+```
