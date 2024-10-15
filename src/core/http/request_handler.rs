@@ -136,13 +136,11 @@ async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
     req: Parts,
 ) -> anyhow::Result<Response<Body>> {
     let mut response = if app_ctx.blueprint.server.enable_jit {
-        let is_query = request.is_query();
         let operation_id = request.operation_id(&req.headers);
         request
             .execute(&JITExecutor::new(
                 app_ctx.clone(),
                 req_ctx.clone(),
-                is_query,
                 operation_id,
             ))
             .await

@@ -17,7 +17,6 @@ use crate::core::jit::{self, ConstValueExecutor, OPHash};
 pub struct JITExecutor {
     app_ctx: Arc<AppContext>,
     req_ctx: Arc<RequestContext>,
-    is_query: bool,
     operation_id: OperationId,
 }
 
@@ -25,10 +24,9 @@ impl JITExecutor {
     pub fn new(
         app_ctx: Arc<AppContext>,
         req_ctx: Arc<RequestContext>,
-        is_query: bool,
         operation_id: OperationId,
     ) -> Self {
-        Self { app_ctx, req_ctx, is_query, operation_id }
+        Self { app_ctx, req_ctx, operation_id }
     }
 
     async fn exec(
@@ -112,7 +110,7 @@ impl Executor for JITExecutor {
 
             let response = if let Some(response) = std::mem::take(&mut exec.response) {
                 response
-            } else if self.is_query && exec.plan.dedupe {
+            } else if exec.plan.is_query() && exec.plan.dedupe {
                 self.dedupe_and_exec(exec, jit_request).await
             } else {
                 self.exec(exec, jit_request).await
