@@ -132,7 +132,7 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
 async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
     app_ctx: &Arc<AppContext>,
     req_ctx: &Arc<RequestContext>,
-    mut request: T,
+    request: T,
     req: Parts,
 ) -> anyhow::Result<Response<Body>> {
     let mut response = if app_ctx.blueprint.server.enable_jit {
