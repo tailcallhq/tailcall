@@ -28,7 +28,7 @@ mod default {
         1
     }
 
-    pub fn repeat() -> usize {
+    pub fn concurrent() -> usize {
         1
     }
 
@@ -61,8 +61,8 @@ pub struct APIRequest {
     pub test_traces: bool,
     #[serde(default)]
     pub test_metrics: bool,
-    #[serde(default = "default::repeat")]
-    pub repeat: usize,
+    #[serde(default = "default::concurrent")]
+    pub concurrent: usize,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

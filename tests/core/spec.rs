@@ -279,7 +279,7 @@ async fn run_test(
     app_ctx: Arc<AppContext>,
     request: &APIRequest,
 ) -> anyhow::Result<http::Response<Body>> {
-    let request_count = request.repeat;
+    let request_count = request.concurrent;
 
     let futures = (0..request_count).map(|_| {
         let app_ctx = app_ctx.clone();
