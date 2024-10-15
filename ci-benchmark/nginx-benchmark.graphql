@@ -1,5 +1,5 @@
 schema
-  @server(hostname: "0.0.0.0", port: 8000)
+  @server(hostname: "0.0.0.0", port: 8000, enableJIT: false)
   @upstream(
     baseURL: "http://jsonplaceholder.typicode.com"
     poolMaxIdlePerHost: 200
@@ -9,7 +9,7 @@ schema
   query: Query
 }
 
-type Query {
+type Query @cache(maxAge: 30000) {
   posts: [Post] @http(path: "/posts")
 }
 
