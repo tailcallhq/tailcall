@@ -3582,9 +3582,9 @@ checksum = "17359afc20d7ab31fdb42bb844c8b3bb1dabd7dcf7e68428492da7f16966fcef"
 
 [[package]]
 name = "pathdiff"
-version = "0.2.1"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8835116a5c179084a830efb3adc117ab007512b535bc1a21c991d3b32a6b44dd"
+checksum = "d61c5ce1153ab5b689d0c074c4e7fc613e942dfb7dd9eea5ab202d2ad91fe361"
 
 [[package]]
 name = "pem"
@@ -6653,7 +6653,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
 dependencies = [
- "windows-sys 0.52.0",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
@@ -7040,9 +7040,9 @@ dependencies = [
 
 [[package]]
 name = "worker"
-version = "0.4.1"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "39ed0536ade2f3c10aba6a145dfb86d573f33eed53d31e5eb6a5261dc3b4ad0d"
+checksum = "d8aca53ec63e508176a89a573c972266f0f98bcc48bd866def7be0d939ef9268"
 dependencies = [
  "async-trait",
  "bytes",
@@ -7086,9 +7086,9 @@ dependencies = [
 
 [[package]]
 name = "worker-macros"
-version = "0.4.1"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd906c1826d2e6b782549ae0fab4c3835473cd8e0dc86467333a3046764e04d7"
+checksum = "1118a0ceb59ddde7fdbaff6c47b6fa6ee47848975ea38b4ae9bb4080f96541cd"
 dependencies = [
  "async-trait",
  "proc-macro2",
@@ -7102,9 +7102,9 @@ dependencies = [
 
 [[package]]
 name = "worker-sys"
-version = "0.4.1"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b9ebe5b036881fbb97ea517e10720ce1704d331a0afc1dfcea7d261103af004f"
+checksum = "d5643a2ba07df61aa50e37212ffcb0944417db7d3960d4331f36aeb2fa5e2fd7"
 dependencies = [
  "cfg-if",
  "js-sys",

@@ -7,6 +7,7 @@ use derive_setters::Setters;
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use strum::IntoEnumIterator;
 use tailcall_typedefs_common::directive_definition::DirectiveDefinition;
 use tailcall_typedefs_common::input_definition::InputDefinition;
 use tailcall_typedefs_common::ServiceDocumentBuilder;
@@ -510,17 +511,63 @@ impl Config {
         types
     }
 
-    /// Returns a list of all the types that are used as interface
-    pub fn interface_types(&self) -> HashSet<String> {
-        let mut types = HashSet::new();
+    pub fn interfaces_types_map(&self) -> BTreeMap<String, BTreeSet<String>> {
+        let mut interfaces_types: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
 
-        for ty in self.types.values() {
-            for interface in ty.implements.iter() {
-                types.insert(interface.clone());
+        for (type_name, type_definition) in self.types.iter() {
+            for implement_name in type_definition.implements.clone() {
+                interfaces_types
+                    .entry(implement_name)
+                    .or_default()
+                    .insert(type_name.clone());
             }
         }
 
-        types
+        fn recursive_interface_type_merging(
+            types_set: &BTreeSet<String>,
+            interfaces_types: &BTreeMap<String, BTreeSet<String>>,
+            temp_interface_types: &mut BTreeMap<String, BTreeSet<String>>,
+        ) -> BTreeSet<String> {
+            let mut types_set_local = BTreeSet::new();
+
+            for type_name in types_set.iter() {
+                match (
+                    interfaces_types.get(type_name),
+                    temp_interface_types.get(type_name),
+                ) {
+                    (Some(types_set_inner), None) => {
+                        let types_set_inner = recursive_interface_type_merging(
+                            types_set_inner,
+                            interfaces_types,
+                            temp_interface_types,
+                        );
+                        temp_interface_types.insert(type_name.to_string(), types_set_inner.clone());
+                        types_set_local = types_set_local.merge_right(types_set_inner);
+                    }
+                    (Some(_), Some(types_set_inner)) => {
+                        types_set_local = types_set_local.merge_right(types_set_inner.clone());
+                    }
+                    _ => {
+                        types_set_local.insert(type_name.to_string());
+                    }
+                }
+            }
+
+            types_set_local
+        }
+
+        let mut interfaces_types_map: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+        let mut temp_interface_types: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+        for (interface_name, types_set) in interfaces_types.iter() {
+            let types_set = recursive_interface_type_merging(
+                types_set,
+                &interfaces_types,
+                &mut temp_interface_types,
+            );
+            interfaces_types_map.insert(interface_name.clone(), types_set);
+        }
+
+        interfaces_types_map
     }
 
     /// Returns a list of all the arguments in the configuration
@@ -595,7 +642,7 @@ impl Config {
         let generated_types = &mut generated_types;
 
         let builder = ServiceDocumentBuilder::new();
-        builder
+        let mut builder = builder
             .add_directive(AddField::directive_definition(generated_types))
             .add_directive(Alias::directive_definition(generated_types))
             .add_directive(Cache::directive_definition(generated_types))
@@ -619,25 +666,13 @@ impl Config {
             .add_input(JS::input_definition())
             .add_input(Modify::input_definition())
             .add_input(Cache::input_definition())
-            .add_input(Telemetry::input_definition())
-            .add_scalar(Scalar::Bytes.scalar_definition())
-            .add_scalar(Scalar::Date.scalar_definition())
-            .add_scalar(Scalar::Email.scalar_definition())
-            .add_scalar(Scalar::Empty.scalar_definition())
-            .add_scalar(Scalar::Int128.scalar_definition())
-            .add_scalar(Scalar::Int16.scalar_definition())
-            .add_scalar(Scalar::Int32.scalar_definition())
-            .add_scalar(Scalar::Int64.scalar_definition())
-            .add_scalar(Scalar::Int8.scalar_definition())
-            .add_scalar(Scalar::JSON.scalar_definition())
-            .add_scalar(Scalar::PhoneNumber.scalar_definition())
-            .add_scalar(Scalar::UInt128.scalar_definition())
-            .add_scalar(Scalar::UInt16.scalar_definition())
-            .add_scalar(Scalar::UInt32.scalar_definition())
-            .add_scalar(Scalar::UInt64.scalar_definition())
-            .add_scalar(Scalar::UInt8.scalar_definition())
-            .add_scalar(Scalar::Url.scalar_definition())
-            .build()
+            .add_input(Telemetry::input_definition());
+
+        for scalar in Scalar::iter() {
+            builder = builder.add_scalar(scalar.scalar_definition());
+        }
+
+        builder.build()
     }
 }
 
@@ -774,5 +809,55 @@ mod tests {
             .map(String::from)
             .collect();
         assert_eq!(union_types, expected_union_types);
+    }
+
+    #[test]
+    fn test_interfaces_types_map() {
+        let sdl = std::fs::read_to_string(tailcall_fixtures::configs::INTERFACE_CONFIG).unwrap();
+        let config = Config::from_sdl(&sdl).to_result().unwrap();
+        let interfaces_types_map = config.interfaces_types_map();
+
+        let mut expected_union_types = BTreeMap::new();
+
+        {
+            let mut set = BTreeSet::new();
+            set.insert("E".to_string());
+            set.insert("F".to_string());
+            expected_union_types.insert("T0".to_string(), set);
+        }
+
+        {
+            let mut set = BTreeSet::new();
+            set.insert("A".to_string());
+            set.insert("E".to_string());
+            set.insert("B".to_string());
+            set.insert("C".to_string());
+            set.insert("D".to_string());
+            expected_union_types.insert("T1".to_string(), set);
+        }
+
+        {
+            let mut set = BTreeSet::new();
+            set.insert("B".to_string());
+            set.insert("E".to_string());
+            set.insert("D".to_string());
+            expected_union_types.insert("T2".to_string(), set);
+        }
+
+        {
+            let mut set = BTreeSet::new();
+            set.insert("C".to_string());
+            set.insert("E".to_string());
+            set.insert("D".to_string());
+            expected_union_types.insert("T3".to_string(), set);
+        }
+
+        {
+            let mut set = BTreeSet::new();
+            set.insert("D".to_string());
+            expected_union_types.insert("T4".to_string(), set);
+        }
+
+        assert_eq!(interfaces_types_map, expected_union_types);
     }
 }
