@@ -34,22 +34,21 @@ impl TypeFieldDiscriminator {
         }
 
         let Some(index_map) = value.as_object() else {
-            bail!("The TypeFieldDiscriminator(type=\"{}\") uses object values to discriminate, but got `{}` instead", self.type_name, value.to_string())
+            bail!("The TypeFieldDiscriminator(type=\"{}\") can only use object values to discriminate, but received a different type.", self.type_name)
         };
 
         let Some(value) = index_map.get(self.typename_field.as_str()) else {
-            bail!("The TypeFieldDiscriminator(type=\"{}\") cannot discriminate the Value `{}` because it does not contain the type name field `{}`", self.type_name, value.to_string(), self.typename_field.to_string())
+            bail!("The TypeFieldDiscriminator(type=\"{}\") cannot discriminate the Value because it does not contain the type name field `{}`", self.type_name, self.typename_field)
         };
 
         let Value::String(type_name) = value else {
-            bail!("The TypeFieldDiscriminator(type=\"{}\") uses a string type name field to discriminate, but got `{}` instead", self.type_name, value.to_string())
+            bail!("The TypeFieldDiscriminator(type=\"{}\") requires `{}` of type string, but received a different type.", self.type_name, self.typename_field)
         };
 
         if self.types.contains(type_name) {
             Ok(type_name.to_string())
         } else {
-            let mut types: Vec<_> = self.types.clone().into_iter().collect();
-            types.sort();
+            let types: Vec<_> = self.types.clone().into_iter().collect();
             bail!("The type `{}` is not in the list of acceptable types {:?} of TypeFieldDiscriminator(type=\"{}\")", type_name, types, self.type_name)
         }
     }
@@ -119,7 +118,7 @@ mod tests {
                 .resolve_type(&Value::from_json(json!(false)).unwrap())
                 .unwrap_err()
                 .to_string(),
-            "The TypeFieldDiscriminator(type=\"Test\") uses object values to discriminate, but got `false` instead"
+            "The TypeFieldDiscriminator(type=\"Test\") can only use object values to discriminate, but received a different type."
         );
 
         assert_eq!(
@@ -127,7 +126,7 @@ mod tests {
                 .resolve_type(&Value::from_json(json!({ "foo": "test" })).unwrap())
                 .unwrap_err()
                 .to_string(),
-            "The TypeFieldDiscriminator(type=\"Test\") cannot discriminate the Value `{foo: \"test\"}` because it does not contain the type name field `type`"
+            "The TypeFieldDiscriminator(type=\"Test\") cannot discriminate the Value because it does not contain the type name field `type`"
         );
 
         assert_eq!(
@@ -135,7 +134,7 @@ mod tests {
                 .resolve_type(&Value::from_json(json!({ "foo": "test", "type": false })).unwrap())
                 .unwrap_err()
                 .to_string(),
-            "The TypeFieldDiscriminator(type=\"Test\") uses a string type name field to discriminate, but got `false` instead"
+            "The TypeFieldDiscriminator(type=\"Test\") requires `type` of type string, but received a different type."
         );
 
         assert_eq!(

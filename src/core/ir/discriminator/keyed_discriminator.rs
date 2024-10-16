@@ -6,7 +6,10 @@ use async_graphql::Value;
 use super::TypedValue;
 use crate::core::valid::Valid;
 
-/// Resolver for type member of a union or interface.
+/// Resolver for `__typename` of Union and Interface types.
+/// The KeyedDiscriminator expects an object with one key, the type of the
+/// value. For example `{ "Foo": {...} }` the `__typename` will resolve to
+/// "Foo".
 #[derive(Debug, Clone)]
 pub struct KeyedDiscriminator {
     /// List of all types that are members of the union or interface.
@@ -16,6 +19,10 @@ pub struct KeyedDiscriminator {
 }
 
 impl KeyedDiscriminator {
+    ///
+    /// Used to construct a KeyedDiscriminator resolver
+    /// `type_name`: the name of the type the KeyedDiscriminator is applied at
+    /// `types`: the possible types the KeyedDiscriminator can resolve
     pub fn new(type_name: String, types: BTreeSet<String>) -> Valid<Self, String> {
         let discriminator = Self { type_name, types };
 
@@ -34,17 +41,16 @@ impl KeyedDiscriminator {
                     if self.types.contains(&type_name) {
                         Ok(type_name)
                     } else {
-                        let mut types: Vec<_> = self.types.clone().into_iter().collect();
-                        types.sort();
+                        let types: Vec<_> = self.types.clone().into_iter().collect();
                         bail!("The type `{}` is not in the list of acceptable types {:?} of KeyedDiscriminator(type=\"{}\")", type_name, types, self.type_name)
                     }
                 } else if index_map_len == 0 {
-                    bail!("The KeyedDiscriminator(type=\"{}\") cannot discriminate the Value `{}` because it contains no keys.", self.type_name, value.to_string())
+                    bail!("The KeyedDiscriminator(type=\"{}\") cannot discriminate the Value because it contains no keys.", self.type_name)
                 } else {
-                    bail!("The KeyedDiscriminator(type=\"{}\") cannot discriminate the Value `{}` because it contains more than one keys.", self.type_name, value.to_string())
+                    bail!("The KeyedDiscriminator(type=\"{}\") cannot discriminate the Value because it contains more than one keys.", self.type_name)
                 }
             },
-            _ => bail!("The KeyedDiscriminator(type=\"{}\") uses object values to discriminate, but got `{}` instead", self.type_name, value.to_string())
+            _ => bail!("The KeyedDiscriminator(type=\"{}\") can only use object values to discriminate, but received a different type.", self.type_name)
         }
     }
 
@@ -56,7 +62,7 @@ impl KeyedDiscriminator {
                 let (_, value) = index_map.into_iter().next().unwrap();
                 value
             },
-            _ => bail!("The KeyedDiscriminator(type=\"{}\") uses object values to discriminate, but got `{}` instead", self.type_name, value.to_string())
+            _ => bail!("The KeyedDiscriminator(type=\"{}\") can only use object values to discriminate, but received a different type.", self.type_name)
         };
         value.set_type_name(type_name)?;
         Ok(value)
@@ -123,7 +129,7 @@ mod tests {
                 .resolve_type(&Value::from_json(json!({})).unwrap())
                 .unwrap_err()
                 .to_string(),
-            "The KeyedDiscriminator(type=\"Test\") cannot discriminate the Value `{}` because it contains no keys."
+            "The KeyedDiscriminator(type=\"Test\") cannot discriminate the Value because it contains no keys."
         );
 
         assert_eq!(
@@ -131,7 +137,7 @@ mod tests {
                 .resolve_type(&Value::from_json(json!(false)).unwrap())
                 .unwrap_err()
                 .to_string(),
-            "The KeyedDiscriminator(type=\"Test\") uses object values to discriminate, but got `false` instead"
+            "The KeyedDiscriminator(type=\"Test\") can only use object values to discriminate, but received a different type."
         );
 
         assert_eq!(
@@ -139,7 +145,7 @@ mod tests {
                 .resolve_type(&Value::from_json(json!({ "Fizz": { "foo": "test" }, "Buzz": { "bar": "test" } })).unwrap())
                 .unwrap_err()
                 .to_string(),
-            "The KeyedDiscriminator(type=\"Test\") cannot discriminate the Value `{Fizz: {foo: \"test\"}, Buzz: {bar: \"test\"}}` because it contains more than one keys."
+            "The KeyedDiscriminator(type=\"Test\") cannot discriminate the Value because it contains more than one keys."
         );
     }
 }

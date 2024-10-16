@@ -11,7 +11,7 @@ use type_field_discriminator::TypeFieldDiscriminator;
 use crate::core::json::{JsonLike, JsonObjectLike};
 use crate::core::valid::{Valid, Validator};
 
-/// Resolver for type member of a union or interface.
+/// Resolver for `__typename` of Union and Interface types.
 #[derive(Debug, Clone)]
 pub enum Discriminator {
     Keyed(KeyedDiscriminator),
@@ -19,6 +19,12 @@ pub enum Discriminator {
 }
 
 impl Discriminator {
+    ///
+    /// Used to construct a Discriminator resolver
+    /// `type_name`: the name of the type the Discriminator is applied at
+    /// `types`: the possible types the Discriminator can resolve
+    /// `typename_field`: if specified the discriminator will use a `field` of
+    /// the object to resolve the `__typename`
     pub fn new(
         type_name: String,
         types: BTreeSet<String>,
@@ -40,6 +46,9 @@ impl Discriminator {
         }
     }
 
+    ///
+    /// Used to resolve the `__typename` for an object insert the value into the
+    /// object.
     pub fn resolve_type(&self, value: Value) -> Result<Value> {
         // if typename is already present we return it
         if value.get_type_name().is_some() {
@@ -62,7 +71,7 @@ impl Discriminator {
                     }
                 }
             },
-            _ => bail!("Discriminator can only determine the types of arrays or objects but got `{:?}` instead.", value.to_string())
+            _ => bail!("Discriminator can only determine the types of arrays or objects but a different type.")
         }
     }
 }
