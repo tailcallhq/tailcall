@@ -10,7 +10,7 @@ fn compile_union_resolver(
     union_definition: &Union,
     discriminate: &Option<Discriminate>,
 ) -> Valid<Discriminator, String> {
-    let typename_field = discriminate.as_ref().map(|d| d.field.clone());
+    let typename_field = discriminate.as_ref().map(|d| d.get_field());
 
     Discriminator::new(
         union_name.to_string(),

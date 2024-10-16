@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
 use anyhow::{bail, Result};
-use async_graphql::{Name, Value};
+use async_graphql::Value;
 
 use super::TypedValue;
 use crate::core::json::JsonLike;
@@ -10,7 +10,7 @@ use crate::core::valid::Valid;
 /// Resolver for type member of a union or interface.
 #[derive(Debug, Clone)]
 pub struct TypeFieldDiscriminator {
-    typename_field: Name,
+    typename_field: String,
     /// List of all types that are members of the union or interface.
     types: BTreeSet<String>,
     /// The name of TypeFieldDiscriminator is used for error reporting
@@ -23,7 +23,7 @@ impl TypeFieldDiscriminator {
         types: BTreeSet<String>,
         typename_field: String,
     ) -> Valid<Self, String> {
-        let discriminator = Self { type_name, types, typename_field: Name::new(typename_field) };
+        let discriminator = Self { type_name, types, typename_field };
 
         Valid::succeed(discriminator)
     }
@@ -37,7 +37,7 @@ impl TypeFieldDiscriminator {
             bail!("The TypeFieldDiscriminator(type=\"{}\") uses object values to discriminate, but got `{}` instead", self.type_name, value.to_string())
         };
 
-        let Some(value) = index_map.get(&self.typename_field) else {
+        let Some(value) = index_map.get(self.typename_field.as_str()) else {
             bail!("The TypeFieldDiscriminator(type=\"{}\") cannot discriminate the Value `{}` because it does not contain the type name field `{}`", self.type_name, value.to_string(), self.typename_field.to_string())
         };
 

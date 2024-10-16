@@ -66,13 +66,13 @@ type Spam {
   url: http://localhost:8080/graphql
   body:
     query: |
-        {
-            data {
-                ... on Buzz {
-                    spam {
-                        value
-                    }
-                }
-            }
-        }
+      {
+          data {
+              ... on Buzz {
+                  spam {
+                      value
+                  }
+              }
+          }
+      }
 ```

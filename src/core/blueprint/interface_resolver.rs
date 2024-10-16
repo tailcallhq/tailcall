@@ -12,7 +12,7 @@ fn compile_interface_resolver(
     interface_types: &BTreeSet<String>,
     discriminate: &Option<Discriminate>,
 ) -> Valid<Discriminator, String> {
-    let typename_field = discriminate.as_ref().map(|d| d.field.clone());
+    let typename_field = discriminate.as_ref().map(|d| d.get_field());
 
     Discriminator::new(
         interface_name.to_string(),
