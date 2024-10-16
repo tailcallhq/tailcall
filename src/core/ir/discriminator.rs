@@ -24,6 +24,15 @@ impl Discriminator {
         types: BTreeSet<String>,
         typename_field: Option<String>,
     ) -> Valid<Self, String> {
+        if let Some(typename_field) = &typename_field {
+            if typename_field.is_empty() {
+                return Valid::fail(format!(
+                    "The `field` cannot be an empty string for the `@discriminate` of type {}",
+                    type_name
+                ));
+            }
+        }
+
         if let Some(typename_field) = typename_field {
             TypeFieldDiscriminator::new(type_name, types, typename_field).map(Self::TypeField)
         } else {
