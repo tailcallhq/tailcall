@@ -1,4 +1,5 @@
-use std::{convert::Infallible, marker::PhantomData};
+use std::convert::Infallible;
+use std::marker::PhantomData;
 
 use crate::core::jit::{OperationPlan, Variables};
 use crate::core::json::JsonLike;

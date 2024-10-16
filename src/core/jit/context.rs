@@ -22,7 +22,7 @@ impl<'a, Input> RequestContext<'a, Input> {
         self.errors().push(new_error);
     }
     pub fn plan(&self) -> &OperationPlan<Input> {
-        &self.plan
+        self.plan
     }
     pub fn errors(&self) -> MutexGuard<Vec<Positioned<Error>>> {
         self.errors.lock().unwrap()

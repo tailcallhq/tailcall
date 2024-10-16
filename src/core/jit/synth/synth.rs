@@ -233,17 +233,17 @@ mod tests {
     use async_graphql_value::ConstValue;
     use serde::{Deserialize, Serialize};
 
-    use crate::core::{blueprint::Blueprint, jit::OperationPlan};
+    use super::ValueStore;
+    use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
     use crate::core::jit::builder::Builder;
     use crate::core::jit::fixtures::JP;
     use crate::core::jit::model::{FieldId, Variables};
     use crate::core::jit::store::Store;
     use crate::core::jit::synth::Synth;
+    use crate::core::jit::OperationPlan;
     use crate::core::json::JsonLike;
     use crate::core::valid::Validator;
-
-    use super::ValueStore;
 
     const POSTS: &str = r#"
         [
@@ -350,7 +350,8 @@ mod tests {
     fn assert_synths(query: &str, store: Vec<(FieldId, TestData)>) {
         let (plan, value_store, vars) = make_store::<ConstValue>(query, store.clone());
         let synth_const = Synth::new(&plan, value_store, vars);
-        let (plan, value_store, vars) = make_store::<serde_json_borrow::Value>(query, store.clone());
+        let (plan, value_store, vars) =
+            make_store::<serde_json_borrow::Value>(query, store.clone());
         let synth_borrow = Synth::new(&plan, value_store, vars);
 
         let val_const = synth_const.synthesize().unwrap();

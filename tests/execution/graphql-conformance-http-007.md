@@ -1,10 +1,4 @@
----
-skip: true
----
-
 # Test named fragments.
-
-TODO: Skipped because there is a pending case to improve the discriminator.
 
 ```graphql @config
 schema
@@ -50,11 +44,11 @@ type Counter {
       - id: 1
         handle: user-1
         friends:
-          counter: 2
+          count: 2
       - id: 2
-        handle: user-2
+        handle: page-1
         likers:
-          counter: 4
+          count: 4
 ```
 
 ```yml @test

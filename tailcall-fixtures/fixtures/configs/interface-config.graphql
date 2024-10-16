@@ -1,0 +1,51 @@
+schema @server {
+  query: Query
+}
+
+interface T0 {
+  id: Int!
+}
+
+interface T1 {
+  id: Int!
+}
+
+interface T2 implements T1 {
+  id: Int!
+}
+
+interface T3 implements T1 {
+  id: Int!
+}
+
+interface T4 implements T2 & T3 & T1 {
+  id: Int!
+}
+
+type A implements T1 {
+  id: Int!
+}
+type B implements T2 {
+  id: Int!
+}
+type C implements T3 {
+  id: Int!
+}
+type D implements T4 {
+  id: Int!
+}
+type E implements T1 & T2 & T3 & T0 {
+  id: Int!
+}
+type F implements T0 {
+  id: Int!
+}
+
+type Query {
+  a: A @expr(body: "A")
+  b: B @expr(body: "B")
+  c: C @expr(body: "C")
+  d: D @expr(body: "D")
+  e: E @expr(body: "E")
+  f: F @expr(body: "F")
+}

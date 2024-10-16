@@ -1,11 +1,9 @@
 use async_graphql_value::{ConstValue, Value};
 
 use super::super::{Arg, Field, OperationPlan, ResolveInputError, Variables};
+use crate::core::blueprint::Index;
+use crate::core::json::{JsonLikeOwned, JsonObjectLike};
 use crate::core::Type;
-use crate::core::{
-    blueprint::Index,
-    json::{JsonLikeOwned, JsonObjectLike},
-};
 
 /// Trait to represent conversion from some dynamic type (with variables)
 /// to the resolved variant based on the additional provided info.
@@ -48,7 +46,7 @@ impl<Input> InputResolver<Input> {
 impl<Input, Output> InputResolver<Input>
 where
     Input: Clone + std::fmt::Debug,
-    Output: Clone + JsonLikeOwned + TryFrom<serde_json::Value>,
+    Output: Clone + JsonLikeOwned + TryFrom<serde_json::Value> + std::fmt::Debug,
     Input: InputResolvable<Output = Output>,
     <Output as TryFrom<serde_json::Value>>::Error: std::fmt::Debug,
 {
@@ -65,9 +63,10 @@ where
             .collect::<Result<Vec<_>, _>>()?;
 
         // Traverse over fields again to verify/populate defaults for args
-        // because the previous iteration will just try convert values based on variables
-        // ignoring default values in schema and not checking if arg is required
-        // TODO: consider changing [Field::try_map] to be able to do this check?
+        // because the previous iteration will just try convert values based on
+        // variables ignoring default values in schema and not checking if arg
+        // is required TODO: consider changing [Field::try_map] to be able to do
+        // this check?
         let selection = selection
             .into_iter()
             .map(|field| Self::resolve_field(&index, field))

@@ -122,7 +122,8 @@ impl<'a, Value: Deserialize<'a> + Clone + 'a + JsonLike<'a> + std::fmt::Debug> J
         let vars = self.vars.clone();
 
         let posts_id = self.plan.find_field_path(&["posts"]).unwrap().id.to_owned();
-        let users_id = self.plan
+        let users_id = self
+            .plan
             .find_field_path(&["posts", "user"])
             .unwrap()
             .id
