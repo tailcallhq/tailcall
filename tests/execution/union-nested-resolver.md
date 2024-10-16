@@ -7,14 +7,14 @@ schema @server(port: 8030) @upstream(baseURL: "https://example.com/") {
 
 type Query {
   data: [Foo!]!
-    @discriminate(field: "type")
+    @discriminate(field: "object_type")
     @expr(
       body: [
-        {id: 1, type: "Fizz"}
-        {uuid: "hazz-1", type: "Hazz"}
-        {uuid: "buzz-1", type: "Buzz", spam: {identifier: 1}}
-        {uuid: "buzz-2", type: "Buzz", spam: {identifier: 2}}
-        {uuid: "buzz-3", type: "Buzz", spam: {identifier: 3}}
+        {id: 1, object_type: "Fizz"}
+        {uuid: "hazz-1", object_type: "Hazz"}
+        {uuid: "buzz-1", object_type: "Buzz", spam: {identifier: 1}}
+        {uuid: "buzz-2", object_type: "Buzz", spam: {identifier: 2}}
+        {uuid: "buzz-3", object_type: "Buzz", spam: {identifier: 3}}
       ]
     )
 }
