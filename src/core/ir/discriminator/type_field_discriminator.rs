@@ -7,17 +7,30 @@ use super::TypedValue;
 use crate::core::json::JsonLike;
 use crate::core::valid::Valid;
 
-/// Resolver for type member of a union or interface.
-#[derive(Debug, Clone)]
+/// Resolver for `__typename` of Union and Interface types.
+///
+/// The [TypeFieldDiscriminator] expects an object with a specific field, the
+/// type of the value. For example `{ "type": "Buzz", "bar": "test" }` the
+/// `__typename` will resolve to "Buzz".
+///
+/// This discriminator is used when the type of an object can be determined by
+/// a specific field.
+#[derive(Debug, Clone, PartialEq)]
 pub struct TypeFieldDiscriminator {
+    /// The field name that contains the type
     typename_field: String,
-    /// List of all types that are members of the union or interface.
+    /// List of all types that are members of the union or interface
     types: BTreeSet<String>,
     /// The name of TypeFieldDiscriminator is used for error reporting
     type_name: String,
 }
 
 impl TypeFieldDiscriminator {
+    /// Constructs a new [TypeFieldDiscriminator] resolver.
+    ///
+    /// `type_name`: The name of the type that this discriminator is applied at.
+    /// `types`: The possible types that this discriminator can resolve.
+    /// `typename_field`: The name of the field that contains the type.
     pub fn new(
         type_name: String,
         types: BTreeSet<String>,
@@ -28,6 +41,7 @@ impl TypeFieldDiscriminator {
         Valid::succeed(discriminator)
     }
 
+    /// Resolves the `__typename` for an object.
     pub fn resolve_type(&self, value: &Value) -> Result<String> {
         if value.is_null() {
             return Ok("NULL".to_string());
@@ -53,6 +67,8 @@ impl TypeFieldDiscriminator {
         }
     }
 
+    /// Resolves the `__typename` for an object and inserts the value into the
+    /// object.
     pub fn resolve_and_set_type(&self, mut value: Value) -> Result<Value> {
         let type_name = self.resolve_type(&value)?;
         value.set_type_name(type_name)?;

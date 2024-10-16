@@ -12,19 +12,37 @@ use crate::core::json::{JsonLike, JsonObjectLike};
 use crate::core::valid::{Valid, Validator};
 
 /// Resolver for `__typename` of Union and Interface types.
-#[derive(Debug, Clone)]
+///
+/// A discriminator is used to determine the type of an object in a GraphQL
+/// schema. It can be used to resolve the `__typename` field of an object.
+///
+/// There are two types of discriminators:
+///
+/// * [KeyedDiscriminator]: Uses the keys of an object to determine its type.
+/// * [TypeFieldDiscriminator]: Uses a specific field of an object to determine
+///   its type.
+///
+/// The [Discriminator] enum provides a way to construct and use these
+/// discriminators.
+#[derive(Debug, Clone, PartialEq)]
 pub enum Discriminator {
+    /// A discriminator that uses the keys of an object to determine its type.
     Keyed(KeyedDiscriminator),
+    /// A discriminator that uses a specific field of an object to determine its
+    /// type.
     TypeField(TypeFieldDiscriminator),
 }
 
 impl Discriminator {
+    /// Constructs a new discriminator.
     ///
-    /// Used to construct a Discriminator resolver
-    /// `type_name`: the name of the type the Discriminator is applied at
-    /// `types`: the possible types the Discriminator can resolve
-    /// `typename_field`: if specified the discriminator will use a `field` of
-    /// the object to resolve the `__typename`
+    /// `type_name`: The name of the type that this discriminator is applied to.
+    /// `types`: The possible types that this discriminator can resolve.
+    /// `typename_field`: If specified, the discriminator will use this field to
+    /// resolve the `__typename`.
+    ///
+    /// When `typename_field` is present the function Validates that it is not
+    /// empty.
     pub fn new(
         type_name: String,
         types: BTreeSet<String>,
@@ -46,8 +64,7 @@ impl Discriminator {
         }
     }
 
-    ///
-    /// Used to resolve the `__typename` for an object insert the value into the
+    /// Resolves the `__typename` for an object and inserts the value into the
     /// object.
     pub fn resolve_type(&self, value: Value) -> Result<Value> {
         // if typename is already present we return it
@@ -106,5 +123,58 @@ where
         } else {
             bail!("Cannot discriminate the type of a non object type.")
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn empty_type_field_is_invalid() {
+        let result = Discriminator::new("Test".to_string(), BTreeSet::new(), Some("".to_string()));
+        assert!(result.is_fail());
+        assert_eq!(result.to_result().unwrap_err().to_string(), "Validation Error\n• The `field` cannot be an empty string for the `@discriminate` of type Test\n");
+    }
+
+    #[test]
+    fn keyed_discriminator_works() {
+        let mut types = BTreeSet::new();
+        types.insert("Test1".to_string());
+        types.insert("Test2".to_string());
+
+        let result = Discriminator::new("Test".to_string(), types.clone(), None);
+        assert!(result.is_succeed());
+
+        let result = result.to_result().unwrap();
+        assert_eq!(
+            result,
+            Discriminator::Keyed(
+                KeyedDiscriminator::new("Test".to_string(), types)
+                    .to_result()
+                    .unwrap()
+            )
+        );
+    }
+
+    #[test]
+    fn type_field_discriminator_works() {
+        let mut types = BTreeSet::new();
+        types.insert("Test1".to_string());
+        types.insert("Test2".to_string());
+
+        let result =
+            Discriminator::new("Test".to_string(), types.clone(), Some("type".to_string()));
+        assert!(result.is_succeed());
+
+        let result = result.to_result().unwrap();
+        assert_eq!(
+            result,
+            Discriminator::TypeField(
+                TypeFieldDiscriminator::new("Test".to_string(), types, "type".to_string())
+                    .to_result()
+                    .unwrap()
+            )
+        );
     }
 }

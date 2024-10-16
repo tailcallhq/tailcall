@@ -7,28 +7,35 @@ use super::TypedValue;
 use crate::core::valid::Valid;
 
 /// Resolver for `__typename` of Union and Interface types.
-/// The KeyedDiscriminator expects an object with one key, the type of the
+///
+/// The [KeyedDiscriminator] expects an object with one key, the type of the
 /// value. For example `{ "Foo": {...} }` the `__typename` will resolve to
 /// "Foo".
-#[derive(Debug, Clone)]
+///
+/// This discriminator is used when the type of an object can be determined by
+/// its keys.
+#[derive(Debug, Clone, PartialEq)]
 pub struct KeyedDiscriminator {
     /// List of all types that are members of the union or interface.
     types: BTreeSet<String>,
-    /// The name of KeyedDiscriminator is used for error reporting
+    /// The name of `KeyedDiscriminator` is used for error reporting
     type_name: String,
 }
 
 impl KeyedDiscriminator {
+    /// Constructs a new [KeyedDiscriminator] resolver.
     ///
-    /// Used to construct a KeyedDiscriminator resolver
-    /// `type_name`: the name of the type the KeyedDiscriminator is applied at
-    /// `types`: the possible types the KeyedDiscriminator can resolve
+    /// `type_name`: The name of the type that this discriminator is applied at.
+    /// `types`: The possible types that this discriminator can resolve.
     pub fn new(type_name: String, types: BTreeSet<String>) -> Valid<Self, String> {
         let discriminator = Self { type_name, types };
 
         Valid::succeed(discriminator)
     }
 
+    /// Resolves the `__typename` for an object.
+    /// If the object has more than one key, or if the key is not in the list of
+    /// possible types, an error will be returned.
     pub fn resolve_type(&self, value: &Value) -> Result<String> {
         match value {
             // INFO: when a value is null you cannot use __typename so we are safe returning whatever
@@ -54,6 +61,8 @@ impl KeyedDiscriminator {
         }
     }
 
+    /// Resolves the `__typename` for an object and inserts the value into the
+    /// object.
     pub fn resolve_and_set_type(&self, value: Value) -> Result<Value> {
         let type_name = self.resolve_type(&value)?;
         let mut value = match value {
