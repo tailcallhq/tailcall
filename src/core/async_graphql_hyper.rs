@@ -307,9 +307,9 @@ impl GraphQLArcResponse {
         let str_repr = match &self.0 {
             JITBatchResponse::Batch(_resp) => {
                 let refs = _resp.iter().map(|r| r.as_ref()).collect::<Vec<_>>();
-                serde_json::to_string(&refs)?
+                serde_json::to_vec(&refs)?
             }
-            JITBatchResponse::Single(resp) => serde_json::to_string(resp.as_ref())?,
+            JITBatchResponse::Single(resp) => serde_json::to_vec(resp.as_ref())?,
         };
         Ok(Body::from(str_repr))
     }
