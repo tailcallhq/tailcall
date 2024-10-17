@@ -80,7 +80,7 @@ impl ConstValueExecutor {
         let response = exe.execute(synth).await;
 
         // Cache the response if we know the output is always the same
-        if is_const {
+        if is_const && self.response.is_none() {
             self.response = Some(response.clone());
         }
 
