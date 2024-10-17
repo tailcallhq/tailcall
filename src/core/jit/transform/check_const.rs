@@ -1,3 +1,4 @@
+use std::convert::Infallible;
 use std::marker::PhantomData;
 
 use crate::core::jit::OperationPlan;
@@ -13,7 +14,7 @@ impl<A> CheckConst<A> {
 
 impl<A> Transform for CheckConst<A> {
     type Value = OperationPlan<A>;
-    type Error = ();
+    type Error = Infallible;
 
     fn transform(&self, mut plan: Self::Value) -> Valid<Self::Value, Self::Error> {
         let is_const = plan.as_flat().all(|field| match field.ir {
