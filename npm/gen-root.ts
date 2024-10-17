@@ -1,9 +1,9 @@
 import * as fs from "fs/promises"
 import {resolve, dirname} from "path"
-import * as yml from "yaml"
 import {fileURLToPath} from "url"
 import {parse} from "ts-command-line-args"
 import {PackageJson as IPackageJSON} from "type-fest"
+import YML from "yaml"
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -17,9 +17,9 @@ const options = parse<ICLI>({
   name: {alias: "n", type: String},
 })
 
-async function getBuildDefinitions(): Promise<string[]> {
+async function get_build_matrix() {
   const ciYMLPath = resolve(__dirname, "../.github/workflows/build_matrix.yml")
-  const ciYML = await fs.readFile(ciYMLPath, "utf8").then(yml.parse)
+  const ciYML = await fs.readFile(ciYMLPath, "utf8").then(YML.parse)
   const steps = ciYML.jobs["setup-matrix"].steps
 
   for (const step of steps) {
@@ -27,25 +27,18 @@ async function getBuildDefinitions(): Promise<string[]> {
 
     if (matrix) {
       // Parse yaml again since matrix is defined as string inside setup-matrix
-      return yml.parse(matrix).build
+      return YML.parse(matrix)
     }
   }
 
   throw new Error("Cannot find matrix definition in workflow file")
 }
 
-async function genServerPackage(buildDefinitions: string[]) {
+async function genServerPackage() {
   const packageVersion = options.version || "0.1.0"
   const name = options.name || "@tailcallhq/tailcall"
 
   console.log(`Generating package.json with version ${packageVersion}`)
-
-  // Construct the optionalDependencies object with the provided version
-  const optionalDependencies: Record<string, string> = {}
-
-  for (const buildDef of buildDefinitions) {
-    optionalDependencies[`@tailcallhq/core-${buildDef}`] = packageVersion
-  }
 
   const packageJson = await fs.readFile(resolve(__dirname, "./package.json"), "utf8")
   const basePackage = JSON.parse(packageJson) as IPackageJSON
@@ -60,7 +53,6 @@ async function genServerPackage(buildDefinitions: string[]) {
     name: name,
     type: "module",
     version: packageVersion,
-    optionalDependencies,
     scarfSettings: {
       defaultOptIn: true,
       allowTopLevel: true,
@@ -68,34 +60,42 @@ async function genServerPackage(buildDefinitions: string[]) {
     dependencies: {
       "detect-libc": "^2.0.2",
       "@scarf/scarf": "^1.3.0",
+      yaml: "^2.3.3",
+      axios: "^1.7.4",
     },
     scripts: {
       postinstall: "node ./scripts/post-install.js",
       preinstall: "node ./scripts/pre-install.js",
+    },
+    bin: {
+      tailcall: "bin/tailcall", // will replace with respective platform binary later.
     },
   }
 
   // Define the directory path where the package.json should be created
   const directoryPath = resolve(__dirname, "@tailcallhq/tailcall")
   const scriptsPath = resolve(directoryPath, "./scripts")
+  const binPath = resolve(directoryPath, "./bin")
 
   await fs.mkdir(scriptsPath, {recursive: true})
+  await fs.mkdir(binPath, {recursive: true})
   await fs.mkdir(directoryPath, {recursive: true})
 
   const postInstallScript = await fs.readFile(resolve(__dirname, "./post-install.js"), "utf8")
   const preInstallScript = await fs.readFile(resolve(__dirname, "./pre-install.js"), "utf8")
+  const utilsScript = await fs.readFile(resolve(__dirname, "./utils.js"), "utf8")
+  const stringified_yaml = YML.stringify(await get_build_matrix())
 
   const postInstallScriptContent = `const version = "${packageVersion}";\n${postInstallScript}`
-  const preInstallScriptContent = `const optionalDependencies = ${JSON.stringify(
-    optionalDependencies,
-  )};\n${preInstallScript}`
 
   await fs.writeFile(resolve(scriptsPath, "post-install.js"), postInstallScriptContent, "utf8")
-  await fs.writeFile(resolve(scriptsPath, "pre-install.js"), preInstallScriptContent, "utf8")
+  await fs.writeFile(resolve(scriptsPath, "pre-install.js"), preInstallScript, "utf8")
+  await fs.writeFile(resolve(scriptsPath, "utils.js"), utilsScript, "utf8")
+  await fs.writeFile(resolve(directoryPath, "./build-matrix.yaml"), stringified_yaml, "utf8")
+
   await fs.writeFile(resolve(directoryPath, "./package.json"), JSON.stringify(tailcallPackage, null, 2), "utf8")
 
   await fs.copyFile(resolve(__dirname, "../README.md"), resolve(directoryPath, "./README.md"))
 }
 
-const buildDefinitions = await getBuildDefinitions()
-await genServerPackage(buildDefinitions)
+await genServerPackage()
