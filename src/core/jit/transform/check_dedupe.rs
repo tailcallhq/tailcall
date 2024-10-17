@@ -16,8 +16,12 @@ impl<A> Transform for CheckDedupe<A> {
 
     fn transform(&self, mut plan: Self::Value) -> Valid<Self::Value, Self::Error> {
         let dedupe = plan.as_nested().iter().all(|field| {
-            if let Some(IR::IO(io)) = field.ir.as_ref() {
-                io.dedupe()
+            if let Some(ir) = field.ir.as_ref() {
+                match ir {
+                    IR::IO(io) => io.dedupe(),
+                    IR::Cache(cache) => cache.io.dedupe(),
+                    _ => true,
+                }
             } else {
                 true
             }
