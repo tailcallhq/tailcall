@@ -5,8 +5,8 @@ use std::sync::Arc;
 use async_graphql::{BatchRequest, Response};
 use async_graphql_value::ConstValue;
 use futures_util::stream::FuturesOrdered;
-use tailcall_hasher::TailcallHasher;
 use futures_util::StreamExt;
+use tailcall_hasher::TailcallHasher;
 
 use crate::core::app_context::AppContext;
 use crate::core::async_graphql_hyper::OperationId;
@@ -100,39 +100,36 @@ impl JITArcExecutor {
                 exec
             };
 
-            let resp = if let Some(response) = std::mem::take(&mut exec.response) {
+            
+            if let Some(response) = std::mem::take(&mut exec.response) {
                 Arc::new(response.into_async_graphql())
             } else if exec.plan.is_query() && exec.plan.dedupe {
                 self.dedupe_and_exec(exec, jit_request).await
             } else {
                 Arc::new(self.exec(exec, jit_request).await)
-            };
-            resp
+            }
         }
     }
 
     /// Execute a GraphQL batch query.
-    pub fn execute_batch(
+    pub async fn execute_batch(
         &self,
         batch_request: BatchRequest,
-    ) -> impl Future<Output = BatchResponse> + Send + '_ {
-        async {
-            match batch_request {
-                BatchRequest::Single(request) => BatchResponse::Single(self.execute(request).await),
-                BatchRequest::Batch(requests) => {
-                    let futs = FuturesOrdered::from_iter(
-                        requests.into_iter().map(|request| self.execute(request)),
-                    );
-                    let ans = futs.collect::<Vec<_>>().await;
-                    BatchResponse::Batch(ans)
-                }
+    ) -> BatchResponse {
+        match batch_request {
+            BatchRequest::Single(request) => BatchResponse::Single(self.execute(request).await),
+            BatchRequest::Batch(requests) => {
+                let futs = FuturesOrdered::from_iter(
+                    requests.into_iter().map(|request| self.execute(request)),
+                );
+                let ans = futs.collect::<Vec<_>>().await;
+                BatchResponse::Batch(ans)
             }
         }
     }
 }
 
-
 pub enum BatchResponse {
     Single(Arc<Response>),
-    Batch(Vec<Arc<Response>>)
+    Batch(Vec<Arc<Response>>),
 }

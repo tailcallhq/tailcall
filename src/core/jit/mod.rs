@@ -23,7 +23,6 @@ pub use error::*;
 pub use exec_const::*;
 pub use graphql_executor::*;
 pub use graphql_executor_arc::*;
-
 pub use model::*;
 pub use request::*;
 pub use response::*;

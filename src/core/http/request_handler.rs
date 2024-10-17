@@ -143,8 +143,8 @@ async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
     } else {
         let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
         response = update_cache_control_header(response, app_ctx, req_ctx.clone());
-        let resp = response.into_response()?;
-        resp
+        
+        response.into_response()?
     };
 
     update_response_headers(&mut response, req_ctx, app_ctx);
