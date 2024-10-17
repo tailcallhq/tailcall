@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::future::Future;
 use std::sync::Arc;
 
-use async_graphql::{Data, Executor, Response, ServerError, Value};
+use async_graphql::{Data, Executor, Response, Value};
 use async_graphql_value::{ConstValue, Extensions};
 use futures_util::stream::BoxStream;
 
@@ -11,6 +11,7 @@ use crate::core::async_graphql_hyper::OperationId;
 use crate::core::http::RequestContext;
 use crate::core::jit;
 use crate::core::jit::ConstValueExecutor;
+use crate::core::lift::{CanLift, Lift};
 use crate::core::merge_right::MergeRight;
 
 #[derive(Clone)]
@@ -64,14 +65,23 @@ impl JITExecutor {
             .dedupe(&self.operation_id, || {
                 Box::pin(async move {
                     let resp = self.exec(exec, jit_request).await;
-                    Ok(Arc::new(resp))
+                    Ok(resp.lift())
                 })
             })
             .await;
-        let val = out.unwrap_or_default();
-        Arc::into_inner(val).unwrap_or_else(|| {
-            Response::from_errors(vec![ServerError::new("Deduplication failed", None)])
-        })
+
+        out.map(|response| response.take()).unwrap_or_default()
+    }
+}
+
+impl Clone for Lift<async_graphql::Response> {
+    fn clone(&self) -> Self {
+        let mut res = async_graphql::Response::new(self.data.clone())
+            .cache_control(self.cache_control)
+            .http_headers(self.http_headers.clone());
+        res.errors = self.errors.clone();
+        res.extensions = self.extensions.clone();
+        res.into()
     }
 }
 
