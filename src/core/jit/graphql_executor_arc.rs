@@ -35,20 +35,22 @@ impl JITArcExecutor {
         &self,
         exec: ConstValueExecutor,
         jit_request: jit::Request<ConstValue>,
-    ) -> Response {
+    ) -> Arc<Response> {
         let is_introspection_query = self.app_ctx.blueprint.server.get_enable_introspection()
             && exec.plan.is_introspection_query;
         let jit_resp = exec
             .execute(&self.req_ctx, &jit_request)
             .await
             .into_async_graphql();
-        if is_introspection_query {
+        let response = if is_introspection_query {
             let async_req = async_graphql::Request::from(jit_request).only_introspection();
             let async_resp = self.app_ctx.execute(async_req).await;
             jit_resp.merge_right(async_resp)
         } else {
             jit_resp
-        }
+        };
+
+        Arc::new(response)
     }
 
     #[inline(always)]
@@ -63,7 +65,7 @@ impl JITArcExecutor {
             .dedupe(&self.operation_id, || {
                 Box::pin(async move {
                     let resp = self.exec(exec, jit_request).await;
-                    Ok(Arc::new(resp))
+                    Ok(resp)
                 })
             })
             .await;
@@ -105,7 +107,7 @@ impl JITArcExecutor {
             } else if exec.plan.is_query() && exec.plan.dedupe {
                 self.dedupe_and_exec(exec, jit_request).await
             } else {
-                Arc::new(self.exec(exec, jit_request).await)
+               self.exec(exec, jit_request).await
             }
         }
     }
