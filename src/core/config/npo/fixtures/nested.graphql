@@ -1,7 +1,4 @@
 schema
-  @link(type: Config, src: "nested/a.graphql")
-  @link(type: Config, src: "nested/b.graphql")
-  @link(type: Config, src: "nested/c.graphql")
   @server(port: 8030)
   @upstream(baseURL: "https://example.com") {
   query: Query
