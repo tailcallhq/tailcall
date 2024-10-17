@@ -17,16 +17,6 @@ pub struct Response<Value, Error> {
     pub extensions: Vec<(String, Value)>,
 }
 
-impl<V, E> Default for Response<V, E> {
-    fn default() -> Self {
-        Self {
-            data: Default::default(),
-            errors: Default::default(),
-            extensions: Default::default(),
-        }
-    }
-}
-
 impl<Value, Error> Response<Value, Error> {
     pub fn new(result: Result<Value, Positioned<Error>>) -> Self {
         match result {
