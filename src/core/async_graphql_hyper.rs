@@ -1,5 +1,6 @@
 use std::any::Any;
 use std::hash::{Hash, Hasher};
+use std::sync::Arc;
 
 use anyhow::Result;
 use async_graphql::parser::types::{ExecutableDocument, OperationType};
@@ -315,6 +316,27 @@ impl GraphQLArcResponse {
 
     pub fn into_response(self) -> Result<Response<hyper::Body>> {
         self.build_response(StatusCode::OK, self.default_body()?)
+    }
+
+    // TODO: this is a problem this about better way to do this.
+    pub fn set_cache_control(mut self, min_cache: i32, cache_public: bool) -> GraphQLArcResponse {
+        match self.0 {
+            JITBatchResponse::Single(ref mut res) => {
+                Arc::get_mut(res).map(|res| {
+                    res.cache_control.max_age = min_cache;
+                    res.cache_control.public = cache_public;
+                });
+            }
+            JITBatchResponse::Batch(ref mut list) => {
+                for res in list {
+                    Arc::get_mut(res).map(|res| {
+                        res.cache_control.max_age = min_cache;
+                        res.cache_control.public = cache_public;
+                    });
+                }
+            }
+        };
+        self
     }
 }
 
