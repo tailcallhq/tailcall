@@ -1,5 +1,6 @@
 use std::any::Any;
 use std::hash::{Hash, Hasher};
+use std::sync::Arc;
 
 use anyhow::Result;
 use async_graphql::parser::types::{ExecutableDocument, OperationType};
@@ -11,6 +12,8 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use tailcall_hasher::TailcallHasher;
 
+use super::jit::{BatchResponse as JITBatchResponse, JITArcExecutor};
+
 #[derive(PartialEq, Eq, Clone, Hash, Debug)]
 pub struct OperationId(u64);
 
@@ -20,6 +23,8 @@ pub trait GraphQLRequestLike: Hash + Send {
     async fn execute<E>(self, executor: &E) -> GraphQLResponse
     where
         E: Executor;
+
+    async fn exec_arc(self, executor: JITArcExecutor) -> GraphQLArcResponse;
 
     fn parse_query(&mut self) -> Option<&ExecutableDocument>;
 
@@ -73,6 +78,11 @@ impl GraphQLRequestLike for GraphQLBatchRequest {
         }
         self
     }
+
+    async fn exec_arc(self, executor: JITArcExecutor) -> GraphQLArcResponse {
+        GraphQLArcResponse(executor.execute_batch(self.0).await)
+    }
+
     /// Shortcut method to execute the request on the executor.
     async fn execute<E>(self, executor: &E) -> GraphQLResponse
     where
@@ -107,6 +117,11 @@ impl GraphQLRequestLike for GraphQLRequest {
         self.0.data.insert(data);
         self
     }
+    async fn exec_arc(self, executor: JITArcExecutor) -> GraphQLArcResponse {
+        let response = executor.execute(self.0).await;
+        GraphQLArcResponse(JITBatchResponse::Single(response))
+    }
+
     /// Shortcut method to execute the request on the schema.
     async fn execute<E>(self, executor: &E) -> GraphQLResponse
     where
@@ -260,6 +275,64 @@ impl GraphQLResponse {
                 for res in list {
                     res.cache_control.max_age = min_cache;
                     res.cache_control.public = cache_public;
+                }
+            }
+        };
+        self
+    }
+}
+
+pub struct GraphQLArcResponse(pub JITBatchResponse);
+
+impl GraphQLArcResponse {
+    fn build_response(&self, status: StatusCode, body: Body) -> Result<Response<Body>> {
+        let mut response = Response::builder()
+            .status(status)
+            .header(CONTENT_TYPE, APPLICATION_JSON.as_ref())
+            .body(body)?;
+
+        if self.0.is_ok() {
+            if let Some(cache_control) = self.0.cache_control().value() {
+                response.headers_mut().insert(
+                    CACHE_CONTROL,
+                    HeaderValue::from_str(cache_control.as_str())?,
+                );
+            }
+        }
+
+        Ok(response)
+    }
+
+    fn default_body(&self) -> Result<Body> {
+        let str_repr = match &self.0 {
+            JITBatchResponse::Batch(_resp) => {
+                let refs = _resp.iter().map(|r| r.as_ref()).collect::<Vec<_>>();
+                serde_json::to_vec(&refs)?
+            }
+            JITBatchResponse::Single(resp) => serde_json::to_vec(resp.as_ref())?,
+        };
+        Ok(Body::from(str_repr))
+    }
+
+    pub fn into_response(self) -> Result<Response<hyper::Body>> {
+        self.build_response(StatusCode::OK, self.default_body()?)
+    }
+
+    // TODO: this is a problem this about better way to do this.
+    pub fn set_cache_control(mut self, min_cache: i32, cache_public: bool) -> GraphQLArcResponse {
+        match self.0 {
+            JITBatchResponse::Single(ref mut res) => {
+                if let Some(res) = Arc::get_mut(res) {
+                    res.cache_control.max_age = min_cache;
+                    res.cache_control.public = cache_public;
+                }
+            }
+            JITBatchResponse::Batch(ref mut list) => {
+                for res in list {
+                    if let Some(res) = Arc::get_mut(res) {
+                        res.cache_control.max_age = min_cache;
+                        res.cache_control.public = cache_public;
+                    }
                 }
             }
         };
