@@ -2,7 +2,7 @@ use std::future::Future;
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
-use async_graphql::{BatchRequest, Response};
+use async_graphql::{BatchRequest, CacheControl, Response};
 use async_graphql_value::ConstValue;
 use futures_util::stream::FuturesOrdered;
 use futures_util::StreamExt;
@@ -100,7 +100,6 @@ impl JITArcExecutor {
                 exec
             };
 
-            
             if let Some(response) = std::mem::take(&mut exec.response) {
                 Arc::new(response.into_async_graphql())
             } else if exec.plan.is_query() && exec.plan.dedupe {
@@ -112,10 +111,7 @@ impl JITArcExecutor {
     }
 
     /// Execute a GraphQL batch query.
-    pub async fn execute_batch(
-        &self,
-        batch_request: BatchRequest,
-    ) -> BatchResponse {
+    pub async fn execute_batch(&self, batch_request: BatchRequest) -> BatchResponse {
         match batch_request {
             BatchRequest::Single(request) => BatchResponse::Single(self.execute(request).await),
             BatchRequest::Batch(requests) => {
@@ -132,4 +128,36 @@ impl JITArcExecutor {
 pub enum BatchResponse {
     Single(Arc<Response>),
     Batch(Vec<Arc<Response>>),
+}
+
+impl BatchResponse {
+    pub fn is_ok(&self) -> bool {
+        match self {
+            BatchResponse::Single(s) => s.is_ok(),
+            BatchResponse::Batch(b) => b.iter().all(|s| s.is_ok()),
+        }
+    }
+
+    /// Gets cache control value
+    pub fn cache_control(&self) -> CacheControl {
+        match self {
+            BatchResponse::Single(resp) => resp.cache_control,
+            BatchResponse::Batch(resp) => resp.iter().fold(CacheControl::default(), |acc, item| {
+                merge(acc, &item.cache_control)
+            }),
+        }
+    }
+}
+
+fn merge(base: CacheControl, other: &CacheControl) -> CacheControl {
+    CacheControl {
+        public: base.public && other.public,
+        max_age: match (base.max_age, other.max_age) {
+            (-1, _) => -1,
+            (_, -1) => -1,
+            (a, 0) => a,
+            (0, b) => b,
+            (a, b) => a.min(b),
+        },
+    }
 }

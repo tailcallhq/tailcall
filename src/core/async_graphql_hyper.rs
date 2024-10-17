@@ -283,28 +283,21 @@ impl GraphQLResponse {
 
 pub struct GraphQLArcResponse(pub JITBatchResponse);
 
-// TODO: remove later on.
-impl Default for GraphQLArcResponse {
-    fn default() -> Self {
-        Self(JITBatchResponse::Batch(vec![]))
-    }
-}
-
 impl GraphQLArcResponse {
     fn build_response(&self, status: StatusCode, body: Body) -> Result<Response<Body>> {
-        let response = Response::builder()
+        let mut response = Response::builder()
             .status(status)
             .header(CONTENT_TYPE, APPLICATION_JSON.as_ref())
             .body(body)?;
 
-        // if self.0.is_ok() {
-        //     if let Some(cache_control) = self.0.cache_control().value() {
-        //         response.headers_mut().insert(
-        //             CACHE_CONTROL,
-        //             HeaderValue::from_str(cache_control.as_str())?,
-        //         );
-        //     }
-        // }
+        if self.0.is_ok() {
+            if let Some(cache_control) = self.0.cache_control().value() {
+                response.headers_mut().insert(
+                    CACHE_CONTROL,
+                    HeaderValue::from_str(cache_control.as_str())?,
+                );
+            }
+        }
 
         Ok(response)
     }
