@@ -60,17 +60,13 @@ where
             .selection
             .into_iter()
             .map(|field| field.try_map(&|value| value.resolve(variables)))
+            // Call `resolve_field` to verify/populate defaults for args
+            // because the previous map will just try convert values based on
+            // variables ignoring default values in schema and not checking if arg
+            // is required TODO: consider changing [Field::try_map] to be able to do
+            // this check?
+            .map(|field| Self::resolve_field(&index, field?))
             .collect::<Result<Vec<_>, _>>()?;
-
-        // Traverse over fields again to verify/populate defaults for args
-        // because the previous iteration will just try convert values based on
-        // variables ignoring default values in schema and not checking if arg
-        // is required TODO: consider changing [Field::try_map] to be able to do
-        // this check?
-        let selection = selection
-            .into_iter()
-            .map(|field| Self::resolve_field(&index, field))
-            .collect::<Result<_, _>>()?;
 
         Ok(OperationPlan {
             root_name: self.plan.root_name.to_string(),
