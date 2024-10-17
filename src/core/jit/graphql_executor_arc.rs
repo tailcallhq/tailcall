@@ -107,7 +107,7 @@ impl JITArcExecutor {
             } else if exec.plan.is_query() && exec.plan.dedupe {
                 self.dedupe_and_exec(exec, jit_request).await
             } else {
-               self.exec(exec, jit_request).await
+                self.exec(exec, jit_request).await
             }
         }
     }

@@ -322,17 +322,17 @@ impl GraphQLArcResponse {
     pub fn set_cache_control(mut self, min_cache: i32, cache_public: bool) -> GraphQLArcResponse {
         match self.0 {
             JITBatchResponse::Single(ref mut res) => {
-                Arc::get_mut(res).map(|res| {
+                if let Some(res) = Arc::get_mut(res) {
                     res.cache_control.max_age = min_cache;
                     res.cache_control.public = cache_public;
-                });
+                }
             }
             JITBatchResponse::Batch(ref mut list) => {
                 for res in list {
-                    Arc::get_mut(res).map(|res| {
+                    if let Some(res) = Arc::get_mut(res) {
                         res.cache_control.max_age = min_cache;
                         res.cache_control.public = cache_public;
-                    });
+                    }
                 }
             }
         };
