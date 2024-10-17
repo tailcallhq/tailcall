@@ -1,0 +1,31 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+---
+type Buzz {
+  spam: Spam
+  uuid: String!
+}
+
+type Fizz {
+  id: Int!
+}
+
+union Foo = Buzz | Fizz | Hazz
+
+type Hazz {
+  uuid: String!
+}
+
+type Query {
+  data: [Foo!]!
+}
+
+type Spam {
+  identifier: Int!
+  value: String!
+}
+
+schema {
+  query: Query
+}

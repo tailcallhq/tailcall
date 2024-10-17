@@ -9,9 +9,7 @@ expression: response
   },
   "body": {
     "data": {
-      "wrong": {
-        "__typename": "Baz"
-      }
+      "node": null
     }
   }
 }

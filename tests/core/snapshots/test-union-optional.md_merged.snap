@@ -1,0 +1,24 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server @upstream {
+  query: Query
+}
+
+union Node = Page | User
+
+type Page {
+  id: ID!
+  slug: String!
+}
+
+type Query {
+  node: Node @expr
+  nodes: [Node]! @expr(body: [{User: {id: 1, username: "user"}}, null, {Page: {id: 2, slug: "page"}}])
+}
+
+type User {
+  id: ID!
+  username: String!
+}
