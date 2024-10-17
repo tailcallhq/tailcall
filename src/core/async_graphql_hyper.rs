@@ -11,6 +11,8 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use tailcall_hasher::TailcallHasher;
 
+use super::jit::{BatchResponse as JITBatchResponse, JITArcExecutor};
+
 #[derive(PartialEq, Eq, Clone, Hash, Debug)]
 pub struct OperationId(u64);
 
@@ -20,6 +22,8 @@ pub trait GraphQLRequestLike: Hash + Send {
     async fn execute<E>(self, executor: &E) -> GraphQLResponse
     where
         E: Executor;
+
+    async fn exec_arc(self, executor: JITArcExecutor) -> GraphQLArcResponse;
 
     fn parse_query(&mut self) -> Option<&ExecutableDocument>;
 
@@ -73,6 +77,11 @@ impl GraphQLRequestLike for GraphQLBatchRequest {
         }
         self
     }
+
+    async fn exec_arc(self, executor: JITArcExecutor) -> GraphQLArcResponse {
+        GraphQLArcResponse(executor.execute_batch(self.0).await)
+    }
+
     /// Shortcut method to execute the request on the executor.
     async fn execute<E>(self, executor: &E) -> GraphQLResponse
     where
@@ -107,6 +116,11 @@ impl GraphQLRequestLike for GraphQLRequest {
         self.0.data.insert(data);
         self
     }
+    async fn exec_arc(self, executor: JITArcExecutor) -> GraphQLArcResponse {
+        let response = executor.execute(self.0).await;
+        GraphQLArcResponse(JITBatchResponse::Single(response))
+    }
+
     /// Shortcut method to execute the request on the schema.
     async fn execute<E>(self, executor: &E) -> GraphQLResponse
     where
@@ -264,6 +278,50 @@ impl GraphQLResponse {
             }
         };
         self
+    }
+}
+
+pub struct GraphQLArcResponse(pub JITBatchResponse);
+
+// TODO: remove later on.
+impl Default for GraphQLArcResponse {
+    fn default() -> Self {
+        Self(JITBatchResponse::Batch(vec![]))
+    }
+}
+
+impl GraphQLArcResponse {
+    fn build_response(&self, status: StatusCode, body: Body) -> Result<Response<Body>> {
+        let response = Response::builder()
+            .status(status)
+            .header(CONTENT_TYPE, APPLICATION_JSON.as_ref())
+            .body(body)?;
+
+        // if self.0.is_ok() {
+        //     if let Some(cache_control) = self.0.cache_control().value() {
+        //         response.headers_mut().insert(
+        //             CACHE_CONTROL,
+        //             HeaderValue::from_str(cache_control.as_str())?,
+        //         );
+        //     }
+        // }
+
+        Ok(response)
+    }
+
+    fn default_body(&self) -> Result<Body> {
+        let str_repr = match &self.0 {
+            JITBatchResponse::Batch(_resp) => {
+                let refs = _resp.iter().map(|r| r.as_ref()).collect::<Vec<_>>();
+                serde_json::to_string(&refs)?
+            }
+            JITBatchResponse::Single(resp) => serde_json::to_string(resp.as_ref())?,
+        };
+        Ok(Body::from(str_repr))
+    }
+
+    pub fn into_response(self) -> Result<Response<hyper::Body>> {
+        self.build_response(StatusCode::OK, self.default_body()?)
     }
 }
 
