@@ -1,0 +1,8 @@
+---
+source: src/core/config/npo/tracker.rs
+expression: actual
+---
+query { t2 { t2 { n } } }
+query { t2_ls { t2 } }
+query { t3 { t3 { n } } }
+query { t3_ls { t3 { n } } }
