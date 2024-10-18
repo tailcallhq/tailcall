@@ -2,14 +2,14 @@ use std::future::Future;
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
-use async_graphql::{BatchRequest, CacheControl, Response};
+use async_graphql::{BatchRequest, Response};
 use async_graphql_value::ConstValue;
 use futures_util::stream::FuturesOrdered;
 use futures_util::StreamExt;
 use tailcall_hasher::TailcallHasher;
 
 use crate::core::app_context::AppContext;
-use crate::core::async_graphql_hyper::OperationId;
+use crate::core::async_graphql_hyper::{CacheControl, OperationId};
 use crate::core::http::RequestContext;
 use crate::core::jit::{self, ConstValueExecutor, OPHash};
 use crate::core::merge_right::MergeRight;
@@ -149,9 +149,12 @@ impl Default for ByteResponse {
 }
 
 impl From<async_graphql::Response> for ByteResponse {
-    fn from(mut response: async_graphql::Response) -> Self {
+    fn from(response: async_graphql::Response) -> Self {
         ByteResponse {
-            cache_control: std::mem::take(&mut response.cache_control),
+            cache_control: CacheControl {
+                max_age: response.cache_control.max_age,
+                public: response.cache_control.public,
+            },
             is_ok: response.errors.is_empty(),
             data: serde_json::to_vec(&response).unwrap(),
         }
@@ -171,26 +174,17 @@ impl BatchResponse {
         }
     }
 
-    /// Gets cache control value
-    pub fn cache_control(&self) -> CacheControl {
+    /// modifies the cache control values with provided.
+    pub fn cache_control(&self, cache_control: Option<&CacheControl>) -> CacheControl {
         match self {
-            BatchResponse::Single(resp) => resp.cache_control,
+            BatchResponse::Single(resp) => resp.cache_control.clone(),
             BatchResponse::Batch(resp) => resp.iter().fold(CacheControl::default(), |acc, item| {
-                merge(acc, &item.cache_control)
+                if let Some(native_cache_control) = cache_control {
+                    acc.merge(native_cache_control)
+                } else {
+                    acc.merge(&item.cache_control)
+                }
             }),
         }
-    }
-}
-
-fn merge(base: CacheControl, other: &CacheControl) -> CacheControl {
-    CacheControl {
-        public: base.public && other.public,
-        max_age: match (base.max_age, other.max_age) {
-            (-1, _) => -1,
-            (_, -1) => -1,
-            (a, 0) => a,
-            (0, b) => b,
-            (a, b) => a.min(b),
-        },
     }
 }

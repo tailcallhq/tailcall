@@ -1,6 +1,5 @@
 use std::any::Any;
 use std::hash::{Hash, Hasher};
-use std::sync::Arc;
 
 use anyhow::Result;
 use async_graphql::parser::types::{ExecutableDocument, OperationType};
@@ -80,7 +79,7 @@ impl GraphQLRequestLike for GraphQLBatchRequest {
     }
 
     async fn exec_arc(self, executor: JITArcExecutor) -> GraphQLArcResponse {
-        GraphQLArcResponse(executor.execute_batch(self.0).await)
+        GraphQLArcResponse::new(executor.execute_batch(self.0).await)
     }
 
     /// Shortcut method to execute the request on the executor.
@@ -119,7 +118,7 @@ impl GraphQLRequestLike for GraphQLRequest {
     }
     async fn exec_arc(self, executor: JITArcExecutor) -> GraphQLArcResponse {
         let response = executor.execute(self.0).await;
-        GraphQLArcResponse(JITBatchResponse::Single(response))
+        GraphQLArcResponse::new(JITBatchResponse::Single(response))
     }
 
     /// Shortcut method to execute the request on the schema.
@@ -282,7 +281,67 @@ impl GraphQLResponse {
     }
 }
 
-pub struct GraphQLArcResponse(pub JITBatchResponse);
+#[derive(Default, Clone)]
+pub struct CacheControl {
+    pub max_age: i32,
+    pub public: bool,
+}
+
+impl CacheControl {
+    pub fn value(&self) -> Option<String> {
+        let mut value = if self.max_age > 0 {
+            format!("max-age={}", self.max_age)
+        } else if self.max_age == -1 {
+            "no-cache".to_string()
+        } else {
+            String::new()
+        };
+
+        if !self.public {
+            if !value.is_empty() {
+                value += ", ";
+            }
+            value += "private";
+        }
+
+        if !value.is_empty() {
+            Some(value)
+        } else {
+            None
+        }
+    }
+
+    pub fn merge(self, other: &CacheControl) -> CacheControl {
+        CacheControl {
+            public: self.public && other.public,
+            max_age: match (self.max_age, other.max_age) {
+                (-1, _) => -1,
+                (_, -1) => -1,
+                (a, 0) => a,
+                (0, b) => b,
+                (a, b) => a.min(b),
+            },
+        }
+    }
+}
+
+pub struct GraphQLArcResponse {
+    response: JITBatchResponse,
+    cache_control: Option<CacheControl>,
+}
+
+impl GraphQLArcResponse {
+    pub fn new(response: JITBatchResponse) -> Self {
+        Self { response, cache_control: None }
+    }
+
+    pub fn with_cache_control(self, public: bool, max_age: i32) -> Self {
+        Self {
+            response: self.response,
+            cache_control: Some(CacheControl { max_age, public }),
+        }
+    }
+}
 
 impl GraphQLArcResponse {
     fn build_response(&self, status: StatusCode, body: Body) -> Result<Response<Body>> {
@@ -291,8 +350,12 @@ impl GraphQLArcResponse {
             .header(CONTENT_TYPE, APPLICATION_JSON.as_ref())
             .body(body)?;
 
-        if self.0.is_ok() {
-            if let Some(cache_control) = self.0.cache_control().value() {
+        if self.response.is_ok() {
+            if let Some(cache_control) = self
+                .response
+                .cache_control(self.cache_control.as_ref())
+                .value()
+            {
                 response.headers_mut().insert(
                     CACHE_CONTROL,
                     HeaderValue::from_str(cache_control.as_str())?,
@@ -304,7 +367,7 @@ impl GraphQLArcResponse {
     }
 
     fn default_body(&self) -> Result<Body> {
-        let str_repr: Vec<u8> = match &self.0 {
+        let str_repr: Vec<u8> = match &self.response {
             JITBatchResponse::Batch(resp) => {
                 // Use iterators and collect for more efficient concatenation
                 let combined = resp
@@ -331,27 +394,6 @@ impl GraphQLArcResponse {
 
     pub fn into_response(self) -> Result<Response<hyper::Body>> {
         self.build_response(StatusCode::OK, self.default_body()?)
-    }
-
-    // TODO: this is a problem this about better way to do this.
-    pub fn set_cache_control(mut self, min_cache: i32, cache_public: bool) -> GraphQLArcResponse {
-        match self.0 {
-            JITBatchResponse::Single(ref mut res) => {
-                if let Some(res) = Arc::get_mut(res) {
-                    res.cache_control.max_age = min_cache;
-                    res.cache_control.public = cache_public;
-                }
-            }
-            JITBatchResponse::Batch(ref mut list) => {
-                for res in list {
-                    if let Some(res) = Arc::get_mut(res) {
-                        res.cache_control.max_age = min_cache;
-                        res.cache_control.public = cache_public;
-                    }
-                }
-            }
-        };
-        self
     }
 }
 

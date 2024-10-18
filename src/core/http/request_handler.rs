@@ -81,7 +81,7 @@ fn update_cache_control_header_for_arc(
     if app_ctx.blueprint.server.enable_cache_control_header {
         let ttl = req_ctx.get_min_max_age().unwrap_or(0);
         let cache_public_flag = req_ctx.is_cache_public().unwrap_or(true);
-        return response.set_cache_control(ttl, cache_public_flag);
+        return response.with_cache_control(cache_public_flag, ttl);
     }
     response
 }
