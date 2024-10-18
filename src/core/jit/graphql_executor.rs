@@ -69,7 +69,7 @@ impl JITExecutor {
             })
             .await;
 
-        out.map(|out| out.take()).unwrap_or_default()
+        out.map(|response| response.take()).unwrap_or_default()
     }
 
     #[inline(always)]
