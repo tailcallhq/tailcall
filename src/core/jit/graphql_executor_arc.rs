@@ -177,9 +177,7 @@ impl BatchResponse {
     /// Modifies the cache control values with the provided one.
     pub fn cache_control(&self, cache_control: Option<&CacheControl>) -> CacheControl {
         match self {
-            BatchResponse::Single(resp) => {
-                cache_control.unwrap_or(&resp.cache_control).clone()
-            }
+            BatchResponse::Single(resp) => cache_control.unwrap_or(&resp.cache_control).clone(),
             BatchResponse::Batch(responses) => {
                 responses.iter().fold(CacheControl::default(), |acc, resp| {
                     if let Some(cc) = cache_control {

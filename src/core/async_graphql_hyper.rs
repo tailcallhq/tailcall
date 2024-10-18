@@ -289,10 +289,7 @@ pub struct CacheControl {
 
 impl Default for CacheControl {
     fn default() -> Self {
-        Self {
-            public: true,
-            max_age: 0,
-        }
+        Self { public: true, max_age: 0 }
     }
 }
 
