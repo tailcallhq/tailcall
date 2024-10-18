@@ -23,7 +23,7 @@ pub trait GraphQLRequestLike: Hash + Send {
     where
         E: Executor;
 
-    async fn exec_arc(self, executor: JITExecutor) -> GraphQLArcResponse;
+    async fn execute_with_jit(self, executor: JITExecutor) -> GraphQLArcResponse;
 
     fn parse_query(&mut self) -> Option<&ExecutableDocument>;
 
@@ -78,7 +78,7 @@ impl GraphQLRequestLike for GraphQLBatchRequest {
         self
     }
 
-    async fn exec_arc(self, executor: JITExecutor) -> GraphQLArcResponse {
+    async fn execute_with_jit(self, executor: JITExecutor) -> GraphQLArcResponse {
         GraphQLArcResponse::new(executor.execute_batch(self.0).await)
     }
 
@@ -116,7 +116,7 @@ impl GraphQLRequestLike for GraphQLRequest {
         self.0.data.insert(data);
         self
     }
-    async fn exec_arc(self, executor: JITExecutor) -> GraphQLArcResponse {
+    async fn execute_with_jit(self, executor: JITExecutor) -> GraphQLArcResponse {
         let response = executor.execute(self.0).await;
         GraphQLArcResponse::new(JITBatchResponse::Single(response))
     }
