@@ -2,5 +2,5 @@
 source: src/core/config/npo/tracker.rs
 expression: actual
 ---
-query { f1 { f2 } }
 query { f1 { f3 } }
+query { f1 { f2 } }
