@@ -4,6 +4,7 @@ use rustls_pemfile;
 use rustls_pki_types::{
     CertificateDer, PrivateKeyDer, PrivatePkcs1KeyDer, PrivatePkcs8KeyDer, PrivateSec1KeyDer,
 };
+use tailcall_valid::{Valid, Validator};
 use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType, PrivateKey};
@@ -12,7 +13,6 @@ use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::{Cached, Resource, ResourceReader};
 use crate::core::rest::EndpointSet;
 use crate::core::runtime::TargetRuntime;
-use crate::core::valid::{Valid, Validator};
 use crate::core::variance::Invariant;
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all

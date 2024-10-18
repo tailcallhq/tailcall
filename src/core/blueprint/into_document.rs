@@ -5,12 +5,12 @@ use async_graphql::parser::types::{
 };
 use async_graphql::{Name, Positioned};
 use async_graphql_value::ConstValue;
+use tailcall_valid::Validator;
 
 use super::blueprint;
 use super::directive::{to_const_directive, Directive};
 use crate::core::blueprint::{Blueprint, Definition};
 use crate::core::pos;
-use crate::core::valid::Validator;
 
 fn to_directives(directives: &[Directive]) -> Vec<Positioned<ConstDirective>> {
     directives

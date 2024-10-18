@@ -1,8 +1,9 @@
+use tailcall_valid::{Valid, Validator};
+
 use super::pair_map::PairMap;
 use super::pair_set::PairSet;
 use crate::core::config::{Config, Type};
 use crate::core::scalar::Scalar;
-use crate::core::valid::{Valid, Validator};
 
 /// Given Two types,it tells similarity between two types based on a specified
 /// threshold.
@@ -137,9 +138,10 @@ impl<'a> Similarity<'a> {
 
 #[cfg(test)]
 mod test {
+    use tailcall_valid::Validator;
+
     use super::Similarity;
     use crate::core::config::{config, Config, Field};
-    use crate::core::valid::Validator;
     use crate::core::Type;
 
     #[test]
