@@ -10,7 +10,7 @@ schema
 }
 
 type Query {
-  posts: [Post] @http(path: "/posts", dedupe: true)
+  posts: [Post] @http(path: "/posts")
 }
 
 type User {
