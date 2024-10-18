@@ -19,7 +19,7 @@ use super::request_context::RequestContext;
 use super::telemetry::{get_response_status_code, RequestCounter};
 use super::{showcase, telemetry, TAILCALL_HTTPS_ORIGIN, TAILCALL_HTTP_ORIGIN};
 use crate::core::app_context::AppContext;
-use crate::core::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
+use crate::core::async_graphql_hyper::{GraphQLArcResponse, GraphQLRequestLike, GraphQLResponse};
 use crate::core::blueprint::telemetry::TelemetryExporter;
 use crate::core::config::{PrometheusExporter, PrometheusFormat};
 use crate::core::jit::JITExecutor;
@@ -69,6 +69,19 @@ fn update_cache_control_header(
         let ttl = req_ctx.get_min_max_age().unwrap_or(0);
         let cache_public_flag = req_ctx.is_cache_public().unwrap_or(true);
         return response.set_cache_control(ttl, cache_public_flag);
+    }
+    response
+}
+
+fn update_cache_control_header_for_arc(
+    response: GraphQLArcResponse,
+    app_ctx: &AppContext,
+    req_ctx: Arc<RequestContext>,
+) -> GraphQLArcResponse {
+    if app_ctx.blueprint.server.enable_cache_control_header {
+        let ttl = req_ctx.get_min_max_age().unwrap_or(0);
+        let cache_public_flag = req_ctx.is_cache_public().unwrap_or(true);
+        return response.with_cache_control(cache_public_flag, ttl);
     }
     response
 }
@@ -134,21 +147,20 @@ async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
 ) -> anyhow::Result<Response<Body>> {
     let mut response = if app_ctx.blueprint.server.enable_jit {
         let operation_id = request.operation_id(&req.headers);
-        request
-            .execute(&JITExecutor::new(
-                app_ctx.clone(),
-                req_ctx.clone(),
-                operation_id,
-            ))
-            .await
-    } else {
-        request.data(req_ctx.clone()).execute(&app_ctx.schema).await
-    };
-    response = update_cache_control_header(response, app_ctx, req_ctx.clone());
+        let exec = JITExecutor::new(app_ctx.clone(), req_ctx.clone(), operation_id);
+        let mut response = request.execute_with_jit(exec).await;
+        response = update_cache_control_header_for_arc(response, app_ctx, req_ctx.clone());
 
-    let mut resp = response.into_response()?;
-    update_response_headers(&mut resp, req_ctx, app_ctx);
-    Ok(resp)
+        response.into_response()?
+    } else {
+        let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
+        response = update_cache_control_header(response, app_ctx, req_ctx.clone());
+
+        response.into_response()?
+    };
+
+    update_response_headers(&mut response, req_ctx, app_ctx);
+    Ok(response)
 }
 
 fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> HeaderMap {
