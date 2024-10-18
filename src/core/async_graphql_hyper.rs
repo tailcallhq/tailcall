@@ -281,10 +281,19 @@ impl GraphQLResponse {
     }
 }
 
-#[derive(Default, Clone)]
+#[derive(Clone, Debug)]
 pub struct CacheControl {
     pub max_age: i32,
     pub public: bool,
+}
+
+impl Default for CacheControl {
+    fn default() -> Self {
+        Self {
+            public: true,
+            max_age: 0,
+        }
+    }
 }
 
 impl CacheControl {
@@ -349,7 +358,6 @@ impl GraphQLArcResponse {
             .status(status)
             .header(CONTENT_TYPE, APPLICATION_JSON.as_ref())
             .body(body)?;
-
         if self.response.is_ok() {
             if let Some(cache_control) = self
                 .response
