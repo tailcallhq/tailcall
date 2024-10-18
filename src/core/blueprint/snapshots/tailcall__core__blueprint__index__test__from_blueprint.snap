@@ -628,20 +628,15 @@ Index {
                             of_type: [SearchResult!],
                             resolver: Some(
                                 Discriminate(
-                                    Discriminator {
-                                    types: ["Post", "User"]
-                                    fields_info:
-                                        author:
-                                            presented_in: ["Post"]
-                                            required_in: ["Post"]
-                                        email:
-                                            presented_in: ["User"]
-                                            required_in: ["User"]
-                                        status:
-                                            presented_in: ["User"]
-                                            required_in: []
-                                    }
-                                    ,
+                                    Keyed(
+                                        KeyedDiscriminator {
+                                            types: {
+                                                "Post",
+                                                "User",
+                                            },
+                                            type_name: "SearchResult",
+                                        },
+                                    ),
                                     IO(
                                         Http {
                                             req_template: RequestTemplate {
@@ -792,20 +787,15 @@ Index {
                             of_type: [SearchResult!],
                             resolver: Some(
                                 Discriminate(
-                                    Discriminator {
-                                    types: ["Post", "User"]
-                                    fields_info:
-                                        author:
-                                            presented_in: ["Post"]
-                                            required_in: ["Post"]
-                                        email:
-                                            presented_in: ["User"]
-                                            required_in: ["User"]
-                                        status:
-                                            presented_in: ["User"]
-                                            required_in: []
-                                    }
-                                    ,
+                                    Keyed(
+                                        KeyedDiscriminator {
+                                            types: {
+                                                "Post",
+                                                "User",
+                                            },
+                                            type_name: "SearchResult",
+                                        },
+                                    ),
                                     IO(
                                         Http {
                                             req_template: RequestTemplate {
