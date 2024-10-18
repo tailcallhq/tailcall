@@ -156,7 +156,10 @@ impl From<async_graphql::Response> for ByteResponse {
                 public: response.cache_control.public,
             },
             is_ok: response.errors.is_empty(),
-            data: serde_json::to_vec(&response).unwrap(),
+            // Safely serialize the response to JSON bytes. Since the response is always valid, serialization is expected to succeed. 
+            // In the unlikely event of a failure, default to an empty byte array.
+            // TODO: return error instead of default value.
+            data: serde_json::to_vec(&response).unwrap_or_default()
         }
     }
 }
