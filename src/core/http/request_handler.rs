@@ -22,7 +22,7 @@ use crate::core::app_context::AppContext;
 use crate::core::async_graphql_hyper::{GraphQLArcResponse, GraphQLRequestLike, GraphQLResponse};
 use crate::core::blueprint::telemetry::TelemetryExporter;
 use crate::core::config::{PrometheusExporter, PrometheusFormat};
-use crate::core::jit::JITArcExecutor;
+use crate::core::jit::JITExecutor;
 
 pub const API_URL_PREFIX: &str = "/api";
 
@@ -147,7 +147,7 @@ async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
 ) -> anyhow::Result<Response<Body>> {
     let mut response = if app_ctx.blueprint.server.enable_jit {
         let operation_id = request.operation_id(&req.headers);
-        let exec = JITArcExecutor::new(app_ctx.clone(), req_ctx.clone(), operation_id);
+        let exec = JITExecutor::new(app_ctx.clone(), req_ctx.clone(), operation_id);
         let mut response = request.exec_arc(exec).await;
         response = update_cache_control_header_for_arc(response, app_ctx, req_ctx.clone());
 
