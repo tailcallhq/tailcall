@@ -75,6 +75,10 @@ impl<'a> MustachePartsValidator<'a> {
                         return Valid::fail(format!("can't use list type '{tail}' here"));
                     }
 
+                    if scalar::Scalar::find(arg.of_type.name()).is_none() {
+                        return Valid::fail(format!("Invalid query parameter type. Expected '{tail}' to be a Scalar but received an Object."));
+                    }
+
                     // we can use non-scalar types in args
                     if !is_query && arg.default_value.is_none() && arg.of_type.is_nullable() {
                         return Valid::fail(format!("argument '{tail}' is a nullable type"));
