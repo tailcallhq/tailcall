@@ -9,10 +9,12 @@ use futures_util::StreamExt;
 use tailcall_hasher::TailcallHasher;
 
 use crate::core::app_context::AppContext;
-use crate::core::async_graphql_hyper::{CacheControl, OperationId};
+use crate::core::async_graphql_hyper::OperationId;
 use crate::core::http::RequestContext;
 use crate::core::jit::{self, ConstValueExecutor, OPHash};
 use crate::core::merge_right::MergeRight;
+
+use super::{BatchResponse, ByteResponse};
 
 #[derive(Clone)]
 pub struct JITArcExecutor {
@@ -122,73 +124,8 @@ impl JITArcExecutor {
                 let futs = FuturesOrdered::from_iter(
                     requests.into_iter().map(|request| self.execute(request)),
                 );
-                let ans = futs.collect::<Vec<_>>().await;
-                BatchResponse::Batch(ans)
-            }
-        }
-    }
-}
-
-/// Represents a GraphQL response in a serialized byte format.
-pub struct ByteResponse {
-    /// The GraphQL response data serialized into a byte array.
-    pub data: Vec<u8>,
-
-    /// Information regarding cache policies for the response, such as max age
-    /// and public/private settings.
-    pub cache_control: CacheControl,
-
-    /// Indicates whether graphql response contains error or not.
-    pub is_ok: bool,
-}
-
-impl Default for ByteResponse {
-    fn default() -> Self {
-        async_graphql::Response::default().into()
-    }
-}
-
-impl From<async_graphql::Response> for ByteResponse {
-    fn from(response: async_graphql::Response) -> Self {
-        ByteResponse {
-            cache_control: CacheControl {
-                max_age: response.cache_control.max_age,
-                public: response.cache_control.public,
-            },
-            is_ok: response.errors.is_empty(),
-            // Safely serialize the response to JSON bytes. Since the response is always valid, serialization is expected to succeed. 
-            // In the unlikely event of a failure, default to an empty byte array.
-            // TODO: return error instead of default value.
-            data: serde_json::to_vec(&response).unwrap_or_default()
-        }
-    }
-}
-
-pub enum BatchResponse {
-    Single(Arc<ByteResponse>),
-    Batch(Vec<Arc<ByteResponse>>),
-}
-
-impl BatchResponse {
-    pub fn is_ok(&self) -> bool {
-        match self {
-            BatchResponse::Single(s) => s.is_ok,
-            BatchResponse::Batch(b) => b.iter().all(|s| s.is_ok),
-        }
-    }
-
-    /// Modifies the cache control values with the provided one.
-    pub fn cache_control(&self, cache_control: Option<&CacheControl>) -> CacheControl {
-        match self {
-            BatchResponse::Single(resp) => cache_control.unwrap_or(&resp.cache_control).clone(),
-            BatchResponse::Batch(responses) => {
-                responses.iter().fold(CacheControl::default(), |acc, resp| {
-                    if let Some(cc) = cache_control {
-                        acc.merge(cc)
-                    } else {
-                        acc.merge(&resp.cache_control)
-                    }
-                })
+                let responses = futs.collect::<Vec<_>>().await;
+                BatchResponse::Batch(responses)
             }
         }
     }
