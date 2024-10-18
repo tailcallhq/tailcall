@@ -174,17 +174,21 @@ impl BatchResponse {
         }
     }
 
-    /// modifies the cache control values with provided.
+    /// Modifies the cache control values with the provided one.
     pub fn cache_control(&self, cache_control: Option<&CacheControl>) -> CacheControl {
         match self {
-            BatchResponse::Single(resp) => resp.cache_control.clone(),
-            BatchResponse::Batch(resp) => resp.iter().fold(CacheControl::default(), |acc, item| {
-                if let Some(native_cache_control) = cache_control {
-                    acc.merge(native_cache_control)
-                } else {
-                    acc.merge(&item.cache_control)
-                }
-            }),
+            BatchResponse::Single(resp) => {
+                cache_control.unwrap_or(&resp.cache_control).clone()
+            }
+            BatchResponse::Batch(responses) => {
+                responses.iter().fold(CacheControl::default(), |acc, resp| {
+                    if let Some(cc) = cache_control {
+                        acc.merge(cc)
+                    } else {
+                        acc.merge(&resp.cache_control)
+                    }
+                })
+            }
         }
     }
 }
