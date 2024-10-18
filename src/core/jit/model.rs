@@ -54,7 +54,7 @@ impl<V> FromIterator<(String, V)> for Variables<V> {
     }
 }
 
-impl<Extensions, Input> Field<Extensions, Input> {
+impl<Input> Field<Input> {
     #[inline(always)]
     pub fn skip<'json, Value: JsonLike<'json>>(&self, variables: &Variables<Value>) -> bool {
         let eval =
@@ -78,6 +78,19 @@ impl<Extensions, Input> Field<Extensions, Input> {
     {
         value.get_type_name().unwrap_or(self.type_of.name())
     }
+
+    pub fn iter(&self) -> impl Iterator<Item = &Field<Input>> {
+        self.selection.iter()
+    }
+    pub fn modify(&self, ff: &impl Fn(&Field<Input>) -> Field<Input>) -> Field<Input> {
+        let mut field = ff(self);
+        field.selection = field
+            .selection
+            .iter()
+            .map(|f| f.modify(&ff))
+            .collect::<Vec<_>>();
+        field
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -92,14 +105,14 @@ pub struct Arg<Input> {
 impl<Input> Arg<Input> {
     pub fn try_map<Output, Error>(
         self,
-        map: impl Fn(Input) -> Result<Output, Error>,
+        map: &impl Fn(Input) -> Result<Output, Error>,
     ) -> Result<Arg<Output>, Error> {
         Ok(Arg {
             id: self.id,
             name: self.name,
             type_of: self.type_of,
-            value: self.value.map(&map).transpose()?,
-            default_value: self.default_value.map(&map).transpose()?,
+            value: self.value.map(map).transpose()?,
+            default_value: self.default_value.map(map).transpose()?,
         })
     }
 }
@@ -138,8 +151,9 @@ impl FieldId {
 }
 
 #[derive(Clone)]
-pub struct Field<Extensions, Input> {
+pub struct Field<Input> {
     pub id: FieldId,
+    pub parent_id: Option<FieldId>,
     /// Name of key in the value object for this field
     pub name: String,
     /// Output name (i.e. with alias) that should be used for the result value
@@ -155,9 +169,29 @@ pub struct Field<Extensions, Input> {
     pub skip: Option<Variable>,
     pub include: Option<Variable>,
     pub args: Vec<Arg<Input>>,
-    pub extensions: Option<Extensions>,
+    pub selection: Vec<Field<Input>>,
     pub pos: Pos,
     pub directives: Vec<Directive<Input>>,
+}
+
+pub struct DFS<'a, Input> {
+    stack: Vec<std::slice::Iter<'a, Field<Input>>>,
+}
+
+impl<'a, Input> Iterator for DFS<'a, Input> {
+    type Item = &'a Field<Input>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some(iter) = self.stack.last_mut() {
+            if let Some(field) = iter.next() {
+                self.stack.push(field.selection.iter());
+                return Some(field);
+            } else {
+                self.stack.pop();
+            }
+        }
+        None
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -175,33 +209,27 @@ impl Variable {
     }
 }
 
-impl<Input> Field<Nested<Input>, Input> {
+impl<Input> Field<Input> {
     pub fn try_map<Output, Error>(
         self,
         map: &impl Fn(Input) -> Result<Output, Error>,
-    ) -> Result<Field<Nested<Output>, Output>, Error> {
-        let mut extensions = None;
-
-        if let Some(nested) = self.extensions {
-            let nested = nested
-                .0
-                .into_iter()
-                .map(|v| v.try_map(map))
-                .collect::<Result<_, _>>()?;
-            extensions = Some(Nested(nested));
-        }
-
+    ) -> Result<Field<Output>, Error> {
         Ok(Field {
             id: self.id,
+            parent_id: self.parent_id,
             name: self.name,
             output_name: self.output_name,
             ir: self.ir,
             type_of: self.type_of,
             type_condition: self.type_condition,
-            extensions,
-            pos: self.pos,
+            selection: self
+                .selection
+                .into_iter()
+                .map(|f| f.try_map(map))
+                .collect::<Result<Vec<Field<Output>>, Error>>()?,
             skip: self.skip,
             include: self.include,
+            pos: self.pos,
             args: self
                 .args
                 .into_iter()
@@ -216,56 +244,13 @@ impl<Input> Field<Nested<Input>, Input> {
     }
 }
 
-impl<Input> Field<Flat, Input> {
-    pub fn try_map<Output, Error>(
-        self,
-        map: impl Fn(Input) -> Result<Output, Error>,
-    ) -> Result<Field<Flat, Output>, Error> {
-        Ok(Field {
-            id: self.id,
-            name: self.name,
-            output_name: self.output_name,
-            ir: self.ir,
-            type_of: self.type_of,
-            type_condition: self.type_condition,
-            extensions: self.extensions,
-            skip: self.skip,
-            include: self.include,
-            pos: self.pos,
-            args: self
-                .args
-                .into_iter()
-                .map(|arg| arg.try_map(&map))
-                .collect::<Result<_, _>>()?,
-            directives: self
-                .directives
-                .into_iter()
-                .map(|directive| directive.try_map(&map))
-                .collect::<Result<_, _>>()?,
-        })
-    }
-}
-
-impl<Input> Field<Nested<Input>, Input> {
-    /// iters over children fields
-    pub fn iter(&self) -> impl Iterator<Item = &Field<Nested<Input>, Input>> {
-        self.extensions
-            .as_ref()
-            .map(move |nested| nested.0.iter())
-            .into_iter()
-            .flatten()
-    }
-}
-
-impl<Input> Field<Flat, Input> {
+impl<Input: Clone> Field<Input> {
     pub fn parent(&self) -> Option<&FieldId> {
-        self.extensions.as_ref().map(|flat| &flat.0)
+        self.parent_id.as_ref()
     }
 
-    fn into_nested(self, fields: &[Field<Flat, Input>]) -> Field<Nested<Input>, Input>
-    where
-        Input: Clone,
-    {
+    #[inline(always)]
+    pub fn into_nested(self, fields: &[Field<Input>]) -> Self {
         let mut children = Vec::new();
         for field in fields.iter() {
             if let Some(id) = field.parent() {
@@ -274,34 +259,15 @@ impl<Input> Field<Flat, Input> {
                 }
             }
         }
-
-        let extensions = if children.is_empty() {
-            None
-        } else {
-            Some(Nested(children))
-        };
-
-        Field {
-            id: self.id,
-            name: self.name,
-            output_name: self.output_name,
-            ir: self.ir,
-            type_of: self.type_of,
-            type_condition: self.type_condition,
-            skip: self.skip,
-            include: self.include,
-            args: self.args,
-            pos: self.pos,
-            extensions,
-            directives: self.directives,
-        }
+        Self { selection: children, ..self }
     }
 }
 
-impl<Extensions: Debug, Input: Debug> Debug for Field<Extensions, Input> {
+impl<Input: Debug> Debug for Field<Input> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut debug_struct = f.debug_struct("Field");
         debug_struct.field("id", &self.id);
+        debug_struct.field("parent_id", &self.parent_id);
         debug_struct.field("name", &self.name);
         debug_struct.field("output_name", &self.output_name);
         if self.ir.is_some() {
@@ -312,8 +278,8 @@ impl<Extensions: Debug, Input: Debug> Debug for Field<Extensions, Input> {
         if !self.args.is_empty() {
             debug_struct.field("args", &self.args);
         }
-        if self.extensions.is_some() {
-            debug_struct.field("extensions", &self.extensions);
+        if !self.selection.is_empty() {
+            debug_struct.field("selection", &self.selection);
         }
         if self.skip.is_some() {
             debug_struct.field("skip", &self.skip);
@@ -327,32 +293,25 @@ impl<Extensions: Debug, Input: Debug> Debug for Field<Extensions, Input> {
     }
 }
 
-/// Stores field relationships in a flat structure where each field links to its
-/// parent.
-#[derive(Clone, Debug)]
-pub struct Flat(FieldId);
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+pub struct OPHash(u64);
 
-impl Flat {
-    pub fn new(parent_id: FieldId) -> Self {
-        Flat(parent_id)
+impl OPHash {
+    pub fn new(hash: u64) -> Self {
+        OPHash(hash)
     }
 }
 
-/// Store field relationships in a nested structure like a tree where each field
-/// links to its children.
-#[derive(Clone, Debug)]
-pub struct Nested<Input>(Vec<Field<Nested<Input>, Input>>);
-
 #[derive(Clone)]
 pub struct OperationPlan<Input> {
-    root_name: String,
-    flat: Vec<Field<Flat, Input>>,
-    operation_type: OperationType,
-    nested: Vec<Field<Nested<Input>, Input>>,
+    pub root_name: String,
+    pub operation_type: OperationType,
     // TODO: drop index from here. Embed all the necessary information in each field of the plan.
     pub index: Arc<Index>,
     pub is_introspection_query: bool,
     pub dedupe: bool,
+    pub is_const: bool,
+    pub selection: Vec<Field<Input>>,
 }
 
 impl<Input> std::fmt::Debug for OperationPlan<Input> {
@@ -368,26 +327,20 @@ impl<Input> OperationPlan<Input> {
         self,
         map: impl Fn(Input) -> Result<Output, Error>,
     ) -> Result<OperationPlan<Output>, Error> {
-        let mut flat = vec![];
+        let mut selection = vec![];
 
-        for f in self.flat {
-            flat.push(f.try_map(&map)?);
-        }
-
-        let mut nested = vec![];
-
-        for n in self.nested {
-            nested.push(n.try_map(&map)?);
+        for n in self.selection {
+            selection.push(n.try_map(&map)?);
         }
 
         Ok(OperationPlan {
             root_name: self.root_name,
-            flat,
             operation_type: self.operation_type,
-            nested,
+            selection,
             index: self.index,
             is_introspection_query: self.is_introspection_query,
             dedupe: self.dedupe,
+            is_const: self.is_const,
         })
     }
 }
@@ -396,7 +349,7 @@ impl<Input> OperationPlan<Input> {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         root_name: &str,
-        fields: Vec<Field<Flat, Input>>,
+        selection: Vec<Field<Input>>,
         operation_type: OperationType,
         index: Arc<Index>,
         is_introspection_query: bool,
@@ -404,33 +357,25 @@ impl<Input> OperationPlan<Input> {
     where
         Input: Clone,
     {
-        let nested = fields
-            .clone()
-            .into_iter()
-            .filter(|f| f.extensions.is_none())
-            .map(|f| f.into_nested(&fields))
-            .collect::<Vec<_>>();
-
-        let dedupe = fields
-            .iter()
-            .map(|field| {
-                if let Some(IR::IO(io)) = field.ir.as_ref() {
-                    io.dedupe()
-                } else {
-                    true
-                }
-            })
-            .all(|a| a);
-
         Self {
             root_name: root_name.to_string(),
-            flat: fields,
-            nested,
+            selection,
             operation_type,
             index,
             is_introspection_query,
-            dedupe,
+            dedupe: false,
+            is_const: false,
         }
+    }
+
+    /// Remove fields which are skipped
+    pub fn filter_skipped<Var: for<'b> JsonLike<'b> + Clone>(
+        mut self,
+        variables: &Variables<Var>,
+    ) -> Self {
+        filter_skipped_fields(&mut self.selection, variables);
+
+        self
     }
 
     /// Returns the name of the root type
@@ -449,31 +394,26 @@ impl<Input> OperationPlan<Input> {
     }
 
     /// Returns a nested [Field] representation
-    pub fn as_nested(&self) -> &[Field<Nested<Input>, Input>] {
-        &self.nested
+    pub fn as_nested(&self) -> &[Field<Input>] {
+        &self.selection
     }
 
-    /// Returns an owned version of [Field] representation
-    pub fn into_nested(self) -> Vec<Field<Nested<Input>, Input>> {
-        self.nested
+    /// Returns a nested [Field] representation
+    pub fn into_nested(self) -> Vec<Field<Input>> {
+        self.selection
     }
 
     /// Returns a flat [Field] representation
-    pub fn as_parent(&self) -> &[Field<Flat, Input>] {
-        &self.flat
-    }
-
-    /// Search for a field with a specified [FieldId]
-    pub fn find_field(&self, id: FieldId) -> Option<&Field<Flat, Input>> {
-        self.flat.iter().find(|field| field.id == id)
+    pub fn as_flat(&self) -> DFS<Input> {
+        DFS { stack: vec![self.selection.iter()] }
     }
 
     /// Search for a field by specified path of nested fields
-    pub fn find_field_path<S: AsRef<str>>(&self, path: &[S]) -> Option<&Field<Flat, Input>> {
+    pub fn find_field_path<S: AsRef<str>>(&self, path: &[S]) -> Option<&Field<Input>> {
         match path.split_first() {
             None => None,
             Some((name, path)) => {
-                let field = self.flat.iter().find(|field| field.name == name.as_ref())?;
+                let field = self.as_flat().find(|field| field.name == name.as_ref())?;
                 if path.is_empty() {
                     Some(field)
                 } else {
@@ -485,31 +425,30 @@ impl<Input> OperationPlan<Input> {
 
     /// Returns number of fields in plan
     pub fn size(&self) -> usize {
-        self.flat.len()
+        fn count<A>(field: &Field<A>) -> usize {
+            1 + field.selection.iter().map(count).sum::<usize>()
+        }
+        self.selection.iter().map(count).sum()
     }
 
     /// Check if the field is of scalar type
-    pub fn field_is_scalar<Extensions>(&self, field: &Field<Extensions, Input>) -> bool {
+    pub fn field_is_scalar(&self, field: &Field<Input>) -> bool {
         self.index.type_is_scalar(field.type_of.name())
     }
 
     /// Check if the field is of enum type
-    pub fn field_is_enum<Extensions>(&self, field: &Field<Extensions, Input>) -> bool {
+    pub fn field_is_enum(&self, field: &Field<Input>) -> bool {
         self.index.type_is_enum(field.type_of.name())
     }
 
     /// Validate the value against enum variants of the field
-    pub fn field_validate_enum_value<Extensions>(
-        &self,
-        field: &Field<Extensions, Input>,
-        value: &str,
-    ) -> bool {
+    pub fn field_validate_enum_value(&self, field: &Field<Input>, value: &str) -> bool {
         self.index.validate_enum_value(field.type_of.name(), value)
     }
 
     pub fn field_is_part_of_value<'a, Output>(
         &'a self,
-        field: &'a Field<Nested<Input>, Input>,
+        field: &'a Field<Input>,
         value: &'a Output,
     ) -> bool
     where
@@ -529,6 +468,17 @@ impl<Input> OperationPlan<Input> {
     }
 }
 
+// TODO: review and rename
+fn filter_skipped_fields<Input, Var: for<'b> JsonLike<'b> + Clone>(
+    fields: &mut Vec<Field<Input>>,
+    vars: &Variables<Var>,
+) {
+    fields.retain(|f| !f.skip(vars));
+    for field in fields {
+        filter_skipped_fields(&mut field.selection, vars);
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Directive<Input> {
     pub name: String,
@@ -538,7 +488,7 @@ pub struct Directive<Input> {
 impl<Input> Directive<Input> {
     pub fn try_map<Output, Error>(
         self,
-        map: impl Fn(Input) -> Result<Output, Error>,
+        map: &impl Fn(Input) -> Result<Output, Error>,
     ) -> Result<Directive<Output>, Error> {
         Ok(Directive {
             name: self.name,
@@ -701,7 +651,7 @@ mod test {
     use crate::core::jit;
     use crate::include_config;
 
-    fn plan(query: &str) -> OperationPlan<ConstValue> {
+    fn plan(query: &str) -> OperationPlan<async_graphql_value::Value> {
         let config = include_config!("./fixtures/dedupe.graphql").unwrap();
         let module = ConfigModule::from(config);
         let bp = Blueprint::try_from(&module).unwrap();

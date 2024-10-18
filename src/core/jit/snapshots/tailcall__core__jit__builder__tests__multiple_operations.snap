@@ -5,6 +5,7 @@ expression: plan.into_nested()
 [
     Field {
         id: 0,
+        parent_id: None,
         name: "user",
         output_name: "user",
         ir: "Some(..)",
@@ -25,36 +26,39 @@ expression: plan.into_nested()
                 default_value: None,
             },
         ],
-        extensions: Some(
-            Nested(
-                [
-                    Field {
-                        id: 1,
-                        name: "id",
-                        output_name: "id",
-                        type_of: ID!,
-                        type_condition: Some(
-                            "User",
-                        ),
-                        directives: [],
-                    },
-                    Field {
-                        id: 2,
-                        name: "username",
-                        output_name: "username",
-                        type_of: String!,
-                        type_condition: Some(
-                            "User",
-                        ),
-                        directives: [],
-                    },
-                ],
-            ),
-        ),
+        selection: [
+            Field {
+                id: 1,
+                parent_id: Some(
+                    0,
+                ),
+                name: "id",
+                output_name: "id",
+                type_of: ID!,
+                type_condition: Some(
+                    "User",
+                ),
+                directives: [],
+            },
+            Field {
+                id: 2,
+                parent_id: Some(
+                    0,
+                ),
+                name: "username",
+                output_name: "username",
+                type_of: String!,
+                type_condition: Some(
+                    "User",
+                ),
+                directives: [],
+            },
+        ],
         directives: [],
     },
     Field {
         id: 3,
+        parent_id: None,
         name: "posts",
         output_name: "posts",
         ir: "Some(..)",
@@ -62,32 +66,34 @@ expression: plan.into_nested()
         type_condition: Some(
             "Query",
         ),
-        extensions: Some(
-            Nested(
-                [
-                    Field {
-                        id: 4,
-                        name: "id",
-                        output_name: "id",
-                        type_of: ID!,
-                        type_condition: Some(
-                            "Post",
-                        ),
-                        directives: [],
-                    },
-                    Field {
-                        id: 5,
-                        name: "title",
-                        output_name: "title",
-                        type_of: String!,
-                        type_condition: Some(
-                            "Post",
-                        ),
-                        directives: [],
-                    },
-                ],
-            ),
-        ),
+        selection: [
+            Field {
+                id: 4,
+                parent_id: Some(
+                    3,
+                ),
+                name: "id",
+                output_name: "id",
+                type_of: ID!,
+                type_condition: Some(
+                    "Post",
+                ),
+                directives: [],
+            },
+            Field {
+                id: 5,
+                parent_id: Some(
+                    3,
+                ),
+                name: "title",
+                output_name: "title",
+                type_of: String!,
+                type_condition: Some(
+                    "Post",
+                ),
+                directives: [],
+            },
+        ],
         directives: [],
     },
 ]
