@@ -35,7 +35,7 @@ impl JITArcExecutor {
         &self,
         exec: ConstValueExecutor,
         jit_request: jit::Request<ConstValue>,
-    ) -> Arc<Response> {
+    ) -> Arc<ByteResponse> {
         let is_introspection_query = self.app_ctx.blueprint.server.get_enable_introspection()
             && exec.plan.is_introspection_query;
         let jit_resp = exec
@@ -50,7 +50,7 @@ impl JITArcExecutor {
             jit_resp
         };
 
-        Arc::new(response)
+        Arc::new(response.into())
     }
 
     #[inline(always)]
@@ -58,7 +58,7 @@ impl JITArcExecutor {
         &self,
         exec: ConstValueExecutor,
         jit_request: jit::Request<ConstValue>,
-    ) -> Arc<Response> {
+    ) -> Arc<ByteResponse> {
         let out = self
             .app_ctx
             .dedupe_operation_handler_arc
@@ -86,7 +86,7 @@ impl JITArcExecutor {
     pub fn execute(
         &self,
         request: async_graphql::Request,
-    ) -> impl Future<Output = Arc<Response>> + Send + '_ {
+    ) -> impl Future<Output = Arc<ByteResponse>> + Send + '_ {
         let hash = Self::req_hash(&request);
 
         async move {
@@ -96,14 +96,16 @@ impl JITArcExecutor {
             } else {
                 let exec = match ConstValueExecutor::try_new(&jit_request, &self.app_ctx) {
                     Ok(exec) => exec,
-                    Err(error) => return Arc::new(Response::from_errors(vec![error.into()])),
+                    Err(error) => {
+                        return Arc::new(Response::from_errors(vec![error.into()]).into())
+                    }
                 };
                 self.app_ctx.operation_plans.insert(hash, exec.plan.clone());
                 exec
             };
 
             if let Some(response) = std::mem::take(&mut exec.response) {
-                Arc::new(response.into_async_graphql())
+                Arc::new(response.into_async_graphql().into())
             } else if exec.plan.is_query() && exec.plan.dedupe {
                 self.dedupe_and_exec(exec, jit_request).await
             } else {
@@ -127,16 +129,45 @@ impl JITArcExecutor {
     }
 }
 
+/// Represents a GraphQL response in a serialized byte format.
+pub struct ByteResponse {
+    /// The GraphQL response data serialized into a byte array.
+    pub data: Vec<u8>,
+
+    /// Information regarding cache policies for the response, such as max age
+    /// and public/private settings.
+    pub cache_control: CacheControl,
+
+    /// Indicates whether graphql response contains error or not.
+    pub is_ok: bool,
+}
+
+impl Default for ByteResponse {
+    fn default() -> Self {
+        async_graphql::Response::default().into()
+    }
+}
+
+impl From<async_graphql::Response> for ByteResponse {
+    fn from(mut response: async_graphql::Response) -> Self {
+        ByteResponse {
+            cache_control: std::mem::take(&mut response.cache_control),
+            is_ok: response.errors.is_empty(),
+            data: serde_json::to_vec(&response).unwrap(),
+        }
+    }
+}
+
 pub enum BatchResponse {
-    Single(Arc<Response>),
-    Batch(Vec<Arc<Response>>),
+    Single(Arc<ByteResponse>),
+    Batch(Vec<Arc<ByteResponse>>),
 }
 
 impl BatchResponse {
     pub fn is_ok(&self) -> bool {
         match self {
-            BatchResponse::Single(s) => s.is_ok(),
-            BatchResponse::Batch(b) => b.iter().all(|s| s.is_ok()),
+            BatchResponse::Single(s) => s.is_ok,
+            BatchResponse::Batch(b) => b.iter().all(|s| s.is_ok),
         }
     }
 

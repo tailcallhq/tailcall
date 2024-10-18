@@ -304,12 +304,27 @@ impl GraphQLArcResponse {
     }
 
     fn default_body(&self) -> Result<Body> {
-        let str_repr = match &self.0 {
-            JITBatchResponse::Batch(_resp) => {
-                let refs = _resp.iter().map(|r| r.as_ref()).collect::<Vec<_>>();
-                serde_json::to_vec(&refs)?
+        let str_repr: Vec<u8> = match &self.0 {
+            JITBatchResponse::Batch(resp) => {
+                // Use iterators and collect for more efficient concatenation
+                let combined = resp
+                    .iter()
+                    .enumerate()
+                    .flat_map(|(i, r)| {
+                        let mut v = if i > 0 {
+                            vec![b',']
+                        } else {
+                            Vec::with_capacity(r.as_ref().data.len())
+                        };
+                        v.extend_from_slice(&r.as_ref().data);
+                        v
+                    })
+                    .collect::<Vec<u8>>();
+
+                // Wrap the result in square brackets
+                [&[b'['], &combined[..], &[b']']].concat()
             }
-            JITBatchResponse::Single(resp) => serde_json::to_vec(resp.as_ref())?,
+            JITBatchResponse::Single(resp) => resp.as_ref().data.to_owned(),
         };
         Ok(Body::from(str_repr))
     }
