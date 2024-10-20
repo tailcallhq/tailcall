@@ -20,7 +20,10 @@ fn check_dedupe(ir: &IR) -> bool {
         IR::Pipe(ir, ir1) => check_dedupe(ir) && check_dedupe(ir1),
         IR::Discriminate(_, ir) => check_dedupe(ir),
         IR::Entity(hash_map) => hash_map.values().all(check_dedupe),
-        _ => true,
+        IR::Dynamic(_) => true,
+        IR::ContextPath(_) => true,
+        IR::Map(_) => true,
+        IR::Service(_) => true,
     }
 }
 
