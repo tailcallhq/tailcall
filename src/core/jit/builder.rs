@@ -214,7 +214,6 @@ impl Builder {
                         // Create the field with its child fields in `selection`
                         let field = Field {
                             id,
-                            parent_id: parent_id.clone(),
                             selection: child_fields,
                             name: field_name.to_string(),
                             output_name: gql_field
@@ -236,7 +235,6 @@ impl Builder {
                     } else if field_name == "__typename" {
                         let typename_field = Field {
                             id: FieldId::new(self.field_id.next()),
-                            parent_id: parent_id.clone(),
                             name: field_name.to_string(),
                             output_name: field_name.to_string(),
                             ir: None,

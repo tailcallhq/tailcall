@@ -153,7 +153,6 @@ impl FieldId {
 #[derive(Clone)]
 pub struct Field<Input> {
     pub id: FieldId,
-    pub parent_id: Option<FieldId>,
     /// Name of key in the value object for this field
     pub name: String,
     /// Output name (i.e. with alias) that should be used for the result value
@@ -216,7 +215,6 @@ impl<Input> Field<Input> {
     ) -> Result<Field<Output>, Error> {
         Ok(Field {
             id: self.id,
-            parent_id: self.parent_id,
             name: self.name,
             output_name: self.output_name,
             ir: self.ir,
@@ -244,30 +242,10 @@ impl<Input> Field<Input> {
     }
 }
 
-impl<Input: Clone> Field<Input> {
-    pub fn parent(&self) -> Option<&FieldId> {
-        self.parent_id.as_ref()
-    }
-
-    #[inline(always)]
-    pub fn into_nested(self, fields: &[Field<Input>]) -> Self {
-        let mut children = Vec::new();
-        for field in fields.iter() {
-            if let Some(id) = field.parent() {
-                if *id == self.id {
-                    children.push(field.to_owned().into_nested(fields));
-                }
-            }
-        }
-        Self { selection: children, ..self }
-    }
-}
-
 impl<Input: Debug> Debug for Field<Input> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut debug_struct = f.debug_struct("Field");
         debug_struct.field("id", &self.id);
-        debug_struct.field("parent_id", &self.parent_id);
         debug_struct.field("name", &self.name);
         debug_struct.field("output_name", &self.output_name);
         if self.ir.is_some() {
