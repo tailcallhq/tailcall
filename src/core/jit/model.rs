@@ -346,16 +346,6 @@ impl<Input> OperationPlan<Input> {
         }
     }
 
-    /// Remove fields which are skipped
-    pub fn filter_skipped<Var: for<'b> JsonLike<'b> + Clone>(
-        mut self,
-        variables: &Variables<Var>,
-    ) -> Self {
-        filter_skipped_fields(&mut self.selection, variables);
-
-        self
-    }
-
     /// Returns the name of the root type
     pub fn root_name(&self) -> &str {
         &self.root_name
@@ -443,17 +433,6 @@ impl<Input> OperationPlan<Input> {
             // if there is no type_condition restriction then use this field
             None => true,
         }
-    }
-}
-
-// TODO: review and rename
-fn filter_skipped_fields<Input, Var: for<'b> JsonLike<'b> + Clone>(
-    fields: &mut Vec<Field<Input>>,
-    vars: &Variables<Var>,
-) {
-    fields.retain(|f| !f.skip(vars));
-    for field in fields {
-        filter_skipped_fields(&mut field.selection, vars);
     }
 }
 

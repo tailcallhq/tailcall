@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::core::jit::{Error, OperationPlan, Variables};
+use crate::core::jit::{Error, Field, OperationPlan, Variables};
 use crate::core::json::JsonLike;
 use crate::core::valid::Valid;
 use crate::core::Transform;
@@ -26,17 +26,29 @@ where
 
     fn transform(&self, plan: Self::Value) -> Valid<Self::Value, Self::Error> {
         // Drop all the fields that are not needed
-        let plan = plan.filter_skipped(self.variables);
-
-        // Recreate a plan with the new fields
-        let plan = OperationPlan::new(
-            &plan.root_name,
-            plan.selection,
-            plan.operation_type,
-            plan.index,
-            plan.is_introspection_query,
-        );
+        let plan = filter_skipped(plan, self.variables);
 
         Valid::succeed(plan)
+    }
+}
+
+/// Remove fields which are skipped
+pub fn filter_skipped<Input, Var: for<'b> JsonLike<'b>>(
+    mut op: OperationPlan<Input>,
+    variables: &Variables<Var>,
+) -> OperationPlan<Input> {
+    filter_skipped_fields(&mut op.selection, variables);
+
+    op
+}
+
+// TODO: review and rename
+fn filter_skipped_fields<Input, Var: for<'b> JsonLike<'b>>(
+    fields: &mut Vec<Field<Input>>,
+    vars: &Variables<Var>,
+) {
+    fields.retain(|f| !f.skip(vars));
+    for field in fields {
+        filter_skipped_fields(&mut field.selection, vars);
     }
 }
