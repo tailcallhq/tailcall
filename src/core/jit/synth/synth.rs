@@ -351,7 +351,7 @@ mod tests {
         synth_borrow: Synth<serde_json_borrow::Value<'a>>,
     }
 
-    impl<'a> Synths<'a> {
+    impl Synths<'_> {
         fn init(query: &str, store: Vec<(FieldId, TestData)>) -> Self {
             let synth_const = make_store::<ConstValue>(query, store.clone());
             let synth_borrow = make_store::<serde_json_borrow::Value>(query, store.clone());

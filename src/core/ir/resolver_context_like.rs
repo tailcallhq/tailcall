@@ -47,7 +47,7 @@ impl<'a> From<async_graphql::dynamic::ResolverContext<'a>> for ResolverContext<'
     }
 }
 
-impl<'a> ResolverContextLike for ResolverContext<'a> {
+impl ResolverContextLike for ResolverContext<'_> {
     fn value(&self) -> Option<&Value> {
         self.inner.parent_value.as_value()
     }

@@ -103,7 +103,7 @@ impl<'ctx> JsonLike<'ctx> for Value<'ctx> {
         self.is_null()
     }
 
-    fn get_path<T: AsRef<str>>(&'ctx self, path: &[T]) -> Option<&Self> {
+    fn get_path<T: AsRef<str>>(&'ctx self, path: &[T]) -> Option<&'ctx Self> {
         let mut val = self;
         for token in path {
             val = match val {
@@ -118,14 +118,14 @@ impl<'ctx> JsonLike<'ctx> for Value<'ctx> {
         Some(val)
     }
 
-    fn get_key(&'ctx self, path: &str) -> Option<&Self> {
+    fn get_key(&'ctx self, path: &str) -> Option<&'ctx Self> {
         match self {
             Value::Object(map) => map.get(path),
             _ => None,
         }
     }
 
-    fn group_by(&'ctx self, path: &[String]) -> std::collections::HashMap<String, Vec<&Self>> {
+    fn group_by(&'ctx self, path: &[String]) -> std::collections::HashMap<String, Vec<&'ctx Self>> {
         let src = gather_path_matches(self, path, vec![]);
         group_by_key(src)
     }
