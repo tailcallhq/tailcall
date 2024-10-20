@@ -74,7 +74,6 @@
   ],
   "preset": {
     "mergeType": 1.0,
-    "consolidateURL": 0.5,
     "treeShake": true,
     "inferTypeNames": true
   },

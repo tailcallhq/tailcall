@@ -2,7 +2,7 @@
 source: tests/cli/gen.rs
 expression: config.to_sdl()
 ---
-schema @server @upstream(baseURL: "https://api.deezer.com") {
+schema @server @upstream {
   query: Query
 }
 
@@ -383,14 +383,14 @@ type Podcast {
 }
 
 type Query {
-  album(GEN__1: Int!): GEN__39 @http(path: "/album/{{.args.GEN__1}}")
-  artist(GEN__1: Int!): GEN__40 @http(path: "/artist/{{.args.GEN__1}}")
-  chart: Chart @http(path: "/chart")
-  editorial: Editorial @http(path: "/editorial")
-  playlist(GEN__1: Int!): Playlist @http(path: "/playlist/{{.args.GEN__1}}")
-  search(q: String): Search @http(path: "/search", query: [{key: "q", value: "{{.args.q}}"}])
-  track(GEN__1: Int!): GEN__4 @http(path: "/track/{{.args.GEN__1}}")
-  user(GEN__1: Int!): User @http(path: "/user/{{.args.GEN__1}}")
+  album(GEN__1: Int!): GEN__39 @http(url: "http://example.com/album/%7B%7B.args.GEN__1%7D%7D")
+  artist(GEN__1: Int!): GEN__40 @http(url: "http://example.com/artist/%7B%7B.args.GEN__1%7D%7D")
+  chart: Chart @http(url: "http://example.com/chart")
+  editorial: Editorial @http(url: "http://example.com/editorial")
+  playlist(GEN__1: Int!): Playlist @http(url: "http://example.com/playlist/%7B%7B.args.GEN__1%7D%7D")
+  search(q: String): Search @http(url: "http://example.com/search", query: [{key: "q", value: "{{.args.q}}"}])
+  track(GEN__1: Int!): GEN__4 @http(url: "http://example.com/track/%7B%7B.args.GEN__1%7D%7D")
+  user(GEN__1: Int!): User @http(url: "http://example.com/user/%7B%7B.args.GEN__1%7D%7D")
 }
 
 type Search {
