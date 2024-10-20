@@ -1,7 +1,5 @@
 use std::marker::PhantomData;
 
-use async_graphql::dynamic;
-
 use crate::core::ir::model::IR;
 use crate::core::jit::OperationPlan;
 use crate::core::valid::Valid;
@@ -23,10 +21,10 @@ pub fn is_const(ir: &IR) -> bool {
         IR::Path(ir, _) => is_const(ir),
         IR::ContextPath(_) => false,
         IR::Protect(ir) => is_const(ir),
-        IR::Map(map) => is_const(&*map.input),
+        IR::Map(map) => is_const(&map.input),
         IR::Pipe(ir, ir1) => is_const(ir) && is_const(ir1),
         IR::Discriminate(_, ir) => is_const(ir),
-        IR::Entity(hash_map) => hash_map.values().all(|ir| is_const(ir)),
+        IR::Entity(hash_map) => hash_map.values().all(is_const),
         IR::Service(_) => true,
     }
 }

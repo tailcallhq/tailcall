@@ -325,6 +325,11 @@ mod tests {
         let plan = builder.build(None).unwrap();
         let plan = plan
             .try_map(|v| {
+                // Earlier we hard OperationPlan<ConstValue> which has impl Deserialize
+                // but now InputResolver takes OperationPlan<async_graphql_value::Value>
+                // and returns OperationPlan<async_graphql_value::Value>.
+                // So we need to map Plan to some other value before being able to deserialize
+                // it.
                 let serde = v.into_json().unwrap();
                 Deserialize::deserialize(serde)
             })
