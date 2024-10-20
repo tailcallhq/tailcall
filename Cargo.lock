@@ -5395,6 +5395,7 @@ dependencies = [
  "colored",
  "convert_case 0.6.0",
  "criterion",
+ "dashmap",
  "datatest-stable",
  "derive-getters",
  "derive_more 0.99.18",

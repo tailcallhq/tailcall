@@ -48,7 +48,7 @@ pub fn init_file() -> Arc<LambdaFileIO> {
 }
 
 pub fn init_cache() -> Arc<EntityCache> {
-    Arc::new(InMemoryCache::new())
+    Arc::new(InMemoryCache::default())
 }
 
 pub fn init_runtime() -> TargetRuntime {

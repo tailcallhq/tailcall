@@ -27,9 +27,9 @@ run_cargo_clippy() {
 run_prettier() {
     MODE=$1
     if [ "$MODE" == "check" ]; then
-        prettier -c .prettierrc --check "**/*.$FILE_TYPES"
+        npx prettier -c .prettierrc --check "**/*.$FILE_TYPES"
     else
-        prettier -c .prettierrc --write "**/*.$FILE_TYPES"
+        npx prettier -c .prettierrc --write "**/*.$FILE_TYPES"
     fi
     return $?
 }
@@ -54,6 +54,9 @@ case $MODE in
         run_autogen_schema $MODE
         AUTOGEN_SCHEMA_EXIT_CODE=$?
 
+        run_prettier $MODE
+        PRETTIER_EXIT_CODE=$?
+
         # Commands that uses nightly toolchains are run from `.nightly` directory
         # to read the nightly version from `rust-toolchain.toml` file
         pushd .nightly
@@ -62,9 +65,6 @@ case $MODE in
         run_cargo_clippy $MODE
         CLIPPY_EXIT_CODE=$?
         popd
-
-        run_prettier $MODE
-        PRETTIER_EXIT_CODE=$?
         ;;
     *)
         echo "Invalid mode. Please use --mode=check or --mode=fix"
