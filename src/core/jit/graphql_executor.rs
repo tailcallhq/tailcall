@@ -108,7 +108,7 @@ impl JITExecutor {
 
             if let Some(response) = std::mem::take(&mut exec.response) {
                 Arc::new(response.into_async_graphql().into())
-            } else if exec.plan.is_query() && exec.plan.dedupe {
+            } else if exec.plan.is_query() && exec.plan.is_dedupe {
                 self.dedupe_and_exec(exec, jit_request).await
             } else {
                 self.exec(exec, jit_request).await

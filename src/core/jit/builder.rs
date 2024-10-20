@@ -131,7 +131,6 @@ impl Builder {
         selection: &SelectionSet,
         type_condition: &str,
         fragments: &HashMap<&str, &FragmentDefinition>,
-        parent_id: Option<FieldId>,
     ) -> Vec<Field<Value>> {
         let mut fields = vec![];
 
@@ -199,12 +198,8 @@ impl Builder {
                         let id = FieldId::new(self.field_id.next());
 
                         // Recursively gather child fields for the selection set
-                        let child_fields = self.iter(
-                            &gql_field.selection_set.node,
-                            type_of.name(),
-                            fragments,
-                            Some(id.clone()),
-                        );
+                        let child_fields =
+                            self.iter(&gql_field.selection_set.node, type_of.name(), fragments);
 
                         let ir = match field_def {
                             QueryField::Field((field_def, _)) => field_def.resolver.clone(),
@@ -214,7 +209,6 @@ impl Builder {
                         // Create the field with its child fields in `selection`
                         let field = Field {
                             id,
-                            parent_id: parent_id.clone(),
                             selection: child_fields,
                             name: field_name.to_string(),
                             output_name: gql_field
@@ -236,7 +230,6 @@ impl Builder {
                     } else if field_name == "__typename" {
                         let typename_field = Field {
                             id: FieldId::new(self.field_id.next()),
-                            parent_id: parent_id.clone(),
                             name: field_name.to_string(),
                             output_name: field_name.to_string(),
                             ir: None,
@@ -261,7 +254,6 @@ impl Builder {
                             &fragment.selection_set.node,
                             fragment.type_condition.node.on.node.as_str(),
                             fragments,
-                            parent_id.clone(),
                         ));
                     }
                 }
@@ -272,12 +264,7 @@ impl Builder {
                         .map(|cond| cond.node.on.node.as_str())
                         .unwrap_or(type_condition);
 
-                    fields.extend(self.iter(
-                        &fragment.selection_set.node,
-                        type_of,
-                        fragments,
-                        parent_id.clone(),
-                    ));
+                    fields.extend(self.iter(&fragment.selection_set.node, type_of, fragments));
                 }
             }
         }
@@ -333,7 +320,7 @@ impl Builder {
         let name = self
             .get_type(operation.ty)
             .ok_or(BuildError::RootOperationTypeNotDefined { operation: operation.ty })?;
-        let fields = self.iter(&operation.selection_set.node, name, &fragments, None);
+        let fields = self.iter(&operation.selection_set.node, name, &fragments);
 
         let is_introspection_query = operation.selection_set.node.items.iter().any(|f| {
             if let Selection::Field(Positioned { node: gql_field, .. }) = &f.node {
@@ -383,9 +370,8 @@ mod tests {
             }
         "#,
         );
-        println!("{:#?}", plan.selection);
         assert!(plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
     }
 
     #[tokio::test]
@@ -413,7 +399,7 @@ mod tests {
         );
 
         assert!(plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
     }
 
     #[test]
@@ -427,7 +413,7 @@ mod tests {
         );
 
         assert!(plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
     }
 
     #[test]
@@ -455,7 +441,7 @@ mod tests {
         );
 
         assert!(!plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
     }
 
     #[test]
@@ -483,7 +469,7 @@ mod tests {
         );
 
         assert!(plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
     }
 
     #[test]
@@ -504,7 +490,7 @@ mod tests {
         );
 
         assert!(plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
     }
 
     #[test]
@@ -521,7 +507,7 @@ mod tests {
         );
 
         assert!(plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
     }
 
     #[test]
@@ -542,7 +528,7 @@ mod tests {
         );
 
         assert!(plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
     }
 
     #[test]
@@ -562,7 +548,7 @@ mod tests {
         );
 
         assert!(!plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
     }
 
     #[test]
@@ -656,13 +642,13 @@ mod tests {
             .build(Some("GetPosts"))
             .unwrap();
         assert!(plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
 
         let plan = Builder::new(&blueprint, document.clone())
             .build(Some("CreateNewPost"))
             .unwrap();
         assert!(!plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
     }
 
     #[test]
@@ -679,6 +665,6 @@ mod tests {
         );
 
         assert!(plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
     }
 }
