@@ -12,18 +12,12 @@ use super::{Error, EvalContext, ResolverContextLike, TypedValue};
 use crate::core::json::{JsonLike, JsonLikeList, JsonObjectLike};
 use crate::core::serde_value_ext::ValueExt;
 
-// Fake trait to capture proper lifetimes.
-// see discussion https://users.rust-lang.org/t/rpitit-allows-more-flexible-code-in-comparison-with-raw-rpit-in-inherit-impl/113417
-// TODO: could be removed after migrating to 2024 edition
-pub trait Captures<T: ?Sized> {}
-impl<T: ?Sized, U: ?Sized> Captures<T> for U {}
-
 impl IR {
     #[tracing::instrument(skip_all, fields(otel.name = %self), err)]
     pub fn eval<'a, 'b, Ctx>(
         &'a self,
         ctx: &'b mut EvalContext<'a, Ctx>,
-    ) -> impl Future<Output = Result<ConstValue, Error>> + Send + Captures<&'b &'a ()>
+    ) -> impl Future<Output = Result<ConstValue, Error>> + Send + use<'a, 'b, Ctx>
     where
         Ctx: ResolverContextLike + Sync,
     {
