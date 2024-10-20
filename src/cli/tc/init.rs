@@ -46,7 +46,10 @@ pub(super) async fn init_command(runtime: TargetRuntime, folder_path: &str) -> R
 fn default_graphqlrc() -> serde_yaml::Value {
     serde_yaml::Value::Mapping(serde_yaml::mapping::Mapping::from_iter([(
         "schema".into(),
-        serde_yaml::Value::Sequence(vec!["./.tailcallrc.graphql".into()]),
+        serde_yaml::Value::Sequence(vec![
+            "./.tailcallrc.graphql".into(),
+            "./main.graphql".into(),
+        ]),
     )]))
 }
 
