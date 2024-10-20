@@ -24,7 +24,7 @@ async-graphql-value = "7.0.5"
 serde_json = "1.0.117"
 url = "2.5.0"
 http = { workspace = true }
-tailcall-valid = {git = "https://github.com/tailcallhq/valid.git"}
+tailcall-valid = { workspace = true }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.42"
