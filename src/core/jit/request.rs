@@ -45,13 +45,12 @@ impl Request<ConstValue> {
         let builder = Builder::new(blueprint, doc);
         let plan = builder.build(self.operation_name.as_deref())?;
 
-        let plan = transform::CheckConst::new()
+        Ok(transform::CheckConst::new()
             .pipe(transform::CheckDedupe::new())
-            .transform(plan.clone())
+            .transform(plan)
             .to_result()
-            .unwrap_or(plan);
-
-        Ok(plan)
+            // NOTE: Unwrapping because these transformations fail with () error
+            .unwrap())
     }
 }
 

@@ -10,24 +10,37 @@ impl<A> CheckDedupe<A> {
     }
 }
 
+#[inline]
+fn check_dedupe(ir: &IR) -> bool {
+    match ir {
+        IR::IO(io) => io.dedupe(),
+        IR::Cache(cache) => cache.io.dedupe(),
+        IR::Path(ir, _) => check_dedupe(ir),
+        IR::Protect(ir) => check_dedupe(ir),
+        IR::Pipe(ir, ir1) => check_dedupe(ir) && check_dedupe(ir1),
+        IR::Discriminate(_, ir) => check_dedupe(ir),
+        IR::Entity(hash_map) => hash_map.values().all(check_dedupe),
+        IR::Dynamic(_) => true,
+        IR::ContextPath(_) => true,
+        IR::Map(_) => true,
+        IR::Service(_) => true,
+    }
+}
+
 impl<A> Transform for CheckDedupe<A> {
     type Value = OperationPlan<A>;
     type Error = ();
 
     fn transform(&self, mut plan: Self::Value) -> Valid<Self::Value, Self::Error> {
-        let dedupe = plan.as_nested().iter().all(|field| {
+        let dedupe = plan.selection.iter().all(|field| {
             if let Some(ir) = field.ir.as_ref() {
-                match ir {
-                    IR::IO(io) => io.dedupe(),
-                    IR::Cache(cache) => cache.io.dedupe(),
-                    _ => true,
-                }
+                check_dedupe(ir)
             } else {
                 true
             }
         });
 
-        plan.dedupe = dedupe;
+        plan.is_dedupe = dedupe;
 
         Valid::succeed(plan)
     }
