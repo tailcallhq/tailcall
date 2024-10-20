@@ -135,7 +135,7 @@ mod test {
     #[test]
     fn test_field() {
         let plan = setup("query {posts {id title}}").unwrap();
-        let field = plan.as_nested();
+        let field = plan.selection;
         let env = RequestContext::new(plan.clone());
         let ctx = Context::<ConstValue, ConstValue>::new(&field[0], &env);
         let expected = <Context<_, _> as ResolverContextLike>::field(&ctx).unwrap();
@@ -146,7 +146,7 @@ mod test {
     fn test_is_query() {
         let plan = setup("query {posts {id title}}").unwrap();
         let env = RequestContext::new(plan.clone());
-        let ctx = Context::new(&plan.as_nested()[0], &env);
+        let ctx = Context::new(&plan.selection[0], &env);
         assert!(ctx.is_query());
     }
 }

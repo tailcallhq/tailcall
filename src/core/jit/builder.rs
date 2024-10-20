@@ -371,7 +371,7 @@ mod tests {
         "#,
         );
         assert!(plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
     }
 
     #[tokio::test]
@@ -399,7 +399,7 @@ mod tests {
         );
 
         assert!(plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
     }
 
     #[test]
@@ -413,7 +413,7 @@ mod tests {
         );
 
         assert!(plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
     }
 
     #[test]
@@ -441,7 +441,7 @@ mod tests {
         );
 
         assert!(!plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
     }
 
     #[test]
@@ -469,7 +469,7 @@ mod tests {
         );
 
         assert!(plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
     }
 
     #[test]
@@ -490,7 +490,7 @@ mod tests {
         );
 
         assert!(plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
     }
 
     #[test]
@@ -507,7 +507,7 @@ mod tests {
         );
 
         assert!(plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
     }
 
     #[test]
@@ -528,7 +528,7 @@ mod tests {
         );
 
         assert!(plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
     }
 
     #[test]
@@ -548,7 +548,7 @@ mod tests {
         );
 
         assert!(!plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
     }
 
     #[test]
@@ -642,13 +642,13 @@ mod tests {
             .build(Some("GetPosts"))
             .unwrap();
         assert!(plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
 
         let plan = Builder::new(&blueprint, document.clone())
             .build(Some("CreateNewPost"))
             .unwrap();
         assert!(!plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
     }
 
     #[test]
@@ -665,6 +665,6 @@ mod tests {
         );
 
         assert!(plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
     }
 }

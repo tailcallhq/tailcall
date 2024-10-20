@@ -40,7 +40,7 @@ where
         let mut path = Vec::new();
         let root_name = self.plan.root_name();
 
-        for child in self.plan.as_nested().iter() {
+        for child in self.plan.selection.iter() {
             if !self.include(child) {
                 continue;
             }

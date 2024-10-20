@@ -130,7 +130,7 @@ impl Executor for JITExecutor {
 
             if let Some(ref response) = exec.response {
                 response.clone().into_async_graphql()
-            } else if self.is_query && exec.plan.dedupe {
+            } else if self.is_query && exec.plan.is_dedupe {
                 self.dedupe_and_exec(exec, jit_request).await
             } else {
                 self.exec(exec, jit_request).await

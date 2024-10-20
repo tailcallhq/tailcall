@@ -32,7 +32,7 @@ impl<A> Transform for CheckDedupe<A> {
     type Error = ();
 
     fn transform(&self, mut plan: Self::Value) -> Valid<Self::Value, Self::Error> {
-        let dedupe = plan.as_nested().iter().all(|field| {
+        let dedupe = plan.selection.iter().all(|field| {
             if let Some(ir) = field.ir.as_ref() {
                 check_dedupe(ir)
             } else {
@@ -40,7 +40,7 @@ impl<A> Transform for CheckDedupe<A> {
             }
         });
 
-        plan.dedupe = dedupe;
+        plan.is_dedupe = dedupe;
 
         Valid::succeed(plan)
     }

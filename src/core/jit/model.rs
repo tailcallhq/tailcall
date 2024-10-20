@@ -82,15 +82,6 @@ impl<Input> Field<Input> {
     pub fn iter(&self) -> impl Iterator<Item = &Field<Input>> {
         self.selection.iter()
     }
-    pub fn modify(&self, ff: &impl Fn(&Field<Input>) -> Field<Input>) -> Field<Input> {
-        let mut field = ff(self);
-        field.selection = field
-            .selection
-            .iter()
-            .map(|f| f.modify(&ff))
-            .collect::<Vec<_>>();
-        field
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -287,7 +278,7 @@ pub struct OperationPlan<Input> {
     // TODO: drop index from here. Embed all the necessary information in each field of the plan.
     pub index: Arc<Index>,
     pub is_introspection_query: bool,
-    pub dedupe: bool,
+    pub is_dedupe: bool,
     pub is_const: bool,
     pub selection: Vec<Field<Input>>,
 }
@@ -317,7 +308,7 @@ impl<Input> OperationPlan<Input> {
             selection,
             index: self.index,
             is_introspection_query: self.is_introspection_query,
-            dedupe: self.dedupe,
+            is_dedupe: self.is_dedupe,
             is_const: self.is_const,
         })
     }
@@ -341,7 +332,7 @@ impl<Input> OperationPlan<Input> {
             operation_type,
             index,
             is_introspection_query,
-            dedupe: false,
+            is_dedupe: false,
             is_const: false,
         }
     }
@@ -359,16 +350,6 @@ impl<Input> OperationPlan<Input> {
     /// Check if current graphQL operation is query
     pub fn is_query(&self) -> bool {
         self.operation_type == OperationType::Query
-    }
-
-    /// Returns a nested [Field] representation
-    pub fn as_nested(&self) -> &[Field<Input>] {
-        &self.selection
-    }
-
-    /// Returns a nested [Field] representation
-    pub fn into_nested(self) -> Vec<Field<Input>> {
-        self.selection
     }
 
     /// Returns a flat [Field] representation
@@ -633,20 +614,20 @@ mod test {
     fn test_operation_plan_dedupe() {
         let actual = plan(r#"{ posts { id } }"#);
 
-        assert!(!actual.dedupe);
+        assert!(!actual.is_dedupe);
     }
 
     #[test]
     fn test_operation_plan_dedupe_nested() {
         let actual = plan(r#"{ posts { id users { id } } }"#);
 
-        assert!(!actual.dedupe);
+        assert!(!actual.is_dedupe);
     }
 
     #[test]
     fn test_operation_plan_dedupe_false() {
         let actual = plan(r#"{ users { id comments {body} } }"#);
 
-        assert!(actual.dedupe);
+        assert!(actual.is_dedupe);
     }
 }
