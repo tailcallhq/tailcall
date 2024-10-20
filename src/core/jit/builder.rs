@@ -131,7 +131,6 @@ impl Builder {
         selection: &SelectionSet,
         type_condition: &str,
         fragments: &HashMap<&str, &FragmentDefinition>,
-        parent_id: Option<FieldId>,
     ) -> Vec<Field<Value>> {
         let mut fields = vec![];
 
@@ -199,12 +198,8 @@ impl Builder {
                         let id = FieldId::new(self.field_id.next());
 
                         // Recursively gather child fields for the selection set
-                        let child_fields = self.iter(
-                            &gql_field.selection_set.node,
-                            type_of.name(),
-                            fragments,
-                            Some(id.clone()),
-                        );
+                        let child_fields =
+                            self.iter(&gql_field.selection_set.node, type_of.name(), fragments);
 
                         let ir = match field_def {
                             QueryField::Field((field_def, _)) => field_def.resolver.clone(),
@@ -259,7 +254,6 @@ impl Builder {
                             &fragment.selection_set.node,
                             fragment.type_condition.node.on.node.as_str(),
                             fragments,
-                            parent_id.clone(),
                         ));
                     }
                 }
@@ -270,12 +264,7 @@ impl Builder {
                         .map(|cond| cond.node.on.node.as_str())
                         .unwrap_or(type_condition);
 
-                    fields.extend(self.iter(
-                        &fragment.selection_set.node,
-                        type_of,
-                        fragments,
-                        parent_id.clone(),
-                    ));
+                    fields.extend(self.iter(&fragment.selection_set.node, type_of, fragments));
                 }
             }
         }
@@ -331,7 +320,7 @@ impl Builder {
         let name = self
             .get_type(operation.ty)
             .ok_or(BuildError::RootOperationTypeNotDefined { operation: operation.ty })?;
-        let fields = self.iter(&operation.selection_set.node, name, &fragments, None);
+        let fields = self.iter(&operation.selection_set.node, name, &fragments);
 
         let is_introspection_query = operation.selection_set.node.items.iter().any(|f| {
             if let Selection::Field(Positioned { node: gql_field, .. }) = &f.node {
