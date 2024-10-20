@@ -135,7 +135,7 @@ mod test {
     #[test]
     fn test_field() {
         let plan = setup("query {posts {id title}}").unwrap();
-        let field = plan.selection;
+        let field = &plan.selection;
         let env = RequestContext::new(plan.clone());
         let ctx = Context::<ConstValue, ConstValue>::new(&field[0], &env);
         let expected = <Context<_, _> as ResolverContextLike>::field(&ctx).unwrap();
