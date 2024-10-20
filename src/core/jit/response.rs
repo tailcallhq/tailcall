@@ -7,7 +7,7 @@ use super::Positioned;
 use crate::core::jit;
 use crate::core::merge_right::MergeRight;
 
-#[derive(Setters, Serialize)]
+#[derive(Clone, Setters, Serialize)]
 pub struct Response<Value, Error> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<Value>,

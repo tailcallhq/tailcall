@@ -247,7 +247,7 @@ fn request_context() -> RequestContext {
         http,
         env: Arc::new(Env {}),
         file: Arc::new(File {}),
-        cache: Arc::new(InMemoryCache::new()),
+        cache: Arc::new(InMemoryCache::default()),
         extensions: Arc::new(vec![]),
         cmd_worker: None,
         worker: None,

@@ -1,6 +1,6 @@
 ---
 source: src/core/jit/builder.rs
-expression: plan.into_nested()
+expression: plan.selection
 ---
 [
     Field {
@@ -35,63 +35,54 @@ expression: plan.into_nested()
                             ): String(
                                 "test-12",
                             ),
-                            Name(
-                                "id",
-                            ): Number(
-                                Number(101),
-                            ),
                         },
                     ),
                 ),
                 default_value: None,
             },
         ],
-        extensions: Some(
-            Nested(
-                [
-                    Field {
-                        id: 1,
-                        name: "id",
-                        output_name: "id",
-                        type_of: ID!,
-                        type_condition: Some(
-                            "Post",
-                        ),
-                        directives: [],
-                    },
-                    Field {
-                        id: 2,
-                        name: "userId",
-                        output_name: "userId",
-                        type_of: ID!,
-                        type_condition: Some(
-                            "Post",
-                        ),
-                        directives: [],
-                    },
-                    Field {
-                        id: 3,
-                        name: "title",
-                        output_name: "title",
-                        type_of: String!,
-                        type_condition: Some(
-                            "Post",
-                        ),
-                        directives: [],
-                    },
-                    Field {
-                        id: 4,
-                        name: "body",
-                        output_name: "body",
-                        type_of: String!,
-                        type_condition: Some(
-                            "Post",
-                        ),
-                        directives: [],
-                    },
-                ],
-            ),
-        ),
+        selection: [
+            Field {
+                id: 1,
+                name: "id",
+                output_name: "id",
+                type_of: ID!,
+                type_condition: Some(
+                    "Post",
+                ),
+                directives: [],
+            },
+            Field {
+                id: 2,
+                name: "userId",
+                output_name: "userId",
+                type_of: ID!,
+                type_condition: Some(
+                    "Post",
+                ),
+                directives: [],
+            },
+            Field {
+                id: 3,
+                name: "title",
+                output_name: "title",
+                type_of: String!,
+                type_condition: Some(
+                    "Post",
+                ),
+                directives: [],
+            },
+            Field {
+                id: 4,
+                name: "body",
+                output_name: "body",
+                type_of: String!,
+                type_condition: Some(
+                    "Post",
+                ),
+                directives: [],
+            },
+        ],
         directives: [],
     },
 ]

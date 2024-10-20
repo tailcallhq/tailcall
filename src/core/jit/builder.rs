@@ -7,15 +7,13 @@ use async_graphql::parser::types::{
     OperationType, Selection, SelectionSet,
 };
 use async_graphql::Positioned;
-use async_graphql_value::{ConstValue, Value};
+use async_graphql_value::Value;
 
-use super::input_resolver::InputResolver;
 use super::model::{Directive as JitDirective, *};
 use super::BuildError;
 use crate::core::blueprint::{Blueprint, Index, QueryField};
 use crate::core::counter::{Count, Counter};
 use crate::core::jit::model::OperationPlan;
-use crate::core::merge_right::MergeRight;
 use crate::core::Type;
 
 #[derive(PartialEq, strum_macros::Display)]
@@ -132,17 +130,16 @@ impl Builder {
         &self,
         selection: &SelectionSet,
         type_condition: &str,
-        exts: Option<Flat>,
         fragments: &HashMap<&str, &FragmentDefinition>,
-    ) -> Vec<Field<Flat, Value>> {
+    ) -> Vec<Field<Value>> {
         let mut fields = vec![];
+
         for selection in &selection.items {
             match &selection.node {
                 Selection::Field(Positioned { node: gql_field, .. }) => {
                     let conditions = self.include(&gql_field.directives);
 
-                    // if include is always false xor skip is always true,
-                    // then we can skip the field from the plan
+                    // Skip fields based on GraphQL's skip/include conditions
                     if conditions.is_const_skip() {
                         continue;
                     }
@@ -164,7 +161,6 @@ impl Builder {
                     }
 
                     let (include, skip) = conditions.into_variable_tuple();
-
                     let field_name = gql_field.name.node.as_str();
                     let request_args = gql_field
                         .arguments
@@ -172,6 +168,7 @@ impl Builder {
                         .map(|(k, v)| (k.node.as_str().to_string(), v.node.to_owned()))
                         .collect::<HashMap<_, _>>();
 
+                    // Check if the field is present in the schema index
                     if let Some(field_def) = self.index.get_field(type_condition, field_name) {
                         let mut args = Vec::with_capacity(request_args.len());
                         if let QueryField::Field((_, schema_args)) = field_def {
@@ -187,8 +184,6 @@ impl Builder {
                                     id,
                                     name,
                                     type_of,
-                                    // TODO: handle errors for non existing request_args without the
-                                    // default
                                     value: request_args.get(arg_name).cloned(),
                                     default_value,
                                 });
@@ -201,18 +196,20 @@ impl Builder {
                         };
 
                         let id = FieldId::new(self.field_id.next());
-                        let child_fields = self.iter(
-                            &gql_field.selection_set.node,
-                            type_of.name(),
-                            Some(Flat::new(id.clone())),
-                            fragments,
-                        );
+
+                        // Recursively gather child fields for the selection set
+                        let child_fields =
+                            self.iter(&gql_field.selection_set.node, type_of.name(), fragments);
+
                         let ir = match field_def {
                             QueryField::Field((field_def, _)) => field_def.resolver.clone(),
                             _ => None,
                         };
-                        let flat_field = Field {
+
+                        // Create the field with its child fields in `selection`
+                        let field = Field {
                             id,
+                            selection: child_fields,
                             name: field_name.to_string(),
                             output_name: gql_field
                                 .alias
@@ -226,31 +223,27 @@ impl Builder {
                             include,
                             args,
                             pos: selection.pos.into(),
-                            extensions: exts.clone(),
                             directives,
                         };
 
-                        fields.push(flat_field);
-                        fields = fields.merge_right(child_fields);
+                        fields.push(field);
                     } else if field_name == "__typename" {
-                        let flat_field = Field {
+                        let typename_field = Field {
                             id: FieldId::new(self.field_id.next()),
                             name: field_name.to_string(),
                             output_name: field_name.to_string(),
                             ir: None,
                             type_of: Type::Named { name: "String".to_owned(), non_null: true },
-                            // __typename has a special meaning and could be applied
-                            // to any type
                             type_condition: None,
                             skip,
                             include,
                             args: Vec::new(),
                             pos: selection.pos.into(),
-                            extensions: exts.clone(),
+                            selection: vec![], // __typename has no child selection
                             directives,
                         };
 
-                        fields.push(flat_field);
+                        fields.push(typename_field);
                     }
                 }
                 Selection::FragmentSpread(Positioned { node: fragment_spread, .. }) => {
@@ -260,7 +253,6 @@ impl Builder {
                         fields.extend(self.iter(
                             &fragment.selection_set.node,
                             fragment.type_condition.node.on.node.as_str(),
-                            exts.clone(),
                             fragments,
                         ));
                     }
@@ -272,19 +264,13 @@ impl Builder {
                         .map(|cond| cond.node.on.node.as_str())
                         .unwrap_or(type_condition);
 
-                    fields.extend(self.iter(
-                        &fragment.selection_set.node,
-                        type_of,
-                        exts.clone(),
-                        fragments,
-                    ));
+                    fields.extend(self.iter(&fragment.selection_set.node, type_of, fragments));
                 }
             }
         }
 
         fields
     }
-
     #[inline(always)]
     fn get_type(&self, ty: OperationType) -> Option<&str> {
         match ty {
@@ -322,12 +308,7 @@ impl Builder {
     }
 
     #[inline(always)]
-    pub fn build(
-        &self,
-        variables: &Variables<ConstValue>,
-        operation_name: Option<&str>,
-    ) -> Result<OperationPlan<ConstValue>, BuildError> {
-        let mut fields = Vec::new();
+    pub fn build(&self, operation_name: Option<&str>) -> Result<OperationPlan<Value>, BuildError> {
         let mut fragments: HashMap<&str, &FragmentDefinition> = HashMap::new();
 
         for (name, fragment) in self.document.fragments.iter() {
@@ -339,10 +320,7 @@ impl Builder {
         let name = self
             .get_type(operation.ty)
             .ok_or(BuildError::RootOperationTypeNotDefined { operation: operation.ty })?;
-        fields.extend(self.iter(&operation.selection_set.node, name, None, &fragments));
-
-        // skip the fields depending on variables.
-        fields.retain(|f| !f.skip(variables));
+        let fields = self.iter(&operation.selection_set.node, name, &fragments);
 
         let is_introspection_query = operation.selection_set.node.items.iter().any(|f| {
             if let Selection::Field(Positioned { node: gql_field, .. }) = &f.node {
@@ -360,13 +338,7 @@ impl Builder {
             self.index.clone(),
             is_introspection_query,
         );
-
-        // TODO: operation from [ExecutableDocument] could contain definitions for
-        // default values of arguments. That info should be passed to
-        // [InputResolver] to resolve defaults properly
-        let input_resolver = InputResolver::new(plan);
-
-        Ok(input_resolver.resolve_input(variables)?)
+        Ok(plan)
     }
 }
 
@@ -382,16 +354,11 @@ mod tests {
 
     const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
 
-    fn plan(
-        query: impl AsRef<str>,
-        variables: &Variables<ConstValue>,
-    ) -> OperationPlan<ConstValue> {
+    fn plan(query: impl AsRef<str>) -> OperationPlan<Value> {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
-        Builder::new(&blueprint, document)
-            .build(variables, None)
-            .unwrap()
+        Builder::new(&blueprint, document).build(None).unwrap()
     }
 
     #[tokio::test]
@@ -402,10 +369,9 @@ mod tests {
                 posts { user { id name } }
             }
         "#,
-            &Variables::new(),
         );
         assert!(plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
     }
 
     #[tokio::test]
@@ -416,7 +382,6 @@ mod tests {
                 posts { user { id name } }
             }
         "#,
-            &Variables::new(),
         );
 
         assert!(plan.is_query());
@@ -431,11 +396,10 @@ mod tests {
                 posts { user { id } }
             }
         "#,
-            &Variables::new(),
         );
 
         assert!(plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
     }
 
     #[test]
@@ -446,11 +410,10 @@ mod tests {
                 articles: posts { author: user { identifier: id } }
             }
         "#,
-            &Variables::new(),
         );
 
         assert!(plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
     }
 
     #[test]
@@ -475,11 +438,10 @@ mod tests {
               }
             }
         "#,
-            &Variables::new(),
         );
 
         assert!(!plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
     }
 
     #[test]
@@ -504,11 +466,10 @@ mod tests {
               }
             }
         "#,
-            &Variables::new(),
         );
 
         assert!(plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
     }
 
     #[test]
@@ -526,11 +487,10 @@ mod tests {
               }
             }
         "#,
-            &Variables::new(),
         );
 
         assert!(plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
     }
 
     #[test]
@@ -544,11 +504,10 @@ mod tests {
               }
             }
         "#,
-            &Variables::from_iter([("id".into(), ConstValue::from(1))]),
         );
 
         assert!(plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
     }
 
     #[test]
@@ -566,11 +525,10 @@ mod tests {
               }
             }
         "#,
-            &Variables::new(),
         );
 
         assert!(plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
     }
 
     #[test]
@@ -587,11 +545,10 @@ mod tests {
               }
             }
         "#,
-            &Variables::new(),
         );
 
         assert!(!plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
     }
 
     #[test]
@@ -670,35 +627,32 @@ mod tests {
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
         let error = Builder::new(&blueprint, document.clone())
-            .build(&Variables::new(), None)
+            .build(None)
             .unwrap_err();
 
         assert_eq!(error, BuildError::OperationNameRequired);
 
         let error = Builder::new(&blueprint, document.clone())
-            .build(&Variables::new(), Some("unknown"))
+            .build(Some("unknown"))
             .unwrap_err();
 
         assert_eq!(error, BuildError::OperationNotFound("unknown".to_string()));
 
         let plan = Builder::new(&blueprint, document.clone())
-            .build(&Variables::new(), Some("GetPosts"))
+            .build(Some("GetPosts"))
             .unwrap();
         assert!(plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
 
         let plan = Builder::new(&blueprint, document.clone())
-            .build(&Variables::new(), Some("CreateNewPost"))
+            .build(Some("CreateNewPost"))
             .unwrap();
         assert!(!plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
     }
 
     #[test]
     fn test_directives() {
-        let mut variables = Variables::new();
-        variables.insert("includeName".to_string(), ConstValue::Boolean(true));
-
         let plan = plan(
             r#"
             query($includeName: Boolean! = true) {
@@ -708,10 +662,9 @@ mod tests {
                 }
             }
             "#,
-            &variables,
         );
 
         assert!(plan.is_query());
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan.selection);
     }
 }

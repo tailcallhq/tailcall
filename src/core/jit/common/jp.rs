@@ -8,8 +8,10 @@ use crate::core::config::{Config, ConfigModule};
 use crate::core::jit::builder::Builder;
 use crate::core::jit::store::Store;
 use crate::core::jit::synth::Synth;
-use crate::core::jit::{OperationPlan, Variables};
+use crate::core::jit::transform::InputResolver;
+use crate::core::jit::{transform, OperationPlan, Variables};
 use crate::core::json::{JsonLike, JsonObjectLike};
+use crate::core::Transform;
 
 /// NOTE: This is a bit of a boilerplate reducing module that is used in tests
 /// and benchmarks.
@@ -81,7 +83,7 @@ impl<'a, Value: JsonLike<'a> + Deserialize<'a> + Clone + 'a> TestData<Value> {
     }
 }
 
-impl<'a, Value: Deserialize<'a> + Clone + 'a + JsonLike<'a>> JP<Value> {
+impl<'a, Value: Deserialize<'a> + Clone + 'a + JsonLike<'a> + std::fmt::Debug> JP<Value> {
     const CONFIG: &'static str = include_str!("../fixtures/jsonplaceholder-mutation.graphql");
 
     fn plan(query: &str, variables: &Variables<async_graphql::Value>) -> OperationPlan<Value> {
@@ -91,7 +93,14 @@ impl<'a, Value: Deserialize<'a> + Clone + 'a + JsonLike<'a>> JP<Value> {
             async_graphql::parser::parse_query(query).unwrap(),
         );
 
-        let plan = builder.build(variables, None).unwrap();
+        let plan = builder.build(None).unwrap();
+        let plan = transform::Skip::new(variables)
+            .transform(plan)
+            .to_result()
+            .unwrap();
+
+        let input_resolver = InputResolver::new(plan);
+        let plan = input_resolver.resolve_input(variables).unwrap();
 
         plan.try_map(Deserialize::deserialize).unwrap()
     }

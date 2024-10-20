@@ -79,7 +79,7 @@ pub fn create_runtime(
         http2_only: http2,
         env: Arc::new(env),
         file: Arc::new(file),
-        cache: Arc::new(InMemoryCache::new()),
+        cache: Arc::new(InMemoryCache::default()),
         extensions: Arc::new(vec![]),
         cmd_worker: match &script {
             Some(script) => Some(init_worker_io::<Event, Command>(script.to_owned())),

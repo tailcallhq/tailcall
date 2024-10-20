@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use crate::core::jit::model::{Field, Nested, OperationPlan, Variables};
+use crate::core::jit::model::{Field, OperationPlan, Variables};
 use crate::core::jit::store::{DataPath, Store};
 use crate::core::jit::{Error, PathSegment, Positioned, ValidationError};
 use crate::core::json::{JsonLike, JsonObjectLike};
@@ -30,7 +30,7 @@ where
     Value: JsonLike<'a> + Clone + std::fmt::Debug,
 {
     #[inline(always)]
-    fn include<T>(&self, field: &Field<T, Value>) -> bool {
+    fn include(&self, field: &Field<Value>) -> bool {
         !field.skip(&self.variables)
     }
 
@@ -40,7 +40,7 @@ where
         let mut path = Vec::new();
         let root_name = self.plan.root_name();
 
-        for child in self.plan.as_nested().iter() {
+        for child in self.plan.selection.iter() {
             if !self.include(child) {
                 continue;
             }
@@ -57,7 +57,7 @@ where
     #[inline(always)]
     fn iter(
         &'a self,
-        node: &'a Field<Nested<Value>, Value>,
+        node: &'a Field<Value>,
         value: Option<&'a Value>,
         data_path: &DataPath,
         path: &mut Vec<PathSegment>,
@@ -96,7 +96,7 @@ where
     /// case it does not it throws an Error
     fn node_nullable_guard(
         &'a self,
-        node: &'a Field<Nested<Value>, Value>,
+        node: &'a Field<Value>,
         path: &[PathSegment],
         root_name: Option<&'a str>,
     ) -> Result<Value, Positioned<Error>> {
@@ -118,7 +118,7 @@ where
     #[inline(always)]
     fn iter_inner(
         &'a self,
-        node: &'a Field<Nested<Value>, Value>,
+        node: &'a Field<Value>,
         value: &'a Value,
         data_path: &DataPath,
         path: &mut Vec<PathSegment>,
@@ -221,7 +221,7 @@ where
     fn to_location_error(
         &'a self,
         error: Error,
-        node: &'a Field<Nested<Value>, Value>,
+        node: &'a Field<Value>,
         path: &[PathSegment],
     ) -> Positioned<Error> {
         Positioned::new(error, node.pos).with_path(path.to_vec())
@@ -322,8 +322,18 @@ mod tests {
         let config = ConfigModule::from(config);
 
         let builder = Builder::new(&Blueprint::try_from(&config).unwrap(), doc);
-        let plan = builder.build(&Variables::new(), None).unwrap();
-        let plan = plan.try_map(Deserialize::deserialize).unwrap();
+        let plan = builder.build(None).unwrap();
+        let plan = plan
+            .try_map(|v| {
+                // Earlier we hard OperationPlan<ConstValue> which has impl Deserialize
+                // but now InputResolver takes OperationPlan<async_graphql_value::Value>
+                // and returns OperationPlan<async_graphql_value::Value>.
+                // So we need to map Plan to some other value before being able to deserialize
+                // it.
+                let serde = v.into_json().unwrap();
+                Deserialize::deserialize(serde)
+            })
+            .unwrap();
 
         let store = store
             .into_iter()

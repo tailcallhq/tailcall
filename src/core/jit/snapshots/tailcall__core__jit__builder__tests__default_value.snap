@@ -1,6 +1,6 @@
 ---
 source: src/core/jit/builder.rs
-expression: plan.into_nested()
+expression: plan.selection
 ---
 [
     Field {
@@ -35,33 +35,24 @@ expression: plan.into_nested()
                             ): String(
                                 "tailcall test",
                             ),
-                            Name(
-                                "id",
-                            ): Number(
-                                Number(101),
-                            ),
                         },
                     ),
                 ),
                 default_value: None,
             },
         ],
-        extensions: Some(
-            Nested(
-                [
-                    Field {
-                        id: 1,
-                        name: "id",
-                        output_name: "id",
-                        type_of: ID!,
-                        type_condition: Some(
-                            "Post",
-                        ),
-                        directives: [],
-                    },
-                ],
-            ),
-        ),
+        selection: [
+            Field {
+                id: 1,
+                name: "id",
+                output_name: "id",
+                type_of: ID!,
+                type_condition: Some(
+                    "Post",
+                ),
+                directives: [],
+            },
+        ],
         directives: [],
     },
 ]

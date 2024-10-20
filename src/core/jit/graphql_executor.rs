@@ -1,16 +1,17 @@
 use std::collections::BTreeMap;
 use std::future::Future;
+use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
 use async_graphql::{Data, Executor, Response, Value};
 use async_graphql_value::{ConstValue, Extensions};
 use futures_util::stream::BoxStream;
+use tailcall_hasher::TailcallHasher;
 
 use crate::core::app_context::AppContext;
 use crate::core::async_graphql_hyper::OperationId;
 use crate::core::http::RequestContext;
-use crate::core::jit;
-use crate::core::jit::ConstValueExecutor;
+use crate::core::jit::{self, ConstValueExecutor, OPHash};
 use crate::core::lift::{CanLift, Lift};
 use crate::core::merge_right::MergeRight;
 
@@ -72,6 +73,14 @@ impl JITExecutor {
 
         out.map(|response| response.take()).unwrap_or_default()
     }
+
+    #[inline(always)]
+    fn req_hash(request: &async_graphql::Request) -> OPHash {
+        let mut hasher = TailcallHasher::default();
+        request.query.hash(&mut hasher);
+
+        OPHash::new(hasher.finish())
+    }
 }
 
 impl Clone for Lift<async_graphql::Response> {
@@ -104,18 +113,27 @@ impl From<jit::Request<Value>> for async_graphql::Request {
 
 impl Executor for JITExecutor {
     fn execute(&self, request: async_graphql::Request) -> impl Future<Output = Response> + Send {
-        let jit_request = jit::Request::from(request);
+        let hash = Self::req_hash(&request);
 
         async move {
-            match ConstValueExecutor::new(&jit_request, &self.app_ctx) {
-                Ok(exec) => {
-                    if self.is_query && exec.plan.dedupe {
-                        self.dedupe_and_exec(exec, jit_request).await
-                    } else {
-                        self.exec(exec, jit_request).await
-                    }
-                }
-                Err(error) => Response::from_errors(vec![error.into()]),
+            let jit_request = jit::Request::from(request);
+            let exec = if let Some(op) = self.app_ctx.operation_plans.get(&hash) {
+                ConstValueExecutor::from(op.value().clone())
+            } else {
+                let exec = match ConstValueExecutor::try_new(&jit_request, &self.app_ctx) {
+                    Ok(exec) => exec,
+                    Err(error) => return Response::from_errors(vec![error.into()]),
+                };
+                self.app_ctx.operation_plans.insert(hash, exec.plan.clone());
+                exec
+            };
+
+            if let Some(ref response) = exec.response {
+                response.clone().into_async_graphql()
+            } else if self.is_query && exec.plan.is_dedupe {
+                self.dedupe_and_exec(exec, jit_request).await
+            } else {
+                self.exec(exec, jit_request).await
             }
         }
     }

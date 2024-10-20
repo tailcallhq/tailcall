@@ -171,6 +171,7 @@ indenter = "0.3.3"
 derive_more = { workspace = true }
 strum = "0.26.2"
 tailcall-valid = { workspace = true }
+dashmap = "6.1.0"
 
 [dev-dependencies]
 datatest-stable = "0.2.9"

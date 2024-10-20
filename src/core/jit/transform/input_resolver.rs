@@ -1,6 +1,6 @@
 use async_graphql_value::{ConstValue, Value};
 
-use super::{Arg, Field, OperationPlan, ResolveInputError, Variables};
+use super::super::{Field, OperationPlan, ResolveInputError, Variables};
 use crate::core::json::{JsonLikeOwned, JsonObjectLike};
 use crate::core::Type;
 
@@ -44,8 +44,8 @@ impl<Input> InputResolver<Input> {
 
 impl<Input, Output> InputResolver<Input>
 where
-    Input: Clone,
-    Output: Clone + JsonLikeOwned + TryFrom<serde_json::Value>,
+    Input: Clone + std::fmt::Debug,
+    Output: Clone + JsonLikeOwned + TryFrom<serde_json::Value> + std::fmt::Debug,
     Input: InputResolvable<Output = Output>,
     <Output as TryFrom<serde_json::Value>>::Error: std::fmt::Debug,
 {
@@ -55,32 +55,17 @@ where
     ) -> Result<OperationPlan<Output>, ResolveInputError> {
         let new_fields = self
             .plan
-            .as_parent()
+            .selection
             .iter()
-            .map(|field| field.clone().try_map(|value| value.resolve(variables)))
+            .map(|field| (*field).clone().try_map(&|value| value.resolve(variables)))
             .map(|field| match field {
                 Ok(field) => {
-                    let args = field
-                        .args
-                        .into_iter()
-                        .map(|arg| {
-                            let value = self.recursive_parse_arg(
-                                &field.name,
-                                &arg.name,
-                                &arg.type_of,
-                                &arg.default_value,
-                                arg.value,
-                            )?;
-                            Ok(Arg { value, ..arg })
-                        })
-                        .collect::<Result<_, _>>()?;
-
-                    Ok(Field { args, ..field })
+                    let field = self.iter_args(field)?;
+                    Ok(field)
                 }
                 Err(err) => Err(err),
             })
             .collect::<Result<Vec<_>, _>>()?;
-
         Ok(OperationPlan::new(
             self.plan.root_name(),
             new_fields,
@@ -88,6 +73,35 @@ where
             self.plan.index.clone(),
             self.plan.is_introspection_query,
         ))
+    }
+
+    #[inline(always)]
+    fn iter_args(&self, mut field: Field<Output>) -> Result<Field<Output>, ResolveInputError> {
+        let args = field
+            .args
+            .into_iter()
+            .map(|mut arg| {
+                let value = self.recursive_parse_arg(
+                    &field.name,
+                    &arg.name,
+                    &arg.type_of,
+                    &arg.default_value,
+                    arg.value,
+                )?;
+                arg.value = value;
+                Ok(arg)
+            })
+            .collect::<Result<_, _>>()?;
+
+        field.args = args;
+
+        field.selection = field
+            .selection
+            .into_iter()
+            .map(|val| self.iter_args(val))
+            .collect::<Result<_, _>>()?;
+
+        Ok(field)
     }
 
     #[allow(clippy::too_many_arguments)]
