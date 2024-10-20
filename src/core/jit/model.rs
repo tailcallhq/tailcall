@@ -404,7 +404,7 @@ impl<Input> OperationPlan<Input> {
     }
 
     /// Returns a flat [Field] representation
-    pub fn as_flat(&self) -> DFS<Input> {
+    pub fn iter_dfs(&self) -> DFS<Input> {
         DFS { stack: vec![self.selection.iter()] }
     }
 
@@ -413,7 +413,7 @@ impl<Input> OperationPlan<Input> {
         match path.split_first() {
             None => None,
             Some((name, path)) => {
-                let field = self.as_flat().find(|field| field.name == name.as_ref())?;
+                let field = self.iter_dfs().find(|field| field.name == name.as_ref())?;
                 if path.is_empty() {
                     Some(field)
                 } else {
