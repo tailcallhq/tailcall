@@ -18,5 +18,5 @@ type GEN__NewsList {
 }
 
 type Query {
-  GEN__NewsService__GetAllNews: GEN__NewsList @grpc(method: "NewsService.GetAllNews")
+  GEN__NewsService__GetAllNews: GEN__NewsList @grpc(url: "http://localhost:50051", method: "NewsService.GetAllNews")
 }

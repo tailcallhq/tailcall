@@ -94,7 +94,12 @@ impl<'a> HttpDirectiveGenerator<'a> {
                 });
 
         // add path in http directive.
-        self.http.path = mustache_compatible_url.to_string();
+        let mut url = url::Url::parse(&mustache_compatible_url)
+            // TODO: Handle this error properly
+            .unwrap_or(Url::parse("http://example.com").unwrap());
+        url.set_path(&mustache_compatible_url);
+
+        self.http.url = url.to_string();
     }
 
     fn add_query_variables(&mut self, field: &mut Field) {
@@ -122,8 +127,8 @@ impl<'a> HttpDirectiveGenerator<'a> {
     }
 
     pub fn generate_http_directive(mut self, field: &mut Field) -> Http {
-        self.add_path_variables(field);
         self.add_query_variables(field);
+        self.add_path_variables(field);
 
         self.http
     }
@@ -198,7 +203,9 @@ mod test {
         let url = Url::parse("http://example.com/foo/70b0be87-d339-4395-8559-204fd368604a/bar/123")
             .unwrap();
         let http_directive = HttpDirectiveGenerator::new(&url);
-        let field = &mut Field { ..Default::default() };
+        let field = &mut Field {
+            ..Default::default()
+        };
         let http = http_directive.generate_http_directive(field);
         let args: HashMap<String, String> = field
             .args
@@ -211,7 +218,7 @@ mod test {
         ]
         .into_iter()
         .collect::<HashMap<_, _>>();
-        assert_eq!("/foo/{{.args.GEN__2}}/bar/{{.args.GEN__1}}", http.path);
+        assert_eq!("http://example.com/foo/%7B%7B.args.GEN__2%7D%7D/bar/%7B%7B.args.GEN__1%7D%7D", http.url);
         assert_eq!(test_args, args);
     }
 }

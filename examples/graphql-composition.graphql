@@ -4,7 +4,7 @@
 
 schema
   @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://localhost:8000/graphql", httpCache: 42, batch: {delay: 1}) {
+  @upstream(httpCache: 42, batch: {delay: 1}) {
   query: Query
 }
 
@@ -17,7 +17,7 @@ type Post {
   userId: Int!
   title: String!
   body: String!
-  user: User @graphQL(name: "user", args: [{key: "id", value: "{{.value.userId}}"}])
+  user: User @graphQL(url: "http://jsonplaceholder.typicode.com", name: "user", args: [{key: "id", value: "{{.value.userId}}"}])
 }
 
 type User {

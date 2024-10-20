@@ -1,16 +1,16 @@
 schema
   @server(port: 8000, headers: {cors: {allowOrigins: ["*"], allowHeaders: ["*"], allowMethods: [POST, GET, OPTIONS]}})
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 100}) {
+  @upstream(httpCache: 42, batch: {delay: 100}) {
   query: Query
   mutation: Mutation
 }
 
 type Query {
-  posts: [Post] @http(path: "/posts")
-  users: [User] @http(path: "/users")
-  user(id: ID!): User @http(path: "/users/{{.args.id}}")
-  post(id: ID!): Post @http(path: "/posts/{{.args.id}}")
-  getUserIdOrEmail(id: ID!): UserIdOrEmail @http(path: "/users/{{.args.id}}")
+  posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts")
+  users: [User] @http(url: "http://jsonplaceholder.typicode.com/users")
+  user(id: ID!): User @http(url: "http://jsonplaceholder.typicode.com/users/{{.args.id}}")
+  post(id: ID!): Post @http(url: "http://jsonplaceholder.typicode.com/posts/{{.args.id}}")
+  getUserIdOrEmail(id: ID!): UserIdOrEmail @http(url: "http://jsonplaceholder.typicode.com/users/{{.args.id}}")
 }
 
 type UserId {
@@ -24,8 +24,8 @@ type UserEmail {
 union UserIdOrEmail = UserId | UserEmail
 
 type Mutation {
-  createUser(user: InputUser!): User @http(method: POST, path: "/users", body: "{{args.user}}")
-  createPost(post: InputPost!): Post @http(method: POST, path: "/posts", body: "{{args.post}}")
+  createUser(user: InputUser!): User @http(method: POST, url: "http://jsonplaceholder.typicode.com/users", body: "{{args.user}}")
+  createPost(post: InputPost!): Post @http(method: POST, url: "http://jsonplaceholder.typicode.com/posts", body: "{{args.post}}")
 }
 
 input InputPost {
@@ -52,7 +52,7 @@ type User {
   phone: String
   website: String
   address: Address
-  todo: Todo @http(path: "/todos/{{.value.id}}")
+  todo: Todo @http(url: "http://jsonplaceholder.typicode.com/todos/{{.value.id}}")
 }
 
 type Todo {

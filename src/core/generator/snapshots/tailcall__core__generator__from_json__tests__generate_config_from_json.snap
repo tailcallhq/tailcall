@@ -2,7 +2,7 @@
 source: src/core/generator/from_json.rs
 expression: config.to_sdl()
 ---
-schema @server @upstream(allowedHeaders: ["authorization"], baseURL: "https://example.com") {
+schema @server @upstream(allowedHeaders: ["authorization"]) {
   query: Query
 }
 
@@ -35,11 +35,11 @@ type Person {
 }
 
 type Query {
-  inCompatibleObjects: [JSON] @http(path: "/api/v2/users")
-  inCompatibleProperties: InCompatibleProperty @http(path: "/")
-  inCompatibleRootObject: JSON @http(path: "/")
-  nestedSameProperties: NestedSameProperty @http(path: "/")
-  nestedUsers(children: Boolean): NestedUser @http(path: "/users", query: [{key: "children", value: "{{.args.children}}"}])
+  inCompatibleObjects: [JSON] @http(url: "http://example.com/api/v2/users")
+  inCompatibleProperties: InCompatibleProperty @http(url: "http://example.com/")
+  inCompatibleRootObject: JSON @http(url: "http://example.com/")
+  nestedSameProperties: NestedSameProperty @http(url: "http://example.com/")
+  nestedUsers(children: Boolean): NestedUser @http(url: "http://example.com/users", query: [{key: "children", value: "{{.args.children}}"}])
 }
 
 type T6 {

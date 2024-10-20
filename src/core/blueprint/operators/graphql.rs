@@ -62,12 +62,8 @@ pub fn compile_graphql(
     graphql: &GraphQL,
 ) -> Valid<IR, String> {
     let args = graphql.args.as_ref();
-    Valid::from_option(
-        graphql
-            .base_url
-            .as_ref()
-            .or(config.upstream.base_url.as_ref()),
-        "No base URL defined".to_string(),
+    Valid::succeed(
+        graphql.url.as_str(),
     )
     .zip(helpers::headers::to_mustache_headers(&graphql.headers))
     .and_then(|(base_url, headers)| {

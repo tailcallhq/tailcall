@@ -11,6 +11,8 @@ pub struct Proxy {
 }
 
 #[derive(PartialEq, Eq, Clone, Debug, Setters, schemars::JsonSchema)]
+// TODO: uncomment following line after fixing tests
+// #[serde(deny_unknown_fields)]
 pub struct Upstream {
     pub pool_idle_timeout: u64,
     pub pool_max_idle_per_host: usize,
@@ -23,7 +25,6 @@ pub struct Upstream {
     pub tcp_keep_alive: u64,
     pub user_agent: String,
     pub allowed_headers: BTreeSet<String>,
-    pub base_url: Option<String>,
     pub http_cache: u64,
     pub batch: Option<Batch>,
     pub http2_only: bool,
@@ -64,9 +65,8 @@ impl TryFrom<&ConfigModule> for Upstream {
         }
 
         get_batch(&config_upstream)
-            .fuse(get_base_url(&config_upstream))
             .fuse(get_proxy(&config_upstream))
-            .map(|(batch, base_url, proxy)| Upstream {
+            .map(|(batch, proxy)| Upstream {
                 pool_idle_timeout: (config_upstream).get_pool_idle_timeout(),
                 pool_max_idle_per_host: (config_upstream).get_pool_max_idle_per_host(),
                 keep_alive_interval: (config_upstream).get_keep_alive_interval(),
@@ -78,7 +78,6 @@ impl TryFrom<&ConfigModule> for Upstream {
                 tcp_keep_alive: (config_upstream).get_tcp_keep_alive(),
                 user_agent: (config_upstream).get_user_agent(),
                 allowed_headers,
-                base_url,
                 http_cache: (config_upstream).get_http_cache_size(),
                 batch,
                 http2_only: (config_upstream).get_http_2_only(),
@@ -100,15 +99,6 @@ fn get_batch(upstream: &config::Upstream) -> Valid<Option<Batch>, String> {
             }))
         },
     )
-}
-
-fn get_base_url(upstream: &config::Upstream) -> Valid<Option<String>, String> {
-    if let Some(ref base_url) = upstream.base_url {
-        Valid::from(reqwest::Url::parse(base_url).map_err(|e| ValidationError::new(e.to_string())))
-            .map_to(Some(base_url.clone()))
-    } else {
-        Valid::succeed(None)
-    }
 }
 
 fn get_proxy(upstream: &config::Upstream) -> Valid<Option<Proxy>, String> {

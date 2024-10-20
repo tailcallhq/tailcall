@@ -18,6 +18,8 @@ use crate::core::transform::{Transform, TransformerOps};
 use crate::core::valid::Validator;
 use crate::core::Type;
 
+const URL: &str = "http://localhost:50051";
+
 /// Assists in the mapping and retrieval of proto type names to custom formatted
 /// strings based on the descriptor type.
 #[derive(Setters)]
@@ -367,7 +369,7 @@ impl Context {
                 cfg_field.type_of = cfg_field.type_of.with_name(output_ty);
 
                 cfg_field.resolver = Some(Resolver::Grpc(Grpc {
-                    base_url: None,
+                    url: URL.to_string(),
                     body,
                     batch_key: vec![],
                     headers: vec![],

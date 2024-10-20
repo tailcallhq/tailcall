@@ -1,12 +1,12 @@
 schema
   @server(port: 8000, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42) {
+  @upstream(httpCache: 42) {
   query: Query
 }
 
 type Query {
-  posts: [Post] @http(path: "/posts")
-  users: [User] @http(path: "/users", dedupe: true)
+  posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts")
+  users: [User] @http(url: "http://jsonplaceholder.typicode.com/users", dedupe: true)
 }
 
 type User {
@@ -15,7 +15,7 @@ type User {
   username: String!
   email: String!
   phone: String
-  comments: [Comment] @http(path: "/users/{{.value.id}}/comments", dedupe: true)
+  comments: [Comment] @http(url: "http://jsonplaceholder.typicode.com/users/{{.value.id}}/comments", dedupe: true)
 }
 
 type Post {
@@ -23,7 +23,7 @@ type Post {
   userId: ID!
   title: String!
   body: String!
-  user: User @http(path: "/users/{{.value.userId}}", dedupe: true)
+  user: User @http(url: "http://jsonplaceholder.typicode.com/users/{{.value.userId}}", dedupe: true)
 }
 
 type Comment {

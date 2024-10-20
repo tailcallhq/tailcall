@@ -4,7 +4,7 @@ use url::Url;
 use super::url_utils::extract_base_url;
 use crate::core::config::{Config, GraphQLOperationType, Resolver};
 use crate::core::transform::Transform;
-use crate::core::valid::Valid;
+use crate::core::valid::{Valid, ValidationError, Validator};
 
 pub struct FieldBaseUrlGenerator<'a> {
     url: &'a Url,
@@ -16,16 +16,19 @@ impl<'a> FieldBaseUrlGenerator<'a> {
         Self { url, operation_type }
     }
 
-    fn update_base_urls(&self, config: &mut Config, operation_name: &str, base_url: &str) {
+    fn update_base_urls(&self, config: &mut Config, operation_name: &str, base_url: &str) -> Result<(), ValidationError<String>>{
         if let Some(query_type) = config.types.get_mut(operation_name) {
             for field in query_type.fields.values_mut() {
+                // TODO: These changes needs a review
+
                 if let Some(Resolver::Http(http)) = &mut field.resolver {
-                    if http.base_url.is_none() {
-                        http.base_url = Some(base_url.to_owned())
-                    }
+                    let base = Url::parse(base_url).map_err(|e| ValidationError::new(e.to_string()))?;
+                    let base_url = base.join(http.url.as_str()).map_err(|e| ValidationError::new(e.to_string()))?;
+                    http.url = base_url.to_string();
                 }
             }
         }
+        Ok(())
     }
 }
 
@@ -40,9 +43,8 @@ impl Transform for FieldBaseUrlGenerator<'_> {
             }
         };
         let op_name = self.operation_type.to_string().to_case(Case::Pascal);
-        self.update_base_urls(&mut config, &op_name, &base_url);
-
-        Valid::succeed(config)
+        Valid::from(self.update_base_urls(&mut config, &op_name, &base_url))
+            .and_then(|_| Valid::succeed(config))
     }
 }
 
@@ -67,7 +69,7 @@ mod test {
             Field {
                 type_of: "Int".to_string().into(),
                 resolver: Some(Resolver::Http(Http {
-                    path: "/day".to_string(),
+                    url: "http://localhost/day".to_string(),
                     ..Default::default()
                 })),
                 ..Default::default()
@@ -78,7 +80,7 @@ mod test {
             Field {
                 type_of: "String".to_string().into(),
                 resolver: Some(Resolver::Http(Http {
-                    path: "/month".to_string(),
+                    url: "http://localhost/month".to_string(),
                     ..Default::default()
                 })),
                 ..Default::default()
@@ -89,7 +91,7 @@ mod test {
             Field {
                 type_of: "String".to_string().into(),
                 resolver: Some(Resolver::Http(Http {
-                    path: "/status".to_string(),
+                    url: "http://localhost/status".to_string(),
                     ..Default::default()
                 })),
                 ..Default::default()
@@ -114,8 +116,7 @@ mod test {
             Field {
                 type_of: "Int".to_string().into(),
                 resolver: Some(Resolver::Http(Http {
-                    base_url: Some("https://calender.com/api/v1/".to_string()),
-                    path: "/day".to_string(),
+                    url: "https://calender.com/api/v1/day".to_string(),
                     ..Default::default()
                 })),
                 ..Default::default()
@@ -126,7 +127,7 @@ mod test {
             Field {
                 type_of: "String".to_string().into(),
                 resolver: Some(Resolver::Http(Http {
-                    path: "/month".to_string(),
+                    url: "http://localhost/month".to_string(),
                     ..Default::default()
                 })),
                 ..Default::default()

@@ -18,7 +18,7 @@ type GEN__person__Person {
 }
 
 type Query {
-  GEN__person__PersonService__GetPerson: GEN__person__Person @grpc(method: "person.PersonService.GetPerson")
+  GEN__person__PersonService__GetPerson: GEN__person__Person @grpc(url: "http://localhost:50051", method: "person.PersonService.GetPerson")
 }
 
   """
