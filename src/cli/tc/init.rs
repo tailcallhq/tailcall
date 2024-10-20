@@ -25,19 +25,26 @@ pub(super) async fn init_command(runtime: TargetRuntime, folder_path: &str) -> R
     let json_file_path = Path::new(folder_path).join(JSON_FILE_NAME);
     let yml_file_path = Path::new(folder_path).join(YML_FILE_NAME);
 
-    confirm_and_write(
-        runtime.clone(),
-        &file_path.display().to_string(),
-        tailcallrc.as_bytes(),
-    )
-    .await?;
-    confirm_and_write(
-        runtime.clone(),
-        &json_file_path.display().to_string(),
-        tailcallrc_json.as_bytes(),
-    )
-    .await?;
-    confirm_and_write_yml(runtime.clone(), &yml_file_path).await?;
+    match selection {
+        Source::GraphQL => {
+            confirm_and_write(
+                runtime.clone(),
+                &file_path.display().to_string(),
+                tailcallrc.as_bytes(),
+            )
+            .await?;
+            confirm_and_write_yml(runtime.clone(), &yml_file_path).await?;
+        }
+        Source::Json | Source::Yml => {
+            confirm_and_write(
+                runtime.clone(),
+                &json_file_path.display().to_string(),
+                tailcallrc_json.as_bytes(),
+            )
+            .await?;
+        }
+    }
+
     create_main(runtime.clone(), folder_path, selection).await?;
 
     Ok(())
