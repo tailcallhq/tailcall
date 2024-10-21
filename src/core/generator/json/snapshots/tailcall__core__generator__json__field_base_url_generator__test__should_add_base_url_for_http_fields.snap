@@ -1,9 +1,0 @@
----
-source: src/core/generator/json/field_base_url_generator.rs
-expression: config.to_sdl()
----
-type Query {
-  f1: Int @http(url: "http://localhost/day")
-  f2: String @http(url: "http://localhost/month")
-  f3: String @http(url: "http://localhost/status")
-}
