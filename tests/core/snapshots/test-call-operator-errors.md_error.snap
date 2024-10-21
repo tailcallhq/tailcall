@@ -4,58 +4,20 @@ expression: errors
 ---
 [
   {
-    "message": "No resolver has been found in the schema",
+    "message": "Parsing failed because of missing field `url`",
     "trace": [
       "Query",
-      "userWithoutResolver"
+      "userWithGraphQLResolver",
+      "@graphQL"
     ],
     "description": null
   },
   {
-    "message": "no argument 'id' found",
+    "message": "Parsing failed because of missing field `url`",
     "trace": [
-      "Post",
-      "argumentMismatchGraphQL",
-      "@call",
-      "userWithGraphQLResolver"
-    ],
-    "description": null
-  },
-  {
-    "message": "no argument 'id' found",
-    "trace": [
-      "Post",
-      "headersMismatchGraphQL",
-      "@call",
-      "userWithGraphQLResolver"
-    ],
-    "description": null
-  },
-  {
-    "message": "no argument 'id' found",
-    "trace": [
-      "Post",
-      "urlMismatchHttp",
-      "@call",
-      "user"
-    ],
-    "description": null
-  },
-  {
-    "message": "call must have query or mutation",
-    "trace": [
-      "Post",
-      "withoutOperator",
-      "@call"
-    ],
-    "description": null
-  },
-  {
-    "message": "userWithoutResolver field has no resolver",
-    "trace": [
-      "Post",
-      "withoutResolver",
-      "@call"
+      "Query",
+      "userWithGraphQLHeaders",
+      "@graphQL"
     ],
     "description": null
   }

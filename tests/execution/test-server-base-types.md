@@ -1,7 +1,7 @@
 # test-server-base-types
 
 ```graphql @config
-schema @server(port: 3000) @upstream(baseURL: "http://abc.com") {
+schema @server(port: 3000) {
   query: Query
 }
 

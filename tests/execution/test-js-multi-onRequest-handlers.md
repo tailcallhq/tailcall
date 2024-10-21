@@ -29,13 +29,13 @@ function bar({request}) {
 ```
 
 ```graphql @config
-schema @server @upstream(baseURL: "http://localhost:3000", onRequest: "foo") @link(type: Script, src: "test1.js") {
+schema @server @upstream(onRequest: "foo") @link(type: Script, src: "test1.js") {
   query: Query
 }
 
 type Query {
-  foo: String @http(baseURL: "http://localhost:3000", path: "/foo")
-  bar: String @http(baseURL: "http://localhost:3000", path: "/bar", onRequest: "bar")
+  foo: String @http(url: "http://localhost:3000/foo")
+  bar: String @http(url: "http://localhost:3000/bar", onRequest: "bar")
 }
 ```
 

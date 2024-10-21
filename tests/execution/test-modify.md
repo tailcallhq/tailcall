@@ -5,7 +5,7 @@ identity: true
 # test-modify
 
 ```graphql @config
-schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+schema @server @upstream {
   query: Query
 }
 
@@ -14,6 +14,6 @@ input Foo {
 }
 
 type Query {
-  foo(input: Foo): String @http(path: "/foo") @modify(name: "data")
+  foo(input: Foo): String @http(url: "http://jsonplaceholder.typicode.com/foo") @modify(name: "data")
 }
 ```

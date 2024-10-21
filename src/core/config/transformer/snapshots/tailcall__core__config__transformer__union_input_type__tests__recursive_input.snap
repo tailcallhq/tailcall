@@ -2,7 +2,7 @@
 source: src/core/config/transformer/union_input_type.rs
 expression: config.to_sdl()
 ---
-schema @server(port: 8000) @upstream(baseURL: "http://localhost") {
+schema @server(port: 8000) @upstream {
   query: Query
 }
 
@@ -16,5 +16,5 @@ input Foo {
 }
 
 type Query {
-  bars(filter: Bar): String @graphQL(args: [{key: "baz", value: "{{.args.baz}}"}], baseURL: "http://localhost", name: "bars")
+  bars(filter: Bar): String @graphQL(args: [{key: "baz", value: "{{.args.baz}}"}], url: "http://localhost", name: "bars")
 }

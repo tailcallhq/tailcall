@@ -2,9 +2,6 @@
 
 ```json @config
 {
-  "upstream": {
-    "baseURL": "http://jsonplaceholder.typicode.com"
-  },
   "schema": {
     "query": "Query"
   },
@@ -40,7 +37,7 @@
             "name": "B"
           },
           "http": {
-            "path": "/posts"
+            "url": "http://jsonplaceholder.typicode.com/posts"
           }
         }
       }

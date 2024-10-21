@@ -5,17 +5,17 @@ identity: true
 # test-nested-value
 
 ```graphql @config
-schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+schema @server @upstream {
   query: Query
 }
 
 type Post {
   id: Int
-  user: User! @http(path: "/users", query: [{key: "id", value: "{{.value.user.id}}"}])
+  user: User! @http(url: "http://jsonplaceholder.typicode.com/users", query: [{key: "id", value: "{{.value.user.id}}"}])
 }
 
 type Query {
-  posts: [Post] @http(path: "/posts")
+  posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts")
 }
 
 type User {

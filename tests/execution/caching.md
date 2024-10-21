@@ -1,13 +1,13 @@
 # Caching
 
 ```graphql @config
-schema @upstream(baseURL: "http://example.com", batch: {delay: 1, maxSize: 1000}) {
+schema @upstream(batch: {delay: 1, maxSize: 1000}) {
   query: Query
 }
 
 type Query {
-  fieldCache: Type @http(path: "/field-cache") @cache(maxAge: 30000)
-  fieldCacheList: [Type] @http(path: "/field-cache-list") @cache(maxAge: 30000)
+  fieldCache: Type @http(url: "http://example.com/field-cache") @cache(maxAge: 30000)
+  fieldCacheList: [Type] @http(url: "http://example.com/field-cache-list") @cache(maxAge: 30000)
   typeCache: TypeCache
 }
 
@@ -16,9 +16,9 @@ type Type {
 }
 
 type TypeCache @cache(maxAge: 1000) {
-  a: Type @http(path: "/type-cache-a")
-  b: Type @http(path: "/type-cache-b")
-  list: [Type] @http(path: "/type-cache-list")
+  a: Type @http(url: "http://example.com/type-cache-a")
+  b: Type @http(url: "http://example.com/type-cache-b")
+  list: [Type] @http(url: "http://example.com/type-cache-list")
 }
 ```
 

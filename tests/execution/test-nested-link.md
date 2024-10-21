@@ -5,7 +5,7 @@ identity: true
 # test-nested-link
 
 ```graphql @file:link-enum.graphql
-schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @server @upstream {
   query: Query
 }
 
@@ -15,23 +15,24 @@ enum Foo {
 }
 
 type Query {
-  foo: Foo @http(path: "/foo")
+  foo: Foo @http(url: "http://jsonplaceholder.typicode.com/foo")
 }
 ```
 
 ```graphql @file:graphql-with-link.graphql
-schema @server @upstream(baseURL: "http://localhost:8000/graphql") @link(src: "link-enum.graphql", type: Config) {
+schema @server @link(src: "link-enum.graphql", type: Config) {
   query: Query
 }
 
 type Post {
   id: Int!
   userId: Int!
-  user: User @graphQL(args: [{key: "id", value: "{{.value.userId}}"}], name: "user")
+  user: User
+    @graphQL(url: "http://jsonplaceholder.typicode.com", args: [{key: "id", value: "{{.value.userId}}"}], name: "user")
 }
 
 type Query {
-  post(id: Int!): Post @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/posts/{{.args.id}}")
+  post(id: Int!): Post @http(url: "http://jsonplaceholder.typicode.com/posts/{{.args.id}}")
 }
 
 type User {

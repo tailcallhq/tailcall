@@ -2,7 +2,7 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+schema @server @upstream {
   query: Query
 }
 
@@ -22,5 +22,5 @@ type Foo {
 }
 
 type Query {
-  foo: FooBar @http(path: "/foo")
+  foo: FooBar @http(url: "http://jsonplaceholder.typicode.com/foo")
 }

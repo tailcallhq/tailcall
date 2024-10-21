@@ -139,13 +139,13 @@ impl Generator {
                         headers: headers.into_btree_map(),
                     });
                 }
-                Source::Proto { src } => {
+                Source::Proto { src, url } => {
                     let path = src.0;
                     let mut metadata = proto_reader.read(&path).await?;
                     if let Some(relative_path_to_proto) = to_relative_path(output_dir, &path) {
                         metadata.path = relative_path_to_proto;
                     }
-                    input_samples.push(Input::Proto(metadata));
+                    input_samples.push(Input::Proto { metadata, url });
                 }
                 Source::Config { src } => {
                     let path = src.0;

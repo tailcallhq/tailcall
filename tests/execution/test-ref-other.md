@@ -5,12 +5,12 @@ identity: true
 # test-ref-other
 
 ```graphql @config
-schema @server(port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @server(port: 8000) @upstream {
   query: Query
 }
 
 type InPost {
-  get: [Post] @http(path: "/posts")
+  get: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts")
 }
 
 type Post {

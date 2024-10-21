@@ -27,17 +27,9 @@ pub fn compile_http(
                     && !http.batch_key.is_empty()
             }),
         )
-        .and(Valid::from_option(
-            http.base_url
-                .as_ref()
-                .or(config_module.upstream.base_url.as_ref()),
-            "No base URL defined".to_string(),
-        ))
+        .and(Valid::succeed(http.url.as_str()))
         .zip(helpers::headers::to_mustache_headers(&http.headers))
         .and_then(|(base_url, headers)| {
-            let mut base_url = base_url.trim_end_matches('/').to_owned();
-            base_url.push_str(http.path.clone().as_str());
-
             let query = http
                 .query
                 .clone()

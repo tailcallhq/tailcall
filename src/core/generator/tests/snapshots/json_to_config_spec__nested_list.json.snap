@@ -22,5 +22,5 @@ type GEN__3 {
 }
 
 type Query {
-  nestedUsers(children: Boolean): GEN__3 @http(baseURL: "https://example.com", path: "/users", query: [{key: "children", value: "{{.args.children}}"}])
+  nestedUsers(children: Boolean): GEN__3 @http(url: "https://example.com/users", query: [{key: "children", value: "{{.args.children}}"}])
 }

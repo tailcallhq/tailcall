@@ -1,5 +1,4 @@
 mod ambiguous_type;
-mod consolidate_url;
 mod flatten_single_field;
 mod improve_type_names;
 mod merge_types;
@@ -12,7 +11,6 @@ mod tree_shake;
 mod union_input_type;
 
 pub use ambiguous_type::{AmbiguousType, Resolution};
-pub use consolidate_url::ConsolidateURL;
 pub use flatten_single_field::FlattenSingleField;
 pub use improve_type_names::ImproveTypeNames;
 pub use merge_types::TypeMerger;

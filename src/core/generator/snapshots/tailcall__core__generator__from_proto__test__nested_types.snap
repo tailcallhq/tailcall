@@ -32,5 +32,5 @@ type GEN__nested__types__Result__Nested__VeryNested {
 }
 
 type Query {
-  GEN__nested__types__Example__Get(veryNested: GEN__nested__types__Result__Nested__VeryNestedInput!): GEN__nested__types__Result @grpc(body: "{{.args.veryNested}}", method: "nested.types.Example.Get")
+  GEN__nested__types__Example__Get(veryNested: GEN__nested__types__Result__Nested__VeryNestedInput!): GEN__nested__types__Result @grpc(url: "http://localhost:50051", body: "{{.args.veryNested}}", method: "nested.types.Example.Get")
 }

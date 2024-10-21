@@ -1,12 +1,12 @@
 # Async Cache Disabled
 
 ```graphql @config
-schema @server(port: 8000, queryValidation: false) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @server(port: 8000, queryValidation: false) {
   query: Query
 }
 
 type Query {
-  posts: Post @http(path: "/post?id=1")
+  posts: Post @http(url: "http://jsonplaceholder.typicode.com/post?id=1")
 }
 
 type Post {
@@ -14,7 +14,7 @@ type Post {
   title: String
   body: String
   userId: Int!
-  user: User @http(path: "/users/{{.value.userId}}")
+  user: User @http(url: "http://jsonplaceholder.typicode.com/users/{{.value.userId}}")
 }
 
 type User {

@@ -1,12 +1,12 @@
 # With List args
 
 ```graphql @config
-schema @server(queryValidation: true) @upstream(baseURL: "http://localhost:3000") {
+schema @server(queryValidation: true) {
   query: Query
 }
 
 type Query {
-  f1(q: [Int!]!): T1 @http(path: "/api", query: [{key: "q", value: "{{.args.q}}"}])
+  f1(q: [Int!]!): T1 @http(url: "http://localhost:3000/api", query: [{key: "q", value: "{{.args.q}}"}])
 }
 
 type T1 {

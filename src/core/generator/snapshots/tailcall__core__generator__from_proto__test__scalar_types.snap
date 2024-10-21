@@ -47,5 +47,5 @@ type GEN__scalars__Result {
 }
 
 type Query {
-  GEN__scalars__Example__Get(item: GEN__scalars__ItemInput!): GEN__scalars__Result @grpc(body: "{{.args.item}}", method: "scalars.Example.Get")
+  GEN__scalars__Example__Get(item: GEN__scalars__ItemInput!): GEN__scalars__Result @grpc(url: "http://localhost:50051", body: "{{.args.item}}", method: "scalars.Example.Get")
 }

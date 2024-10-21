@@ -7,5 +7,5 @@ schema @server(hostname: "0.0.0.0", port: 8000) @upstream {
 }
 
 type Query {
-  hello: String! @http(baseURL: "http://api.com", path: "/")
+  hello: String! @http(url: "http://api.com/")
 }

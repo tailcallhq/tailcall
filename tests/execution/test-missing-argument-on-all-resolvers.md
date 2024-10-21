@@ -41,7 +41,7 @@ message NewsList {
 ```
 
 ```graphql @config
-schema @upstream(baseURL: "http://jsonplaceholder.typicode.com") @link(id: "news", src: "news.proto", type: Protobuf) {
+schema @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
 }
 
@@ -61,12 +61,20 @@ type NewsData {
 }
 
 type Query {
-  postGraphQLArgs: Post @graphQL(name: "post", args: [{key: "id", value: "{{.args.id}}"}])
-  postGraphQLHeaders: Post @graphQL(name: "post", headers: [{key: "id", value: "{{.args.id}}"}])
-  postHttp: Post @http(path: "/posts/{{.args.id}}")
-  newsGrpcHeaders: NewsData! @grpc(method: "news.NewsService.GetAllNews", headers: [{key: "id", value: "{{.args.id}}"}])
-  newsGrpcUrl: NewsData! @grpc(method: "news.NewsService.GetAllNews", baseURL: "{{.args.url}}")
-  newsGrpcBody: NewsData! @grpc(method: "news.NewsService.GetAllNews", body: "{{.args.id}}")
+  postGraphQLArgs: Post
+    @graphQL(url: "http://jsonplaceholder.typicode.com", name: "post", args: [{key: "id", value: "{{.args.id}}"}])
+  postGraphQLHeaders: Post
+    @graphQL(url: "http://jsonplaceholder.typicode.com", name: "post", headers: [{key: "id", value: "{{.args.id}}"}])
+  postHttp: Post @http(path: "http://jsonplaceholder.typicode.com/posts/{{.args.id}}")
+  newsGrpcHeaders: NewsData!
+    @grpc(
+      url: "http://jsonplaceholder.typicode.com"
+      method: "news.NewsService.GetAllNews"
+      headers: [{key: "id", value: "{{.args.id}}"}]
+    )
+  newsGrpcUrl: NewsData! @grpc(method: "news.NewsService.GetAllNews", url: "{{.args.url}}")
+  newsGrpcBody: NewsData!
+    @grpc(url: "http://jsonplaceholder.typicode.com", method: "news.NewsService.GetAllNews", body: "{{.args.id}}")
 }
 
 type User {

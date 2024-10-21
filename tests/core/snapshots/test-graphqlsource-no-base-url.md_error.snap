@@ -4,7 +4,7 @@ expression: errors
 ---
 [
   {
-    "message": "No base URL defined",
+    "message": "Parsing failed because of missing field `url`",
     "trace": [
       "Post",
       "user",

@@ -34,10 +34,8 @@ pub struct Http {
     /// request interception handler.
     pub on_request: Option<String>,
 
-    #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
-    /// This refers to the base URL of the API. If not specified, the default
-    /// base URL is the one specified in the `@upstream` operator.
-    pub base_url: Option<String>,
+    /// This refers to URL of the API.
+    pub url: String,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// The body of the API call. It's used for methods like POST or PUT that
@@ -70,13 +68,6 @@ pub struct Http {
     /// This refers to the HTTP method of the API call. Commonly used methods
     /// include `GET`, `POST`, `PUT`, `DELETE` etc. @default `GET`.
     pub method: Method,
-
-    /// This refers to the API endpoint you're going to call. For instance `https://jsonplaceholder.typicode.com/users`.
-    ///
-    /// For dynamic segments in your API endpoint, use Mustache templates for
-    /// variable substitution. For instance, to fetch a specific user, use
-    /// `/users/{{args.id}}`.
-    pub path: String,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// Schema of the output of the API call. It is automatically inferred in

@@ -10,6 +10,6 @@ schema @server {
 }
 
 type Query {
-  users: [User] @http(path: "/users")
+  users: [User] @http(url: "http://jsonplaceholder.typicode.com/users")
 }
 ```

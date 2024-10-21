@@ -1,7 +1,7 @@
 # Mutation
 
 ```graphql @config
-schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @server {
   query: Query
   mutation: Mutation
 }
@@ -13,7 +13,8 @@ input PostInput {
 }
 
 type Mutation {
-  insertPost(input: PostInput): Post @http(body: "{{.args.input}}", method: "POST", path: "/posts")
+  insertPost(input: PostInput): Post
+    @http(body: "{{.args.input}}", method: "POST", url: "http://jsonplaceholder.typicode.com/posts")
 }
 
 type Post {
@@ -24,7 +25,7 @@ type Post {
 }
 
 type Query {
-  firstUser: User @http(method: "GET", path: "/users/1")
+  firstUser: User @http(method: "GET", url: "http://jsonplaceholder.typicode.com/users/1")
 }
 
 type User {

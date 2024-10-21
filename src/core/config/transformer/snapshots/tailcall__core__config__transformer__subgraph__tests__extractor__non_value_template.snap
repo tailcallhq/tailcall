@@ -11,7 +11,7 @@ Valid(
                     description: None,
                     trace: [
                         "http",
-                        "path",
+                        "url",
                     ],
                 },
                 Cause {

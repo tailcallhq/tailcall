@@ -2,9 +2,7 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema
-  @server(hostname: "0.0.0.0", port: 8001, queryValidation: false)
-  @upstream(baseURL: "http://upstream/", httpCache: 42) {
+schema @server(hostname: "0.0.0.0", port: 8001, queryValidation: false) @upstream(httpCache: 42) {
   query: Query
 }
 
@@ -32,5 +30,5 @@ type PhotoMeta {
 }
 
 type Query {
-  search: [SearchResult!]! @http(path: "/search")
+  search: [SearchResult!]! @http(url: "http://upstream/search")
 }

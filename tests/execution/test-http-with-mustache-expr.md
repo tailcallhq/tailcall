@@ -6,7 +6,7 @@ schema {
 }
 
 type Query {
-  a: A @http(baseURL: "http://localhost:3000", path: "/a")
+  a: A @http(url: "http://localhost:3000/a")
 }
 
 type A {

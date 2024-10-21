@@ -2,9 +2,7 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema
-  @server(hostname: "0.0.0.0", port: 8001, queryValidation: false)
-  @upstream(baseURL: "http://upstream/", httpCache: 42) {
+schema @server(hostname: "0.0.0.0", port: 8001, queryValidation: false) @upstream(httpCache: 42) {
   query: Query
 }
 
@@ -29,7 +27,8 @@ type Page implements Profile {
 }
 
 type Query {
-  profiles(handles: [ID!]!): [Profile!]! @http(path: "/profiles", query: [{key: "handles", value: "{{.args.handles}}"}])
+  profiles(handles: [ID!]!): [Profile!]!
+    @http(url: "http://upstream/profiles", query: [{key: "handles", value: "{{.args.handles}}"}])
 }
 
 type User implements Profile {

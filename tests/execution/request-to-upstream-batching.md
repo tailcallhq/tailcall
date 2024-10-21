@@ -31,14 +31,13 @@
             }
           },
           "http": {
-            "path": "/users",
+            "url": "http://jsonplaceholder.typicode.com/users",
             "query": [
               {
                 "key": "id",
                 "value": "{{.args.id}}"
               }
             ],
-            "baseURL": "http://jsonplaceholder.typicode.com",
             "batchKey": ["id"]
           },
           "cache": null

@@ -2,9 +2,7 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema
-  @server(hostname: "0.0.0.0", port: 8001, queryValidation: false)
-  @upstream(baseURL: "http://upstream/", httpCache: 42) {
+schema @server(hostname: "0.0.0.0", port: 8001, queryValidation: false) @upstream(httpCache: 42) {
   query: Query
 }
 
@@ -98,8 +96,8 @@ type Pig implements Animal & DomesticAnimal {
 }
 
 type Query {
-  allAnimals: [Animal] @http(path: "/all-animals")
-  edibleAnimals: [EdibleAnimals] @http(path: "/edible-animals")
+  allAnimals: [Animal] @http(url: "http://upstream/all-animals")
+  edibleAnimals: [EdibleAnimals] @http(url: "http://upstream/edible-animals")
 }
 
 type Salmon implements Animal & Fish {

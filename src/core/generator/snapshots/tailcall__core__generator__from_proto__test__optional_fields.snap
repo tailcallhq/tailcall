@@ -51,5 +51,5 @@ type GEN__type__Type__Nested {
 }
 
 type Query {
-  GEN__type__TypeService__Get(type: GEN__type__TypeInput!): GEN__type__Type @grpc(body: "{{.args.type}}", method: "type.TypeService.Get")
+  GEN__type__TypeService__Get(type: GEN__type__TypeInput!): GEN__type__Type @grpc(url: "http://localhost:50051", body: "{{.args.type}}", method: "type.TypeService.Get")
 }

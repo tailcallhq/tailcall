@@ -20,7 +20,7 @@ type Geo {
 }
 
 type Query {
-  user: User @http(path: "/users/1", baseURL: "http://jsonplaceholder.typicode.com")
+  user: User @http(url: "http://jsonplaceholder.typicode.com/users/1")
 }
 ```
 

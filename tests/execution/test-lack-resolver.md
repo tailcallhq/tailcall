@@ -5,7 +5,7 @@ error: true
 # test-lack-resolver
 
 ```graphql @config
-schema @server(port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @server(port: 8000) {
   query: Query
 }
 
@@ -22,7 +22,7 @@ type Post {
   userId: Int!
   title: String!
   body: String!
-  user: User @http(path: "/users/1")
+  user: User @http(url: "http://jsonplaceholder.typicode.com/users/1")
 }
 
 type User {

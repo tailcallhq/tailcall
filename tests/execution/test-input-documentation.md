@@ -5,7 +5,7 @@ identity: true
 # test-input-type-documentation
 
 ```graphql @config
-schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @server @upstream {
   query: Query
   mutation: Mutation
 }
@@ -21,7 +21,8 @@ input Foo {
 }
 
 type Mutation {
-  testDocumentation(input: Foo!): Post @http(body: "{{.args.input}}", method: "POST", path: "/posts")
+  testDocumentation(input: Foo!): Post
+    @http(url: "http://jsonplaceholder.typicode.com/posts", body: "{{.args.input}}", method: "POST")
 }
 
 type Post {
@@ -33,7 +34,7 @@ type Post {
 Some Documentation
 """
 type Query {
-  foo: String @http(path: "/foo")
-  postFromFoo(id: Int!): Post @http(path: "/posts?id={{.args.id}}")
+  foo: String @http(url: "http://jsonplaceholder.typicode.com/foo")
+  postFromFoo(id: Int!): Post @http(url: "http://jsonplaceholder.typicode.com/posts?id={{.args.id}}")
 }
 ```

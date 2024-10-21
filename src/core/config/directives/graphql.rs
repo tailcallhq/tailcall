@@ -25,10 +25,8 @@ pub struct GraphQL {
     /// Named arguments for the requested field. More info [here](https://tailcall.run/docs/guides/operators/#args)
     pub args: Option<Vec<KeyValue>>,
 
-    #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
-    /// This refers to the base URL of the API. If not specified, the default
-    /// base URL is the one specified in the `@upstream` operator.
-    pub base_url: Option<String>,
+    /// This refers URL of the API.
+    pub url: String,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// If the upstream GraphQL server supports request batching, you can

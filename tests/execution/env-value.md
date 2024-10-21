@@ -3,9 +3,6 @@
 ```json @config
 {
   "server": {},
-  "upstream": {
-    "baseURL": "http://jsonplaceholder.typicode.com"
-  },
   "schema": {
     "query": "Query"
   },
@@ -47,7 +44,7 @@
             "name": "Post"
           },
           "http": {
-            "path": "/posts/{{.env.ID}}"
+            "url": "http://jsonplaceholder.typicode.com/posts/{{.env.ID}}"
           },
           "cache": null
         },
@@ -56,7 +53,7 @@
             "name": "Post"
           },
           "http": {
-            "path": "/posts/{{.env.POST_ID}}"
+            "url": "http://jsonplaceholder.typicode.com/posts/{{.env.POST_ID}}"
           },
           "cache": null
         },
@@ -65,7 +62,7 @@
             "name": "Post"
           },
           "http": {
-            "path": "/posts/{{.env.NESTED_POST_ID}}"
+            "url": "http://jsonplaceholder.typicode.com/posts/{{.env.NESTED_POST_ID}}"
           },
           "cache": null
         }

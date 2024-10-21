@@ -28,10 +28,10 @@ type NewsData {
 }
 
 type Query {
-  news: NewsData! @grpc(baseURL: "http://localhost:50051", method: "news.NewsService.GetAllNews")
+  news: NewsData! @grpc(url: "http://localhost:50051", method: "news.NewsService.GetAllNews")
   newsById(news: NewsInput!): News!
     @grpc(
-      baseURL: "http://localhost:50051"
+      url: "http://localhost:50051"
       body: "{{.args.news}}"
       batchKey: ["news", "id"]
       method: "news.NewsService.GetMultipleNews"

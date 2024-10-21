@@ -5,7 +5,7 @@ identity: true
 # test-enum-aliases
 
 ```graphql @config
-schema @server @upstream(baseURL: "http://localhost:8080") {
+schema @server @upstream {
   query: Query
 }
 

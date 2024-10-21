@@ -1,7 +1,7 @@
 # Ref other
 
 ```graphql @config
-schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") {
+schema @server {
   query: Query
 }
 
@@ -11,7 +11,7 @@ type User {
 }
 
 type User1 {
-  user1: User @http(path: "/users/1")
+  user1: User @http(url: "http://jsonplaceholder.typicode.com/users/1")
 }
 
 type Query {
@@ -22,7 +22,7 @@ type Query {
 ```yml @mock
 - request:
     method: GET
-    url: https://jsonplaceholder.typicode.com/users/1
+    url: http://jsonplaceholder.typicode.com/users/1
   response:
     status: 200
     body:

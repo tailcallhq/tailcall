@@ -2,7 +2,7 @@
 source: src/core/config/config_module/merge.rs
 expression: merged.to_sdl()
 ---
-schema @server(port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com", batch: {delay: 100, headers: []}, httpCache: 42) {
+schema @server(port: 8000) @upstream(batch: {delay: 100, headers: []}, httpCache: 42) {
   query: Query
 }
 
@@ -14,7 +14,7 @@ input CommentInput {
 interface Post {
   body: String
   id: Int!
-  user: User @http(path: "/users/{{.value.userId}}")
+  user: User @http(url: "http://jsonplaceholder.typicode.com/users/{{.value.userId}}")
   userId: Int!
 }
 
@@ -34,11 +34,11 @@ type Comment {
 }
 
 type Query {
-  addComment(postId: Int!, comment: CommentInput!): Boolean @http(method: "POST", path: "/add-comment")
-  posts: [UserPost] @http(path: "/posts")
-  searchComments(type: CommentSearch): [Comment] @http(path: "/comment")
-  user(id: Int!): User @http(path: "/users/{{.args.id}}")
-  users: [User] @http(path: "/users")
+  addComment(postId: Int!, comment: CommentInput!): Boolean @http(url: "http://jsonplaceholder.typicode.com/add-comment", method: "POST")
+  posts: [UserPost] @http(url: "http://jsonplaceholder.typicode.com/posts")
+  searchComments(type: CommentSearch): [Comment] @http(url: "http://jsonplaceholder.typicode.com/comment")
+  user(id: Int!): User @http(url: "http://jsonplaceholder.typicode.com/users/{{.args.id}}")
+  users: [User] @http(url: "http://jsonplaceholder.typicode.com/users")
   version: String @expr(body: "test")
 }
 
@@ -56,6 +56,6 @@ type UserPost implements Post {
   body: String
   id: Int!
   title: String
-  user: User @http(path: "/users/{{.value.userId}}")
+  user: User @http(url: "http://jsonplaceholder.typicode.com/users/{{.value.userId}}")
   userId: Int!
 }

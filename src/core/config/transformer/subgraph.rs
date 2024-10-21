@@ -198,8 +198,7 @@ impl KeysExtractor {
             Resolver::Http(http) => {
                 Valid::from_iter(
                     [
-                        Self::parse_str_option(http.base_url.as_deref()).trace("base_url"),
-                        Self::parse_str(&http.path).trace("path"),
+                        Self::parse_str(http.url.as_str()).trace("url"),
                         Self::parse_str_option(http.body.as_deref()).trace("body"),
                         Self::parse_key_value_iter(http.headers.iter()).trace("headers"),
                         Self::parse_key_value_iter(http.query.iter().map(|q| KeyValue {
@@ -214,7 +213,7 @@ impl KeysExtractor {
             }
             Resolver::Grpc(grpc) => Valid::from_iter(
                 [
-                    Self::parse_str_option(grpc.base_url.as_deref()),
+                    Self::parse_str(grpc.url.as_str()),
                     Self::parse_str(&grpc.method),
                     Self::parse_value_option(&grpc.body),
                     Self::parse_key_value_iter(grpc.headers.iter()),
@@ -389,8 +388,7 @@ mod tests {
         #[test]
         fn test_non_value_template() {
             let http = Http {
-                base_url: Some("http://tailcall.run".to_string()),
-                path: "users/{{.args.id}}".to_string(),
+                url: "http://tailcall.run/users/{{.args.id}}".to_string(),
                 query: vec![URLQuery {
                     key: "{{.env.query.key}}".to_string(),
                     value: "{{.args.query.value}}".to_string(),
@@ -407,14 +405,13 @@ mod tests {
         #[test]
         fn test_extract_http() {
             let http = Http {
-                base_url: Some("http://tailcall.run".to_string()),
+                url: "http://tailcall.run/users/{{.value.id}}".to_string(),
                 body: Some(r#"{ "obj": "{{.value.obj}}"} "#.to_string()),
                 headers: vec![KeyValue {
                     key: "{{.value.header.key}}".to_string(),
                     value: "{{.value.header.value}}".to_string(),
                 }],
                 method: Method::POST,
-                path: "users/{{.value.id}}".to_string(),
                 query: vec![URLQuery {
                     key: "{{.value.query_key}}".to_string(),
                     value: "{{.value.query_value}}".to_string(),
@@ -431,7 +428,7 @@ mod tests {
         #[test]
         fn test_extract_grpc() {
             let grpc = Grpc {
-                base_url: Some("http://localhost:5051/{{.env.target}}".to_string()),
+                url: "http://localhost:5051/{{.env.target}}".to_string(),
                 body: Some(json!({ "a": "{{.value.body.a}}", "b": "{{.value.body.b}}"})),
                 headers: vec![KeyValue {
                     key: "test".to_string(),
@@ -450,7 +447,7 @@ mod tests {
         #[test]
         fn test_extract_graphql() {
             let graphql = GraphQL {
-                base_url: Some("http://localhost:5051/{{.env.target}}".to_string()),
+                url: "http://localhost:5051/{{.env.target}}".to_string(),
                 headers: vec![KeyValue {
                     key: "test".to_string(),
                     value: "{{.value.header_test}}".to_string(),

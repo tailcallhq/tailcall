@@ -1,7 +1,7 @@
 # test-merge-nested
 
 ```graphql @config
-schema @server @upstream(baseURL: "http://abc.com") {
+schema @server {
   query: Query
 }
 

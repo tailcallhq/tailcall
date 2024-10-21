@@ -4,12 +4,8 @@ expression: errors
 ---
 [
   {
-    "message": "No base URL defined",
-    "trace": [
-      "Query",
-      "user",
-      "@http"
-    ],
+    "message": "  --> 10:20\n   |\n10 |   user: User @http()\n   |                    ^---\n   |\n   = expected name",
+    "trace": [],
     "description": null
   }
 ]

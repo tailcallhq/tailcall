@@ -15,5 +15,5 @@ type GEN__greetings__HelloReply {
 }
 
 type Query {
-  GEN__greetings__Greeter__SayHello(helloRequest: GEN__greetings__HelloRequest!): GEN__greetings__HelloReply @grpc(body: "{{.args.helloRequest}}", method: "greetings.Greeter.SayHello")
+  GEN__greetings__Greeter__SayHello(helloRequest: GEN__greetings__HelloRequest!): GEN__greetings__HelloReply @grpc(url: "http://localhost:50051", body: "{{.args.helloRequest}}", method: "greetings.Greeter.SayHello")
 }

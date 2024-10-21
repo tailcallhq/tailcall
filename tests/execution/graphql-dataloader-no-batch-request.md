@@ -9,7 +9,7 @@ type Post {
   id: Int
   title: String
   userId: Int
-  user: User @graphQL(baseURL: "http://upstream/graphql", name: "user", args: [{key: "id", value: "{{.value.userId}}"}])
+  user: User @graphQL(url: "http://upstream/graphql", name: "user", args: [{key: "id", value: "{{.value.userId}}"}])
 }
 
 type User {
@@ -18,7 +18,7 @@ type User {
 }
 
 type Query {
-  posts: [Post] @http(path: "/posts", baseURL: "http://jsonplaceholder.typicode.com")
+  posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts")
 }
 ```
 

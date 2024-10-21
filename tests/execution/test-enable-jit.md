@@ -1,14 +1,12 @@
 # test-enable-jit
 
 ```graphql @config
-schema
-  @server(port: 8000, hostname: "0.0.0.0", enableJIT: true)
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @server(port: 8000, hostname: "0.0.0.0", enableJIT: true) {
   query: Query
 }
 
 type Query @cache(maxAge: 30000) {
-  posts: [Post] @http(path: "/posts")
+  posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts")
 }
 
 type User {
@@ -21,7 +19,7 @@ type Post {
   id: Int!
   userId: Int!
   title: String!
-  user: User @http(path: "/users/{{.value.userId}}")
+  user: User @http(url: "http://jsonplaceholder.typicode.com/users/{{.value.userId}}")
 }
 ```
 

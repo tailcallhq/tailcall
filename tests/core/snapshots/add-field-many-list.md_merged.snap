@@ -13,7 +13,7 @@ type A {
 }
 
 type Query {
-  u: U @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/us/1")
+  u: U @http(url: "http://jsonplaceholder.typicode.com/us/1")
 }
 
 type U

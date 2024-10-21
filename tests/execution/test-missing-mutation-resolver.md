@@ -11,7 +11,7 @@ schema {
 }
 
 type Query {
-  user: User @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/user/1")
+  user: User @http(url: "http://jsonplaceholder.typicode.com/user/1")
 }
 
 type User {

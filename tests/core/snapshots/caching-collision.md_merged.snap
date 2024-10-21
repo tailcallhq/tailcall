@@ -2,12 +2,12 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema @server @upstream(baseURL: "http://example.com", batch: {delay: 1, headers: [], maxSize: 1000}) {
+schema @server @upstream(batch: {delay: 1, headers: [], maxSize: 1000}) {
   query: Query
 }
 
 type Bar {
-  foo: Foo @http(path: "/foo?id={{.value.id}}") @cache(maxAge: 300)
+  foo: Foo @http(url: "http://example.com/foo?id={{.value.id}}") @cache(maxAge: 300)
   id: String!
 }
 
@@ -16,5 +16,5 @@ type Foo {
 }
 
 type Query @cache(maxAge: 100) {
-  bars: [Bar] @http(path: "/bars")
+  bars: [Bar] @http(url: "http://example.com/bars")
 }

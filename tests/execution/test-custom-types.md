@@ -5,7 +5,7 @@ identity: true
 # test-custom-types
 
 ```graphql @config
-schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @server @upstream {
   query: Que
   mutation: Mut
 }
@@ -17,7 +17,8 @@ input PostInput {
 }
 
 type Mut {
-  insertPost(input: PostInput): Post @http(body: "{{.args.input}}", method: "POST", path: "/posts")
+  insertPost(input: PostInput): Post
+    @http(url: "http://jsonplaceholder.typicode.com/posts", body: "{{.args.input}}", method: "POST")
 }
 
 type Post {

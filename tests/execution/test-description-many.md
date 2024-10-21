@@ -5,7 +5,7 @@ identity: true
 # test-description-many
 
 ```graphql @config
-schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+schema @server @upstream {
   query: Query
 }
 
@@ -20,6 +20,6 @@ type Query {
   """
   This is test
   """
-  foo: Bar @http(path: "/foo")
+  foo: Bar @http(url: "http://jsonplacheholder.typicode.com/foo")
 }
 ```

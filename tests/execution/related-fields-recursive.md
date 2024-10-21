@@ -1,10 +1,10 @@
 ```graphql @config
-schema @server(port: 8000, hostname: "0.0.0.0") @upstream(baseURL: "http://localhost:8083/graphql") {
+schema @server(port: 8000, hostname: "0.0.0.0") {
   query: Query
 }
 
 type Query {
-  queryNodeA: [NodeA] @graphQL(name: "queryNodeA", batch: false)
+  queryNodeA: [NodeA] @graphQL(url: "http://localhost:8083/graphql", name: "queryNodeA", batch: false)
 }
 
 type NodeA {

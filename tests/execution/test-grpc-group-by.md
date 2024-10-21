@@ -52,7 +52,7 @@ type Query {
   newsById(news: NewsInput!): News!
     @grpc(
       method: "news.NewsService.GetMultipleNews"
-      baseURL: "http://localhost:50051"
+      url: "http://localhost:50051"
       body: "{{.args.news}}"
       batchKey: ["id"]
     )

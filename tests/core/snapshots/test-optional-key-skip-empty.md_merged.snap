@@ -2,7 +2,7 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema @server(port: 8000) @upstream(baseURL: "http://example.com") {
+schema @server(port: 8000) @upstream {
   query: Query
 }
 
@@ -13,7 +13,7 @@ type Bar {
 type Foo {
   bar: Bar
     @http(
-      path: "/bar"
+      url: "http://example.com/bar"
       query: [{key: "tagEmpty", value: "{{.value.tag}}", skipEmpty: true}, {key: "tag", value: "{{.value.tag}}"}]
     )
   id: Int!
@@ -21,5 +21,5 @@ type Foo {
 }
 
 type Query {
-  foos: [Foo] @http(path: "/foos")
+  foos: [Foo] @http(url: "http://example.com/foos")
 }

@@ -11,7 +11,7 @@ type User {
 }
 
 type Query {
-  not_user: User @http(path: "/users/1", baseURL: "http://jsonplaceholder.typicode.com")
+  not_user: User @http(url: "http://jsonplaceholder.typicode.com/users/1")
 }
 ```
 
@@ -35,7 +35,7 @@ type Query {
     textBody: |2-
        schema { query: Query }
       type User { id: Int name: String }
-      type Query { user: User @http(path: "/users/1", baseURL: "http://jsonplaceholder.typicode.com") }
+      type Query { user: User @http(url: "http://jsonplaceholder.typicode.com/users/1") }
 - request:
     method: GET
     url: http://example.com/invalid.graphql

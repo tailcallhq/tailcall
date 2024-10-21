@@ -5,7 +5,7 @@ identity: true
 # test-omit
 
 ```graphql @config
-schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+schema @server @upstream {
   query: Query
 }
 
@@ -22,6 +22,6 @@ type Foo {
 }
 
 type Query @addField(name: "foo", path: ["foo", "a", "b"]) {
-  foo: Foo @http(path: "/foo") @omit
+  foo: Foo @http(url: "http://jsonplaceholder.typicode.com/foo") @omit
 }
 ```

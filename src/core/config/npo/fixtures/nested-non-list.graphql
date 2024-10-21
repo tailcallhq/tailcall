@@ -3,7 +3,7 @@ schema @server @upstream {
 }
 
 type F {
-  g: [G] @http(path: "")
+  g: [G] @http(url: "")
 }
 
 type G {
@@ -11,5 +11,5 @@ type G {
 }
 
 type Query {
-  f: F @http(path: "")
+  f: F @http(url: "")
 }

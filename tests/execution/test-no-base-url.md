@@ -14,6 +14,6 @@ type User {
 }
 
 type Query {
-  user: User @http(path: "/user/1")
+  user: User @http()
 }
 ```

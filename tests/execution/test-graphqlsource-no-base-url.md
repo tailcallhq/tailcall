@@ -15,7 +15,7 @@ type Post {
 }
 
 type Query {
-  post(id: Int!): Post @http(baseURL: "http://jsonplacheholder.typicode.com", path: "/posts/{{.args.id}}")
+  post(id: Int!): Post @http(url: "http://jsonplaceholder.typicode.com/posts/{{.args.id}}")
 }
 
 type User {

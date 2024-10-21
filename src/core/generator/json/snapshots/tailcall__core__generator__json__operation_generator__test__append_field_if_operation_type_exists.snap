@@ -4,5 +4,5 @@ expression: config.to_sdl()
 ---
 type Query {
   post: Int
-  postComments(postId: Int): T44 @http(path: "/comments", query: [{key: "postId", value: "{{.args.postId}}"}])
+  postComments(postId: Int): T44 @http(url: "https://jsonplaceholder.typicode.com/comments", query: [{key: "postId", value: "{{.args.postId}}"}])
 }

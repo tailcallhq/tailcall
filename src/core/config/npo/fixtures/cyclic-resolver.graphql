@@ -4,7 +4,7 @@ schema @server @upstream {
 
 type F1 {
   f1: [F1]
-  f2: String @http(path: "")
+  f2: String @http(url: "")
 }
 
 type F2 {
@@ -12,5 +12,5 @@ type F2 {
 }
 
 type Query {
-  f1: F1 @http(path: "")
+  f1: F1 @http(url: "")
 }

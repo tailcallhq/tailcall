@@ -3,19 +3,19 @@
   "inputs": [
     {
       "curl": {
-        "src": "https://jsonplaceholder.typicode.com/users",
+        "src": "http://jsonplaceholder.typicode.com/users",
         "fieldName": "users"
       }
     },
     {
       "proto": {
-        "src": "tailcall-fixtures/fixtures/protobuf/news.proto"
+        "src": "tailcall-fixtures/fixtures/protobuf/news.proto",
+        "url": "http://localhost:50051"
       }
     }
   ],
   "preset": {
     "mergeType": 1.0,
-    "consolidateURL": 0.5,
     "inferTypeNames": true,
     "treeShake": true
   },

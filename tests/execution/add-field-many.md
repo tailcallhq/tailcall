@@ -18,7 +18,7 @@ type Foo
 }
 
 type Query {
-  user: Foo @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users/1")
+  user: Foo @http(url: "http://jsonplaceholder.typicode.com/users/1")
 }
 
 type X {

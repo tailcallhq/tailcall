@@ -7,7 +7,7 @@ schema {
 
 type Query {
   users(id: ID): [User]
-    @http(path: "/users", query: [{key: "id", value: "{{.args.id}}"}], baseURL: "http://jsonplaceholder.typicode.com")
+    @http(url: "http://jsonplaceholder.typicode.com/users", query: [{key: "id", value: "{{.args.id}}"}])
 }
 
 type User {

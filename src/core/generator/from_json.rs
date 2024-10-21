@@ -125,10 +125,6 @@ impl Transform for FromJsonGenerator<'_> {
                     &sample.operation_type,
                     &header_keys,
                 ))
-                .pipe(json::FieldBaseUrlGenerator::new(
-                    &sample.url,
-                    &sample.operation_type,
-                ))
                 .pipe(RenameTypes::new(rename_types.into_iter()))
                 .transform(config.clone())
         })

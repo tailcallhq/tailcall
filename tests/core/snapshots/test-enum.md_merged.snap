@@ -2,7 +2,7 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema @server @upstream(baseURL: "http://localhost:8080") {
+schema @server @upstream {
   query: Query
 }
 

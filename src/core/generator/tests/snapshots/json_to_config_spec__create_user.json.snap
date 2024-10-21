@@ -24,5 +24,5 @@ type GEN__1 {
 }
 
 type Mutation {
-  createPost(GEN__Input1: GEN__2): GEN__1 @http(baseURL: "https://jsonplaceholder.typicode.com", body: "{{.args.GEN__Input1}}", method: "POST", path: "/posts")
+  createPost(GEN__Input1: GEN__2): GEN__1 @http(url: "https://jsonplaceholder.typicode.com/posts", body: "{{.args.GEN__Input1}}", method: "POST")
 }

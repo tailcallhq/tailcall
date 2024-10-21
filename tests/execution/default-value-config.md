@@ -1,13 +1,13 @@
 # default value for input Type
 
 ```graphql @config
-schema @upstream(baseURL: "http://abc.com") {
+schema {
   query: Query
 }
 
 type Query {
-  foo(input: Input!): Int @http(path: "/foo/{{.args.input.id}}")
-  bar(input: Input = {id: 3}): Int @http(path: "/foo/{{.args.input.id}}")
+  foo(input: Input!): Int @http(url: "http://abc.com/foo/{{.args.input.id}}")
+  bar(input: Input = {id: 3}): Int @http(url: "http://abc.com/foo/{{.args.input.id}}")
 }
 
 input Input {

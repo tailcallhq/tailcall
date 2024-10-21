@@ -3,9 +3,6 @@
 ```json @config
 {
   "server": {},
-  "upstream": {
-    "baseURL": "http://jsonplaceholder.typicode.com"
-  },
   "schema": {
     "query": "Query"
   },
@@ -25,8 +22,7 @@
             }
           },
           "http": {
-            "path": "/users/{{.args.id}}",
-            "baseURL": "http://jsonplaceholder.typicode.com"
+            "url": "http://jsonplaceholder.typicode.com/users/{{.args.id}}"
           },
           "cache": null
         }

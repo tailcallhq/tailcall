@@ -1,14 +1,12 @@
-schema
-  @server(port: 8000, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42) {
+schema @server(port: 8000, hostname: "0.0.0.0") @upstream(httpCache: 42) {
   query: Query
 }
 
 type Query {
-  posts: [Post] @http(path: "/posts?_limit=11")
-  users: [User] @http(path: "/users")
-  user(id: Int!): User @http(path: "/users/{{.args.id}}")
-  post(id: Int! = 1): Post @http(path: "/posts/{{.args.id}}")
+  posts: [Post] @http(url: "https://jsonplaceholder.typicode.com/posts?_limit=11")
+  users: [User] @http(url: "https://jsonplaceholder.typicode.com/users")
+  user(id: Int!): User @http(url: "https://jsonplaceholder.typicode.com/users/{{.args.id}}")
+  post(id: Int! = 1): Post @http(url: "https://jsonplaceholder.typicode.com/posts/{{.args.id}}")
 }
 
 type User {
@@ -18,7 +16,7 @@ type User {
   email: String!
   phone: String
   blog: String @expr(body: "https://test.blog/users/website/{{.value.username}}")
-  albums: [Album] @http(path: "/users/{{.value.id}}/albums?_limit=2")
+  albums: [Album] @http(url: "https://jsonplaceholder.typicode.com/users/{{.value.id}}/albums?_limit=2")
 }
 
 type Post {
@@ -26,9 +24,9 @@ type Post {
   userId: Int!
   title: String!
   body: String!
-  user: User @http(path: "/users/{{.value.userId}}")
-  users: [User] @http(path: "/users")
-  comments: [Comment] @http(path: "/posts/{{.value.id}}/comments")
+  user: User @http(url: "https://jsonplaceholder.typicode.com/users/{{.value.userId}}")
+  users: [User] @http(url: "https://jsonplaceholder.typicode.com/users")
+  comments: [Comment] @http(url: "https://jsonplaceholder.typicode.com/posts/{{.value.id}}/comments")
 }
 
 type Comment {
@@ -50,5 +48,5 @@ type Album {
   userId: Int!
   id: Int!
   title: Int
-  photos: [Photo] @http(path: "/albums/{{.value.id}}/photos?_limit=3")
+  photos: [Photo] @http(url: "https://jsonplaceholder.typicode.com/albums/{{.value.id}}/photos?_limit=3")
 }

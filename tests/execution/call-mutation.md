@@ -1,7 +1,7 @@
 # Call mutation
 
 ```graphql @config
-schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @server {
   query: Query
   mutation: Mutation
 }
@@ -22,14 +22,23 @@ type Mutation {
   attachPostToFirstUser(postId: Int!): User
     @call(steps: [{mutation: "attachPostToUser", args: {postId: "{{.args.postId}}", userId: 1}}])
   attachPostToUser(userId: Int!, postId: Int!): User
-    @http(body: "{\"postId\":{{.args.postId}}}", method: "PATCH", path: "/users/{{.args.userId}}")
-  insertPost(input: PostInput): Post @http(body: "{{.args.input}}", method: "POST", path: "/posts")
+    @http(
+      body: "{\"postId\":{{.args.postId}}}"
+      method: "PATCH"
+      url: "http://jsonplaceholder.typicode.com/users/{{.args.userId}}"
+    )
+  insertPost(input: PostInput): Post
+    @http(body: "{{.args.input}}", method: "POST", url: "http://jsonplaceholder.typicode.com/posts")
   insertPostToFirstUser(input: PostInputWithoutUserId): Post
     @call(steps: [{mutation: "insertPostToUser", args: {input: "{{.args.input}}", userId: 1}}])
   insertMockedPost: Post
     @call(steps: [{mutation: "insertPost", args: {input: {body: "post-body", title: "post-title", userId: 1}}}])
   insertPostToUser(input: PostInputWithoutUserId!, userId: Int!): Post
-    @http(body: "{{.args.input}}", method: "POST", path: "/users/{{.args.userId}}/posts")
+    @http(
+      body: "{{.args.input}}"
+      method: "POST"
+      url: "http://jsonplaceholder.typicode.com/users/{{.args.userId}}/posts"
+    )
 }
 
 type Post {
@@ -40,8 +49,8 @@ type Post {
 }
 
 type Query {
-  firstUser: User @http(method: "GET", path: "/users/1")
-  postFromUser(userId: Int!): Post @http(path: "/posts?userId={{.args.userId}}")
+  firstUser: User @http(method: "GET", url: "http://jsonplaceholder.typicode.com/users/1")
+  postFromUser(userId: Int!): Post @http(url: "http://jsonplaceholder.typicode.com/posts?userId={{.args.userId}}")
 }
 
 type User {

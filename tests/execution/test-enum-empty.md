@@ -7,9 +7,6 @@ error: true
 ```json @config
 {
   "server": {},
-  "upstream": {
-    "baseURL": "http://localhost:8080"
-  },
   "schema": {
     "query": "Query"
   },
