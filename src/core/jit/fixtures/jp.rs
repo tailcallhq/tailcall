@@ -8,9 +8,10 @@ use crate::core::jit::builder::Builder;
 use crate::core::jit::store::Store;
 use crate::core::jit::synth::Synth;
 use crate::core::jit::transform::InputResolver;
-use crate::core::jit::{OperationPlan, Variables};
+use crate::core::jit::{transform, OperationPlan, Variables};
 use crate::core::json::{JsonLike, JsonObjectLike};
 use crate::core::valid::Validator;
+use crate::core::Transform;
 
 /// NOTE: This is a bit of a boilerplate reducing module that is used in tests
 /// and benchmarks.
@@ -92,15 +93,12 @@ impl<'a, Value: Deserialize<'a> + Clone + 'a + JsonLike<'a> + std::fmt::Debug> J
             async_graphql::parser::parse_query(query).unwrap(),
         );
 
-        let mut plan = builder.build(None).unwrap();
-        plan = plan.filter_skipped(variables);
-        let plan = OperationPlan::new(
-            &plan.root_name,
-            plan.selection,
-            plan.operation_type,
-            plan.index,
-            plan.is_introspection_query,
-        );
+        let plan = builder.build(None).unwrap();
+        let plan = transform::Skip::new(variables)
+            .transform(plan)
+            .to_result()
+            .unwrap();
+
         let input_resolver = InputResolver::new(plan);
         let plan = input_resolver.resolve_input(variables).unwrap();
 

@@ -73,7 +73,7 @@ where
             operation_type: self.plan.operation_type,
             index,
             is_introspection_query: self.plan.is_introspection_query,
-            dedupe: self.plan.dedupe,
+            is_dedupe: self.plan.is_dedupe,
             is_const: self.plan.is_const,
             selection,
         })

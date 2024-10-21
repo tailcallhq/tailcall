@@ -19,7 +19,6 @@ use crate::core::merge_right::MergeRight;
 pub struct JITExecutor {
     app_ctx: Arc<AppContext>,
     req_ctx: Arc<RequestContext>,
-    is_query: bool,
     operation_id: OperationId,
 }
 
@@ -27,11 +26,11 @@ impl JITExecutor {
     pub fn new(
         app_ctx: Arc<AppContext>,
         req_ctx: Arc<RequestContext>,
-        is_query: bool,
         operation_id: OperationId,
     ) -> Self {
-        Self { app_ctx, req_ctx, is_query, operation_id }
+        Self { app_ctx, req_ctx, operation_id }
     }
+
     #[inline(always)]
     async fn exec(
         &self,
@@ -40,12 +39,10 @@ impl JITExecutor {
     ) -> Response {
         let is_introspection_query = self.app_ctx.blueprint.server.get_enable_introspection()
             && exec.plan.is_introspection_query;
-
         let jit_resp = exec
             .execute(&self.req_ctx, &jit_request)
             .await
             .into_async_graphql();
-
         if is_introspection_query {
             let async_req = async_graphql::Request::from(jit_request).only_introspection();
             let async_resp = self.app_ctx.execute(async_req).await;
@@ -54,6 +51,7 @@ impl JITExecutor {
             jit_resp
         }
     }
+
     #[inline(always)]
     async fn dedupe_and_exec(
         &self,
@@ -117,7 +115,7 @@ impl Executor for JITExecutor {
 
         async move {
             let jit_request = jit::Request::from(request);
-            let exec = if let Some(op) = self.app_ctx.operation_plans.get(&hash) {
+            let mut exec = if let Some(op) = self.app_ctx.operation_plans.get(&hash) {
                 ConstValueExecutor::from(op.value().clone())
             } else {
                 let exec = match ConstValueExecutor::try_new(&jit_request, &self.app_ctx) {
@@ -128,9 +126,9 @@ impl Executor for JITExecutor {
                 exec
             };
 
-            if let Some(ref response) = exec.response {
-                response.clone().into_async_graphql()
-            } else if self.is_query && exec.plan.dedupe {
+            if let Some(response) = std::mem::take(&mut exec.response) {
+                response.into_async_graphql()
+            } else if exec.plan.is_query() && exec.plan.is_dedupe {
                 self.dedupe_and_exec(exec, jit_request).await
             } else {
                 self.exec(exec, jit_request).await

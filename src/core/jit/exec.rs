@@ -71,7 +71,7 @@ where
     }
 
     async fn init(&mut self) {
-        join_all(self.request.plan().as_nested().iter().map(|field| async {
+        join_all(self.request.plan().selection.iter().map(|field| async {
             let ctx = Context::new(field, self.request);
             // TODO: with_args should be called on inside iter_field on any level, not only
             // for root fields
