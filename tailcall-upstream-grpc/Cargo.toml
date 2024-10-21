@@ -10,7 +10,7 @@ publish = false
 hyper = { version = "0.14.28", features = ["full"] }
 tokio = { version = "1.37.0", features = ["full"] }
 headers = { workspace = true }
-tonic = "0.11.0"
+tonic = "0.12.0"
 tonic-reflection = "0.11.0"
 prost = "0.12.4"
 prost-types = "0.12.4"
