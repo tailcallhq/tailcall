@@ -45,10 +45,17 @@ impl ConstValueExecutor {
         let is_const = self.plan.is_const;
 
         // Attempt to skip unnecessary fields
-        let plan = transform::Skip::new(variables)
-            .transform(self.plan.clone())
+        let Ok(plan) = transform::Skip::new(variables)
+            .transform(self.plan)
             .to_result()
-            .unwrap_or(self.plan);
+        else {
+            // this shouldn't actually ever happen
+            return Response {
+                data: None,
+                errors: vec![Positioned::new(Error::Unknown, Pos { line: 0, column: 0 })],
+                extensions: Default::default(),
+            };
+        };
 
         // Attempt to replace variables in the plan with the actual values
         // TODO: operation from [ExecutableDocument] could contain definitions for
@@ -71,16 +78,16 @@ impl ConstValueExecutor {
             }
         };
 
-        // TODO: drop the clones in plan
-        let exec = ConstValueExec::new(plan.clone(), req_ctx);
+        let exec = ConstValueExec::new(&plan, req_ctx);
+        // PERF: remove this particular clone?
         let vars = request.variables.clone();
-        let exe = Executor::new(plan.clone(), exec);
+        let exe = Executor::new(&plan, exec);
         let store = exe.store().await;
-        let synth = Synth::new(plan, store, vars);
+        let synth = Synth::new(&plan, store, vars);
         let response = exe.execute(synth).await;
 
         // Cache the response if we know the output is always the same
-        if is_const && self.response.is_none() {
+        if is_const {
             self.response = Some(response.clone());
         }
 
@@ -89,12 +96,12 @@ impl ConstValueExecutor {
 }
 
 struct ConstValueExec<'a> {
-    plan: OperationPlan<ConstValue>,
+    plan: &'a OperationPlan<ConstValue>,
     req_context: &'a RequestContext,
 }
 
 impl<'a> ConstValueExec<'a> {
-    pub fn new(plan: OperationPlan<ConstValue>, req_context: &'a RequestContext) -> Self {
+    pub fn new(plan: &'a OperationPlan<ConstValue>, req_context: &'a RequestContext) -> Self {
         Self { req_context, plan }
     }
 
