@@ -1,9 +1,9 @@
 use std::collections::BTreeSet;
 
 use derive_setters::Setters;
+use tailcall_valid::{Valid, ValidationError, Validator};
 
 use crate::core::config::{self, Batch, ConfigModule};
-use crate::core::valid::{Valid, ValidationError, Validator};
 
 #[derive(PartialEq, Eq, Clone, Debug, schemars::JsonSchema)]
 pub struct Proxy {

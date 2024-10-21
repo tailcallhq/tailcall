@@ -1,8 +1,9 @@
 use std::marker::PhantomData;
 
+use tailcall_valid::Valid;
+
 use crate::core::jit::{Error, Field, OperationPlan, Variables};
 use crate::core::json::JsonLike;
-use crate::core::valid::Valid;
 use crate::core::Transform;
 
 pub struct Skip<'a, Var, Value> {

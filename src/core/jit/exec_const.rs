@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use async_graphql_value::{ConstValue, Value};
 use futures_util::future::join_all;
+use tailcall_valid::Validator;
 
 use super::context::Context;
 use super::exec::{Executor, IRExecutor};
@@ -15,7 +16,6 @@ use crate::core::ir::{self, EvalContext};
 use crate::core::jit::synth::Synth;
 use crate::core::jit::transform::InputResolver;
 use crate::core::json::{JsonLike, JsonLikeList};
-use crate::core::valid::Validator;
 use crate::core::Transform;
 
 /// A specialized executor that executes with async_graphql::Value
