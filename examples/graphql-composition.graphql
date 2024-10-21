@@ -7,7 +7,7 @@ schema @server(port: 8001, queryValidation: false, hostname: "0.0.0.0") @upstrea
 }
 
 type Query {
-  posts: [Post] @graphQL(name: "posts")
+  posts: [Post] @graphQL(url: "http://jsonplaceholder.typicode.com", name: "posts")
 }
 
 type Post {
