@@ -46,7 +46,7 @@ schema @link(id: "news", src: "news.proto", type: Protobuf) {
 }
 
 type Query {
-  news: NewsData @grpc(method: "news.NewsService.X", baseURL: "http://localhost:4000")
+  news: NewsData @grpc(method: "news.NewsService.X", url: "http://localhost:4000")
 }
 
 type NewsData {

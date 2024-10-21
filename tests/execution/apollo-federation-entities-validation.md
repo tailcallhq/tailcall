@@ -7,12 +7,12 @@ error: true
 ```graphql @config
 schema
   @server(port: 8000, enableFederation: true)
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 100}) {
+  @upstream(httpCache: 42, batch: {delay: 100}) {
   query: Query
 }
 
 type Query {
-  user(id: Int!): User @http(path: "/users/{{.args.id}}")
+  user(id: Int!): User @http(url: "http://jsonplaceholder.typicode.com/users/{{.args.id}}")
 }
 
 type User @call(steps: [{query: "user", args: {id: "{{.args.id}}"}}]) {
@@ -20,7 +20,7 @@ type User @call(steps: [{query: "user", args: {id: "{{.args.id}}"}}]) {
   name: String!
 }
 
-type Post @http(path: "/posts", query: [{key: "id", value: "{{.args.id}}"}]) {
+type Post @http(url: "http://jsonplaceholder.typicode.com/posts", query: [{key: "id", value: "{{.args.id}}"}]) {
   id: Int!
   title: String!
 }

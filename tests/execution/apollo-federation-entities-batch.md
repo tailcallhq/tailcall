@@ -3,21 +3,21 @@
 ```graphql @config
 schema
   @server(port: 8000, enableFederation: true)
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 100}) {
+  @upstream(httpCache: 42, batch: {delay: 100}) {
   query: Query
 }
 
 type Query {
-  user(id: Int!): User @http(path: "/users/{{.args.id}}")
+  user(id: Int!): User @http(url: "http://jsonplaceholder.typicode.com/users/{{.args.id}}")
 }
 
-type User @http(path: "/users", query: [{key: "id", value: "{{.value.id}}"}], batchKey: ["id"]) {
+type User @http(url: "http://jsonplaceholder.typicode.com/users", query: [{key: "id", value: "{{.value.id}}"}], batchKey: ["id"]) {
   id: Int!
   name: String!
 }
 
 type Post
-  @graphQL(baseURL: "http://upstream/graphql", batch: true, name: "post", args: [{key: "id", value: "{{.value.id}}"}]) {
+  @graphQL(url: "http://upstream/graphql", batch: true, name: "post", args: [{key: "id", value: "{{.value.id}}"}]) {
   id: Int!
   title: String!
 }

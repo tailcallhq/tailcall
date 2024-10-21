@@ -3,12 +3,12 @@
 ```graphql @config
 schema
   @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://upstream/", httpCache: 42) {
+  @upstream(httpCache: 42) {
   query: Query
 }
 
 type Query {
-  profiles(handles: [ID!]!): [Profile!]! @http(path: "/profiles", query: [{key: "handles", value: "{{.args.handles}}"}])
+  profiles(handles: [ID!]!): [Profile!]! @http(url: "http://upstream/profiles", query: [{key: "handles", value: "{{.args.handles}}"}])
 }
 
 interface Profile {

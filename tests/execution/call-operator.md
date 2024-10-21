@@ -39,28 +39,28 @@ message NewsList {
 ```graphql @config
 schema
   @server(port: 8000, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42)
+  @upstream(httpCache: 42)
   @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
 }
 
 type Query {
   userId: Int! @expr(body: 2)
-  posts: [Post] @http(path: "/posts")
-  user(id: Int!): User @http(path: "/users/{{.args.id}}")
-  userPosts(id: ID!): [Post] @http(path: "/posts", query: [{key: "userId", value: "{{.args.id}}"}])
-  user1: User @http(path: "/users/1")
-  userFromValue: User @http(path: "/users/{{.value.userId}}")
-  userHttpHeaders(id: ID!): User @http(path: "/users", headers: [{key: "id", value: "{{.args.id}}"}])
-  userHttpQuery(id: ID!): User @http(path: "/users", query: [{key: "id", value: "{{.args.id}}"}])
+  posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts")
+  user(id: Int!): User @http(url: "http://jsonplaceholder.typicode.com/users/{{.args.id}}")
+  userPosts(id: ID!): [Post] @http(url: "http://jsonplaceholder.typicode.com/posts", query: [{key: "userId", value: "{{.args.id}}"}])
+  user1: User @http(url: "http://jsonplaceholder.typicode.com/users/1")
+  userFromValue: User @http(url: "http://jsonplaceholder.typicode.com/users/{{.value.userId}}")
+  userHttpHeaders(id: ID!): User @http(url: "http://jsonplaceholder.typicode.com/users", headers: [{key: "id", value: "{{.args.id}}"}])
+  userHttpQuery(id: ID!): User @http(url: "http://jsonplaceholder.typicode.com/users", query: [{key: "id", value: "{{.args.id}}"}])
   userGraphQL(id: Int): User
-    @graphQL(baseURL: "http://upstream/graphql", name: "user", args: [{key: "id", value: "{{.args.id}}"}])
+    @graphQL(url: "http://upstream/graphql", name: "user", args: [{key: "id", value: "{{.args.id}}"}])
   userGraphQLHeaders(id: Int!): User
-    @graphQL(baseURL: "http://upstream/graphql", name: "user", headers: [{key: "id", value: "{{.args.id}}"}])
-  userWithPosts: UserWithPosts @http(path: "/users/1")
-  news: NewsData! @grpc(method: "news.NewsService.GetAllNews", baseURL: "http://localhost:50051")
+    @graphQL(url: "http://upstream/graphql", name: "user", headers: [{key: "id", value: "{{.args.id}}"}])
+  userWithPosts: UserWithPosts @http(url: "http://jsonplaceholder.typicode.com/users/1")
+  news: NewsData! @grpc(method: "news.NewsService.GetAllNews", url: "http://localhost:50051")
   newsWithPortArg(port: Int!): NewsData!
-    @grpc(method: "news.NewsService.GetAllNews", baseURL: "http://localhost:{{.args.port}}")
+    @grpc(method: "news.NewsService.GetAllNews", url: "http://localhost:{{.args.port}}")
 }
 
 type NewsData {

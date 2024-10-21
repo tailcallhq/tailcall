@@ -3,14 +3,14 @@
 ```graphql @config
 schema
   @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://upstream", httpCache: 42) {
+  @upstream(httpCache: 42) {
   query: Query
 }
 
 type Query {
-  userCompany(id: Int!): Company @http(path: "/users/{{.args.id}}", select: "{{.company}}")
+  userCompany(id: Int!): Company @http(url: "http://upstream/users/{{.args.id}}", select: "{{.company}}")
   userDetails(id: Int!): UserDetails
-    @http(path: "/users/{{.args.id}}", select: {id: "{{.id}}", city: "{{.address.city}}", phone: "{{.phone}}"})
+    @http(url: "http://upstream/users/{{.args.id}}", select: {id: "{{.id}}", city: "{{.address.city}}", phone: "{{.phone}}"})
 }
 
 type UserDetails {

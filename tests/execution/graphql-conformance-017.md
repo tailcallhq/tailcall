@@ -9,13 +9,13 @@ TODO: Skipped because Tailcall does not send the whole query with the **fragment
 ```graphql @config
 schema
   @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://upstream/graphql", httpCache: 42) {
+  @upstream(httpCache: 42) {
   query: Query
 }
 
 type Query {
-  edibleAnimals: [EdibleAnimals] @graphQL(name: "edibleAnimals")
-  allAnimals: [Animal] @graphQL(name: "allAnimals")
+  edibleAnimals: [EdibleAnimals] @graphQL(url: "http://upstream/graphql", name: "edibleAnimals")
+  allAnimals: [Animal] @graphQL(url: "http://upstream/graphql", name: "allAnimals")
 }
 
 interface Animal {

@@ -7,7 +7,7 @@ skip: true
 TODO: snapshot mismatch when running the test on 32bit architecture
 
 ```graphql @config
-schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @server  {
   query: Query
 }
 
@@ -339,6 +339,6 @@ union AllTypes =
   | Type65
 
 type Query {
-  allTypes: AllTypes @http(path: "/path")
+  allTypes: AllTypes @http(url: "http://jsonplaceholder.typicode.com/path")
 }
 ```

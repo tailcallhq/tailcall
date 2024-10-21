@@ -22,7 +22,7 @@ service MapService {
 ```graphql @config
 schema
   @server(port: 8000)
-  @upstream(baseURL: "http://localhost:50051", httpCache: 42, batch: {delay: 10})
+  @upstream(httpCache: 42, batch: {delay: 10})
   @link(src: "map.proto", type: Protobuf) {
   query: Query
 }
@@ -37,7 +37,7 @@ input map__MapRequest {
 
 type Query {
   map__MapService__GetMap(mapRequest: map__MapRequest!): map__MapResponse!
-    @grpc(body: "{{.args.mapRequest}}", method: "map.MapService.GetMap")
+    @grpc(url: "http://localhost:50051", body: "{{.args.mapRequest}}", method: "map.MapService.GetMap")
 }
 
 type map__MapResponse {

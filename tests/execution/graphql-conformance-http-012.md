@@ -3,12 +3,12 @@
 ```graphql @config
 schema
   @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://upstream/", httpCache: 42) {
+  @upstream(httpCache: 42) {
   query: Query
 }
 
 type Query {
-  search: [SearchResult!]! @http(path: "/search")
+  search: [SearchResult!]! @http(url: "http://upstream/search")
 }
 
 union SearchResult = Photo | Person

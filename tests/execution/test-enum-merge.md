@@ -1,7 +1,7 @@
 # test-enum-merge
 
 ```graphql @config
-schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+schema @server  {
   query: Query
 }
 
@@ -11,12 +11,12 @@ enum Foo {
 }
 
 type Query {
-  foo: Foo @http(path: "/foo")
+  foo: Foo @http(url: "http://jsonplaceholder.typicode.com/foo")
 }
 ```
 
 ```graphql @config
-schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+schema @server  {
   query: Query
 }
 
@@ -26,6 +26,6 @@ enum Foo {
 }
 
 type Query {
-  foo: Foo @http(path: "/foo")
+  foo: Foo @http(url: "http://jsonplaceholder.typicode.com/foo")
 }
 ```

@@ -3,12 +3,12 @@
 ```graphql @config
 schema
   @server(port: 8000, queryValidation: false)
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 1, maxSize: 1000}) {
+  @upstream(httpCache: 42, batch: {delay: 1, maxSize: 1000}) {
   query: Query
 }
 
 type Query {
-  posts: [Post] @http(path: "/posts?id=11&id=3&foo=1")
+  posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts?id=11&id=3&foo=1")
 }
 
 type Post {
@@ -18,7 +18,7 @@ type Post {
   userId: Int!
   user: User
     @http(
-      path: "/users"
+      url: "http://jsonplaceholder.typicode.com/users"
       query: [{key: "id", value: "{{.value.userId}}"}, {key: "foo", value: "bar"}]
       batchKey: ["id"]
     )

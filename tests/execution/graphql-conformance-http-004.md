@@ -3,12 +3,12 @@
 ```graphql @config
 schema
   @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://upstream/", httpCache: 42) {
+  @upstream(httpCache: 42) {
   query: Query
 }
 
 type Query {
-  user(id: ID!): User! @http(path: "/user", query: [{key: "id", value: "{{.args.id}}"}])
+  user(id: ID!): User! @http(url: "http://upstream/user", query: [{key: "id", value: "{{.args.id}}"}])
 }
 
 type User {
@@ -16,7 +16,7 @@ type User {
   name: String!
   profilePic(size: Int, width: Int, height: Int): String!
     @http(
-      path: "/pic"
+      url: "http://upstream/pic"
       query: [
         {key: "id", value: "{{.value.id}}"}
         {key: "size", value: "{{.args.size}}"}

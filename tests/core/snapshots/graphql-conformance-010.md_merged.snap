@@ -2,9 +2,7 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema
-  @server(hostname: "0.0.0.0", port: 8001, queryValidation: false)
-  @upstream(baseURL: "http://upstream/graphql", httpCache: 42) {
+schema @server(hostname: "0.0.0.0", port: 8001, queryValidation: false) @upstream(httpCache: 42) {
   query: Query
 }
 
@@ -26,5 +24,5 @@ type Point {
 
 type Query {
   nearby(location: LocationInput): Point
-    @graphQL(args: [{key: "location", value: "{{.args.location}}"}], name: "nearby")
+    @graphQL(args: [{key: "location", value: "{{.args.location}}"}], url: "http://upstream/graphql", name: "nearby")
 }

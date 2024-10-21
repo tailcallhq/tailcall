@@ -36,15 +36,14 @@ service BarService {
 ```graphql @config
 schema
   @server(port: 8000)
-  @upstream(baseURL: "http://localhost:50051")
   @link(src: "foo.proto", type: Protobuf)
   @link(src: "bar.proto", type: Protobuf) {
   query: Query
 }
 
 type Query {
-  foo: Foo! @grpc(method: "test.FooService.GetFoo")
-  bar: Bar! @grpc(method: "test.BarService.GetBar")
+  foo: Foo! @grpc(url: "http://localhost:50051", method: "test.FooService.GetFoo")
+  bar: Bar! @grpc(url: "http://localhost:50051", method: "test.BarService.GetBar")
 }
 
 type Foo {

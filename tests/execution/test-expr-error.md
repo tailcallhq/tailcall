@@ -5,7 +5,7 @@ error: true
 # test-expr-error
 
 ```graphql @config
-schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") {
+schema @server  {
   query: Query
 }
 

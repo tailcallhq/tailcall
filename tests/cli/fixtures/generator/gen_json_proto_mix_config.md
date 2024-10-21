@@ -3,7 +3,7 @@
   "inputs": [
     {
       "curl": {
-        "src": "https://jsonplaceholder.typicode.com/users",
+        "src": "http://jsonplaceholder.typicode.com/users",
         "fieldName": "users"
       }
     },

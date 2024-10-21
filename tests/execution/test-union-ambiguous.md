@@ -3,7 +3,7 @@
 In some cases, when the resolved data shape does not strongly correspond to GraphQL types, the discriminator may return the first possible type or no possible types at all.
 
 ```graphql @config
-schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @server  {
   query: Query
 }
 
@@ -28,13 +28,13 @@ type Nested {
 }
 
 type Query {
-  arr: [FooBarBaz] @http(path: "/arr")
-  bar: FooBarBaz @http(path: "/bar")
-  foo: FooBarBaz @http(path: "/foo")
-  nested: Nested @http(path: "/nested")
-  unknown: FooBarBaz @http(path: "/unknown")
-  wrong: FooBarBaz @http(path: "/wrong")
-  string: FooBarBaz @http(path: "/string")
+  arr: [FooBarBaz] @http(url: "http://jsonplaceholder.typicode.com/arr")
+  bar: FooBarBaz @http(url: "http://jsonplaceholder.typicode.com/bar")
+  foo: FooBarBaz @http(url: "http://jsonplaceholder.typicode.com/foo")
+  nested: Nested @http(url: "http://jsonplaceholder.typicode.com/nested")
+  unknown: FooBarBaz @http(url: "http://jsonplaceholder.typicode.com/unknown")
+  wrong: FooBarBaz @http(url: "http://jsonplaceholder.typicode.com/wrong")
+  string: FooBarBaz @http(url: "http://jsonplaceholder.typicode.com/string")
 }
 ```
 

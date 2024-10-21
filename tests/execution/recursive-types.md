@@ -1,7 +1,7 @@
 # Recursive Type
 
 ```graphql @config
-schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") {
+schema @server {
   query: Query
   mutation: Mutation
 }
@@ -9,7 +9,7 @@ schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") {
 type User {
   name: String
   id: Int!
-  connections: [Connection] @http(path: "/connections/{{.value.id}}")
+  connections: [Connection] @http(url: "http://jsonplaceholder.typicode.com/connections/{{.value.id}}")
 }
 
 type Connection {
@@ -18,18 +18,18 @@ type Connection {
 }
 
 type Query {
-  user: User @http(path: "/users/1")
+  user: User @http(url: "http://jsonplaceholder.typicode.com/users/1")
 }
 
 type Mutation {
-  createUser(user: User): User @http(path: "/user", method: "POST", body: "{{.args.user}}")
+  createUser(user: User): User @http(url: "http://jsonplaceholder.typicode.com/user", method: "POST", body: "{{.args.user}}")
 }
 ```
 
 ```yml @mock
 - request:
     method: GET
-    url: https://jsonplaceholder.typicode.com/users/1
+    url: http://jsonplaceholder.typicode.com/users/1
   response:
     status: 200
     body:
@@ -37,7 +37,7 @@ type Mutation {
       name: User1
 - request:
     method: GET
-    url: https://jsonplaceholder.typicode.com/connections/1
+    url: http://jsonplaceholder.typicode.com/connections/1
   response:
     status: 200
     body:
@@ -48,7 +48,7 @@ type Mutation {
 
 - request:
     method: GET
-    url: https://jsonplaceholder.typicode.com/connections/2
+    url: http://jsonplaceholder.typicode.com/connections/2
   response:
     status: 200
     body:
@@ -63,7 +63,7 @@ type Mutation {
 
 - request:
     method: POST
-    url: https://jsonplaceholder.typicode.com/user
+    url: http://jsonplaceholder.typicode.com/user
     body:
       id: 111
       name: NewUser
@@ -80,7 +80,7 @@ type Mutation {
 
 - request:
     method: GET
-    url: https://jsonplaceholder.typicode.com/connections/111
+    url: http://jsonplaceholder.typicode.com/connections/111
   response:
     status: 200
     body:

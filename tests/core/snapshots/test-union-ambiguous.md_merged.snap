@@ -2,7 +2,7 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @server @upstream {
   query: Query
 }
 
@@ -27,11 +27,11 @@ type Nested {
 }
 
 type Query {
-  arr: [FooBarBaz] @http(path: "/arr")
-  bar: FooBarBaz @http(path: "/bar")
-  foo: FooBarBaz @http(path: "/foo")
-  nested: Nested @http(path: "/nested")
-  string: FooBarBaz @http(path: "/string")
-  unknown: FooBarBaz @http(path: "/unknown")
-  wrong: FooBarBaz @http(path: "/wrong")
+  arr: [FooBarBaz] @http(url: "http://jsonplaceholder.typicode.com/arr")
+  bar: FooBarBaz @http(url: "http://jsonplaceholder.typicode.com/bar")
+  foo: FooBarBaz @http(url: "http://jsonplaceholder.typicode.com/foo")
+  nested: Nested @http(url: "http://jsonplaceholder.typicode.com/nested")
+  string: FooBarBaz @http(url: "http://jsonplaceholder.typicode.com/string")
+  unknown: FooBarBaz @http(url: "http://jsonplaceholder.typicode.com/unknown")
+  wrong: FooBarBaz @http(url: "http://jsonplaceholder.typicode.com/wrong")
 }

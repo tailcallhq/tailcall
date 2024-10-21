@@ -27,7 +27,7 @@ message NewsId {
 ```graphql @config
 schema
   @server(port: 8000)
-  @upstream(baseURL: "http://localhost:50051", batch: {delay: 10, headers: [], maxSize: 1000})
+  @upstream(batch: {delay: 10, headers: [], maxSize: 1000})
   @link(id: "news", src: "news.proto", meta: {description: "Test"}, type: Protobuf) {
   query: Query
 }
@@ -45,6 +45,6 @@ type NewsData {
 }
 
 type Query {
-  newsById(news: NewsInput!): News! @grpc(body: "{{.args.news}}", method: "news.NewsService.GetNews")
+  newsById(news: NewsInput!): News! @grpc(url: "http://localhost:50051", body: "{{.args.news}}", method: "news.NewsService.GetNews")
 }
 ```

@@ -12,13 +12,12 @@ query ($id: Int!) @rest(method: GET, path: "/user/$id") {
 ```graphql @config
 schema
   @server
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com")
   @link(type: Operation, src: "operation-user.graphql") {
   query: Query
 }
 
 type Query {
-  user(id: Int!): User @http(path: "/users/{{.args.id}}")
+  user(id: Int!): User @http(url: "http://jsonplaceholder.typicode.com/users/{{.args.id}}")
 }
 
 type User {

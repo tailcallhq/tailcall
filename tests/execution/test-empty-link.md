@@ -5,13 +5,13 @@ error: true
 # test-empty-link
 
 ```graphql @config
-schema @upstream(baseURL: "https://jsonplaceholder.typicode.com") @link(type: Config, src: "") @link(type: Config) {
+schema  @link(type: Config, src: "") @link(type: Config) {
   query: Query
 }
 
 type Query {
-  posts: [Post] @http(path: "/posts")
-  user(id: Int!): User @http(path: "/users/{{.args.id}}")
+  posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts")
+  user(id: Int!): User @http(url: "http://jsonplaceholder.typicode.com/users/{{.args.id}}")
 }
 
 type User {
@@ -28,6 +28,6 @@ type Post {
   userId: Int!
   title: String!
   body: String!
-  user: User @http(path: "/users/{{.value.userId}}")
+  user: User @http(url: "http://jsonplaceholder.typicode.com/users/{{.value.userId}}")
 }
 ```

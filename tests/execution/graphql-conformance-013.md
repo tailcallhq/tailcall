@@ -3,12 +3,12 @@
 ```graphql @config
 schema
   @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://upstream/graphql", httpCache: 42) {
+  @upstream(httpCache: 42) {
   query: Query
 }
 
 type Query {
-  me: User! @graphQL(name: "me")
+  me: User! @graphQL(url: "http://upstream/graphql", name: "me")
 }
 
 type User {

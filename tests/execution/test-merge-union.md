@@ -1,7 +1,7 @@
 # test-merge-union
 
 ```graphql @config
-schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+schema @server  {
   query: Query
 }
 
@@ -16,12 +16,12 @@ type Foo {
 }
 
 type Query {
-  foo: FooBar @http(path: "/foo")
+  foo: FooBar @http(url: "http://jsonplaceholder.typicode.com/foo")
 }
 ```
 
 ```graphql @config
-schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+schema @server  {
   query: Query
 }
 
@@ -37,6 +37,6 @@ type Foo {
 }
 
 type Query {
-  foo: FooBar @http(path: "/foo")
+  foo: FooBar @http(url: "http://jsonplaceholder.typicode.com/foo")
 }
 ```

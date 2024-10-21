@@ -10,7 +10,7 @@ type Query {
     @graphQL(
       name: "getMyType"
       args: [{key: "filter", value: "{{.args.filter}}"}]
-      baseURL: "http://localhost:8083/mesh"
+      url: "http://localhost:8083/mesh"
     )
 }
 

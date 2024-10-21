@@ -3,20 +3,20 @@
 ```graphql @config
 schema
   @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://upstream/graphql", httpCache: 42) {
+  @upstream(httpCache: 42) {
   query: Query
 }
 
 type Query {
-  a: [A] @graphQL(name: "a")
+  a: [A] @graphQL(url: "http://upstream/graphql", name: "a")
 }
 
 type A {
   id: Int!
   bid: Int!
   cid: Int!
-  b: B @graphQL(name: "b", args: [{key: "id", value: "{{.value.bid}}"}])
-  c: C @graphQL(name: "c", args: [{key: "id", value: "{{.value.cid}}"}])
+  b: B @graphQL(url: "http://upstream/graphql", name: "b", args: [{key: "id", value: "{{.value.bid}}"}])
+  c: C @graphQL(url: "http://upstream/graphql", name: "c", args: [{key: "id", value: "{{.value.cid}}"}])
 }
 
 type B {

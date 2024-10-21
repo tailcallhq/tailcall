@@ -1,12 +1,12 @@
 # With nesting
 
 ```graphql @config
-schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @server  {
   query: Query
 }
 
 type Query {
-  user: User @http(path: "/users/1")
+  user: User @http(url: "http://jsonplaceholder.typicode.com/users/1")
 }
 
 type User {
@@ -16,7 +16,7 @@ type User {
   email: String!
   phone: String
   website: String
-  posts: [Post] @http(path: "/users/{{.value.id}}/posts")
+  posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/users/{{.value.id}}/posts")
 }
 
 type Post {

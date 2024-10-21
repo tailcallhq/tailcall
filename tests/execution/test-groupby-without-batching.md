@@ -5,7 +5,7 @@ error: true
 # test-groupby-without-batching
 
 ```graphql @config
-schema @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42) {
+schema @upstream(httpCache: 42) {
   query: Query
 }
 
@@ -15,6 +15,6 @@ type User {
 }
 
 type Query {
-  user(id: Int!): User @http(path: "/users", query: [{key: "id", value: "{{.args.id}}"}], batchKey: ["id"])
+  user(id: Int!): User @http(url: "http://jsonplaceholder.typicode.com/users", query: [{key: "id", value: "{{.args.id}}"}], batchKey: ["id"])
 }
 ```

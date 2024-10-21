@@ -3,13 +3,13 @@
 ```graphql @config
 schema
   @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://upstream/", httpCache: 42) {
+  @upstream(httpCache: 42) {
   query: Query
 }
 
 type Query {
-  userGroups: [[User!]!]! @http(path: "/users")
-  addUsers(userNames: [[String!]!]!): Boolean @http(path: "/users", method: POST, body: "{{.args.userNames}}")
+  userGroups: [[User!]!]! @http(url: "http://upstream/users")
+  addUsers(userNames: [[String!]!]!): Boolean @http(url: "http://upstream/users", method: POST, body: "{{.args.userNames}}")
 }
 
 type User {

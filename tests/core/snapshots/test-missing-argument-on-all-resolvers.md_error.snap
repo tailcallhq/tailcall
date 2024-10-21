@@ -4,57 +4,7 @@ expression: errors
 ---
 [
   {
-    "message": "no argument 'id' found",
-    "trace": [
-      "Query",
-      "newsGrpcBody",
-      "@grpc",
-      "body"
-    ],
-    "description": null
-  },
-  {
-    "message": "no argument 'id' found",
-    "trace": [
-      "Query",
-      "newsGrpcHeaders",
-      "@grpc",
-      "headers"
-    ],
-    "description": null
-  },
-  {
-    "message": "no argument 'url' found",
-    "trace": [
-      "Query",
-      "newsGrpcUrl",
-      "@grpc",
-      "path"
-    ],
-    "description": null
-  },
-  {
-    "message": "no argument 'id' found",
-    "trace": [
-      "Query",
-      "postGraphQLArgs",
-      "@graphQL",
-      "args"
-    ],
-    "description": null
-  },
-  {
-    "message": "no argument 'id' found",
-    "trace": [
-      "Query",
-      "postGraphQLHeaders",
-      "@graphQL",
-      "headers"
-    ],
-    "description": null
-  },
-  {
-    "message": "no argument 'id' found",
+    "message": "Parsing failed because of unknown field `path`, expected one of `onRequest`, `url`, `body`, `encoding`, `batchKey`, `headers`, `input`, `method`, `output`, `query`, `dedupe`, `select`",
     "trace": [
       "Query",
       "postHttp",

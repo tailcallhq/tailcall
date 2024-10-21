@@ -5,12 +5,12 @@ error: true
 # test-expr-with-add-field
 
 ```graphql @config
-schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @server  {
   query: Query
 }
 
 type Query @addField(name: "name", path: ["post", "user", "name"]) {
-  post: Post @http(path: "/posts/1")
+  post: Post @http(url: "http://jsonplaceholder.typicode.com/posts/1")
 }
 
 type Post {
