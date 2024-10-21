@@ -9,7 +9,8 @@
     },
     {
       "proto": {
-        "src": "tailcall-fixtures/fixtures/protobuf/news.proto"
+        "src": "tailcall-fixtures/fixtures/protobuf/news.proto",
+        "url": "http://localhost:50051"
       }
     }
   ],

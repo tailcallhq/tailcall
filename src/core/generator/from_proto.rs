@@ -18,8 +18,6 @@ use crate::core::transform::{Transform, TransformerOps};
 use crate::core::valid::Validator;
 use crate::core::Type;
 
-const URL: &str = "http://localhost:50051";
-
 /// Assists in the mapping and retrieval of proto type names to custom formatted
 /// strings based on the descriptor type.
 #[derive(Setters)]
@@ -329,6 +327,7 @@ impl Context {
         mut self,
         services: &[ServiceDescriptorProto],
         parent_path: &PathBuilder,
+        url: &str,
     ) -> Result<Self> {
         if services.is_empty() {
             return Ok(self);
@@ -369,7 +368,7 @@ impl Context {
                 cfg_field.type_of = cfg_field.type_of.with_name(output_ty);
 
                 cfg_field.resolver = Some(Resolver::Grpc(Grpc {
-                    url: URL.to_string(),
+                    url: url.to_string(),
                     body,
                     batch_key: vec![],
                     headers: vec![],
@@ -456,7 +455,7 @@ fn get_input_type(input_ty: &str) -> Result<Option<GraphQLType<Unparsed>>> {
 }
 
 /// The main entry point that builds a Config object from proto descriptor sets.
-pub fn from_proto(descriptor_sets: &[FileDescriptorSet], query: &str) -> Result<Config> {
+pub fn from_proto(descriptor_sets: &[FileDescriptorSet], query: &str, url: &str) -> Result<Config> {
     let mut ctx = Context::new(query);
     for descriptor_set in descriptor_sets.iter() {
         for file_descriptor in descriptor_set.file.iter() {
@@ -471,7 +470,7 @@ pub fn from_proto(descriptor_sets: &[FileDescriptorSet], query: &str) -> Result<
             ctx = ctx
                 .append_enums(&file_descriptor.enum_type, &root_path, false)
                 .append_msg_type(&file_descriptor.message_type, &root_path, false)?
-                .append_query_service(&file_descriptor.service, &root_path)?;
+                .append_query_service(&file_descriptor.service, &root_path, url)?;
         }
     }
 
@@ -499,7 +498,7 @@ mod test {
     macro_rules! assert_gen {
         ($( $set:expr ), +) => {
             let set = compile_protobuf(&[$( $set ),+]).unwrap();
-            let config = from_proto(&[set], "Query").unwrap();
+            let config = from_proto(&[set], "Query", "http://localhost:50051").unwrap();
             let config_module = ConfigModule::from(config);
             let result = config_module.to_sdl();
             insta::assert_snapshot!(result);
@@ -543,9 +542,10 @@ mod test {
         let set1 = compile_protobuf(&[protobuf::NEWS])?;
         let set2 = compile_protobuf(&[protobuf::GREETINGS_A])?;
         let set3 = compile_protobuf(&[protobuf::GREETINGS_B])?;
+        let url = "http://localhost:50051";
 
-        let actual = from_proto(&[set.clone()], "Query")?.to_sdl();
-        let expected = from_proto(&[set1, set2, set3], "Query")?.to_sdl();
+        let actual = from_proto(&[set.clone()], "Query", url)?.to_sdl();
+        let expected = from_proto(&[set1, set2, set3], "Query", url)?.to_sdl();
 
         pretty_assertions::assert_eq!(actual, expected);
         Ok(())

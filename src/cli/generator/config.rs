@@ -83,6 +83,7 @@ pub enum Source<Status = UnResolved> {
     },
     Proto {
         src: Location<Status>,
+        url: String,
     },
     Config {
         src: Location<Status>,
@@ -216,9 +217,9 @@ impl Source<UnResolved> {
                     is_mutation,
                 })
             }
-            Source::Proto { src } => {
+            Source::Proto { src, url } => {
                 let resolved_path = src.into_resolved(parent_dir);
-                Ok(Source::Proto { src: resolved_path })
+                Ok(Source::Proto { src: resolved_path, url })
             }
             Source::Config { src } => {
                 let resolved_path = src.into_resolved(parent_dir);
