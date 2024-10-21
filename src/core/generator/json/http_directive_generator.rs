@@ -203,9 +203,7 @@ mod test {
         let url = Url::parse("http://example.com/foo/70b0be87-d339-4395-8559-204fd368604a/bar/123")
             .unwrap();
         let http_directive = HttpDirectiveGenerator::new(&url);
-        let field = &mut Field {
-            ..Default::default()
-        };
+        let field = &mut Field { ..Default::default() };
         let http = http_directive.generate_http_directive(field);
         let args: HashMap<String, String> = field
             .args
@@ -218,7 +216,10 @@ mod test {
         ]
         .into_iter()
         .collect::<HashMap<_, _>>();
-        assert_eq!("http://example.com/foo/%7B%7B.args.GEN__2%7D%7D/bar/%7B%7B.args.GEN__1%7D%7D", http.url);
+        assert_eq!(
+            "http://example.com/foo/%7B%7B.args.GEN__2%7D%7D/bar/%7B%7B.args.GEN__1%7D%7D",
+            http.url
+        );
         assert_eq!(test_args, args);
     }
 }

@@ -10,9 +10,7 @@ query ($id: Int!) @rest(method: GET, path: "/user/$id") {
 ```
 
 ```graphql @config
-schema
-  @server
-  @link(type: Operation, src: "operation-user.graphql") {
+schema @server @link(type: Operation, src: "operation-user.graphql") {
   query: Query
 }
 

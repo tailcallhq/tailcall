@@ -7,7 +7,7 @@ error: true
 In some cases, when the resolved data shape does not strongly correspond to GraphQL types, the discriminator may return the first possible type or no possible types at all.
 
 ```graphql @config
-schema @server  {
+schema @server {
   query: Query
 }
 

@@ -5,7 +5,7 @@ identity: true
 # test-http-baseurl
 
 ```graphql @config
-schema @server @upstream{
+schema @server @upstream {
   query: Query
 }
 

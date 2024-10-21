@@ -68,8 +68,14 @@ type NewsData {
 
 type Query {
   news: NewsData! @grpc(url: "http://localhost:50051", method: "news.NewsService.GetAllNews")
-  newsById(news: NewsInput!): News! @grpc(url: "http://localhost:50051", body: "{{.args.news}}", method: "news.NewsService.GetNews")
+  newsById(news: NewsInput!): News!
+    @grpc(url: "http://localhost:50051", body: "{{.args.news}}", method: "news.NewsService.GetNews")
   newsByIdBatch(news: NewsInput!): News!
-    @grpc(url: "http://localhost:50051", body: "{{.args.news}}", batchKey: ["news", "id"], method: "news.NewsService.GetMultipleNews")
+    @grpc(
+      url: "http://localhost:50051"
+      body: "{{.args.news}}"
+      batchKey: ["news", "id"]
+      method: "news.NewsService.GetMultipleNews"
+    )
 }
 ```

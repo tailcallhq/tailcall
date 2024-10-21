@@ -1,6 +1,4 @@
-schema
-  @server(port: 8000)
-  @upstream(httpCache: 42, batch: {delay: 100}) {
+schema @server(port: 8000) @upstream(httpCache: 42, batch: {delay: 100}) {
   query: Query
   mutation: Mutation
 }
@@ -45,7 +43,8 @@ type Post implements Node {
 
 type Query {
   user(id: ID!): User @http(url: "http://jsonplaceholder.typicode.com/users/{{.args.id}}")
-  search(term: String!): [SearchResult!] @http(url: "http://jsonplaceholder.typicode.com/search", query: [{key: "q", value: "{{.args.term}}"}])
+  search(term: String!): [SearchResult!]
+    @http(url: "http://jsonplaceholder.typicode.com/search", query: [{key: "q", value: "{{.args.term}}"}])
 }
 
 input PostInput {
@@ -55,6 +54,8 @@ input PostInput {
 }
 
 type Mutation {
-  createUser(input: UserInput!): User! @http(url: "http://jsonplaceholder.typicode.com/users", body: "{{.args.input}}", method: "POST")
-  createPost(input: PostInput): Post! @http(url: "http://jsonplaceholder.typicode.com/posts", body: "{{.args.input}}", method: "POST")
+  createUser(input: UserInput!): User!
+    @http(url: "http://jsonplaceholder.typicode.com/users", body: "{{.args.input}}", method: "POST")
+  createPost(input: PostInput): Post!
+    @http(url: "http://jsonplaceholder.typicode.com/posts", body: "{{.args.input}}", method: "POST")
 }

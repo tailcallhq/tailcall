@@ -3,10 +3,7 @@
 ```graphql @config
 schema
   @server(port: 8000, queryValidation: false)
-  @upstream(
-    httpCache: 42
-    batch: {maxSize: 1000, delay: 1, headers: []}
-  ) {
+  @upstream(httpCache: 42, batch: {maxSize: 1000, delay: 1, headers: []}) {
   query: Query
 }
 

@@ -46,11 +46,13 @@ schema
 
 type Query {
   news: NewsData! @grpc(url: "http://localhost:50051", method: "news.NewsService.GetAllNews")
-  newsById(news: NewsInput!): News! @grpc(url: "http://localhost:50051", method: "news.NewsService.GetNews", body: "{{.args.news}}")
+  newsById(news: NewsInput!): News!
+    @grpc(url: "http://localhost:50051", method: "news.NewsService.GetNews", body: "{{.args.news}}")
 }
 
 type Mutation {
-  deleteNews(news: NewsId!): Empty! @grpc(url: "http://localhost:50051", method: "news.NewsService.DeleteNews", body: "{{.args.news}}")
+  deleteNews(news: NewsId!): Empty!
+    @grpc(url: "http://localhost:50051", method: "news.NewsService.DeleteNews", body: "{{.args.news}}")
 }
 
 input NewsId {

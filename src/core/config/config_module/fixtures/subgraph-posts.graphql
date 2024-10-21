@@ -1,12 +1,11 @@
-schema
-  @server(port: 8000)
-  @upstream(httpCache: 42, batch: {delay: 100}) {
+schema @server(port: 8000) @upstream(httpCache: 42, batch: {delay: 100}) {
   query: Query
 }
 
 type Query {
   posts: [UserPost] @http(url: "http://jsonplaceholder.typicode.com/posts")
-  addComment(postId: Int!, comment: CommentInput!, premium: Boolean): Boolean @http(url: "http://jsonplaceholder.typicode.com/add-comment", method: POST)
+  addComment(postId: Int!, comment: CommentInput!, premium: Boolean): Boolean
+    @http(url: "http://jsonplaceholder.typicode.com/add-comment", method: POST)
   searchComments(type: CommentSearch): [Comment] @http(url: "http://jsonplaceholder.typicode.com/comment")
 }
 

@@ -17,10 +17,7 @@ use crate::core::valid::{Valid, ValidationError, Validator};
 use crate::core::{config, helpers};
 
 fn to_url(grpc: &Grpc, method: &GrpcMethod) -> Valid<Mustache, String> {
-    Valid::succeed(
-        grpc.url.as_str(),
-    )
-    .and_then(|base_url| {
+    Valid::succeed(grpc.url.as_str()).and_then(|base_url| {
         let mut base_url = base_url.trim_end_matches('/').to_owned();
         base_url.push('/');
         base_url.push_str(format!("{}.{}", method.package, method.service).as_str());

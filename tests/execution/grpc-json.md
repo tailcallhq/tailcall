@@ -37,15 +37,14 @@ message NewsList {
 ```
 
 ```graphql @config
-schema
-  @server(port: 8000)
-  @link(id: "news", src: "news.proto", type: Protobuf) {
+schema @server(port: 8000) @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
 }
 
 type Query {
   newsById: News! @grpc(url: "http://localhost:50051", method: "news.NewsService.GetNews", body: {id: 2})
-  newsByIdMustache(news: NewsInput!): News! @grpc(url: "http://localhost:50051", method: "news.NewsService.GetNews", body: "{{.args.news}}")
+  newsByIdMustache(news: NewsInput!): News!
+    @grpc(url: "http://localhost:50051", method: "news.NewsService.GetNews", body: "{{.args.news}}")
   newsByIdMustacheAndJson(news: NewsInput!): News!
     @grpc(url: "http://localhost:50051", method: "news.NewsService.GetNews", body: {id: "{{.args.news.id}}"})
 }

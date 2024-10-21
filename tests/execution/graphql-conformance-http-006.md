@@ -1,9 +1,7 @@
 # Test complex nested query
 
 ```graphql @config
-schema
-  @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
-  @upstream(httpCache: 42) {
+schema @server(port: 8001, queryValidation: false, hostname: "0.0.0.0") @upstream(httpCache: 42) {
   query: Query
 }
 
@@ -17,7 +15,10 @@ type User {
   profilePic(size: Int, width: Int, height: Int): String!
     @expr(body: "{{.value.id}}_{{.args.size}}_{{.args.width}}_{{.args.height}}")
   friends(first: Int): [User!]!
-    @http(url: "http://upstream/friends", query: [{key: "id", value: "{{.value.id}}"}, {key: "first", value: "{{.args.first}}"}])
+    @http(
+      url: "http://upstream/friends"
+      query: [{key: "id", value: "{{.value.id}}"}, {key: "first", value: "{{.args.first}}"}]
+    )
   mutualFriends(first: Int): [User!]!
     @http(
       url: "http://upstream/mutual-friends"

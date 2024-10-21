@@ -1,7 +1,7 @@
 # Test API
 
 ```graphql @config
-schema @server(enableJIT: true)  {
+schema @server(enableJIT: true) {
   query: Query
 }
 

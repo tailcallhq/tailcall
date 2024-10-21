@@ -22,14 +22,23 @@ type Mutation {
   attachPostToFirstUser(postId: Int!): User
     @call(steps: [{mutation: "attachPostToUser", args: {postId: "{{.args.postId}}", userId: 1}}])
   attachPostToUser(userId: Int!, postId: Int!): User
-    @http(body: "{\"postId\":{{.args.postId}}}", method: "PATCH", url: "http://jsonplaceholder.typicode.com/users/{{.args.userId}}")
-  insertPost(input: PostInput): Post @http(body: "{{.args.input}}", method: "POST", url: "http://jsonplaceholder.typicode.com/posts")
+    @http(
+      body: "{\"postId\":{{.args.postId}}}"
+      method: "PATCH"
+      url: "http://jsonplaceholder.typicode.com/users/{{.args.userId}}"
+    )
+  insertPost(input: PostInput): Post
+    @http(body: "{{.args.input}}", method: "POST", url: "http://jsonplaceholder.typicode.com/posts")
   insertPostToFirstUser(input: PostInputWithoutUserId): Post
     @call(steps: [{mutation: "insertPostToUser", args: {input: "{{.args.input}}", userId: 1}}])
   insertMockedPost: Post
     @call(steps: [{mutation: "insertPost", args: {input: {body: "post-body", title: "post-title", userId: 1}}}])
   insertPostToUser(input: PostInputWithoutUserId!, userId: Int!): Post
-    @http(body: "{{.args.input}}", method: "POST", url: "http://jsonplaceholder.typicode.com/users/{{.args.userId}}/posts")
+    @http(
+      body: "{{.args.input}}"
+      method: "POST"
+      url: "http://jsonplaceholder.typicode.com/users/{{.args.userId}}/posts"
+    )
 }
 
 type Post {

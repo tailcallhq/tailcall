@@ -5,7 +5,7 @@ error: true
 # test-http-with-add-field
 
 ```graphql @config
-schema @server  {
+schema @server {
   query: Query
 }
 

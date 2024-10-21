@@ -5,13 +5,14 @@ identity: true
 # test-graphqlsource
 
 ```graphql @config
-schema @server @upstream{
+schema @server @upstream {
   query: Query
 }
 
 type Post {
   id: Int!
-  user: User @graphQL(args: [{key: "id", value: "{{.value.userId}}"}], url: "http://localhost:8000/graphql", name: "user")
+  user: User
+    @graphQL(args: [{key: "id", value: "{{.value.userId}}"}], url: "http://localhost:8000/graphql", name: "user")
   userId: Int!
 }
 

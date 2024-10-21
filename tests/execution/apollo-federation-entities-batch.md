@@ -1,9 +1,7 @@
 # Apollo federation query for batching resolvers
 
 ```graphql @config
-schema
-  @server(port: 8000, enableFederation: true)
-  @upstream(httpCache: 42, batch: {delay: 100}) {
+schema @server(port: 8000, enableFederation: true) @upstream(httpCache: 42, batch: {delay: 100}) {
   query: Query
 }
 
@@ -11,7 +9,12 @@ type Query {
   user(id: Int!): User @http(url: "http://jsonplaceholder.typicode.com/users/{{.args.id}}")
 }
 
-type User @http(url: "http://jsonplaceholder.typicode.com/users", query: [{key: "id", value: "{{.value.id}}"}], batchKey: ["id"]) {
+type User
+  @http(
+    url: "http://jsonplaceholder.typicode.com/users"
+    query: [{key: "id", value: "{{.value.id}}"}]
+    batchKey: ["id"]
+  ) {
   id: Int!
   name: String!
 }

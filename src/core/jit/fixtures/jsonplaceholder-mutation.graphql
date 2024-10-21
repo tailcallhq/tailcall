@@ -24,8 +24,10 @@ type UserEmail {
 union UserIdOrEmail = UserId | UserEmail
 
 type Mutation {
-  createUser(user: InputUser!): User @http(method: POST, url: "http://jsonplaceholder.typicode.com/users", body: "{{args.user}}")
-  createPost(post: InputPost!): Post @http(method: POST, url: "http://jsonplaceholder.typicode.com/posts", body: "{{args.post}}")
+  createUser(user: InputUser!): User
+    @http(method: POST, url: "http://jsonplaceholder.typicode.com/users", body: "{{args.user}}")
+  createPost(post: InputPost!): Post
+    @http(method: POST, url: "http://jsonplaceholder.typicode.com/posts", body: "{{args.post}}")
 }
 
 input InputPost {

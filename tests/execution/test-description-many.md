@@ -5,7 +5,7 @@ identity: true
 # test-description-many
 
 ```graphql @config
-schema @server @upstream{
+schema @server @upstream {
   query: Query
 }
 

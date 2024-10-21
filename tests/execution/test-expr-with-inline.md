@@ -5,7 +5,7 @@ error: true
 # test-expr-with-inline
 
 ```graphql @config
-schema @server  {
+schema @server {
   query: Query
 }
 

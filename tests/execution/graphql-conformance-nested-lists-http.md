@@ -1,15 +1,14 @@
 # List of lists.
 
 ```graphql @config
-schema
-  @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
-  @upstream(httpCache: 42) {
+schema @server(port: 8001, queryValidation: false, hostname: "0.0.0.0") @upstream(httpCache: 42) {
   query: Query
 }
 
 type Query {
   userGroups: [[User!]!]! @http(url: "http://upstream/users")
-  addUsers(userNames: [[String!]!]!): Boolean @http(url: "http://upstream/users", method: POST, body: "{{.args.userNames}}")
+  addUsers(userNames: [[String!]!]!): Boolean
+    @http(url: "http://upstream/users", method: POST, body: "{{.args.userNames}}")
 }
 
 type User {

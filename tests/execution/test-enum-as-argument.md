@@ -1,12 +1,16 @@
 # test enum as argument
 
 ```graphql @config
-schema @server  {
+schema @server {
   query: Query
 }
 
 type Query {
-  user(id: Int!, test: Test): User @http(url: "http://jsonplaceholder.typicode.com/users/{{.args.id}}", query: [{key: "enum", value: "{{.args.test}}"}])
+  user(id: Int!, test: Test): User
+    @http(
+      url: "http://jsonplaceholder.typicode.com/users/{{.args.id}}"
+      query: [{key: "enum", value: "{{.args.test}}"}]
+    )
 }
 
 enum Test {

@@ -7,9 +7,7 @@ skip: true
 TODO: Skipped because Tailcall does not construct the query correctly. Moreover it does not validate the query that is invalid (contains a missing field).
 
 ```graphql @config
-schema
-  @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
-  @upstream(httpCache: 42) {
+schema @server(port: 8001, queryValidation: false, hostname: "0.0.0.0") @upstream(httpCache: 42) {
   query: Query
 }
 

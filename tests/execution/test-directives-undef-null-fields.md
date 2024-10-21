@@ -36,18 +36,14 @@ type Post {
   userInvalidDirective: User @http(url: "http://localhost:8080/users/{{.Vale.userId}}")
   userNonScalar: User @http(url: "http://localhost:8080/users/{{.value.nonNullableUser}}")
   userNullable: User @http(url: "http://localhost:8080/users/{{.value.user.id}}")
-  nestedUserNullable: User
-    @http(url: "http://localhost:8080/users/{{.value.nonNullableUser.nestedUser.id}}")
-  nestedNonScalar: User
-    @http(url: "http://localhost:8080/users/{{.value.nonNullableUser.nonNullableNestedUser}}")
+  nestedUserNullable: User @http(url: "http://localhost:8080/users/{{.value.nonNullableUser.nestedUser.id}}")
+  nestedNonScalar: User @http(url: "http://localhost:8080/users/{{.value.nonNullableUser.nonNullableNestedUser}}")
   nestedUndefinedValue: User
     @http(url: "http://localhost:8080/users/{{.value.nonNullableUser.nonNullableNestedUser.userId}}")
-  nestedNullable: User
-    @http(url: "http://localhost:8080/users/{{.value.nonNullableUser.nonNullableNestedUser.id}}")
+  nestedNullable: User @http(url: "http://localhost:8080/users/{{.value.nonNullableUser.nonNullableNestedUser.id}}")
   userNullValue: User @http(url: "http://localhost:8080/users/{{.value.userId}}")
   # nullable values are allowed in queries
-  userNullValueQuery: User
-    @http(url: "http://localhost:8080/users", query: [{key: "id", value: "{{.value.id}}"}])
+  userNullValueQuery: User @http(url: "http://localhost:8080/users", query: [{key: "id", value: "{{.value.id}}"}])
   userUndefinedValue: User @http(url: "http://localhost:8080/users/{{.value.userid}}")
   # but not undefined values
   userUndefinedValueQuery: User

@@ -4,7 +4,7 @@ schema @server(port: 8000, hostname: "0.0.0.0") {
 }
 
 type Query {
-  queryNodeA: [NodeA] @graphQL(url: "http://localhost:8083/graphql",name: "queryNodeA", batch: false)
+  queryNodeA: [NodeA] @graphQL(url: "http://localhost:8083/graphql", name: "queryNodeA", batch: false)
 }
 
 type NodeA {

@@ -11,8 +11,7 @@ type User {
 }
 
 type Query {
-  user: [User]
-    @http(url: "http://jsonplaceholder.typicode.com/users", query: [{key: "id", value: "{{.vars.id}}"}])
+  user: [User] @http(url: "http://jsonplaceholder.typicode.com/users", query: [{key: "id", value: "{{.vars.id}}"}])
 }
 ```
 

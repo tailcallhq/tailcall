@@ -1,7 +1,7 @@
 # test-enum-merge
 
 ```graphql @config
-schema @server  {
+schema @server {
   query: Query
 }
 
@@ -16,7 +16,7 @@ type Query {
 ```
 
 ```graphql @config
-schema @server  {
+schema @server {
   query: Query
 }
 

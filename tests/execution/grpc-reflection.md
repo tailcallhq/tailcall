@@ -1,10 +1,7 @@
 # Grpc datasource
 
 ```graphql @config
-schema
-  @server(port: 8000)
-  @upstream(httpCache: 42)
-  @link(src: "http://localhost:50051", type: Grpc) {
+schema @server(port: 8000) @upstream(httpCache: 42) @link(src: "http://localhost:50051", type: Grpc) {
   query: Query
 }
 

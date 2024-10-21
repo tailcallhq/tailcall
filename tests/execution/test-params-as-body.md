@@ -1,12 +1,13 @@
 # Http with args as body
 
 ```graphql @config
-schema @server(port: 8000)  {
+schema @server(port: 8000) {
   query: Query
 }
 
 type Query {
-  firstUser(id: Int, name: String): User @http(method: POST, url: "http://jsonplaceholder.typicode.com/users", body: "{{.args}}")
+  firstUser(id: Int, name: String): User
+    @http(method: POST, url: "http://jsonplaceholder.typicode.com/users", body: "{{.args}}")
 }
 
 type User {

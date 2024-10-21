@@ -39,10 +39,7 @@ service OneOfService {
 ```
 
 ```graphql @config
-schema
-  @server(port: 8000)
-  @upstream(httpCache: 42, batch: {delay: 10})
-  @link(src: "oneof.proto", type: Protobuf) {
+schema @server(port: 8000) @upstream(httpCache: 42, batch: {delay: 10}) @link(src: "oneof.proto", type: Protobuf) {
   query: Query
 }
 

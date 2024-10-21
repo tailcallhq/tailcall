@@ -13,7 +13,8 @@ input PostInput {
 }
 
 type Mutation {
-  insertPost(input: PostInput): Post @http(body: "{{.args.input}}", method: "POST", url: "http://jsonplaceholder.typicode.com/posts")
+  insertPost(input: PostInput): Post
+    @http(body: "{{.args.input}}", method: "POST", url: "http://jsonplaceholder.typicode.com/posts")
 }
 
 type Post {

@@ -20,10 +20,7 @@ service MapService {
 ```
 
 ```graphql @config
-schema
-  @server(port: 8000)
-  @upstream(httpCache: 42, batch: {delay: 10})
-  @link(src: "map.proto", type: Protobuf) {
+schema @server(port: 8000) @upstream(httpCache: 42, batch: {delay: 10}) @link(src: "map.proto", type: Protobuf) {
   query: Query
 }
 

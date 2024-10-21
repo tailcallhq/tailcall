@@ -27,7 +27,8 @@ schema @server @link(src: "link-enum.graphql", type: Config) {
 type Post {
   id: Int!
   userId: Int!
-  user: User @graphQL(url: "http://jsonplaceholder.typicode.com", args: [{key: "id", value: "{{.value.userId}}"}], name: "user")
+  user: User
+    @graphQL(url: "http://jsonplaceholder.typicode.com", args: [{key: "id", value: "{{.value.userId}}"}], name: "user")
 }
 
 type Query {

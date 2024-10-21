@@ -48,11 +48,14 @@ type Query {
   userId: Int! @expr(body: 2)
   posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts")
   user(id: Int!): User @http(url: "http://jsonplaceholder.typicode.com/users/{{.args.id}}")
-  userPosts(id: ID!): [Post] @http(url: "http://jsonplaceholder.typicode.com/posts", query: [{key: "userId", value: "{{.args.id}}"}])
+  userPosts(id: ID!): [Post]
+    @http(url: "http://jsonplaceholder.typicode.com/posts", query: [{key: "userId", value: "{{.args.id}}"}])
   user1: User @http(url: "http://jsonplaceholder.typicode.com/users/1")
   userFromValue: User @http(url: "http://jsonplaceholder.typicode.com/users/{{.value.userId}}")
-  userHttpHeaders(id: ID!): User @http(url: "http://jsonplaceholder.typicode.com/users", headers: [{key: "id", value: "{{.args.id}}"}])
-  userHttpQuery(id: ID!): User @http(url: "http://jsonplaceholder.typicode.com/users", query: [{key: "id", value: "{{.args.id}}"}])
+  userHttpHeaders(id: ID!): User
+    @http(url: "http://jsonplaceholder.typicode.com/users", headers: [{key: "id", value: "{{.args.id}}"}])
+  userHttpQuery(id: ID!): User
+    @http(url: "http://jsonplaceholder.typicode.com/users", query: [{key: "id", value: "{{.args.id}}"}])
   userGraphQL(id: Int): User
     @graphQL(url: "http://upstream/graphql", name: "user", args: [{key: "id", value: "{{.args.id}}"}])
   userGraphQLHeaders(id: Int!): User

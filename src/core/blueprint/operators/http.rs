@@ -27,13 +27,9 @@ pub fn compile_http(
                     && !http.batch_key.is_empty()
             }),
         )
-        .and(Valid::succeed(
-            http.url
-                .as_str()
-        ))
+        .and(Valid::succeed(http.url.as_str()))
         .zip(helpers::headers::to_mustache_headers(&http.headers))
         .and_then(|(base_url, headers)| {
-
             let query = http
                 .query
                 .clone()

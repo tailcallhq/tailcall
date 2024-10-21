@@ -1,13 +1,12 @@
-schema
-  @server(port: 8000)
-  @upstream(httpCache: 42, batch: {delay: 100}) {
+schema @server(port: 8000) @upstream(httpCache: 42, batch: {delay: 100}) {
   query: Query
 }
 
 type Query {
   users: [User] @http(url: "http://jsonplaceholder.typicode.com/users")
   user(id: Int!): User @http(url: "http://jsonplaceholder.typicode.com/users/{{.args.id}}")
-  addComment(postId: Int!, comment: CommentInput!): Boolean @http(url: "http://jsonplaceholder.typicode.com/add-comment")
+  addComment(postId: Int!, comment: CommentInput!): Boolean
+    @http(url: "http://jsonplaceholder.typicode.com/add-comment")
 }
 
 enum Role {
