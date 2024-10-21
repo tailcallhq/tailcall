@@ -1,0 +1,33 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "data": [
+        {},
+        {},
+        {
+          "spam": {
+            "value": "spam-1"
+          }
+        },
+        {
+          "spam": {
+            "value": "spam-2"
+          }
+        },
+        {
+          "spam": {
+            "value": "spam-3"
+          }
+        }
+      ]
+    }
+  }
+}

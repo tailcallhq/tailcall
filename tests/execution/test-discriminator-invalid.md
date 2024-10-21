@@ -1,0 +1,30 @@
+---
+error: true
+---
+
+# Test union type resolve
+
+```graphql @config
+schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+  query: Query
+}
+
+union FooBar = Bar | Foo
+
+type Bar {
+  bar: String!
+}
+
+type Foo {
+  foo: String!
+}
+
+type Nested {
+  bar: FooBar
+  foo: FooBar
+}
+
+type Query {
+  foo: FooBar @http(path: "/foo") @discriminate(field: "")
+}
+```

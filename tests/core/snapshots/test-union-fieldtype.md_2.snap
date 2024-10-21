@@ -9,8 +9,13 @@ expression: response
   },
   "body": {
     "data": {
-      "wrong": {
-        "__typename": "Baz"
+      "nested": {
+        "foo": {
+          "foo": "nested-foo"
+        },
+        "bar": {
+          "bar": "nested-bar"
+        }
       }
     }
   }
