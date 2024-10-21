@@ -13,7 +13,7 @@ pub struct ConfigReaderContext<'a> {
     pub headers: HeaderMap,
 }
 
-impl<'a> PathString for ConfigReaderContext<'a> {
+impl PathString for ConfigReaderContext<'_> {
     fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
         if path.is_empty() {
             return None;

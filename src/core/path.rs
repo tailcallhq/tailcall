@@ -1,13 +1,11 @@
+//! The path module provides a trait for accessing values from a JSON-like
+//! structure.
 use std::borrow::Cow;
 
 use serde_json::json;
 
 use crate::core::ir::{EvalContext, ResolverContextLike};
 use crate::core::json::JsonLike;
-
-///
-/// The path module provides a trait for accessing values from a JSON-like
-/// structure.
 
 ///
 /// The PathString trait provides a method for accessing values from a JSON-like
@@ -66,7 +64,7 @@ pub enum ValueString<'a> {
     String(Cow<'a, str>),
 }
 
-impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
+impl<Ctx: ResolverContextLike> EvalContext<'_, Ctx> {
     fn to_raw_value<T: AsRef<str>>(&self, path: &[T]) -> Option<ValueString<'_>> {
         let ctx = self;
 
@@ -101,13 +99,13 @@ impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
     }
 }
 
-impl<'a, Ctx: ResolverContextLike> PathValue for EvalContext<'a, Ctx> {
+impl<Ctx: ResolverContextLike> PathValue for EvalContext<'_, Ctx> {
     fn raw_value<'b, T: AsRef<str>>(&'b self, path: &[T]) -> Option<ValueString<'b>> {
         self.to_raw_value(path)
     }
 }
 
-impl<'a, Ctx: ResolverContextLike> PathString for EvalContext<'a, Ctx> {
+impl<Ctx: ResolverContextLike> PathString for EvalContext<'_, Ctx> {
     fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
         self.to_raw_value(path).and_then(|value| match value {
             ValueString::String(env) => Some(env),
@@ -116,7 +114,7 @@ impl<'a, Ctx: ResolverContextLike> PathString for EvalContext<'a, Ctx> {
     }
 }
 
-impl<'a, Ctx: ResolverContextLike> PathGraphql for EvalContext<'a, Ctx> {
+impl<Ctx: ResolverContextLike> PathGraphql for EvalContext<'_, Ctx> {
     fn path_graphql<T: AsRef<str>>(&self, path: &[T]) -> Option<String> {
         if path.len() < 2 {
             return None;

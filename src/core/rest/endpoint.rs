@@ -29,7 +29,6 @@ pub struct Endpoint {
 }
 
 /// Creates a Rest instance from @rest directive
-
 impl Endpoint {
     pub fn get_method(&self) -> &Method {
         &self.method

@@ -33,7 +33,7 @@ impl<'a> From<Chunk<Chunk<FieldName<'a>>>> for QueryPath<'a> {
     }
 }
 
-impl<'a> Display for QueryPath<'a> {
+impl Display for QueryPath<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let query_data: Vec<String> = self
             .0
@@ -109,7 +109,7 @@ pub struct PathTracker<'a> {
 }
 
 impl<'a> PathTracker<'a> {
-    pub fn new(config: &'a Config) -> PathTracker {
+    pub fn new(config: &'a Config) -> PathTracker<'a> {
         PathTracker { config, cache: Default::default() }
     }
 
