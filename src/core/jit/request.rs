@@ -3,11 +3,11 @@ use std::ops::DerefMut;
 
 use async_graphql_value::ConstValue;
 use serde::Deserialize;
+use tailcall_valid::Validator;
 
 use super::{transform, Builder, OperationPlan, Result, Variables};
 use crate::core::blueprint::Blueprint;
 use crate::core::transform::TransformerOps;
-use crate::core::valid::Validator;
 use crate::core::Transform;
 
 #[derive(Debug, Deserialize, Clone)]
