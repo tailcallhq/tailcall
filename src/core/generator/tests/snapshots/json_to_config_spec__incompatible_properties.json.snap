@@ -12,5 +12,5 @@ type GEN__1 {
 }
 
 type Query {
-  inCompatibleProperties: GEN__1 @http(url: "http://example.com/")
+  inCompatibleProperties: GEN__1 @http(url: "https://example.com/")
 }

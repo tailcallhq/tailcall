@@ -49,17 +49,17 @@ type Post {
 }
 
 type Query {
-  comment(GEN__1: Int!): Comment @http(url: "http://example.com/comments/%7B%7B.args.GEN__1%7D%7D")
-  comments: [Comment] @http(url: "http://example.com/comments")
-  photo(GEN__1: Int!): Photo @http(url: "http://example.com/photos/%7B%7B.args.GEN__1%7D%7D")
-  photos: [Photo] @http(url: "http://example.com/photos")
-  post(GEN__1: Int!): Post @http(url: "http://example.com/posts/%7B%7B.args.GEN__1%7D%7D")
-  postComments(postId: Int): [Comment] @http(url: "http://example.com/comments", query: [{key: "postId", value: "{{.args.postId}}"}])
-  posts: [Post] @http(url: "http://example.com/posts")
-  todo(GEN__1: Int!): Todo @http(url: "http://example.com/todos/%7B%7B.args.GEN__1%7D%7D")
-  todos: [Todo] @http(url: "http://example.com/todos")
-  user(GEN__1: Int!): User @http(url: "http://example.com/users/%7B%7B.args.GEN__1%7D%7D")
-  users: [User] @http(url: "http://example.com/users")
+  comment(GEN__1: Int!): Comment @http(url: "http://jsonplaceholder.typicode.com/comments/%7B%7B.args.GEN__1%7D%7D")
+  comments: [Comment] @http(url: "http://jsonplaceholder.typicode.com/comments")
+  photo(GEN__1: Int!): Photo @http(url: "http://jsonplaceholder.typicode.com/photos/%7B%7B.args.GEN__1%7D%7D")
+  photos: [Photo] @http(url: "http://jsonplaceholder.typicode.com/photos")
+  post(GEN__1: Int!): Post @http(url: "http://jsonplaceholder.typicode.com/posts/%7B%7B.args.GEN__1%7D%7D")
+  postComments(postId: Int): [Comment] @http(url: "http://jsonplaceholder.typicode.com/comments", query: [{key: "postId", value: "{{.args.postId}}"}])
+  posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts")
+  todo(GEN__1: Int!): Todo @http(url: "http://jsonplaceholder.typicode.com/todos/%7B%7B.args.GEN__1%7D%7D")
+  todos: [Todo] @http(url: "http://jsonplaceholder.typicode.com/todos")
+  user(GEN__1: Int!): User @http(url: "http://jsonplaceholder.typicode.com/users/%7B%7B.args.GEN__1%7D%7D")
+  users: [User] @http(url: "http://jsonplaceholder.typicode.com/users")
 }
 
 type Todo {

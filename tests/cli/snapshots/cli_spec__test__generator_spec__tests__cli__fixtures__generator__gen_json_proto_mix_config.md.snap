@@ -66,7 +66,7 @@ type Query {
   GEN__news__NewsService__GetAllNews: GEN__news__NewsList @grpc(url: "http://localhost:50051", method: "news.NewsService.GetAllNews")
   GEN__news__NewsService__GetMultipleNews(multipleNewsId: GEN__news__MultipleNewsId!): GEN__news__NewsList @grpc(url: "http://localhost:50051", body: "{{.args.multipleNewsId}}", method: "news.NewsService.GetMultipleNews")
   GEN__news__NewsService__GetNews(newsId: Id!): News @grpc(url: "http://localhost:50051", body: "{{.args.newsId}}", method: "news.NewsService.GetNews")
-  users: [User] @http(url: "http://example.com/users")
+  users: [User] @http(url: "http://jsonplaceholder.typicode.com/users")
 }
 
 type User {

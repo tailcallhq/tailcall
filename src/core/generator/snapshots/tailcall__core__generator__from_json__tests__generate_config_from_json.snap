@@ -39,7 +39,7 @@ type Query {
   inCompatibleProperties: InCompatibleProperty @http(url: "https://example.com/")
   inCompatibleRootObject: JSON @http(url: "https://example.com/")
   nestedSameProperties: NestedSameProperty @http(url: "https://example.com/")
-  nestedUsers(children: Boolean): NestedUser @http(url: "https://example.com/users?children=true", query: [{key: "children", value: "{{.args.children}}"}])
+  nestedUsers(children: Boolean): NestedUser @http(url: "https://example.com/users", query: [{key: "children", value: "{{.args.children}}"}])
 }
 
 type T6 {

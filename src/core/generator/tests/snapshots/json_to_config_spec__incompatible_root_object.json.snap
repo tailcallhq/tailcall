@@ -7,5 +7,5 @@ schema @server @upstream {
 }
 
 type Query {
-  inCompatibleRootObject: JSON @http(url: "http://example.com/")
+  inCompatibleRootObject: JSON @http(url: "https://example.com/")
 }

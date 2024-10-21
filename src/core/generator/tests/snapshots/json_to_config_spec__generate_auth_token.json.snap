@@ -25,5 +25,5 @@ type GEN__1 {
 }
 
 type Mutation {
-  login(GEN__Input1: GEN__2): GEN__1 @http(url: "http://example.com/auth/login", body: "{{.args.GEN__Input1}}", method: "POST")
+  login(GEN__Input1: GEN__2): GEN__1 @http(url: "https://dummyjson.com/auth/login", body: "{{.args.GEN__Input1}}", method: "POST")
 }
