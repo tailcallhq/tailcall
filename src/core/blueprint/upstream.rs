@@ -11,8 +11,6 @@ pub struct Proxy {
 }
 
 #[derive(PartialEq, Eq, Clone, Debug, Setters, schemars::JsonSchema)]
-// TODO: uncomment following line after fixing tests
-// #[serde(deny_unknown_fields)]
 pub struct Upstream {
     pub pool_idle_timeout: u64,
     pub pool_max_idle_per_host: usize,
