@@ -970,12 +970,6 @@ dependencies = [
 
 [[package]]
 name = "convert_case"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6245d59a3e82a7fc217c5828a6692dbc6dfb63a0c8c90495621f7b9d79704a0e"
-
-[[package]]
-name = "convert_case"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec182b0ca2f35d8fc196cf3404988fd8b8c739a4d270ff118a398feb0cbec1ca"
@@ -1298,19 +1292,6 @@ checksum = "870368c3fb35b8031abb378861d4460f573b92238ec2152c927a21f77e3e0127"
 dependencies = [
  "derive_builder_core",
  "syn 1.0.109",
-]
-
-[[package]]
-name = "derive_more"
-version = "0.99.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f33878137e4dafd7fa914ad4e259e18a4e8e532b9617a2d0150262bf53abfce"
-dependencies = [
- "convert_case 0.4.0",
- "proc-macro2",
- "quote",
- "rustc_version",
- "syn 2.0.82",
 ]
 
 [[package]]
@@ -1763,7 +1744,7 @@ version = "0.1.7-wip"
 source = "git+https://github.com/laststylebender14/rust-genai.git?rev=63a542ce20132503c520f4e07108e0d768f243c3#63a542ce20132503c520f4e07108e0d768f243c3"
 dependencies = [
  "bytes",
- "derive_more 1.0.0",
+ "derive_more",
  "eventsource-stream",
  "futures",
  "reqwest 0.12.7",
@@ -4619,7 +4600,7 @@ version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f27b39e889cc951e3e5f6b74012f943e642fa0fac51a8552948751f19a9b62f8"
 dependencies = [
- "convert_case 0.6.0",
+ "convert_case",
  "fnv",
  "ident_case",
  "indexmap 2.6.0",
@@ -5393,12 +5374,12 @@ dependencies = [
  "chrono",
  "clap",
  "colored",
- "convert_case 0.6.0",
+ "convert_case",
  "criterion",
  "dashmap",
  "datatest-stable",
  "derive-getters",
- "derive_more 0.99.18",
+ "derive_more",
  "derive_setters",
  "dotenvy",
  "exitcode",
@@ -5542,8 +5523,8 @@ dependencies = [
 name = "tailcall-fixtures"
 version = "0.1.0"
 dependencies = [
- "convert_case 0.6.0",
- "derive_more 0.99.18",
+ "convert_case",
+ "derive_more",
  "indenter",
 ]
 
@@ -5595,8 +5576,8 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "chrono",
- "convert_case 0.6.0",
- "derive_more 0.99.18",
+ "convert_case",
+ "derive_more",
  "http 0.2.12",
  "lazy_static",
  "machineid-rs",
@@ -5642,7 +5623,7 @@ dependencies = [
 name = "tailcall-upstream-grpc"
 version = "0.1.0"
 dependencies = [
- "derive_more 0.99.18",
+ "derive_more",
  "headers",
  "http 0.2.12",
  "http-body-util",
