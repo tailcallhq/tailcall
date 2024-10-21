@@ -67,7 +67,7 @@ impl<'a> HttpDirectiveGenerator<'a> {
             Regex::new(r"/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}").unwrap();
 
         let mut arg_index = 1;
-        let path_url = self.url.path();
+        let path_url = self.url.as_str();
 
         let regex_map = vec![(int_regex, "Int"), (uuid_regex, "String")];
 
@@ -94,12 +94,7 @@ impl<'a> HttpDirectiveGenerator<'a> {
                 });
 
         // add path in http directive.
-        let mut url = url::Url::parse(&mustache_compatible_url)
-            // TODO: Handle this error properly
-            .unwrap_or(Url::parse("http://example.com").unwrap());
-        url.set_path(&mustache_compatible_url);
-
-        self.http.url = url.to_string();
+        self.http.url = mustache_compatible_url;
     }
 
     fn add_query_variables(&mut self, field: &mut Field) {
@@ -217,7 +212,7 @@ mod test {
         .into_iter()
         .collect::<HashMap<_, _>>();
         assert_eq!(
-            "http://example.com/foo/%7B%7B.args.GEN__2%7D%7D/bar/%7B%7B.args.GEN__1%7D%7D",
+            "http://example.com/foo/{{.args.GEN__2}}/bar/{{.args.GEN__1}}",
             http.url
         );
         assert_eq!(test_args, args);
