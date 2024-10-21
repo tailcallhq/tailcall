@@ -384,7 +384,7 @@ impl GraphQLArcResponse {
                         } else {
                             Vec::with_capacity(r.body.as_ref().len())
                         };
-                        v.extend_from_slice(&r.body.as_ref());
+                        v.extend_from_slice(r.body.as_ref());
                         v
                     })
                     .collect::<Vec<u8>>();
