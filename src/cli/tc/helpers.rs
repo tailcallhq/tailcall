@@ -6,9 +6,9 @@ use crate::core::http::API_URL_PREFIX;
 use crate::core::print_schema;
 use crate::core::rest::{EndpointSet, Unchecked};
 
-pub const FILE_NAME: &str = ".tailcallrc.graphql";
-pub const YML_FILE_NAME: &str = ".graphqlrc.yml";
-pub const JSON_FILE_NAME: &str = ".tailcallrc.schema.json";
+pub const TAILCALL_RC: &str = ".tailcallrc.graphql";
+pub const GRAPHQL_RC: &str = ".graphqlrc.yml";
+pub const TAILCALL_RC_SCHEMA: &str = ".tailcallrc.schema.json";
 
 lazy_static! {
     pub static ref TRACKER: tailcall_tracker::Tracker = tailcall_tracker::Tracker::default();

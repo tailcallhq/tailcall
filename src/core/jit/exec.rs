@@ -30,7 +30,7 @@ where
     Exec: IRExecutor<Input = Input, Output = Output, Error = jit::Error>,
 {
     pub fn new(plan: OperationPlan<Input>, exec: Exec) -> Self {
-        Self { exec, ctx: RequestContext::new(plan.clone()) }
+        Self { exec, ctx: RequestContext::new(plan) }
     }
 
     pub async fn store(&self) -> Store<Result<Output, Positioned<jit::Error>>> {
@@ -71,7 +71,7 @@ where
     }
 
     async fn init(&mut self) {
-        join_all(self.request.plan().as_nested().iter().map(|field| async {
+        join_all(self.request.plan().selection.iter().map(|field| async {
             let ctx = Context::new(field, self.request);
             // TODO: with_args should be called on inside iter_field on any level, not only
             // for root fields
