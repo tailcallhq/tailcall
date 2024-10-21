@@ -332,12 +332,12 @@ impl CacheControl {
 }
 
 pub struct GraphQLArcResponse {
-    response: JITBatchResponse,
+    response: JITBatchResponse<Vec<u8>>,
     cache_control: Option<CacheControl>,
 }
 
 impl GraphQLArcResponse {
-    pub fn new(response: JITBatchResponse) -> Self {
+    pub fn new(response: JITBatchResponse<Vec<u8>>) -> Self {
         Self { response, cache_control: None }
     }
 

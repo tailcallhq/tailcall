@@ -65,8 +65,6 @@ impl Response<async_graphql::Value, jit::Error> {
     }
 }
 
-pub type ByteResponse = AnyResponse<Vec<u8>>;
-
 /// Represents a GraphQL response in a serialized byte format.
 #[derive(Clone)]
 pub struct AnyResponse<Body> {
@@ -81,15 +79,22 @@ pub struct AnyResponse<Body> {
     pub is_ok: bool,
 }
 
-impl Default for ByteResponse {
+impl<Body> Default for AnyResponse<Body>
+where
+    Body: Default,
+{
     fn default() -> Self {
-        async_graphql::Response::default().into()
+        Self {
+            body: Default::default(),
+            cache_control: Default::default(),
+            is_ok: true,
+        }
     }
 }
 
-impl From<async_graphql::Response> for ByteResponse {
+impl From<async_graphql::Response> for AnyResponse<Vec<u8>> {
     fn from(response: async_graphql::Response) -> Self {
-        ByteResponse {
+        Self {
             cache_control: CacheControl {
                 max_age: response.cache_control.max_age,
                 public: response.cache_control.public,
@@ -104,12 +109,12 @@ impl From<async_graphql::Response> for ByteResponse {
     }
 }
 
-pub enum BatchResponse {
-    Single(ByteResponse),
-    Batch(Vec<ByteResponse>),
+pub enum BatchResponse<Body> {
+    Single(AnyResponse<Body>),
+    Batch(Vec<AnyResponse<Body>>),
 }
 
-impl BatchResponse {
+impl<Body> BatchResponse<Body> {
     pub fn is_ok(&self) -> bool {
         match self {
             BatchResponse::Single(s) => s.is_ok,

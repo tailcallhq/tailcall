@@ -9,7 +9,7 @@ use futures_util::stream::FuturesOrdered;
 use futures_util::StreamExt;
 use tailcall_hasher::TailcallHasher;
 
-use super::{BatchResponse, ByteResponse};
+use super::{AnyResponse, BatchResponse};
 use crate::core::app_context::AppContext;
 use crate::core::async_graphql_hyper::OperationId;
 use crate::core::http::RequestContext;
@@ -37,7 +37,7 @@ impl JITExecutor {
         &self,
         exec: ConstValueExecutor,
         jit_request: jit::Request<ConstValue>,
-    ) -> ByteResponse {
+    ) -> AnyResponse<Vec<u8>> {
         let is_introspection_query = self.app_ctx.blueprint.server.get_enable_introspection()
             && exec.plan.is_introspection_query;
         let jit_resp = exec
@@ -60,7 +60,7 @@ impl JITExecutor {
         &self,
         exec: ConstValueExecutor,
         jit_request: jit::Request<ConstValue>,
-    ) -> ByteResponse {
+    ) -> AnyResponse<Vec<u8>> {
         let out = self
             .app_ctx
             .dedupe_operation_handler
@@ -88,7 +88,7 @@ impl JITExecutor {
     pub fn execute(
         &self,
         request: async_graphql::Request,
-    ) -> impl Future<Output = ByteResponse> + Send + '_ {
+    ) -> impl Future<Output = AnyResponse<Vec<u8>>> + Send + '_ {
         let hash = Self::req_hash(&request);
 
         async move {
@@ -115,7 +115,7 @@ impl JITExecutor {
     }
 
     /// Execute a GraphQL batch query.
-    pub async fn execute_batch(&self, batch_request: BatchRequest) -> BatchResponse {
+    pub async fn execute_batch(&self, batch_request: BatchRequest) -> BatchResponse<Vec<u8>> {
         match batch_request {
             BatchRequest::Single(request) => BatchResponse::Single(self.execute(request).await),
             BatchRequest::Batch(requests) => {
