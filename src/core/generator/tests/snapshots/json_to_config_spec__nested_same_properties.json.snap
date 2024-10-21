@@ -25,5 +25,5 @@ type GEN__4 {
 }
 
 type Query {
-  nestedSameProperties: GEN__4 @http(baseURL: "https://example.com", path: "/")
+  nestedSameProperties: GEN__4 @http(url: "http://example.com/")
 }

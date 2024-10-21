@@ -13,5 +13,5 @@ type GEN__1 {
 }
 
 type Query {
-  userData: [GEN__1] @http(baseURL: "https://example.com", path: "/users")
+  userData: [GEN__1] @http(url: "http://example.com/users")
 }
