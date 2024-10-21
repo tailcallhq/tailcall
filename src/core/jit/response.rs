@@ -1,9 +1,11 @@
 use std::borrow::BorrowMut;
+use std::sync::Arc;
 
 use derive_setters::Setters;
 use serde::Serialize;
 
 use super::Positioned;
+use crate::core::async_graphql_hyper::CacheControl;
 use crate::core::jit;
 use crate::core::merge_right::MergeRight;
 
@@ -60,6 +62,80 @@ impl Response<async_graphql::Value, jit::Error> {
             resp.errors.push(error.into());
         }
         resp
+    }
+}
+
+/// Represents a GraphQL response in a serialized byte format.
+#[derive(Clone)]
+pub struct AnyResponse<Body> {
+    /// The GraphQL response data serialized into a byte array.
+    pub body: Arc<Body>,
+
+    /// Information regarding cache policies for the response, such as max age
+    /// and public/private settings.
+    pub cache_control: CacheControl,
+
+    /// Indicates whether graphql response contains error or not.
+    pub is_ok: bool,
+}
+
+impl<Body> Default for AnyResponse<Body>
+where
+    Body: Default,
+{
+    fn default() -> Self {
+        Self {
+            body: Default::default(),
+            cache_control: Default::default(),
+            is_ok: true,
+        }
+    }
+}
+
+impl From<async_graphql::Response> for AnyResponse<Vec<u8>> {
+    fn from(response: async_graphql::Response) -> Self {
+        Self {
+            cache_control: CacheControl {
+                max_age: response.cache_control.max_age,
+                public: response.cache_control.public,
+            },
+            is_ok: response.errors.is_empty(),
+            // Safely serialize the response to JSON bytes. Since the response is always valid,
+            // serialization is expected to succeed. In the unlikely event of a failure,
+            // default to an empty byte array. TODO: return error instead of default
+            // value.
+            body: Arc::new(serde_json::to_vec(&response).unwrap_or_default()),
+        }
+    }
+}
+
+pub enum BatchResponse<Body> {
+    Single(AnyResponse<Body>),
+    Batch(Vec<AnyResponse<Body>>),
+}
+
+impl<Body> BatchResponse<Body> {
+    pub fn is_ok(&self) -> bool {
+        match self {
+            BatchResponse::Single(s) => s.is_ok,
+            BatchResponse::Batch(b) => b.iter().all(|s| s.is_ok),
+        }
+    }
+
+    /// Modifies the cache control values with the provided one.
+    pub fn cache_control(&self, cache_control: Option<&CacheControl>) -> CacheControl {
+        match self {
+            BatchResponse::Single(resp) => cache_control.unwrap_or(&resp.cache_control).clone(),
+            BatchResponse::Batch(responses) => {
+                responses.iter().fold(CacheControl::default(), |acc, resp| {
+                    if let Some(cc) = cache_control {
+                        acc.merge(cc)
+                    } else {
+                        acc.merge(&resp.cache_control)
+                    }
+                })
+            }
+        }
     }
 }
 
