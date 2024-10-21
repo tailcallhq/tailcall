@@ -7,5 +7,5 @@ schema @server @upstream {
 }
 
 type Query {
-  userStatus(GEN__1: Int!): Boolean @http(url: "http://example.com/user/%7B%7B.args.GEN__1%7D%7D/online")
+  userStatus(GEN__1: Int!): Boolean @http(url: "https://example.com/user/{{.args.GEN__1}}/online")
 }

@@ -38,5 +38,5 @@ type GEN__2 {
 }
 
 type Mutation {
-  addCart(code: String, GEN__Input1: GEN__4): GEN__2 @http(url: "http://example.com/carts/add", body: "{{.args.GEN__Input1}}", method: "POST", query: [{key: "code", value: "{{.args.code}}"}])
+  addCart(code: String, GEN__Input1: GEN__4): GEN__2 @http(url: "https://dummyjson.com/carts/add", body: "{{.args.GEN__Input1}}", method: "POST", query: [{key: "code", value: "{{.args.code}}"}])
 }
