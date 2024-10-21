@@ -82,14 +82,6 @@ impl JITExecutor {
 
         OPHash::new(hasher.finish())
     }
-
-    #[inline(always)]
-    fn req_hash(request: &async_graphql::Request) -> OPHash {
-        let mut hasher = TailcallHasher::default();
-        request.query.hash(&mut hasher);
-
-        OPHash::new(hasher.finish())
-    }
 }
 
 impl JITExecutor {
