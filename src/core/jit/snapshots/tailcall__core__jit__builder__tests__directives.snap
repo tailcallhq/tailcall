@@ -1,6 +1,6 @@
 ---
 source: src/core/jit/builder.rs
-expression: plan.into_nested()
+expression: plan.selection
 ---
 [
     Field {
@@ -12,49 +12,47 @@ expression: plan.into_nested()
         type_condition: Some(
             "Query",
         ),
-        extensions: Some(
-            Nested(
-                [
-                    Field {
-                        id: 1,
-                        name: "id",
-                        output_name: "id",
-                        type_of: ID!,
-                        type_condition: Some(
-                            "User",
-                        ),
-                        directives: [
-                            Directive {
-                                name: "options",
-                                arguments: [
-                                    (
-                                        "paging",
-                                        Boolean(
-                                            true,
-                                        ),
+        selection: [
+            Field {
+                id: 1,
+                name: "id",
+                output_name: "id",
+                type_of: ID!,
+                type_condition: Some(
+                    "User",
+                ),
+                directives: [
+                    Directive {
+                        name: "options",
+                        arguments: [
+                            (
+                                "paging",
+                                Variable(
+                                    Name(
+                                        "includeName",
                                     ),
-                                ],
-                            },
+                                ),
+                            ),
                         ],
                     },
-                    Field {
-                        id: 2,
-                        name: "name",
-                        output_name: "name",
-                        type_of: String!,
-                        type_condition: Some(
-                            "User",
-                        ),
-                        include: Some(
-                            Variable(
-                                "includeName",
-                            ),
-                        ),
-                        directives: [],
-                    },
                 ],
-            ),
-        ),
+            },
+            Field {
+                id: 2,
+                name: "name",
+                output_name: "name",
+                type_of: String!,
+                type_condition: Some(
+                    "User",
+                ),
+                include: Some(
+                    Variable(
+                        "includeName",
+                    ),
+                ),
+                directives: [],
+            },
+        ],
         directives: [],
     },
 ]

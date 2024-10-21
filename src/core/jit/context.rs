@@ -5,7 +5,7 @@ use async_graphql_value::ConstValue;
 use indexmap::IndexMap;
 
 use super::error::*;
-use super::{Field, Nested, OperationPlan, Positioned};
+use super::{Field, OperationPlan, Positioned};
 use crate::core::ir::{ResolverContextLike, SelectionField};
 
 #[derive(Debug, Clone)]
@@ -36,11 +36,11 @@ pub struct Context<'a, Input, Output> {
     args: Option<indexmap::IndexMap<Name, Input>>,
     // TODO: remove the args, since they're already present inside the fields and add support for
     // default values.
-    field: &'a Field<Nested<Input>, Input>,
+    field: &'a Field<Input>,
     request: &'a RequestContext<Input>,
 }
 impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
-    pub fn new(field: &'a Field<Nested<Input>, Input>, request: &'a RequestContext<Input>) -> Self {
+    pub fn new(field: &'a Field<Input>, request: &'a RequestContext<Input>) -> Self {
         Self { request, value: None, args: Self::build_args(field), field }
     }
 
@@ -54,11 +54,7 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
         }
     }
 
-    pub fn with_value_and_field(
-        &self,
-        value: &'a Output,
-        field: &'a Field<Nested<Input>, Input>,
-    ) -> Self {
+    pub fn with_value_and_field(&self, value: &'a Output, field: &'a Field<Input>) -> Self {
         Self {
             request: self.request,
             args: Self::build_args(field),
@@ -71,11 +67,11 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
         self.value
     }
 
-    pub fn field(&self) -> &Field<Nested<Input>, Input> {
+    pub fn field(&self) -> &Field<Input> {
         self.field
     }
 
-    fn build_args(field: &Field<Nested<Input>, Input>) -> Option<IndexMap<Name, Input>> {
+    fn build_args(field: &Field<Input>) -> Option<IndexMap<Name, Input>> {
         let mut arg_map = IndexMap::new();
 
         for arg in field.args.iter() {
@@ -120,6 +116,7 @@ mod test {
     use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
     use crate::core::ir::ResolverContextLike;
+    use crate::core::jit::transform::InputResolver;
     use crate::core::jit::{OperationPlan, Request};
     use crate::core::valid::Validator;
 
@@ -129,13 +126,16 @@ mod test {
         let blueprint = Blueprint::try_from(&ConfigModule::from(config))?;
         let request = Request::new(query);
         let plan = request.clone().create_plan(&blueprint)?;
+        let input_resolver = InputResolver::new(plan);
+        let plan = input_resolver.resolve_input(&Default::default()).unwrap();
+
         Ok(plan)
     }
 
     #[test]
     fn test_field() {
         let plan = setup("query {posts {id title}}").unwrap();
-        let field = plan.as_nested();
+        let field = &plan.selection;
         let env = RequestContext::new(plan.clone());
         let ctx = Context::<ConstValue, ConstValue>::new(&field[0], &env);
         let expected = <Context<_, _> as ResolverContextLike>::field(&ctx).unwrap();
@@ -146,7 +146,7 @@ mod test {
     fn test_is_query() {
         let plan = setup("query {posts {id title}}").unwrap();
         let env = RequestContext::new(plan.clone());
-        let ctx = Context::new(&plan.as_nested()[0], &env);
+        let ctx = Context::new(&plan.selection[0], &env);
         assert!(ctx.is_query());
     }
 }
