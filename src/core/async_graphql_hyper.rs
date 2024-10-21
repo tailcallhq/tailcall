@@ -382,9 +382,9 @@ impl GraphQLArcResponse {
                         let mut v = if i > 0 {
                             vec![b',']
                         } else {
-                            Vec::with_capacity(r.as_ref().data.len())
+                            Vec::with_capacity(r.body.as_ref().len())
                         };
-                        v.extend_from_slice(&r.as_ref().data);
+                        v.extend_from_slice(&r.body.as_ref());
                         v
                     })
                     .collect::<Vec<u8>>();
@@ -392,7 +392,7 @@ impl GraphQLArcResponse {
                 // Wrap the result in square brackets
                 [&[b'['], &combined[..], &[b']']].concat()
             }
-            JITBatchResponse::Single(resp) => resp.as_ref().data.to_owned(),
+            JITBatchResponse::Single(resp) => resp.body.as_ref().to_owned(),
         };
         Ok(Body::from(str_repr))
     }

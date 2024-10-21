@@ -65,10 +65,13 @@ impl Response<async_graphql::Value, jit::Error> {
     }
 }
 
+pub type ByteResponse = AnyResponse<Vec<u8>>;
+
 /// Represents a GraphQL response in a serialized byte format.
-pub struct ByteResponse {
+#[derive(Clone)]
+pub struct AnyResponse<Body> {
     /// The GraphQL response data serialized into a byte array.
-    pub data: Vec<u8>,
+    pub body: Arc<Body>,
 
     /// Information regarding cache policies for the response, such as max age
     /// and public/private settings.
@@ -96,14 +99,14 @@ impl From<async_graphql::Response> for ByteResponse {
             // serialization is expected to succeed. In the unlikely event of a failure,
             // default to an empty byte array. TODO: return error instead of default
             // value.
-            data: serde_json::to_vec(&response).unwrap_or_default(),
+            body: Arc::new(serde_json::to_vec(&response).unwrap_or_default()),
         }
     }
 }
 
 pub enum BatchResponse {
-    Single(Arc<ByteResponse>),
-    Batch(Vec<Arc<ByteResponse>>),
+    Single(ByteResponse),
+    Batch(Vec<ByteResponse>),
 }
 
 impl BatchResponse {

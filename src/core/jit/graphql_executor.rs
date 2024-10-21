@@ -37,7 +37,7 @@ impl JITExecutor {
         &self,
         exec: ConstValueExecutor,
         jit_request: jit::Request<ConstValue>,
-    ) -> Arc<ByteResponse> {
+    ) -> ByteResponse {
         let is_introspection_query = self.app_ctx.blueprint.server.get_enable_introspection()
             && exec.plan.is_introspection_query;
         let jit_resp = exec
@@ -52,7 +52,7 @@ impl JITExecutor {
             jit_resp
         };
 
-        Arc::new(response.into())
+        response.into()
     }
 
     #[inline(always)]
@@ -60,7 +60,7 @@ impl JITExecutor {
         &self,
         exec: ConstValueExecutor,
         jit_request: jit::Request<ConstValue>,
-    ) -> Arc<ByteResponse> {
+    ) -> ByteResponse {
         let out = self
             .app_ctx
             .dedupe_operation_handler
@@ -88,7 +88,7 @@ impl JITExecutor {
     pub fn execute(
         &self,
         request: async_graphql::Request,
-    ) -> impl Future<Output = Arc<ByteResponse>> + Send + '_ {
+    ) -> impl Future<Output = ByteResponse> + Send + '_ {
         let hash = Self::req_hash(&request);
 
         async move {
@@ -98,16 +98,14 @@ impl JITExecutor {
             } else {
                 let exec = match ConstValueExecutor::try_new(&jit_request, &self.app_ctx) {
                     Ok(exec) => exec,
-                    Err(error) => {
-                        return Arc::new(Response::from_errors(vec![error.into()]).into())
-                    }
+                    Err(error) => return Response::from_errors(vec![error.into()]).into(),
                 };
                 self.app_ctx.operation_plans.insert(hash, exec.plan.clone());
                 exec
             };
 
             if let Some(response) = std::mem::take(&mut exec.response) {
-                Arc::new(response.into_async_graphql().into())
+                response.into_async_graphql().into()
             } else if exec.plan.is_query() && exec.plan.is_dedupe {
                 self.dedupe_and_exec(exec, jit_request).await
             } else {
