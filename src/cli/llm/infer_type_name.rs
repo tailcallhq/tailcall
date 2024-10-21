@@ -94,6 +94,7 @@ impl InferTypeName {
     }
 
     pub async fn generate(&mut self, config: &Config) -> Result<HashMap<String, String>> {
+
         let mut new_name_mappings: HashMap<String, String> = HashMap::new();
         // Filter out root operation types and types with non-auto-generated names
         let types_to_be_processed = config
@@ -123,6 +124,7 @@ impl InferTypeName {
                     .collect(),
             };
 
+
             let mut delay = 3;
             loop {
                 let answer = self.wizard.ask(question.clone()).await;
@@ -137,32 +139,19 @@ impl InferTypeName {
                             new_name_mappings.insert(type_name.to_owned(), name);
                             break;
                         }
-                        tracing::info!(
-                            "Suggestions for {}: [{}] - {}/{}",
-                            type_name,
-                            name,
-                            i + 1,
-                            total
-                        );
-
-                        // TODO: case where suggested names are already used, then extend the base
-                        // question with `suggest different names, we have already used following
-                        // names: [names list]`
+                        new_name_mappings.insert(name, type_name.to_owned());
                         break;
                     }
-                    Err(e) => {
-                        // TODO: log errors after certain number of retries.
-                        if let Error::GenAI(_) = e {
-                            // TODO: retry only when it's required.
-                            tracing::warn!(
-                                "Unable to retrieve a name for the type '{}'. Retrying in {}s",
-                                type_name,
-                                delay
-                            );
-                            tokio::time::sleep(tokio::time::Duration::from_secs(delay)).await;
-                            delay *= std::cmp::min(delay * 2, 60);
-                        }
-                    }
+                    tracing::info!(
+                        "Suggestions for {}: [{}] - {}/{}",
+                        type_name,
+                        name,
+                        i + 1,
+                        total
+                    );
+                }
+                Err(e) => {
+                    tracing::error!("Failed to generate name for {}: {:?}", type_name, e);
                 }
             }
         }
