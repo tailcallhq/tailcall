@@ -12,5 +12,5 @@ type InCompatibleProperty {
 }
 
 type Query {
-  inCompatibleProperties: InCompatibleProperty @http(url: "http://example.com/")
+  inCompatibleProperties: InCompatibleProperty @http(url: "https://example.com/")
 }

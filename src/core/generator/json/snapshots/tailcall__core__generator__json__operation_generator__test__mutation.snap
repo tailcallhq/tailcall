@@ -10,5 +10,5 @@ input Input1 {
 }
 
 type Mutation {
-  postComments(GEN__Input1: Input1): T44 @http(url: "http://example.com/posts", body: "{{.args.GEN__Input1}}", method: "POST")
+  postComments(GEN__Input1: Input1): T44 @http(url: "https://jsonplaceholder.typicode.com/posts", body: "{{.args.GEN__Input1}}", method: "POST")
 }

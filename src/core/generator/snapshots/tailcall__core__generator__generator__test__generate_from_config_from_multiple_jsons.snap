@@ -12,9 +12,9 @@ type InCompatibleProperty {
 }
 
 type Query {
-  inCompatibleObjects: [JSON] @http(url: "http://example.com/api/v2/users")
-  inCompatibleProperties: InCompatibleProperty @http(url: "http://example.com/")
-  userData: [Userdatum] @http(url: "http://example.com/users")
+  inCompatibleObjects: [JSON] @http(url: "https://example.com/api/v2/users")
+  inCompatibleProperties: InCompatibleProperty @http(url: "https://example.com/")
+  userData: [Userdatum] @http(url: "https://example.com/users")
 }
 
 type Userdatum {

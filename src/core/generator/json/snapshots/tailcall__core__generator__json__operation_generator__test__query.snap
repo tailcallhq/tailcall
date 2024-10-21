@@ -3,5 +3,5 @@ source: src/core/generator/json/operation_generator.rs
 expression: config.to_sdl()
 ---
 type Query {
-  postComments(postId: Int): T44 @http(url: "http://example.com/comments", query: [{key: "postId", value: "{{.args.postId}}"}])
+  postComments(postId: Int): T44 @http(url: "https://jsonplaceholder.typicode.com/comments?postId=1", query: [{key: "postId", value: "{{.args.postId}}"}])
 }
