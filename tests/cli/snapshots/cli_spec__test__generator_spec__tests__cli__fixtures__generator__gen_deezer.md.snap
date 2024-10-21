@@ -383,14 +383,14 @@ type Podcast {
 }
 
 type Query {
-  album(GEN__1: Int!): GEN__39 @http(url: "http://example.com/album/%7B%7B.args.GEN__1%7D%7D")
-  artist(GEN__1: Int!): GEN__40 @http(url: "http://example.com/artist/%7B%7B.args.GEN__1%7D%7D")
-  chart: Chart @http(url: "http://example.com/chart")
-  editorial: Editorial @http(url: "http://example.com/editorial")
-  playlist(GEN__1: Int!): Playlist @http(url: "http://example.com/playlist/%7B%7B.args.GEN__1%7D%7D")
-  search(q: String): Search @http(url: "http://example.com/search", query: [{key: "q", value: "{{.args.q}}"}])
-  track(GEN__1: Int!): GEN__4 @http(url: "http://example.com/track/%7B%7B.args.GEN__1%7D%7D")
-  user(GEN__1: Int!): User @http(url: "http://example.com/user/%7B%7B.args.GEN__1%7D%7D")
+  album(GEN__1: Int!): GEN__39 @http(url: "https://api.deezer.com/album/%7B%7B.args.GEN__1%7D%7D")
+  artist(GEN__1: Int!): GEN__40 @http(url: "https://api.deezer.com/artist/%7B%7B.args.GEN__1%7D%7D")
+  chart: Chart @http(url: "https://api.deezer.com/chart")
+  editorial: Editorial @http(url: "https://api.deezer.com/editorial")
+  playlist(GEN__1: Int!): Playlist @http(url: "https://api.deezer.com/playlist/%7B%7B.args.GEN__1%7D%7D")
+  search(q: String): Search @http(url: "https://api.deezer.com/search", query: [{key: "q", value: "{{.args.q}}"}])
+  track(GEN__1: Int!): GEN__4 @http(url: "https://api.deezer.com/track/%7B%7B.args.GEN__1%7D%7D")
+  user(GEN__1: Int!): User @http(url: "https://api.deezer.com/user/%7B%7B.args.GEN__1%7D%7D")
 }
 
 type Search {
