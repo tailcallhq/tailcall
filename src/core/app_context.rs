@@ -150,7 +150,7 @@ impl AppContext {
             endpoints,
             auth_ctx: Arc::new(auth_ctx),
             dedupe_handler: Arc::new(DedupeResult::new(false)),
-            dedupe_operation_handler: DedupeResult::new(true),
+            dedupe_operation_handler: DedupeResult::new(false),
             operation_plans: DashMap::new(),
         }
     }
