@@ -32,16 +32,21 @@ union Role = User | Admin
   response:
     status: 200
     body:
-      - - id: 1
-          name: user-1
-        - id: 2
-          name: user-2
-        - id: 3
-          name: user-3
-      - - name: admin-1
-          region: eu
-        - name: admin-2
-          region: us
+      - - User:
+            id: 1
+            name: user-1
+        - User:
+            id: 2
+            name: user-2
+        - User:
+            id: 3
+            name: user-3
+      - - Admin:
+            name: admin-1
+            region: eu
+        - Admin:
+            name: admin-2
+            region: us
 
 # refs
 - request:
