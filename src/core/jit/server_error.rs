@@ -25,16 +25,18 @@ impl From<async_graphql::ServerError> for ServerError {
     fn from(value: async_graphql::ServerError) -> Self {
         // we can't copy extensions, bcoz it's private inside the async_graphql.
         // hack: serialize the value and deserialize it back to btreemap.
-        let ext = value.extensions.unwrap();
-        let serialized_value = serde_json::to_value(ext).unwrap();
-        let btremap: BTreeMap<String, async_graphql::Value> =
-            serde_json::from_value(serialized_value).unwrap();
+        let extensions = value.extensions.and_then(|ext| {
+            serde_json::to_value(ext)
+                .ok()
+                .and_then(|serialized_value| serde_json::from_value(serialized_value).ok())
+                .map(ErrorExtensionValues)
+        });
 
         Self {
             message: value.message,
             locations: value.locations.into_iter().map(|l| l.into()).collect(),
             path: value.path.into_iter().map(|p| p.into()).collect(),
-            extensions: Some(ErrorExtensionValues(btremap)),
+            extensions,
         }
     }
 }
