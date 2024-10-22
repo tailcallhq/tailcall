@@ -143,8 +143,7 @@ mod test {
     use async_graphql_value::ConstValue;
 
     use super::Response;
-    use crate::core::jit::{self, Pos, Positioned};
-    use crate::core::merge_right::MergeRight;
+    use crate::core::jit::{self, server_error::ServerError, Pos, Positioned};
 
     #[test]
     fn test_with_response() {
@@ -247,11 +246,11 @@ mod test {
             }
         }
         "#;
-        let user_data =
-            ConstValue::from_json(serde_json::from_str(user_response).unwrap()).unwrap();
-        let query_response = async_graphql::Response::new(user_data);
+        let user_data = ConstValue::from_json(serde_json::from_str(user_response).unwrap())
+            .map_err(|_| Positioned::new(jit::Error::Unknown, Pos::default()));
+        let query_response = Response::new(user_data);
 
-        let merged_response = introspection_response.merge_right(query_response);
+        let merged_response = query_response.merge_with(introspection_response);
 
         insta::assert_json_snapshot!(merged_response);
     }
@@ -262,14 +261,11 @@ mod test {
         let mut err1 = vec![async_graphql::ServerError::new("Error-1", None)];
         resp1.errors.append(&mut err1);
 
-        let mut resp2 = async_graphql::Response::new(ConstValue::default());
-        let mut err2 = vec![async_graphql::ServerError::new(
-            "Error-2",
-            Some(async_graphql::Pos::default()),
-        )];
+        let mut resp2 = Response::new(Ok(ConstValue::default()));
+        let mut err2 = vec![ServerError::new("Error-2", Some(Pos::default()))];
         resp2.errors.append(&mut err2);
 
-        let merged_resp = resp1.merge_right(resp2);
+        let merged_resp = resp2.merge_with(resp1);
         insta::assert_json_snapshot!(merged_resp);
     }
 }
