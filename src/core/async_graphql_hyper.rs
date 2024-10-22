@@ -4,14 +4,11 @@ use std::hash::{Hash, Hasher};
 use anyhow::Result;
 use async_graphql::parser::types::{ExecutableDocument, OperationType};
 use async_graphql::{BatchResponse, Executor, Value};
-use bytes::Bytes;
-use futures_util::stream::Stream;
 use http::header::{HeaderMap, HeaderValue, CACHE_CONTROL, CONTENT_TYPE};
 use http::{Response, StatusCode};
 use hyper::Body;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-use serde_json::ser::Serializer;
 use tailcall_hasher::TailcallHasher;
 
 #[derive(PartialEq, Eq, Clone, Hash, Debug)]
@@ -29,9 +26,11 @@ pub trait GraphQLRequestLike: Hash + Send {
     fn is_query(&mut self) -> bool {
         self.parse_query()
             .map(|a| {
-                a.operations
-                    .iter()
-                    .any(|(_, operation)| operation.node.ty == OperationType::Query)
+                let mut is_query = false;
+                for (_, operation) in a.operations.iter() {
+                    is_query = operation.node.ty == OperationType::Query;
+                }
+                is_query
             })
             .unwrap_or(false)
     }
@@ -50,12 +49,12 @@ pub trait GraphQLRequestLike: Hash + Send {
 
 #[derive(Debug, Deserialize)]
 pub struct GraphQLBatchRequest(pub async_graphql::BatchRequest);
-
+impl GraphQLBatchRequest {}
 impl Hash for GraphQLBatchRequest {
     //TODO: Fix Hash implementation for BatchRequest, which should ideally batch
     // execution of individual requests instead of the whole chunk of requests as
     // one.
-    fn hash<H: Hasher>(&self, state: &mut H) {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         for request in self.0.iter() {
             request.query.hash(state);
             request.operation_name.hash(state);
@@ -92,7 +91,7 @@ pub struct GraphQLRequest(pub async_graphql::Request);
 
 impl GraphQLRequest {}
 impl Hash for GraphQLRequest {
-    fn hash<H: Hasher>(&self, state: &mut H) {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.0.query.hash(state);
         self.0.operation_name.hash(state);
         for (name, value) in self.0.variables.iter() {
@@ -192,18 +191,12 @@ impl GraphQLResponse {
         Ok(response)
     }
 
-    async fn default_body(&self) -> Result<Body> {
-        let mut buffer = Vec::with_capacity(256); // Pre-allocate buffer
-        let mut serializer = Serializer::new(&mut buffer);
-        self.0.serialize(&mut serializer)?;
-
-        let body_stream = stream_body(Bytes::from(buffer));
-        Ok(Body::wrap_stream(body_stream))
+    fn default_body(&self) -> Result<Body> {
+        Ok(Body::from(serde_json::to_string(&self.0)?))
     }
 
-    pub async fn into_response(self) -> Result<Response<hyper::Body>> {
-        let body = self.default_body().await?;
-        self.build_response(StatusCode::OK, body)
+    pub fn into_response(self) -> Result<Response<hyper::Body>> {
+        self.build_response(StatusCode::OK, self.default_body()?)
     }
 
     fn flatten_response(data: &Value) -> &Value {
@@ -216,36 +209,47 @@ impl GraphQLResponse {
     /// Transforms a plain `GraphQLResponse` into a `Response<Body>`.
     /// Differs as `to_response` by flattening the response's data
     /// `{"data": {"user": {"name": "John"}}}` becomes `{"name": "John"}`.
-    pub async fn into_rest_response(self) -> Result<Response<hyper::Body>> {
+    pub fn into_rest_response(self) -> Result<Response<hyper::Body>> {
         if !self.0.is_ok() {
-            return self.build_response(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                self.default_body().await?,
-            );
+            return self.build_response(StatusCode::INTERNAL_SERVER_ERROR, self.default_body()?);
         }
-
-        let mut buffer = Vec::with_capacity(4096); // Pre-allocate buffer
-        let mut serializer = Serializer::new(&mut buffer);
 
         match self.0 {
             BatchResponse::Single(ref res) => {
                 let item = Self::flatten_response(&res.data);
-                item.serialize(&mut serializer)?;
-                let body_stream = stream_body(Bytes::from(buffer));
-                self.build_response(StatusCode::OK, Body::wrap_stream(body_stream))
+                let data = serde_json::to_string(item)?;
+
+                self.build_response(StatusCode::OK, Body::from(data))
             }
             BatchResponse::Batch(ref list) => {
-                let flattened_items = list
+                let item = list
                     .iter()
                     .map(|res| Self::flatten_response(&res.data))
                     .collect::<Vec<&Value>>();
-                flattened_items.serialize(&mut serializer)?;
-                let body_stream = stream_body(Bytes::from(buffer));
-                self.build_response(StatusCode::OK, Body::wrap_stream(body_stream))
+                let data = serde_json::to_string(&item)?;
+
+                self.build_response(StatusCode::OK, Body::from(data))
             }
         }
     }
 
+    /// Sets the `cache_control` for a given `GraphQLResponse`.
+    ///
+    /// The function modifies the `GraphQLResponse` to set the `cache_control`
+    /// `max_age` to the specified `min_cache` value and `public` flag to
+    /// `cache_public`
+    ///
+    /// # Arguments
+    ///
+    /// * `res` - The GraphQL response whose `cache_control` is to be set.
+    /// * `min_cache` - The `max_age` value to be set for `cache_control`.
+    /// * `cache_public` - The negation of `public` flag to be set for
+    ///   `cache_control`.
+    ///
+    /// # Returns
+    ///
+    /// * A modified `GraphQLResponse` with updated `cache_control` `max_age`
+    ///   and `public` flag.
     pub fn set_cache_control(mut self, min_cache: i32, cache_public: bool) -> GraphQLResponse {
         match self.0 {
             BatchResponse::Single(ref mut res) => {
@@ -261,12 +265,6 @@ impl GraphQLResponse {
         };
         self
     }
-}
-
-fn stream_body(
-    buffer: Bytes,
-) -> impl Stream<Item = Result<Bytes, std::io::Error>> + Send + 'static {
-    futures_util::stream::once(async move { Ok(buffer) })
 }
 
 #[cfg(test)]
@@ -286,7 +284,7 @@ mod tests {
         let data = IndexMap::from([(Name::new("user"), Value::Object(user))]);
 
         let response = GraphQLResponse(BatchResponse::Single(Response::new(Value::Object(data))));
-        let rest_response = response.into_rest_response().await.unwrap();
+        let rest_response = response.into_rest_response().unwrap();
 
         assert_eq!(rest_response.status(), StatusCode::OK);
         assert_eq!(rest_response.headers()["content-type"], "application/json");
@@ -313,7 +311,7 @@ mod tests {
             .collect();
 
         let response = GraphQLResponse(BatchResponse::Batch(list));
-        let rest_response = response.into_rest_response().await.unwrap();
+        let rest_response = response.into_rest_response().unwrap();
 
         assert_eq!(rest_response.status(), StatusCode::OK);
         assert_eq!(rest_response.headers()["content-type"], "application/json");
@@ -342,7 +340,7 @@ mod tests {
             .map(|error| ServerError::new(error.to_string(), None))
             .collect();
         let response = GraphQLResponse(BatchResponse::Single(response));
-        let rest_response = response.into_rest_response().await.unwrap();
+        let rest_response = response.into_rest_response().unwrap();
 
         assert_eq!(rest_response.status(), StatusCode::INTERNAL_SERVER_ERROR);
         assert_eq!(rest_response.headers()["content-type"], "application/json");
