@@ -370,7 +370,6 @@ mod tests {
             }
         "#,
         );
-        println!("{:#?}", plan.selection);
         assert!(plan.is_query());
         insta::assert_debug_snapshot!(plan.selection);
     }
