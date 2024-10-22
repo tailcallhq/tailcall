@@ -18,7 +18,7 @@ type Query {
     bigObjects: Int! = 100
     nestedObjects: Int! = 100
     deeplyNestedObjects: Int! = 100
-  ): [BigObject!]!  @http(dedupe: false,baseURL: "http://127.0.0.1:8088", path: "/big-response", query: [{key: "artificialDelay", value: "{{.args.artificialDelay}}", skipEmpty: true}, {key: "bigObjects", value: "{{.args.bigObjects}}", skipEmpty: true}, {key: "nestedObjects", value: "{{.args.nestedObjects}}", skipEmpty: true}, {key: "deeplyNestedObjects", value: "{{.args.deeplyNestedObjects}}", skipEmpty: true}])
+  ): [BigObject!]!  @http(dedupe: true,baseURL: "http://127.0.0.1:8088", path: "/big-response", query: [{key: "artificialDelay", value: "{{.args.artificialDelay}}", skipEmpty: true}, {key: "bigObjects", value: "{{.args.bigObjects}}", skipEmpty: true}, {key: "nestedObjects", value: "{{.args.nestedObjects}}", skipEmpty: true}, {key: "deeplyNestedObjects", value: "{{.args.deeplyNestedObjects}}", skipEmpty: true}])
 
   bigAbstractResponse: BigAbstractResponse @http(baseURL: "http://127.0.0.1:8088", path: "/big-abstract-response")
 
