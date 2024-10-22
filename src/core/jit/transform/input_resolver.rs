@@ -1,6 +1,7 @@
 use async_graphql_value::{ConstValue, Value};
 
-use super::super::{Field, OperationPlan, ResolveInputError, Variables};
+use super::super::{Arg, Field, OperationPlan, ResolveInputError, Variables};
+use crate::core::blueprint::Index;
 use crate::core::json::{JsonLikeOwned, JsonObjectLike};
 use crate::core::Type;
 
@@ -50,63 +51,67 @@ where
     <Output as TryFrom<serde_json::Value>>::Error: std::fmt::Debug,
 {
     pub fn resolve_input(
-        &self,
+        self,
         variables: &Variables<Output>,
     ) -> Result<OperationPlan<Output>, ResolveInputError> {
-        let new_fields = self
+        let index = self.plan.index;
+        let selection = self
             .plan
             .selection
-            .iter()
-            .map(|field| (*field).clone().try_map(&|value| value.resolve(variables)))
-            .map(|field| match field {
-                Ok(field) => {
-                    let field = self.iter_args(field)?;
-                    Ok(field)
-                }
-                Err(err) => Err(err),
-            })
+            .into_iter()
+            .map(|field| field.try_map(&|value| value.resolve(variables)))
+            // Call `resolve_field` to verify/populate defaults for args
+            // because the previous map will just try convert values based on
+            // variables ignoring default values in schema and not checking if arg
+            // is required TODO: consider changing [Field::try_map] to be able to do
+            // this check?
+            .map(|field| Self::resolve_field(&index, field?))
             .collect::<Result<Vec<_>, _>>()?;
-        Ok(OperationPlan::new(
-            self.plan.root_name(),
-            new_fields,
-            self.plan.operation_type(),
-            self.plan.index.clone(),
-            self.plan.is_introspection_query,
-        ))
+
+        Ok(OperationPlan {
+            root_name: self.plan.root_name.to_string(),
+            operation_type: self.plan.operation_type,
+            index,
+            is_introspection_query: self.plan.is_introspection_query,
+            is_dedupe: self.plan.is_dedupe,
+            is_const: self.plan.is_const,
+            selection,
+        })
     }
 
-    #[inline(always)]
-    fn iter_args(&self, mut field: Field<Output>) -> Result<Field<Output>, ResolveInputError> {
+    fn resolve_field(
+        index: &Index,
+        field: Field<Output>,
+    ) -> Result<Field<Output>, ResolveInputError> {
+        // TODO: should also check and provide defaults for directives
         let args = field
             .args
             .into_iter()
-            .map(|mut arg| {
-                let value = self.recursive_parse_arg(
+            .map(|arg| {
+                let value = Self::recursive_parse_arg(
+                    index,
                     &field.name,
                     &arg.name,
                     &arg.type_of,
                     &arg.default_value,
                     arg.value,
                 )?;
-                arg.value = value;
-                Ok(arg)
+                Ok(Arg { value, ..arg })
             })
             .collect::<Result<_, _>>()?;
 
-        field.args = args;
-
-        field.selection = field
+        let selection = field
             .selection
             .into_iter()
-            .map(|val| self.iter_args(val))
+            .map(|field| Self::resolve_field(index, field))
             .collect::<Result<_, _>>()?;
 
-        Ok(field)
+        Ok(Field { args, selection, ..field })
     }
 
     #[allow(clippy::too_many_arguments)]
     fn recursive_parse_arg(
-        &self,
+        index: &Index,
         parent_name: &str,
         arg_name: &str,
         type_of: &Type,
@@ -136,7 +141,7 @@ where
             return Ok(None);
         };
 
-        let Some(def) = self.plan.index.get_input_type_definition(type_of.name()) else {
+        let Some(def) = index.get_input_type_definition(type_of.name()) else {
             return Ok(Some(value));
         };
 
@@ -148,7 +153,8 @@ where
                     .default_value
                     .clone()
                     .map(|value| Output::try_from(value).expect("The conversion cannot fail"));
-                let value = self.recursive_parse_arg(
+                let value = Self::recursive_parse_arg(
+                    index,
                     &parent_name,
                     &arg_field.name,
                     &arg_field.of_type,
@@ -160,18 +166,18 @@ where
                 }
             }
         } else if let Some(arr) = value.as_array_mut() {
-            for (index, item) in arr.iter_mut().enumerate() {
-                let parent_name = format!("{}.{}.{}", parent_name, arg_name, index);
+            for (i, item) in arr.iter_mut().enumerate() {
+                let parent_name = format!("{}.{}.{}", parent_name, arg_name, i);
 
-                *item = self
-                    .recursive_parse_arg(
-                        &parent_name,
-                        &index.to_string(),
-                        type_of,
-                        &None,
-                        Some(item.clone()),
-                    )?
-                    .expect("Because we start with `Some`, we will end with `Some`");
+                *item = Self::recursive_parse_arg(
+                    index,
+                    &parent_name,
+                    &i.to_string(),
+                    type_of,
+                    &None,
+                    Some(item.clone()),
+                )?
+                .expect("Because we start with `Some`, we will end with `Some`");
             }
         }
 
