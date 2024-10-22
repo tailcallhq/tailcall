@@ -35,3 +35,22 @@ Running 10s test @ http://127.0.0.1:8005/big-json
   1306138 requests in 10.10s, 88.93GB read
 Requests/sec: 129274.62
 Transfer/sec:      8.80GB
+-------------------------------- without dedupe ----------------
+➜  src git:(main) ✗ wrk -t4 -c100 -d10s -s big-bench.lua http://127.0.0.1:8005/graphql
+Running 10s test @ http://127.0.0.1:8005/graphql
+  4 threads and 100 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     8.81ms    2.91ms  55.62ms   72.49%
+    Req/Sec     2.85k   173.18     3.37k    78.75%
+  113849 requests in 10.05s, 5.63GB read
+Requests/sec:  11331.58
+Transfer/sec:    573.92MB
+➜  src git:(main) ✗ wrk -t4 -c100 -d10s -s big-bench.lua http://127.0.0.1:8005/graphql
+Running 10s test @ http://127.0.0.1:8005/graphql
+  4 threads and 100 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     9.40ms    3.21ms  69.45ms   73.81%
+    Req/Sec     2.68k   208.20     3.29k    79.50%
+  106726 requests in 10.02s, 5.28GB read
+Requests/sec:  10652.99
+Transfer/sec:    539.55MB

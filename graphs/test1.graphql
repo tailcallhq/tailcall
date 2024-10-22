@@ -1,0 +1,899 @@
+schema
+  @server(port: 8005, pipelineFlush: false, enableJIT: true)
+  @upstream(poolMaxIdlePerHost: 500, tcpKeepAlive: 60, baseURL: "http://127.0.0.1:8088") {
+  query: Query
+}
+
+type Query {
+  # "Returns the value of the received HTTP header."
+  headerValue(name: String!): String! @http(baseURL: "http://127.0.0.1:8088", path: "/header-value" ,query: [{key: "name", value: "{{.args.name}}"}])
+  # "Returns the value of the given key in the WS initial payload."
+  # initPayloadValue(key: String!): String!     # WS we don't support.
+  # initialPayload: Map                         # not sure how to write this.
+  # "Returns response after the given delay"
+  delay(response: String!, ms: Int!): String! @http(baseURL: "http://127.0.0.1:8088", path: "/delay", query: [{key: "ms", value: "{{.args.ms}}", skipEmpty: true}, {key: "response", value: "{{.args.response}}", skipEmpty: true}])
+
+  bigResponse(
+    artificialDelay: Int! = 0
+    bigObjects: Int! = 100
+    nestedObjects: Int! = 100
+    deeplyNestedObjects: Int! = 100
+  ): [BigObject!]!  @http(dedupe: false,baseURL: "http://127.0.0.1:8088", path: "/big-response", query: [{key: "artificialDelay", value: "{{.args.artificialDelay}}", skipEmpty: true}, {key: "bigObjects", value: "{{.args.bigObjects}}", skipEmpty: true}, {key: "nestedObjects", value: "{{.args.nestedObjects}}", skipEmpty: true}, {key: "deeplyNestedObjects", value: "{{.args.deeplyNestedObjects}}", skipEmpty: true}])
+
+  bigAbstractResponse: BigAbstractResponse @http(baseURL: "http://127.0.0.1:8088", path: "/big-abstract-response")
+
+  rootFieldWithListArg(arg: [String!]!): [String!]! @expr(body: "{{.args.arg}}")
+  rootFieldWithNestedListArg(arg: [[String!]!]!): [[String!]!]! @expr(body: "{{.args.arg}}")
+  rootFieldWithListOfInputArg(arg: [InputType!]!): [InputResponse!]! @expr(body: "{{.args.arg}}")
+  rootFieldWithListOfEnumArg(arg: [EnumType!]!): [EnumType!]!  @expr(body: "{{.args.arg}}")
+  rootFieldWithInput(arg: InputArg!): String! @http(baseURL: "http://127.0.0.1:8088", path:"/root-field-with-input", query: [{key: "enum", value: "{{.args.arg.enum}}", skipEmpty: true},{key: "enums[]", value: "{{.args.arg.enums}}", skipEmpty: true},{key: "string", value: "{{.args.arg.string}}", skipEmpty: true},{key: "strings[]", value: "{{.args.arg.strings}}", skipEmpty: true}])
+}
+
+input InputArg {
+  enums: [EnumType!]
+  enum: EnumType!
+  string: String
+  strings: [String!]
+}
+
+enum EnumType {
+  A
+  B
+  C
+}
+
+input InputType {
+  arg: String!
+}
+
+type InputResponse {
+  arg: String!
+}
+
+scalar Map
+
+# type TimestampedString {
+#   "The value of the string."
+#   value: String!
+#   "The timestamp when the response was generated."
+#   unixTime: Int!
+#   "Sequence number"
+#   seq: Int!
+#   "Total number of responses to be sent"
+#   total: Int!
+#   initialPayload: Map
+# }
+
+# type Subscription {
+#   "Returns a stream with the value of the received HTTP header."
+#   headerValue(name: String!, repeat: Int): TimestampedString!
+#   "Returns a stream with the value of value of the given key in the WS initial payload."
+#   initPayloadValue(key: String!, repeat: Int): TimestampedString!
+#   "Returns a stream with the value of the WS initial payload."
+#   initialPayload(repeat: Int): Map
+#   returnsError: String
+# }
+
+type Employee {
+  id: Int!
+  fieldThrowsError: String
+}
+
+type BigObject {
+  nestedObjects: [NestedObject!]!
+}
+
+type NestedObject {
+  deeplyNestedObjects: [DeeplyNestedObject!]!
+}
+
+type DeeplyNestedObject {
+  aFieldOnDeeplyNestedObject: String!
+  bFieldOnDeeplyNestedObject: Int!
+  cFieldOnDeeplyNestedObject: Boolean!
+  dFieldOnDeeplyNestedObject: Float!
+  eFieldOnDeeplyNestedObject: String!
+  fFieldOnDeeplyNestedObject: Int!
+  gFieldOnDeeplyNestedObject: Boolean!
+  hFieldOnDeeplyNestedObject: Float!
+  iFieldOnDeeplyNestedObject: String!
+  jFieldOnDeeplyNestedObject: Int!
+  kFieldOnDeeplyNestedObject: Boolean!
+  lFieldOnDeeplyNestedObject: Float!
+  mFieldOnDeeplyNestedObject: String!
+  nFieldOnDeeplyNestedObject: Int!
+  oFieldOnDeeplyNestedObject: Boolean!
+  pFieldOnDeeplyNestedObject: Float!
+  qFieldOnDeeplyNestedObject: String!
+  rFieldOnDeeplyNestedObject: Int!
+  sFieldOnDeeplyNestedObject: Boolean!
+  tFieldOnDeeplyNestedObject: Float!
+  uFieldOnDeeplyNestedObject: String!
+  vFieldOnDeeplyNestedObject: Int!
+  wFieldOnDeeplyNestedObject: Boolean!
+  xFieldOnDeeplyNestedObject: Float!
+  yFieldOnDeeplyNestedObject: String!
+  zFieldOnDeeplyNestedObject: Int!
+}
+
+union BigAbstractResponse =
+  | ABigObject
+  | BBigObject
+  | CBigObject
+  | DBigObject
+  | EBigObject
+  | FBigObject
+  | GBigObject
+  | HBigObject
+  | IBigObject
+  | JBigObject
+  | KBigObject
+  | LBigObject
+  | MBigObject
+  | NBigObject
+  | OBigObject
+  | PBigObject
+  | QBigObject
+  | RBigObject
+  | SBigObject
+  | TBigObject
+  | UBigObject
+  | VBigObject
+  | WBigObject
+  | XBigObject
+  | YBigObject
+  | ZBigObject
+
+type ABigObject {
+  aFieldOnABigObject: String!
+  bFieldOnABigObject: Int!
+  cFieldOnABigObject: Boolean!
+  dFieldOnABigObject: Float!
+  eFieldOnABigObject: String!
+  fFieldOnABigObject: Int!
+  gFieldOnABigObject: Boolean!
+  hFieldOnABigObject: Float!
+  iFieldOnABigObject: String!
+  jFieldOnABigObject: Int!
+  kFieldOnABigObject: Boolean!
+  lFieldOnABigObject: Float!
+  mFieldOnABigObject: String!
+  nFieldOnABigObject: Int!
+  oFieldOnABigObject: Boolean!
+  pFieldOnABigObject: Float!
+  qFieldOnABigObject: String!
+  rFieldOnABigObject: Int!
+  sFieldOnABigObject: Boolean!
+  tFieldOnABigObject: Float!
+  uFieldOnABigObject: String!
+  vFieldOnABigObject: Int!
+  wFieldOnABigObject: Boolean!
+  xFieldOnABigObject: Float!
+  yFieldOnABigObject: String!
+  zFieldOnABigObject: Int!
+}
+
+type BBigObject {
+  aFieldOnBBigObject: String!
+  bFieldOnBBigObject: Int!
+  cFieldOnBBigObject: Boolean!
+  dFieldOnBBigObject: Float!
+  eFieldOnBBigObject: String!
+  fFieldOnBBigObject: Int!
+  gFieldOnBBigObject: Boolean!
+  hFieldOnBBigObject: Float!
+  iFieldOnBBigObject: String!
+  jFieldOnBBigObject: Int!
+  kFieldOnBBigObject: Boolean!
+  lFieldOnBBigObject: Float!
+  mFieldOnBBigObject: String!
+  nFieldOnBBigObject: Int!
+  oFieldOnBBigObject: Boolean!
+  pFieldOnBBigObject: Float!
+  qFieldOnBBigObject: String!
+  rFieldOnBBigObject: Int!
+  sFieldOnBBigObject: Boolean!
+  tFieldOnBBigObject: Float!
+  uFieldOnBBigObject: String!
+  vFieldOnBBigObject: Int!
+  wFieldOnBBigObject: Boolean!
+  xFieldOnBBigObject: Float!
+  yFieldOnBBigObject: String!
+  zFieldOnBBigObject: Int!
+}
+
+type CBigObject {
+  aFieldOnCBigObject: String!
+  bFieldOnCBigObject: Int!
+  cFieldOnCBigObject: Boolean!
+  dFieldOnCBigObject: Float!
+  eFieldOnCBigObject: String!
+  fFieldOnCBigObject: Int!
+  gFieldOnCBigObject: Boolean!
+  hFieldOnCBigObject: Float!
+  iFieldOnCBigObject: String!
+  jFieldOnCBigObject: Int!
+  kFieldOnCBigObject: Boolean!
+  lFieldOnCBigObject: Float!
+  mFieldOnCBigObject: String!
+  nFieldOnCBigObject: Int!
+  oFieldOnCBigObject: Boolean!
+  pFieldOnCBigObject: Float!
+  qFieldOnCBigObject: String!
+  rFieldOnCBigObject: Int!
+  sFieldOnCBigObject: Boolean!
+  tFieldOnCBigObject: Float!
+  uFieldOnCBigObject: String!
+  vFieldOnCBigObject: Int!
+  wFieldOnCBigObject: Boolean!
+  xFieldOnCBigObject: Float!
+  yFieldOnCBigObject: String!
+  zFieldOnCBigObject: Int!
+}
+
+type DBigObject {
+  aFieldOnDBigObject: String!
+  bFieldOnDBigObject: Int!
+  cFieldOnDBigObject: Boolean!
+  dFieldOnDBigObject: Float!
+  eFieldOnDBigObject: String!
+  fFieldOnDBigObject: Int!
+  gFieldOnDBigObject: Boolean!
+  hFieldOnDBigObject: Float!
+  iFieldOnDBigObject: String!
+  jFieldOnDBigObject: Int!
+  kFieldOnDBigObject: Boolean!
+  lFieldOnDBigObject: Float!
+  mFieldOnDBigObject: String!
+  nFieldOnDBigObject: Int!
+  oFieldOnDBigObject: Boolean!
+  pFieldOnDBigObject: Float!
+  qFieldOnDBigObject: String!
+  rFieldOnDBigObject: Int!
+  sFieldOnDBigObject: Boolean!
+  tFieldOnDBigObject: Float!
+  uFieldOnDBigObject: String!
+  vFieldOnDBigObject: Int!
+  wFieldOnDBigObject: Boolean!
+  xFieldOnDBigObject: Float!
+  yFieldOnDBigObject: String!
+  zFieldOnDBigObject: Int!
+}
+
+type EBigObject {
+  aFieldOnEBigObject: String!
+  bFieldOnEBigObject: Int!
+  cFieldOnEBigObject: Boolean!
+  dFieldOnEBigObject: Float!
+  eFieldOnEBigObject: String!
+  fFieldOnEBigObject: Int!
+  gFieldOnEBigObject: Boolean!
+  hFieldOnEBigObject: Float!
+  iFieldOnEBigObject: String!
+  jFieldOnEBigObject: Int!
+  kFieldOnEBigObject: Boolean!
+  lFieldOnEBigObject: Float!
+  mFieldOnEBigObject: String!
+  nFieldOnEBigObject: Int!
+  oFieldOnEBigObject: Boolean!
+  pFieldOnEBigObject: Float!
+  qFieldOnEBigObject: String!
+  rFieldOnEBigObject: Int!
+  sFieldOnEBigObject: Boolean!
+  tFieldOnEBigObject: Float!
+  uFieldOnEBigObject: String!
+  vFieldOnEBigObject: Int!
+  wFieldOnEBigObject: Boolean!
+  xFieldOnEBigObject: Float!
+  yFieldOnEBigObject: String!
+  zFieldOnEBigObject: Int!
+}
+
+type FBigObject {
+  aFieldOnFBigObject: String!
+  bFieldOnFBigObject: Int!
+  cFieldOnFBigObject: Boolean!
+  dFieldOnFBigObject: Float!
+  eFieldOnFBigObject: String!
+  fFieldOnFBigObject: Int!
+  gFieldOnFBigObject: Boolean!
+  hFieldOnFBigObject: Float!
+  iFieldOnFBigObject: String!
+  jFieldOnFBigObject: Int!
+  kFieldOnFBigObject: Boolean!
+  lFieldOnFBigObject: Float!
+  mFieldOnFBigObject: String!
+  nFieldOnFBigObject: Int!
+  oFieldOnFBigObject: Boolean!
+  pFieldOnFBigObject: Float!
+  qFieldOnFBigObject: String!
+  rFieldOnFBigObject: Int!
+  sFieldOnFBigObject: Boolean!
+  tFieldOnFBigObject: Float!
+  uFieldOnFBigObject: String!
+  vFieldOnFBigObject: Int!
+  wFieldOnFBigObject: Boolean!
+  xFieldOnFBigObject: Float!
+  yFieldOnFBigObject: String!
+  zFieldOnFBigObject: Int!
+}
+
+type GBigObject {
+  aFieldOnGBigObject: String!
+  bFieldOnGBigObject: Int!
+  cFieldOnGBigObject: Boolean!
+  dFieldOnGBigObject: Float!
+  eFieldOnGBigObject: String!
+  fFieldOnGBigObject: Int!
+  gFieldOnGBigObject: Boolean!
+  hFieldOnGBigObject: Float!
+  iFieldOnGBigObject: String!
+  jFieldOnGBigObject: Int!
+  kFieldOnGBigObject: Boolean!
+  lFieldOnGBigObject: Float!
+  mFieldOnGBigObject: String!
+  nFieldOnGBigObject: Int!
+  oFieldOnGBigObject: Boolean!
+  pFieldOnGBigObject: Float!
+  qFieldOnGBigObject: String!
+  rFieldOnGBigObject: Int!
+  sFieldOnGBigObject: Boolean!
+  tFieldOnGBigObject: Float!
+  uFieldOnGBigObject: String!
+  vFieldOnGBigObject: Int!
+  wFieldOnGBigObject: Boolean!
+  xFieldOnGBigObject: Float!
+  yFieldOnGBigObject: String!
+  zFieldOnGBigObject: Int!
+}
+
+type HBigObject {
+  aFieldOnHBigObject: String!
+  bFieldOnHBigObject: Int!
+  cFieldOnHBigObject: Boolean!
+  dFieldOnHBigObject: Float!
+  eFieldOnHBigObject: String!
+  fFieldOnHBigObject: Int!
+  gFieldOnHBigObject: Boolean!
+  hFieldOnHBigObject: Float!
+  iFieldOnHBigObject: String!
+  jFieldOnHBigObject: Int!
+  kFieldOnHBigObject: Boolean!
+  lFieldOnHBigObject: Float!
+  mFieldOnHBigObject: String!
+  nFieldOnHBigObject: Int!
+  oFieldOnHBigObject: Boolean!
+  pFieldOnHBigObject: Float!
+  qFieldOnHBigObject: String!
+  rFieldOnHBigObject: Int!
+  sFieldOnHBigObject: Boolean!
+  tFieldOnHBigObject: Float!
+  uFieldOnHBigObject: String!
+  vFieldOnHBigObject: Int!
+  wFieldOnHBigObject: Boolean!
+  xFieldOnHBigObject: Float!
+  yFieldOnHBigObject: String!
+  zFieldOnHBigObject: Int!
+}
+
+type IBigObject {
+  aFieldOnIBigObject: String!
+  bFieldOnIBigObject: Int!
+  cFieldOnIBigObject: Boolean!
+  dFieldOnIBigObject: Float!
+  eFieldOnIBigObject: String!
+  fFieldOnIBigObject: Int!
+  gFieldOnIBigObject: Boolean!
+  hFieldOnIBigObject: Float!
+  iFieldOnIBigObject: String!
+  jFieldOnIBigObject: Int!
+  kFieldOnIBigObject: Boolean!
+  lFieldOnIBigObject: Float!
+  mFieldOnIBigObject: String!
+  nFieldOnIBigObject: Int!
+  oFieldOnIBigObject: Boolean!
+  pFieldOnIBigObject: Float!
+  qFieldOnIBigObject: String!
+  rFieldOnIBigObject: Int!
+  sFieldOnIBigObject: Boolean!
+  tFieldOnIBigObject: Float!
+  uFieldOnIBigObject: String!
+  vFieldOnIBigObject: Int!
+  wFieldOnIBigObject: Boolean!
+  xFieldOnIBigObject: Float!
+  yFieldOnIBigObject: String!
+  zFieldOnIBigObject: Int!
+}
+
+type JBigObject {
+  aFieldOnJBigObject: String!
+  bFieldOnJBigObject: Int!
+  cFieldOnJBigObject: Boolean!
+  dFieldOnJBigObject: Float!
+  eFieldOnJBigObject: String!
+  fFieldOnJBigObject: Int!
+  gFieldOnJBigObject: Boolean!
+  hFieldOnJBigObject: Float!
+  iFieldOnJBigObject: String!
+  jFieldOnJBigObject: Int!
+  kFieldOnJBigObject: Boolean!
+  lFieldOnJBigObject: Float!
+  mFieldOnJBigObject: String!
+  nFieldOnJBigObject: Int!
+  oFieldOnJBigObject: Boolean!
+  pFieldOnJBigObject: Float!
+  qFieldOnJBigObject: String!
+  rFieldOnJBigObject: Int!
+  sFieldOnJBigObject: Boolean!
+  tFieldOnJBigObject: Float!
+  uFieldOnJBigObject: String!
+  vFieldOnJBigObject: Int!
+  wFieldOnJBigObject: Boolean!
+  xFieldOnJBigObject: Float!
+  yFieldOnJBigObject: String!
+  zFieldOnJBigObject: Int!
+}
+
+type KBigObject {
+  aFieldOnKBigObject: String!
+  bFieldOnKBigObject: Int!
+  cFieldOnKBigObject: Boolean!
+  dFieldOnKBigObject: Float!
+  eFieldOnKBigObject: String!
+  fFieldOnKBigObject: Int!
+  gFieldOnKBigObject: Boolean!
+  hFieldOnKBigObject: Float!
+  iFieldOnKBigObject: String!
+  jFieldOnKBigObject: Int!
+  kFieldOnKBigObject: Boolean!
+  lFieldOnKBigObject: Float!
+  mFieldOnKBigObject: String!
+  nFieldOnKBigObject: Int!
+  oFieldOnKBigObject: Boolean!
+  pFieldOnKBigObject: Float!
+  qFieldOnKBigObject: String!
+  rFieldOnKBigObject: Int!
+  sFieldOnKBigObject: Boolean!
+  tFieldOnKBigObject: Float!
+  uFieldOnKBigObject: String!
+  vFieldOnKBigObject: Int!
+  wFieldOnKBigObject: Boolean!
+  xFieldOnKBigObject: Float!
+  yFieldOnKBigObject: String!
+  zFieldOnKBigObject: Int!
+}
+
+type LBigObject {
+  aFieldOnLBigObject: String!
+  bFieldOnLBigObject: Int!
+  cFieldOnLBigObject: Boolean!
+  dFieldOnLBigObject: Float!
+  eFieldOnLBigObject: String!
+  fFieldOnLBigObject: Int!
+  gFieldOnLBigObject: Boolean!
+  hFieldOnLBigObject: Float!
+  iFieldOnLBigObject: String!
+  jFieldOnLBigObject: Int!
+  kFieldOnLBigObject: Boolean!
+  lFieldOnLBigObject: Float!
+  mFieldOnLBigObject: String!
+  nFieldOnLBigObject: Int!
+  oFieldOnLBigObject: Boolean!
+  pFieldOnLBigObject: Float!
+  qFieldOnLBigObject: String!
+  rFieldOnLBigObject: Int!
+  sFieldOnLBigObject: Boolean!
+  tFieldOnLBigObject: Float!
+  uFieldOnLBigObject: String!
+  vFieldOnLBigObject: Int!
+  wFieldOnLBigObject: Boolean!
+  xFieldOnLBigObject: Float!
+  yFieldOnLBigObject: String!
+  zFieldOnLBigObject: Int!
+}
+
+type MBigObject {
+  aFieldOnMBigObject: String!
+  bFieldOnMBigObject: Int!
+  cFieldOnMBigObject: Boolean!
+  dFieldOnMBigObject: Float!
+  eFieldOnMBigObject: String!
+  fFieldOnMBigObject: Int!
+  gFieldOnMBigObject: Boolean!
+  hFieldOnMBigObject: Float!
+  iFieldOnMBigObject: String!
+  jFieldOnMBigObject: Int!
+  kFieldOnMBigObject: Boolean!
+  lFieldOnMBigObject: Float!
+  mFieldOnMBigObject: String!
+  nFieldOnMBigObject: Int!
+  oFieldOnMBigObject: Boolean!
+  pFieldOnMBigObject: Float!
+  qFieldOnMBigObject: String!
+  rFieldOnMBigObject: Int!
+  sFieldOnMBigObject: Boolean!
+  tFieldOnMBigObject: Float!
+  uFieldOnMBigObject: String!
+  vFieldOnMBigObject: Int!
+  wFieldOnMBigObject: Boolean!
+  xFieldOnMBigObject: Float!
+  yFieldOnMBigObject: String!
+  zFieldOnMBigObject: Int!
+}
+
+type NBigObject {
+  aFieldOnNBigObject: String!
+  bFieldOnNBigObject: Int!
+  cFieldOnNBigObject: Boolean!
+  dFieldOnNBigObject: Float!
+  eFieldOnNBigObject: String!
+  fFieldOnNBigObject: Int!
+  gFieldOnNBigObject: Boolean!
+  hFieldOnNBigObject: Float!
+  iFieldOnNBigObject: String!
+  jFieldOnNBigObject: Int!
+  kFieldOnNBigObject: Boolean!
+  lFieldOnNBigObject: Float!
+  mFieldOnNBigObject: String!
+  nFieldOnNBigObject: Int!
+  oFieldOnNBigObject: Boolean!
+  pFieldOnNBigObject: Float!
+  qFieldOnNBigObject: String!
+  rFieldOnNBigObject: Int!
+  sFieldOnNBigObject: Boolean!
+  tFieldOnNBigObject: Float!
+  uFieldOnNBigObject: String!
+  vFieldOnNBigObject: Int!
+  wFieldOnNBigObject: Boolean!
+  xFieldOnNBigObject: Float!
+  yFieldOnNBigObject: String!
+  zFieldOnNBigObject: Int!
+}
+
+type OBigObject {
+  aFieldOnOBigObject: String!
+  bFieldOnOBigObject: Int!
+  cFieldOnOBigObject: Boolean!
+  dFieldOnOBigObject: Float!
+  eFieldOnOBigObject: String!
+  fFieldOnOBigObject: Int!
+  gFieldOnOBigObject: Boolean!
+  hFieldOnOBigObject: Float!
+  iFieldOnOBigObject: String!
+  jFieldOnOBigObject: Int!
+  kFieldOnOBigObject: Boolean!
+  lFieldOnOBigObject: Float!
+  mFieldOnOBigObject: String!
+  nFieldOnOBigObject: Int!
+  oFieldOnOBigObject: Boolean!
+  pFieldOnOBigObject: Float!
+  qFieldOnOBigObject: String!
+  rFieldOnOBigObject: Int!
+  sFieldOnOBigObject: Boolean!
+  tFieldOnOBigObject: Float!
+  uFieldOnOBigObject: String!
+  vFieldOnOBigObject: Int!
+  wFieldOnOBigObject: Boolean!
+  xFieldOnOBigObject: Float!
+  yFieldOnOBigObject: String!
+  zFieldOnOBigObject: Int!
+}
+
+type PBigObject {
+  aFieldOnPBigObject: String!
+  bFieldOnPBigObject: Int!
+  cFieldOnPBigObject: Boolean!
+  dFieldOnPBigObject: Float!
+  eFieldOnPBigObject: String!
+  fFieldOnPBigObject: Int!
+  gFieldOnPBigObject: Boolean!
+  hFieldOnPBigObject: Float!
+  iFieldOnPBigObject: String!
+  jFieldOnPBigObject: Int!
+  kFieldOnPBigObject: Boolean!
+  lFieldOnPBigObject: Float!
+  mFieldOnPBigObject: String!
+  nFieldOnPBigObject: Int!
+  oFieldOnPBigObject: Boolean!
+  pFieldOnPBigObject: Float!
+  qFieldOnPBigObject: String!
+  rFieldOnPBigObject: Int!
+  sFieldOnPBigObject: Boolean!
+  tFieldOnPBigObject: Float!
+  uFieldOnPBigObject: String!
+  vFieldOnPBigObject: Int!
+  wFieldOnPBigObject: Boolean!
+  xFieldOnPBigObject: Float!
+  yFieldOnPBigObject: String!
+  zFieldOnPBigObject: Int!
+}
+
+type QBigObject {
+  aFieldOnQBigObject: String!
+  bFieldOnQBigObject: Int!
+  cFieldOnQBigObject: Boolean!
+  dFieldOnQBigObject: Float!
+  eFieldOnQBigObject: String!
+  fFieldOnQBigObject: Int!
+  gFieldOnQBigObject: Boolean!
+  hFieldOnQBigObject: Float!
+  iFieldOnQBigObject: String!
+  jFieldOnQBigObject: Int!
+  kFieldOnQBigObject: Boolean!
+  lFieldOnQBigObject: Float!
+  mFieldOnQBigObject: String!
+  nFieldOnQBigObject: Int!
+  oFieldOnQBigObject: Boolean!
+  pFieldOnQBigObject: Float!
+  qFieldOnQBigObject: String!
+  rFieldOnQBigObject: Int!
+  sFieldOnQBigObject: Boolean!
+  tFieldOnQBigObject: Float!
+  uFieldOnQBigObject: String!
+  vFieldOnQBigObject: Int!
+  wFieldOnQBigObject: Boolean!
+  xFieldOnQBigObject: Float!
+  yFieldOnQBigObject: String!
+  zFieldOnQBigObject: Int!
+}
+
+type RBigObject {
+  aFieldOnRBigObject: String!
+  bFieldOnRBigObject: Int!
+  cFieldOnRBigObject: Boolean!
+  dFieldOnRBigObject: Float!
+  eFieldOnRBigObject: String!
+  fFieldOnRBigObject: Int!
+  gFieldOnRBigObject: Boolean!
+  hFieldOnRBigObject: Float!
+  iFieldOnRBigObject: String!
+  jFieldOnRBigObject: Int!
+  kFieldOnRBigObject: Boolean!
+  lFieldOnRBigObject: Float!
+  mFieldOnRBigObject: String!
+  nFieldOnRBigObject: Int!
+  oFieldOnRBigObject: Boolean!
+  pFieldOnRBigObject: Float!
+  qFieldOnRBigObject: String!
+  rFieldOnRBigObject: Int!
+  sFieldOnRBigObject: Boolean!
+  tFieldOnRBigObject: Float!
+  uFieldOnRBigObject: String!
+  vFieldOnRBigObject: Int!
+  wFieldOnRBigObject: Boolean!
+  xFieldOnRBigObject: Float!
+  yFieldOnRBigObject: String!
+  zFieldOnRBigObject: Int!
+}
+
+type SBigObject {
+  aFieldOnSBigObject: String!
+  bFieldOnSBigObject: Int!
+  cFieldOnSBigObject: Boolean!
+  dFieldOnSBigObject: Float!
+  eFieldOnSBigObject: String!
+  fFieldOnSBigObject: Int!
+  gFieldOnSBigObject: Boolean!
+  hFieldOnSBigObject: Float!
+  iFieldOnSBigObject: String!
+  jFieldOnSBigObject: Int!
+  kFieldOnSBigObject: Boolean!
+  lFieldOnSBigObject: Float!
+  mFieldOnSBigObject: String!
+  nFieldOnSBigObject: Int!
+  oFieldOnSBigObject: Boolean!
+  pFieldOnSBigObject: Float!
+  qFieldOnSBigObject: String!
+  rFieldOnSBigObject: Int!
+  sFieldOnSBigObject: Boolean!
+  tFieldOnSBigObject: Float!
+  uFieldOnSBigObject: String!
+  vFieldOnSBigObject: Int!
+  wFieldOnSBigObject: Boolean!
+  xFieldOnSBigObject: Float!
+  yFieldOnSBigObject: String!
+  zFieldOnSBigObject: Int!
+}
+
+type TBigObject {
+  aFieldOnTBigObject: String!
+  bFieldOnTBigObject: Int!
+  cFieldOnTBigObject: Boolean!
+  dFieldOnTBigObject: Float!
+  eFieldOnTBigObject: String!
+  fFieldOnTBigObject: Int!
+  gFieldOnTBigObject: Boolean!
+  hFieldOnTBigObject: Float!
+  iFieldOnTBigObject: String!
+  jFieldOnTBigObject: Int!
+  kFieldOnTBigObject: Boolean!
+  lFieldOnTBigObject: Float!
+  mFieldOnTBigObject: String!
+  nFieldOnTBigObject: Int!
+  oFieldOnTBigObject: Boolean!
+  pFieldOnTBigObject: Float!
+  qFieldOnTBigObject: String!
+  rFieldOnTBigObject: Int!
+  sFieldOnTBigObject: Boolean!
+  tFieldOnTBigObject: Float!
+  uFieldOnTBigObject: String!
+  vFieldOnTBigObject: Int!
+  wFieldOnTBigObject: Boolean!
+  xFieldOnTBigObject: Float!
+  yFieldOnTBigObject: String!
+  zFieldOnTBigObject: Int!
+}
+
+type UBigObject {
+  aFieldOnUBigObject: String!
+  bFieldOnUBigObject: Int!
+  cFieldOnUBigObject: Boolean!
+  dFieldOnUBigObject: Float!
+  eFieldOnUBigObject: String!
+  fFieldOnUBigObject: Int!
+  gFieldOnUBigObject: Boolean!
+  hFieldOnUBigObject: Float!
+  iFieldOnUBigObject: String!
+  jFieldOnUBigObject: Int!
+  kFieldOnUBigObject: Boolean!
+  lFieldOnUBigObject: Float!
+  mFieldOnUBigObject: String!
+  nFieldOnUBigObject: Int!
+  oFieldOnUBigObject: Boolean!
+  pFieldOnUBigObject: Float!
+  qFieldOnUBigObject: String!
+  rFieldOnUBigObject: Int!
+  sFieldOnUBigObject: Boolean!
+  tFieldOnUBigObject: Float!
+  uFieldOnUBigObject: String!
+  vFieldOnUBigObject: Int!
+  wFieldOnUBigObject: Boolean!
+  xFieldOnUBigObject: Float!
+  yFieldOnUBigObject: String!
+  zFieldOnUBigObject: Int!
+}
+
+type VBigObject {
+  aFieldOnVBigObject: String!
+  bFieldOnVBigObject: Int!
+  cFieldOnVBigObject: Boolean!
+  dFieldOnVBigObject: Float!
+  eFieldOnVBigObject: String!
+  fFieldOnVBigObject: Int!
+  gFieldOnVBigObject: Boolean!
+  hFieldOnVBigObject: Float!
+  iFieldOnVBigObject: String!
+  jFieldOnVBigObject: Int!
+  kFieldOnVBigObject: Boolean!
+  lFieldOnVBigObject: Float!
+  mFieldOnVBigObject: String!
+  nFieldOnVBigObject: Int!
+  oFieldOnVBigObject: Boolean!
+  pFieldOnVBigObject: Float!
+  qFieldOnVBigObject: String!
+  rFieldOnVBigObject: Int!
+  sFieldOnVBigObject: Boolean!
+  tFieldOnVBigObject: Float!
+  uFieldOnVBigObject: String!
+  vFieldOnVBigObject: Int!
+  wFieldOnVBigObject: Boolean!
+  xFieldOnVBigObject: Float!
+  yFieldOnVBigObject: String!
+  zFieldOnVBigObject: Int!
+}
+
+type WBigObject {
+  aFieldOnWBigObject: String!
+  bFieldOnWBigObject: Int!
+  cFieldOnWBigObject: Boolean!
+  dFieldOnWBigObject: Float!
+  eFieldOnWBigObject: String!
+  fFieldOnWBigObject: Int!
+  gFieldOnWBigObject: Boolean!
+  hFieldOnWBigObject: Float!
+  iFieldOnWBigObject: String!
+  jFieldOnWBigObject: Int!
+  kFieldOnWBigObject: Boolean!
+  lFieldOnWBigObject: Float!
+  mFieldOnWBigObject: String!
+  nFieldOnWBigObject: Int!
+  oFieldOnWBigObject: Boolean!
+  pFieldOnWBigObject: Float!
+  qFieldOnWBigObject: String!
+  rFieldOnWBigObject: Int!
+  sFieldOnWBigObject: Boolean!
+  tFieldOnWBigObject: Float!
+  uFieldOnWBigObject: String!
+  vFieldOnWBigObject: Int!
+  wFieldOnWBigObject: Boolean!
+  xFieldOnWBigObject: Float!
+  yFieldOnWBigObject: String!
+  zFieldOnWBigObject: Int!
+}
+
+type XBigObject {
+  aFieldOnXBigObject: String!
+  bFieldOnXBigObject: Int!
+  cFieldOnXBigObject: Boolean!
+  dFieldOnXBigObject: Float!
+  eFieldOnXBigObject: String!
+  fFieldOnXBigObject: Int!
+  gFieldOnXBigObject: Boolean!
+  hFieldOnXBigObject: Float!
+  iFieldOnXBigObject: String!
+  jFieldOnXBigObject: Int!
+  kFieldOnXBigObject: Boolean!
+  lFieldOnXBigObject: Float!
+  mFieldOnXBigObject: String!
+  nFieldOnXBigObject: Int!
+  oFieldOnXBigObject: Boolean!
+  pFieldOnXBigObject: Float!
+  qFieldOnXBigObject: String!
+  rFieldOnXBigObject: Int!
+  sFieldOnXBigObject: Boolean!
+  tFieldOnXBigObject: Float!
+  uFieldOnXBigObject: String!
+  vFieldOnXBigObject: Int!
+  wFieldOnXBigObject: Boolean!
+  xFieldOnXBigObject: Float!
+  yFieldOnXBigObject: String!
+  zFieldOnXBigObject: Int!
+}
+
+type YBigObject {
+  aFieldOnYBigObject: String!
+  bFieldOnYBigObject: Int!
+  cFieldOnYBigObject: Boolean!
+  dFieldOnYBigObject: Float!
+  eFieldOnYBigObject: String!
+  fFieldOnYBigObject: Int!
+  gFieldOnYBigObject: Boolean!
+  hFieldOnYBigObject: Float!
+  iFieldOnYBigObject: String!
+  jFieldOnYBigObject: Int!
+  kFieldOnYBigObject: Boolean!
+  lFieldOnYBigObject: Float!
+  mFieldOnYBigObject: String!
+  nFieldOnYBigObject: Int!
+  oFieldOnYBigObject: Boolean!
+  pFieldOnYBigObject: Float!
+  qFieldOnYBigObject: String!
+  rFieldOnYBigObject: Int!
+  sFieldOnYBigObject: Boolean!
+  tFieldOnYBigObject: Float!
+  uFieldOnYBigObject: String!
+  vFieldOnYBigObject: Int!
+  wFieldOnYBigObject: Boolean!
+  xFieldOnYBigObject: Float!
+  yFieldOnYBigObject: String!
+  zFieldOnYBigObject: Int!
+}
+
+type ZBigObject {
+  aFieldOnZBigObject: String!
+  bFieldOnZBigObject: Int!
+  cFieldOnZBigObject: Boolean!
+  dFieldOnZBigObject: Float!
+  eFieldOnZBigObject: String!
+  fFieldOnZBigObject: Int!
+  gFieldOnZBigObject: Boolean!
+  hFieldOnZBigObject: Float!
+  iFieldOnZBigObject: String!
+  jFieldOnZBigObject: Int!
+  kFieldOnZBigObject: Boolean!
+  lFieldOnZBigObject: Float!
+  mFieldOnZBigObject: String!
+  nFieldOnZBigObject: Int!
+  oFieldOnZBigObject: Boolean!
+  pFieldOnZBigObject: Float!
+  qFieldOnZBigObject: String!
+  rFieldOnZBigObject: Int!
+  sFieldOnZBigObject: Boolean!
+  tFieldOnZBigObject: Float!
+  uFieldOnZBigObject: String!
+  vFieldOnZBigObject: Int!
+  wFieldOnZBigObject: Boolean!
+  xFieldOnZBigObject: Float!
+  yFieldOnZBigObject: String!
+  zFieldOnZBigObject: Int!
+}
