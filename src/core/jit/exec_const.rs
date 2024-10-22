@@ -50,12 +50,8 @@ impl ConstValueExecutor {
             .to_result()
         else {
             // this shouldn't actually ever happen
-            return Response {
-                data: Default::default(),
-                errors: vec![Positioned::new(Error::Unknown, Pos { line: 0, column: 0 }).into()],
-                extensions: Default::default(),
-                cache_control: Default::default(),
-            };
+            return Response::default()
+                .with_errors(vec![Positioned::new(Error::Unknown, Pos::default())]);
         };
 
         // Attempt to replace variables in the plan with the actual values
@@ -67,17 +63,10 @@ impl ConstValueExecutor {
         let plan = match result {
             Ok(plan) => plan,
             Err(err) => {
-                return Response {
-                    data: Default::default(),
-                    // TODO: Position shouldn't be 0, 0
-                    errors: vec![Positioned::new(
-                        BuildError::from(err).into(),
-                        Pos { line: 0, column: 0 },
-                    )
-                    .into()],
-                    extensions: Default::default(),
-                    cache_control: Default::default(),
-                };
+                return Response::default().with_errors(vec![Positioned::new(
+                    BuildError::from(err).into(),
+                    Pos::default(),
+                )]);
             }
         };
 

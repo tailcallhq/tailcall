@@ -22,21 +22,33 @@ pub struct Response<Value> {
     pub cache_control: CacheControl,
 }
 
+impl<V: Default> Default for Response<V> {
+    fn default() -> Self {
+        Self {
+            data: Default::default(),
+            errors: Default::default(),
+            extensions: Default::default(),
+            cache_control: Default::default(),
+        }
+    }
+}
+
 impl<Value: Default> Response<Value> {
     pub fn new(result: Result<Value, Positioned<jit::Error>>) -> Self {
         match result {
-            Ok(value) => Response {
-                data: value,
-                errors: Vec::new(),
-                extensions: Vec::new(),
-                cache_control: Default::default(),
-            },
-            Err(error) => Response {
-                data: Default::default(),
-                errors: vec![error.into()],
-                extensions: Vec::new(),
-                cache_control: Default::default(),
-            },
+            Ok(value) => Response::default().with_value(value),
+            Err(error) => Response::default().with_errors(vec![error]),
+        }
+    }
+
+    pub fn with_value(self, value: Value) -> Self {
+        Self { data: value, ..self }
+    }
+
+    pub fn with_errors<E: Into<ServerError>>(self, errors: Vec<E>) -> Self {
+        Self {
+            errors: errors.into_iter().map(|e| e.into()).collect(),
+            ..self
         }
     }
 
