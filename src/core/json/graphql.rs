@@ -14,6 +14,10 @@ impl<'obj, Value: JsonLike<'obj> + Clone> JsonObjectLike<'obj> for IndexMap<Name
         IndexMap::new()
     }
 
+    fn with_capacity(n: usize) -> Self {
+        IndexMap::with_capacity(n)
+    }
+
     fn get_key(&self, key: &str) -> Option<&Self::Value> {
         self.get(key)
     }

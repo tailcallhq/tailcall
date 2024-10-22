@@ -179,7 +179,7 @@ where
         } else {
             match (value.as_array(), value.as_object()) {
                 (_, Some(obj)) => {
-                    let mut ans = Value::JsonObject::new();
+                    let mut ans = Value::JsonObject::with_capacity(node.selection.len());
 
                     for child in node
                         .iter()
@@ -201,7 +201,7 @@ where
                     Ok(Value::object(ans))
                 }
                 (Some(arr), _) => {
-                    let mut ans = vec![];
+                    let mut ans = Vec::with_capacity(arr.len());
                     for (i, val) in arr.iter().enumerate() {
                         path.push(PathSegment::Index(i));
                         let val =
