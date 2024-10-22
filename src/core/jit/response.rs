@@ -143,7 +143,8 @@ mod test {
     use async_graphql_value::ConstValue;
 
     use super::Response;
-    use crate::core::jit::{self, server_error::ServerError, Pos, Positioned};
+    use crate::core::jit::server_error::ServerError;
+    use crate::core::jit::{self, Pos, Positioned};
 
     #[test]
     fn test_with_response() {
