@@ -4,30 +4,12 @@ expression: errors
 ---
 [
   {
-    "message": "no argument 'input' found",
+    "message": "Parsing failed because of unknown field `baseURL`, expected one of `onRequest`, `url`, `body`, `encoding`, `batchKey`, `headers`, `input`, `method`, `output`, `query`, `dedupe`, `select`",
     "trace": [
       "Query",
       "user",
       "@http",
-      "path"
-    ],
-    "description": null
-  },
-  {
-    "message": "Field is already implemented from interface",
-    "trace": [
-      "User",
-      "userId",
-      "@modify"
-    ],
-    "description": null
-  },
-  {
-    "message": "Field is already implemented from interface",
-    "trace": [
-      "User",
-      "userName",
-      "@modify"
+      "baseURL"
     ],
     "description": null
   }

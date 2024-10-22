@@ -2,7 +2,7 @@
 source: src/core/config/transformer/merge_types/type_merger.rs
 expression: config.to_sdl()
 ---
-schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+schema @server @upstream {
   query: Query
 }
 
@@ -19,5 +19,5 @@ type GEN__M1 {
 }
 
 type Query {
-  foo: FooBar @http(path: "/foo")
+  foo: FooBar @http(url: "http://jsonplacheholder.typicode.com/foo")
 }

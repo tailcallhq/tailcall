@@ -7,11 +7,7 @@ schema {
 
 type Query {
   queryTest(filter: StringFilter): [MyType]
-    @graphQL(
-      name: "getMyType"
-      args: [{key: "filter", value: "{{.args.filter}}"}]
-      baseURL: "http://localhost:8083/mesh"
-    )
+    @graphQL(name: "getMyType", args: [{key: "filter", value: "{{.args.filter}}"}], url: "http://localhost:8083/mesh")
 }
 
 type StringFilter {

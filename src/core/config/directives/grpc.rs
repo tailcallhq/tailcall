@@ -30,10 +30,8 @@ use crate::core::is_default;
 /// In this scenario, the GraphQL server will make a gRPC request to the gRPC
 /// endpoint specified when the `users` field is queried.
 pub struct Grpc {
-    #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
-    /// This refers to the base URL of the API. If not specified, the default
-    /// base URL is the one specified in the `@upstream` operator.
-    pub base_url: Option<String>,
+    /// This refers to URL of the API.
+    pub url: String,
     #[serde(default, skip_serializing_if = "is_default")]
     /// This refers to the arguments of your gRPC call. You can pass it as a
     /// static object or use Mustache template for dynamic parameters. These

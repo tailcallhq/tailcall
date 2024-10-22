@@ -30,8 +30,8 @@ schema @server @upstream(onRequest: "onRequest") @link(type: Script, src: "test.
 }
 
 type Query {
-  hello: String @http(baseURL: "http://localhost:3000", path: "/hello")
-  hi: String @http(baseURL: "http://localhost:3000", path: "/hi")
+  hello: String @http(url: "http://localhost:3000/hello")
+  hi: String @http(url: "http://localhost:3000/hi")
 }
 ```
 

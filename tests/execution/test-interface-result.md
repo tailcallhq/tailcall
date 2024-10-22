@@ -5,7 +5,7 @@ identity: true
 # test-interface-result
 
 ```graphql @config
-schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+schema @server @upstream {
   query: Query
 }
 
@@ -19,6 +19,6 @@ type B implements IA {
 }
 
 type Query {
-  bar: IA @http(path: "/user")
+  bar: IA @http(url: "http://jsonplaceholder.typicode.com/user")
 }
 ```

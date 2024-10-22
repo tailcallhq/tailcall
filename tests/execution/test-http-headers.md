@@ -5,11 +5,11 @@ identity: true
 # test-http-headers
 
 ```graphql @config
-schema @server @upstream(baseURL: "http://localhost:4000") {
+schema @server @upstream {
   query: Query
 }
 
 type Query {
-  foo: String @http(headers: [{key: "foo", value: "bar"}], path: "/foo")
+  foo: String @http(url: "http://localhost:4000/foo", headers: [{key: "foo", value: "bar"}])
 }
 ```

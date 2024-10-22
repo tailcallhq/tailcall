@@ -10,14 +10,5 @@ expression: errors
       "users"
     ],
     "description": null
-  },
-  {
-    "message": "No base URL defined",
-    "trace": [
-      "Query",
-      "users",
-      "@http"
-    ],
-    "description": null
   }
 ]
