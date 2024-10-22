@@ -8,7 +8,6 @@ use super::server_error::ServerError;
 use super::Positioned;
 use crate::core::async_graphql_hyper::CacheControl;
 use crate::core::jit;
-use crate::core::merge_right::MergeRight;
 
 #[derive(Clone, Setters, Serialize, Debug)]
 pub struct Response<Value> {
@@ -43,22 +42,6 @@ impl<Value: Default> Response<Value> {
 
     pub fn add_errors(&mut self, new_errors: Vec<Positioned<jit::Error>>) {
         self.errors.extend(new_errors.into_iter().map(|e| e.into()));
-    }
-}
-
-impl MergeRight for async_graphql::Response {
-    fn merge_right(mut self, other: Self) -> Self {
-        if let async_graphql::Value::Object(mut other_obj) = other.data {
-            if let async_graphql::Value::Object(self_obj) = std::mem::take(self.data.borrow_mut()) {
-                other_obj.extend(self_obj);
-                self.data = async_graphql::Value::Object(other_obj);
-            }
-        }
-
-        self.errors.extend(other.errors);
-        self.extensions.extend(other.extensions);
-
-        self
     }
 }
 
@@ -110,23 +93,6 @@ where
 
 impl From<Response<async_graphql::Value>> for AnyResponse<Vec<u8>> {
     fn from(response: Response<async_graphql::Value>) -> Self {
-        Self {
-            cache_control: CacheControl {
-                max_age: response.cache_control.max_age,
-                public: response.cache_control.public,
-            },
-            is_ok: response.errors.is_empty(),
-            // Safely serialize the response to JSON bytes. Since the response is always valid,
-            // serialization is expected to succeed. In the unlikely event of a failure,
-            // default to an empty byte array. TODO: return error instead of default
-            // value.
-            body: Arc::new(serde_json::to_vec(&response).unwrap_or_default()),
-        }
-    }
-}
-
-impl From<async_graphql::Response> for AnyResponse<Vec<u8>> {
-    fn from(response: async_graphql::Response) -> Self {
         Self {
             cache_control: CacheControl {
                 max_age: response.cache_control.max_age,
