@@ -103,8 +103,8 @@ where
     }
 }
 
-impl From<Response<async_graphql::Value>> for AnyResponse<Vec<u8>> {
-    fn from(response: Response<async_graphql::Value>) -> Self {
+impl<V: Serialize + Default> From<Response<V>> for AnyResponse<Vec<u8>> {
+    fn from(response: Response<V>) -> Self {
         Self {
             cache_control: CacheControl {
                 max_age: response.cache_control.max_age,

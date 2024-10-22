@@ -95,7 +95,7 @@ impl JITExecutor {
                 let exec = match ConstValueExecutor::try_new(&jit_request, &self.app_ctx) {
                     Ok(exec) => exec,
                     Err(error) => {
-                        return Response::default()
+                        return Response::<async_graphql::Value>::default()
                             .with_errors(vec![Positioned::new(error, Pos::default())])
                             .into()
                     }
