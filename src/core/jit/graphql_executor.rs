@@ -94,9 +94,11 @@ impl JITExecutor {
             } else {
                 let exec = match ConstValueExecutor::try_new(&jit_request, &self.app_ctx) {
                     Ok(exec) => exec,
-                    Err(error) => return Response::default()
-                        .with_errors(vec![Positioned::new(error, Pos::default())])
-                        .into(),
+                    Err(error) => {
+                        return Response::default()
+                            .with_errors(vec![Positioned::new(error, Pos::default())])
+                            .into()
+                    }
                 };
                 self.app_ctx.operation_plans.insert(hash, exec.plan.clone());
                 exec
