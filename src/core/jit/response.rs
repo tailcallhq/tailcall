@@ -17,6 +17,9 @@ pub struct Response<Value, Error> {
     pub errors: Vec<Positioned<Error>>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub extensions: Vec<(String, Value)>,
+
+    #[serde(skip)]
+    pub cache_control: CacheControl,
 }
 
 impl<Value, Error> Response<Value, Error> {
@@ -26,8 +29,14 @@ impl<Value, Error> Response<Value, Error> {
                 data: Some(value),
                 errors: Vec::new(),
                 extensions: Vec::new(),
+                cache_control: Default::default(),
             },
-            Err(error) => Response { data: None, errors: vec![error], extensions: Vec::new() },
+            Err(error) => Response {
+                data: None,
+                errors: vec![error],
+                extensions: Vec::new(),
+                cache_control: Default::default(),
+            },
         }
     }
 
@@ -88,6 +97,24 @@ where
             body: Default::default(),
             cache_control: Default::default(),
             is_ok: true,
+        }
+    }
+}
+
+impl From<Response<async_graphql::Value, jit::Error>> for AnyResponse<Vec<u8>> {
+    fn from(response: Response<async_graphql::Value, jit::Error>) -> Self {
+        // FIXME: handle serialization for errors.
+        Self {
+            cache_control: CacheControl {
+                max_age: response.cache_control.max_age,
+                public: response.cache_control.public,
+            },
+            is_ok: response.errors.is_empty(),
+            // Safely serialize the response to JSON bytes. Since the response is always valid,
+            // serialization is expected to succeed. In the unlikely event of a failure,
+            // default to an empty byte array. TODO: return error instead of default
+            // value.
+            body: Arc::new(serde_json::to_vec(&response.data).unwrap_or_default()),
         }
     }
 }

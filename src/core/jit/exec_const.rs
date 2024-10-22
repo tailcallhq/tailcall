@@ -54,6 +54,7 @@ impl ConstValueExecutor {
                 data: None,
                 errors: vec![Positioned::new(Error::Unknown, Pos { line: 0, column: 0 })],
                 extensions: Default::default(),
+                cache_control: Default::default(),
             };
         };
 
@@ -74,6 +75,7 @@ impl ConstValueExecutor {
                         Pos { line: 0, column: 0 },
                     )],
                     extensions: Default::default(),
+                    cache_control: Default::default(),
                 };
             }
         };
