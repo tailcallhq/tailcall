@@ -178,23 +178,6 @@ impl IR {
             }
         }
     }
-
-    /// Checks if the IR will always evaluate to a Constant Value
-    pub fn is_const(&self) -> bool {
-        match self {
-            IR::Dynamic(dynamic_value) => dynamic_value.is_const(),
-            IR::IO(_) => false,
-            IR::Cache(_) => false,
-            IR::Path(ir, _) => ir.is_const(),
-            IR::ContextPath(_) => false,
-            IR::Protect(ir) => ir.is_const(),
-            IR::Map(map) => map.input.is_const(),
-            IR::Pipe(ir, ir1) => ir.is_const() && ir1.is_const(),
-            IR::Discriminate(_, ir) => ir.is_const(),
-            IR::Entity(hash_map) => hash_map.values().all(|ir| ir.is_const()),
-            IR::Service(_) => true,
-        }
-    }
 }
 
 impl<'a, Ctx: ResolverContextLike + Sync> CacheKey<EvalContext<'a, Ctx>> for IO {
