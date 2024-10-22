@@ -139,7 +139,7 @@ where
             } else {
                 Err(ValidationError::ValueRequired.into())
             }
-        } else if self.plan.field_is_scalar(node) {
+        } else if node.is_scalar {
             let scalar =
                 scalar::Scalar::find(node.type_of.name()).unwrap_or(&scalar::Scalar::Empty);
 
@@ -154,7 +154,7 @@ where
                         .into(),
                 )
             }
-        } else if self.plan.field_is_enum(node) {
+        } else if node.is_enum {
             let check_valid_enum = |value: &Value| -> bool {
                 value
                     .as_str()
