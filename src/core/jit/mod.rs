@@ -1,9 +1,9 @@
 mod exec;
 mod model;
+pub mod server_error;
 mod store;
 mod synth;
 mod transform;
-pub mod server_error;
 
 use builder::*;
 use store::*;

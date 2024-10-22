@@ -1,7 +1,5 @@
-use std::{
-    collections::BTreeMap,
-    fmt::{Debug, Display, Formatter},
-};
+use std::collections::BTreeMap;
+use std::fmt::{Debug, Display, Formatter};
 
 use serde::{Deserialize, Serialize};
 
@@ -89,7 +87,7 @@ impl From<async_graphql::parser::Error> for ServerError {
     fn from(e: async_graphql::parser::Error) -> Self {
         Self {
             message: e.to_string(),
-            locations: e.positions().into_iter().map(|p| p.into()).collect(),
+            locations: e.positions().map(|p| p.into()).collect(),
             path: Vec::new(),
             extensions: None,
         }

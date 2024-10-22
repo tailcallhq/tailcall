@@ -34,10 +34,7 @@ mod tests {
             Ok(Self { app_ctx, req_ctx })
         }
 
-        async fn run(
-            &self,
-            request: Request<ConstValue>,
-        ) -> anyhow::Result<Response<ConstValue>> {
+        async fn run(&self, request: Request<ConstValue>) -> anyhow::Result<Response<ConstValue>> {
             let executor = ConstValueExecutor::try_new(&request, &self.app_ctx)?;
 
             Ok(executor.execute(&self.req_ctx, &request).await)
@@ -178,7 +175,8 @@ mod tests {
                 ResolveInputError::VariableIsNotFound("id".to_string()),
             )),
             Pos::default().into(),
-        ).into()];
+        )
+        .into()];
         assert_eq!(format!("{:?}", resp.errors), format!("{:?}", errs));
 
         let request = Request::new(query);
@@ -216,7 +214,8 @@ mod tests {
                 ResolveInputError::VariableIsNotFound("id".to_string()),
             )),
             Pos::default().into(),
-        ).into()];
+        )
+        .into()];
         assert_eq!(format!("{:?}", resp.errors), format!("{:?}", errs));
 
         let request = Request::new(query);

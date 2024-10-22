@@ -5,11 +5,8 @@ use async_graphql::Value as ConstValue;
 use derive_more::From;
 use thiserror::Error;
 
-use crate::core::{
-    auth, cache,
-    jit::server_error::{Error as ExtensionError, ErrorExtensions},
-    worker, Errata,
-};
+use crate::core::jit::server_error::{Error as ExtensionError, ErrorExtensions};
+use crate::core::{auth, cache, worker, Errata};
 
 #[derive(From, Debug, Error, Clone)]
 pub enum Error {

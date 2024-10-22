@@ -65,9 +65,7 @@ impl MergeRight for async_graphql::Response {
 impl Response<async_graphql::Value> {
     pub fn merge_with(mut self, other: async_graphql::Response) -> Self {
         if let async_graphql::Value::Object(mut other_obj) = other.data {
-            if let async_graphql::Value::Object(self_obj) =
-                std::mem::take(self.data.borrow_mut())
-            {
+            if let async_graphql::Value::Object(self_obj) = std::mem::take(self.data.borrow_mut()) {
                 other_obj.extend(self_obj);
                 self.data = async_graphql::Value::Object(other_obj);
             } else {
@@ -77,7 +75,7 @@ impl Response<async_graphql::Value> {
 
         self.errors
             .extend(other.errors.into_iter().map(|e| e.into()));
-        self.extensions.extend(other.extensions.into_iter());
+        self.extensions.extend(other.extensions);
 
         self
     }

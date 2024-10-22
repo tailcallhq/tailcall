@@ -73,7 +73,8 @@ impl ConstValueExecutor {
                     errors: vec![Positioned::new(
                         BuildError::from(err).into(),
                         Pos { line: 0, column: 0 },
-                    ).into()],
+                    )
+                    .into()],
                     extensions: Default::default(),
                     cache_control: Default::default(),
                 };

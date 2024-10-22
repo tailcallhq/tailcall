@@ -1,5 +1,4 @@
 use async_graphql::parser::types::OperationType;
-use async_graphql::ServerError;
 use thiserror::Error;
 
 use super::server_error::ErrorExtensions;
@@ -72,18 +71,18 @@ impl ErrorExtensions for Error {
 
 pub type Result<A> = std::result::Result<A, Error>;
 
-impl From<Error> for ServerError {
-    fn from(val: Error) -> Self {
-        // async_graphql::parser::Error has special conversion to ServerError
-        if let Error::ParseError(error) = val {
-            return error.into();
-        }
+// impl From<Error> for ServerError {
+//     fn from(val: Error) -> Self {
+//         // async_graphql::parser::Error has special conversion to ServerError
+//         if let Error::ParseError(error) = val {
+//             return error.into();
+//         }
 
-        let _extensions = val.extend().extensions;
-        let server_error = ServerError::new(val.to_string(), None);
+//         let _extensions = val.extend().extensions;
+        
 
-        // server_error.extensions = extensions;
+//         // server_error.extensions = extensions;
 
-        server_error
-    }
-}
+//         ServerError::new(val.to_string(), None)
+//     }
+// }

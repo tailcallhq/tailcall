@@ -3,17 +3,17 @@ use std::future::Future;
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
-use async_graphql::{BatchRequest, Response, Value};
+use async_graphql::{BatchRequest, Value};
 use async_graphql_value::{ConstValue, Extensions};
 use futures_util::stream::FuturesOrdered;
 use futures_util::StreamExt;
 use tailcall_hasher::TailcallHasher;
 
-use super::{AnyResponse, BatchResponse};
+use super::{AnyResponse, BatchResponse, Response};
 use crate::core::app_context::AppContext;
 use crate::core::async_graphql_hyper::OperationId;
 use crate::core::http::RequestContext;
-use crate::core::jit::{self, ConstValueExecutor, OPHash};
+use crate::core::jit::{self, ConstValueExecutor, OPHash, Pos, Positioned};
 
 #[derive(Clone)]
 pub struct JITExecutor {
@@ -39,9 +39,7 @@ impl JITExecutor {
     ) -> AnyResponse<Vec<u8>> {
         let is_introspection_query = self.app_ctx.blueprint.server.get_enable_introspection()
             && exec.plan.is_introspection_query;
-        let response = exec
-            .execute(&self.req_ctx, &jit_request)
-            .await;
+        let response = exec.execute(&self.req_ctx, &jit_request).await;
         let response = if is_introspection_query {
             let async_req = async_graphql::Request::from(jit_request).only_introspection();
             let async_resp = self.app_ctx.execute(async_req).await;
@@ -96,7 +94,15 @@ impl JITExecutor {
             } else {
                 let exec = match ConstValueExecutor::try_new(&jit_request, &self.app_ctx) {
                     Ok(exec) => exec,
-                    Err(error) => return Response::from_errors(vec![error.into()]).into(),
+                    Err(error) => {
+                        return Response {
+                            data: Default::default(),
+                            errors: vec![Positioned::new(error, Pos::default()).into()],
+                            cache_control: Default::default(),
+                            extensions: Default::default(),
+                        }
+                        .into();
+                    }
                 };
                 self.app_ctx.operation_plans.insert(hash, exec.plan.clone());
                 exec
