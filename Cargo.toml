@@ -171,6 +171,9 @@ derive_more = { workspace = true }
 strum = "0.26.2"
 dashmap = "6.1.0"
 urlencoding = "2.1.3"
+tokio-util = "0.7.12"
+futures = "0.3.30"
+bytes = "1.7.2"
 
 [dev-dependencies]
 datatest-stable = "0.2.9"
@@ -267,7 +270,7 @@ opt-level = 3
 codegen-units = 1
 panic = 'abort'
 lto = 'fat'
-debug = false
+debug = true
 incremental = false
 overflow-checks = false
 
