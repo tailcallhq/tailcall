@@ -270,7 +270,7 @@ debug = false
 incremental = false
 overflow-checks = false
 
-[profile.profile]
+[profile.benchmark]
 inherits = "release"
 debug = true
 

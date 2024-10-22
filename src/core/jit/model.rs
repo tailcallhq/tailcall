@@ -82,16 +82,6 @@ impl<Input> Field<Input> {
     pub fn iter(&self) -> impl Iterator<Item = &Field<Input>> {
         self.selection.iter()
     }
-
-    pub fn modify(&self, ff: &impl Fn(&Field<Input>) -> Field<Input>) -> Field<Input> {
-        let mut field = ff(self);
-        field.selection = field
-            .selection
-            .iter()
-            .map(|f| f.modify(&ff))
-            .collect::<Vec<_>>();
-        field
-    }
 }
 
 #[derive(Debug, Clone)]
