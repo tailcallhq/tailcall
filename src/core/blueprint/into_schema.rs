@@ -97,8 +97,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                         let value = expr
                                             .eval(ctx)
                                             .await
-                                            .map_err(|err| err.extend())
-                                            .unwrap();
+                                            .map_err(|err| err.extend())?;
 
                                         if let ConstValue::Null = value {
                                             Ok(FieldValue::NONE)

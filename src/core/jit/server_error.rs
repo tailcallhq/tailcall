@@ -163,6 +163,13 @@ impl Debug for Error {
     }
 }
 
+impl Display for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        // Delegate to the Debug implementation
+        write!(f, "{:?}", self)
+    }
+}
+
 impl PartialEq for Error {
     fn eq(&self, other: &Self) -> bool {
         self.message.eq(&other.message) && self.extensions.eq(&other.extensions)
@@ -190,12 +197,6 @@ impl Error {
             path: Vec::new(),
             extensions: self.extensions,
         }
-    }
-}
-
-impl<T: Display + Send + Sync + 'static> From<T> for Error {
-    fn from(e: T) -> Self {
-        Self { message: e.to_string(), extensions: None }
     }
 }
 
