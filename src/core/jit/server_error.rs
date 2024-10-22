@@ -237,3 +237,25 @@ impl<E: Display> ErrorExtensions for &E {
         Error { message: self.to_string(), extensions: None }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use async_graphql::{ErrorExtensionValues, ServerError};
+
+    #[test]
+    fn test_extension_conversion() {
+        let mut async_ext = ErrorExtensionValues::default();
+        async_ext.set("k-1", async_graphql::Value::Number(2.into()));
+        async_ext.set("k-2", async_graphql::Value::Null);
+        async_ext.set("k-3", async_graphql::Value::String("test".into()));
+
+        let mut async_server_err = ServerError::new("testing-error-message", None);
+        async_server_err.extensions = Some(async_ext);
+        let async_ext_str = serde_json::to_value(async_server_err.clone()).unwrap();
+
+        let owned_server_err = super::ServerError::from(async_server_err);
+        let owned_ext_str = serde_json::to_value(owned_server_err).unwrap();
+
+        assert_eq!(async_ext_str, owned_ext_str);
+    }
+}
