@@ -14,7 +14,6 @@ use crate::core::app_context::AppContext;
 use crate::core::async_graphql_hyper::OperationId;
 use crate::core::http::RequestContext;
 use crate::core::jit::{self, ConstValueExecutor, OPHash};
-use crate::core::merge_right::MergeRight;
 
 #[derive(Clone)]
 pub struct JITExecutor {
@@ -38,18 +37,18 @@ impl JITExecutor {
         exec: ConstValueExecutor,
         jit_request: jit::Request<ConstValue>,
     ) -> AnyResponse<Vec<u8>> {
-        let _is_introspection_query = self.app_ctx.blueprint.server.get_enable_introspection()
+        let is_introspection_query = self.app_ctx.blueprint.server.get_enable_introspection()
             && exec.plan.is_introspection_query;
         let response = exec
             .execute(&self.req_ctx, &jit_request)
             .await;
-        // let response = if is_introspection_query {
-        //     let async_req = async_graphql::Request::from(jit_request).only_introspection();
-        //     let async_resp = self.app_ctx.execute(async_req).await;
-        //     response.merge_right(async_resp)
-        // } else {
-        //     response
-        // };
+        let response = if is_introspection_query {
+            let async_req = async_graphql::Request::from(jit_request).only_introspection();
+            let async_resp = self.app_ctx.execute(async_req).await;
+            response.merge_with(async_resp)
+        } else {
+            response
+        };
 
         response.into()
     }

@@ -3,7 +3,6 @@ use std::{
     fmt::{Debug, Display, Formatter},
 };
 
-use async_graphql::ErrorExtensions;
 use serde::{Deserialize, Serialize};
 
 use super::{PathSegment, Pos, Positioned};
@@ -24,14 +23,33 @@ pub struct ServerError {
     pub extensions: Option<ErrorExtensionValues>,
 }
 
+impl From<async_graphql::ServerError> for ServerError {
+    fn from(value: async_graphql::ServerError) -> Self {
+        // we can't copy extensions, bcoz it's private inside the async_graphql.
+        // hack: serialize the value and deserialize it back to btreemap.
+        let ext = value.extensions.unwrap();
+        let serialized_value = serde_json::to_value(ext).unwrap();
+        let btremap: BTreeMap<String, async_graphql::Value> =
+            serde_json::from_value(serialized_value).unwrap();
+
+        Self {
+            message: value.message,
+            locations: value.locations.into_iter().map(|l| l.into()).collect(),
+            path: value.path.into_iter().map(|p| p.into()).collect(),
+            extensions: Some(ErrorExtensionValues(btremap)),
+        }
+    }
+}
+
 impl From<Positioned<super::Error>> for ServerError {
     fn from(value: Positioned<super::Error>) -> Self {
         let inner_value = value.value;
         let position = value.pos;
 
-        // TODO: fix the extensions.
-        let _ext = inner_value.extend().extensions;
-        let server_error = ServerError::new(inner_value.to_string(), Some(position));
+        let ext = inner_value.extend().extensions;
+        let mut server_error = ServerError::new(inner_value.to_string(), Some(position));
+        server_error.extensions = ext;
+        server_error.path = value.path;
 
         server_error
     }
@@ -121,5 +139,95 @@ impl ErrorExtensionValues {
     /// Get an extension value.
     pub fn get(&self, name: impl AsRef<str>) -> Option<&async_graphql::Value> {
         self.0.get(name.as_ref())
+    }
+}
+
+#[derive(Clone, Serialize)]
+pub struct Error {
+    /// The error message.
+    pub message: String,
+    /// Extensions to the error.
+    #[serde(skip_serializing_if = "error_extensions_is_empty")]
+    pub extensions: Option<ErrorExtensionValues>,
+}
+
+impl Debug for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Error")
+            .field("message", &self.message)
+            .field("extensions", &self.extensions)
+            .finish()
+    }
+}
+
+impl PartialEq for Error {
+    fn eq(&self, other: &Self) -> bool {
+        self.message.eq(&other.message) && self.extensions.eq(&other.extensions)
+    }
+}
+
+impl Error {
+    /// Create an error from the given error message.
+    pub fn new(message: impl Into<String>) -> Self {
+        Self { message: message.into(), extensions: None }
+    }
+
+    /// Create an error with a type that implements `Display`, and it will also
+    /// set the `source` of the error to this value.
+    pub fn new_with_source(source: impl Display + Send + Sync + 'static) -> Self {
+        Self { message: source.to_string(), extensions: None }
+    }
+
+    /// Convert the error to a server error.
+    #[must_use]
+    pub fn into_server_error(self, pos: Pos) -> ServerError {
+        ServerError {
+            message: self.message,
+            locations: vec![pos],
+            path: Vec::new(),
+            extensions: self.extensions,
+        }
+    }
+}
+
+impl<T: Display + Send + Sync + 'static> From<T> for Error {
+    fn from(e: T) -> Self {
+        Self { message: e.to_string(), extensions: None }
+    }
+}
+
+// An error which can be extended into a `Error`.
+pub trait ErrorExtensions: Sized {
+    /// Convert the error to a `Error`.
+    fn extend(&self) -> Error;
+
+    /// Add extensions to the error, using a callback to make the extensions.
+    fn extend_with<C>(self, cb: C) -> Error
+    where
+        C: FnOnce(&Self, &mut ErrorExtensionValues),
+    {
+        let mut new_extensions = Default::default();
+        cb(&self, &mut new_extensions);
+
+        let Error { message, extensions } = self.extend();
+
+        let mut extensions = extensions.unwrap_or_default();
+        extensions.0.extend(new_extensions.0);
+
+        Error { message, extensions: Some(extensions) }
+    }
+}
+
+impl ErrorExtensions for Error {
+    fn extend(&self) -> Error {
+        self.clone()
+    }
+}
+
+// implementing for &E instead of E gives the user the possibility to implement
+// for E which does not conflict with this implementation acting as a fallback.
+impl<E: Display> ErrorExtensions for &E {
+    fn extend(&self) -> Error {
+        Error { message: self.to_string(), extensions: None }
     }
 }

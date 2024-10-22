@@ -8,6 +8,7 @@ mod tests {
     use tailcall::core::blueprint::Blueprint;
     use tailcall::core::config::{Config, ConfigModule};
     use tailcall::core::http::RequestContext;
+    use tailcall::core::jit::server_error::ServerError;
     use tailcall::core::jit::{
         BuildError, ConstValueExecutor, Error, Positioned, Request, ResolveInputError, Response,
     };
@@ -36,7 +37,7 @@ mod tests {
         async fn run(
             &self,
             request: Request<ConstValue>,
-        ) -> anyhow::Result<Response<ConstValue, Error>> {
+        ) -> anyhow::Result<Response<ConstValue>> {
             let executor = ConstValueExecutor::try_new(&request, &self.app_ctx)?;
 
             Ok(executor.execute(&self.req_ctx, &request).await)
@@ -172,12 +173,12 @@ mod tests {
         let executor = TestExecutor::try_new().await.unwrap();
 
         let resp = executor.run(request).await.unwrap();
-        let errs = vec![Positioned::new(
+        let errs: Vec<ServerError> = vec![Positioned::new(
             Error::BuildError(BuildError::ResolveInputError(
                 ResolveInputError::VariableIsNotFound("id".to_string()),
             )),
             Pos::default().into(),
-        )];
+        ).into()];
         assert_eq!(format!("{:?}", resp.errors), format!("{:?}", errs));
 
         let request = Request::new(query);
@@ -210,12 +211,12 @@ mod tests {
         let executor = TestExecutor::try_new().await.unwrap();
 
         let resp = executor.run(request).await.unwrap();
-        let errs = vec![Positioned::new(
+        let errs: Vec<ServerError> = vec![Positioned::new(
             Error::BuildError(BuildError::ResolveInputError(
                 ResolveInputError::VariableIsNotFound("id".to_string()),
             )),
             Pos::default().into(),
-        )];
+        ).into()];
         assert_eq!(format!("{:?}", resp.errors), format!("{:?}", errs));
 
         let request = Request::new(query);
@@ -223,14 +224,14 @@ mod tests {
         let response = executor.run(request).await.unwrap();
         let data = response.data;
 
-        assert_eq!(data.and_then(get_id_value).unwrap(), 1);
+        assert_eq!(get_id_value(data).unwrap(), 1);
 
         let request = Request::new(query);
         let request = request.variables([("id".into(), ConstValue::from(2))]);
         let response = executor.run(request).await.unwrap();
         let data = response.data;
 
-        assert_eq!(data.and_then(get_id_value).unwrap(), 2);
+        assert_eq!(get_id_value(data).unwrap(), 2);
     }
 
     #[tokio::test]

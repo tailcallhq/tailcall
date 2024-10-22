@@ -1,6 +1,8 @@
 use async_graphql::parser::types::OperationType;
-use async_graphql::{ErrorExtensions, ServerError};
+use async_graphql::ServerError;
 use thiserror::Error;
+
+use super::server_error::ErrorExtensions;
 
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
 #[error("Error while building the plan")]
@@ -56,14 +58,14 @@ pub enum Error {
 }
 
 impl ErrorExtensions for Error {
-    fn extend(&self) -> async_graphql::Error {
+    fn extend(&self) -> super::server_error::Error {
         match self {
             Error::BuildError(error) => error.extend(),
             Error::ParseError(error) => error.extend(),
             Error::IR(error) => error.extend(),
             Error::Validation(error) => error.extend(),
             Error::ServerError(error) => error.extend(),
-            Error::Unknown => async_graphql::Error::new(self.to_string()),
+            Error::Unknown => super::server_error::Error::new(self.to_string()),
         }
     }
 }
@@ -77,10 +79,10 @@ impl From<Error> for ServerError {
             return error.into();
         }
 
-        let extensions = val.extend().extensions;
-        let mut server_error = ServerError::new(val.to_string(), None);
+        let _extensions = val.extend().extensions;
+        let server_error = ServerError::new(val.to_string(), None);
 
-        server_error.extensions = extensions;
+        // server_error.extensions = extensions;
 
         server_error
     }
