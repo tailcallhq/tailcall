@@ -462,15 +462,25 @@ impl<'a> From<&'a Directive<ConstValue>> for ConstDirective {
 ///
 /// You can serialize and deserialize it to the GraphQL `locations` format
 /// ([reference](https://spec.graphql.org/October2021/#sec-Errors)).
-#[derive(
-    Debug, PartialOrd, Ord, PartialEq, Eq, Clone, Copy, Default, Hash, Serialize, Deserialize,
-)]
+#[derive(PartialOrd, Ord, PartialEq, Eq, Clone, Copy, Default, Hash, Serialize, Deserialize)]
 pub struct Pos {
     /// One-based line number.
     pub line: usize,
 
     /// One-based column number.
     pub column: usize,
+}
+
+impl std::fmt::Debug for Pos {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Pos({}:{})", self.line, self.column)
+    }
+}
+
+impl std::fmt::Display for Pos {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}:{}", self.line, self.column)
+    }
 }
 
 impl From<async_graphql::Pos> for Pos {
