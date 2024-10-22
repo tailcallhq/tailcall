@@ -44,6 +44,11 @@ impl From<Positioned<super::Error>> for ServerError {
         let inner_value = value.value;
         let position = value.pos;
 
+        // async_graphql::parser::Error has special conversion to ServerError
+        if let super::Error::ParseError(e) = inner_value {
+            return e.into();
+        }
+
         let ext = inner_value.extend().extensions;
         let mut server_error = ServerError::new(inner_value.to_string(), Some(position));
         server_error.extensions = ext;
