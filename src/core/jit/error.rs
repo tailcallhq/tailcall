@@ -70,19 +70,3 @@ impl ErrorExtensions for Error {
 }
 
 pub type Result<A> = std::result::Result<A, Error>;
-
-// impl From<Error> for ServerError {
-//     fn from(val: Error) -> Self {
-//         // async_graphql::parser::Error has special conversion to ServerError
-//         if let Error::ParseError(error) = val {
-//             return error.into();
-//         }
-
-//         let _extensions = val.extend().extensions;
-        
-
-//         // server_error.extensions = extensions;
-
-//         ServerError::new(val.to_string(), None)
-//     }
-// }
