@@ -117,11 +117,11 @@ impl<'a, Value: Deserialize<'a> + Clone + 'a + JsonLike<'a> + std::fmt::Debug> J
 
     pub fn synth(&'a self) -> Synth<Value> {
         let ProcessedTestData { posts, users } = self.test_data.to_processed();
-        let plan = self.plan.clone();
         let vars = self.vars.clone();
 
-        let posts_id = plan.find_field_path(&["posts"]).unwrap().id.to_owned();
-        let users_id = plan
+        let posts_id = self.plan.find_field_path(&["posts"]).unwrap().id.to_owned();
+        let users_id = self
+            .plan
             .find_field_path(&["posts", "user"])
             .unwrap()
             .id
@@ -134,6 +134,6 @@ impl<'a, Value: Deserialize<'a> + Clone + 'a + JsonLike<'a> + std::fmt::Debug> J
                 store
             });
 
-        Synth::new(plan, store, vars)
+        Synth::new(&self.plan, store, vars)
     }
 }

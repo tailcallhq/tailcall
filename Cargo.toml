@@ -271,6 +271,10 @@ debug = false
 incremental = false
 overflow-checks = false
 
+[profile.benchmark]
+inherits = "release"
+debug = true
+
 [profile.release.package.tailcall-cloudflare]
 strip = true
 codegen-units = 1
