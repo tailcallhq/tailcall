@@ -3,6 +3,7 @@ mod model;
 mod store;
 mod synth;
 mod transform;
+mod server_error;
 
 use builder::*;
 use store::*;

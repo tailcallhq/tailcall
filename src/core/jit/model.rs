@@ -486,6 +486,7 @@ impl From<Pos> for async_graphql::Pos {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(untagged)]
 pub enum PathSegment {
     /// A field in an object.
     Field(String),

@@ -38,7 +38,7 @@ impl JITExecutor {
         exec: ConstValueExecutor,
         jit_request: jit::Request<ConstValue>,
     ) -> AnyResponse<Vec<u8>> {
-        let is_introspection_query = self.app_ctx.blueprint.server.get_enable_introspection()
+        let _is_introspection_query = self.app_ctx.blueprint.server.get_enable_introspection()
             && exec.plan.is_introspection_query;
         let response = exec
             .execute(&self.req_ctx, &jit_request)
@@ -104,7 +104,7 @@ impl JITExecutor {
             };
 
             if let Some(response) = std::mem::take(&mut exec.response) {
-                response.into_async_graphql().into()
+                response.into()
             } else if exec.plan.is_query() && exec.plan.is_dedupe {
                 self.dedupe_and_exec(exec, jit_request).await
             } else {

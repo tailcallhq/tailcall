@@ -21,7 +21,7 @@ use crate::core::Transform;
 /// A specialized executor that executes with async_graphql::Value
 pub struct ConstValueExecutor {
     pub plan: OperationPlan<Value>,
-    pub response: Option<Response<ConstValue, Error>>,
+    pub response: Option<Response<ConstValue>>,
 }
 
 impl From<OperationPlan<Value>> for ConstValueExecutor {
@@ -40,7 +40,7 @@ impl ConstValueExecutor {
         mut self,
         req_ctx: &RequestContext,
         request: &Request<ConstValue>,
-    ) -> Response<ConstValue, Error> {
+    ) -> Response<ConstValue> {
         let variables = &request.variables;
         let is_const = self.plan.is_const;
 
@@ -51,8 +51,8 @@ impl ConstValueExecutor {
         else {
             // this shouldn't actually ever happen
             return Response {
-                data: None,
-                errors: vec![Positioned::new(Error::Unknown, Pos { line: 0, column: 0 })],
+                data: Default::default(),
+                errors: vec![Positioned::new(Error::Unknown, Pos { line: 0, column: 0 }).into()],
                 extensions: Default::default(),
                 cache_control: Default::default(),
             };
@@ -68,12 +68,12 @@ impl ConstValueExecutor {
             Ok(plan) => plan,
             Err(err) => {
                 return Response {
-                    data: None,
+                    data: Default::default(),
                     // TODO: Position shouldn't be 0, 0
                     errors: vec![Positioned::new(
                         BuildError::from(err).into(),
                         Pos { line: 0, column: 0 },
-                    )],
+                    ).into()],
                     extensions: Default::default(),
                     cache_control: Default::default(),
                 };
