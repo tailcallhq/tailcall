@@ -184,12 +184,6 @@ impl Error {
         Self { message: message.into(), extensions: None }
     }
 
-    /// Create an error with a type that implements `Display`, and it will also
-    /// set the `source` of the error to this value.
-    pub fn new_with_source(source: impl Display + Send + Sync + 'static) -> Self {
-        Self { message: source.to_string(), extensions: None }
-    }
-
     /// Convert the error to a server error.
     #[must_use]
     pub fn into_server_error(self, pos: Pos) -> ServerError {
