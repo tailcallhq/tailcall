@@ -351,7 +351,7 @@ impl GraphQLArcResponse {
     pub fn set_cache_control(self, enable_cache_header: bool, max_age: i32, public: bool) -> Self {
         Self {
             response: self.response,
-            cache_control: enable_cache_header.then(|| CacheControl { max_age, public }),
+            cache_control: enable_cache_header.then_some(CacheControl { max_age, public }),
         }
     }
 }
