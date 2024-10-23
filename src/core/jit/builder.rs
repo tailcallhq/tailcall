@@ -14,7 +14,7 @@ use super::BuildError;
 use crate::core::blueprint::{Blueprint, Index, QueryField};
 use crate::core::counter::{Count, Counter};
 use crate::core::jit::model::OperationPlan;
-use crate::core::Type;
+use crate::core::{scalar, Type};
 
 #[derive(PartialEq, strum_macros::Display)]
 enum Condition {
@@ -206,6 +206,16 @@ impl Builder {
                             _ => None,
                         };
 
+                        let scalar = if self.index.type_is_scalar(type_of.name()) {
+                            Some(
+                                scalar::Scalar::find(type_of.name())
+                                    .cloned()
+                                    .unwrap_or(scalar::Scalar::Empty),
+                            )
+                        } else {
+                            None
+                        };
+
                         // Create the field with its child fields in `selection`
                         let field = Field {
                             id,
@@ -217,7 +227,6 @@ impl Builder {
                                 .map(|a| a.node.to_string())
                                 .unwrap_or(field_name.to_owned()),
                             ir,
-                            is_scalar: self.index.type_is_scalar(type_of.name()),
                             is_enum: self.index.type_is_enum(type_of.name()),
                             type_of,
                             type_condition: Some(type_condition.to_string()),
@@ -226,6 +235,7 @@ impl Builder {
                             args,
                             pos: selection.pos.into(),
                             directives,
+                            scalar,
                         };
 
                         fields.push(field);
@@ -243,8 +253,8 @@ impl Builder {
                             pos: selection.pos.into(),
                             selection: vec![], // __typename has no child selection
                             directives,
-                            is_scalar: true,
                             is_enum: false,
+                            scalar: Some(scalar::Scalar::Empty),
                         };
 
                         fields.push(typename_field);

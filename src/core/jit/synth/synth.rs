@@ -4,7 +4,6 @@ use crate::core::jit::model::{Field, OperationPlan, Variables};
 use crate::core::jit::store::{DataPath, Store};
 use crate::core::jit::{Error, PathSegment, Positioned, ValidationError};
 use crate::core::json::{JsonLike, JsonObjectLike};
-use crate::core::scalar;
 
 type ValueStore<Value> = Store<Result<Value, Positioned<Error>>>;
 
@@ -36,7 +35,7 @@ where
 
     #[inline(always)]
     pub fn synthesize(&'a self) -> Result<Value, Positioned<Error>> {
-        let mut data = Value::JsonObject::new();
+        let mut data = Value::JsonObject::with_capacity(self.plan.selection.len());
         let mut path = Vec::new();
         let root_name = self.plan.root_name();
 
@@ -139,9 +138,8 @@ where
             } else {
                 Err(ValidationError::ValueRequired.into())
             }
-        } else if node.is_scalar {
-            let scalar =
-                scalar::Scalar::find(node.type_of.name()).unwrap_or(&scalar::Scalar::Empty);
+        } else if node.scalar.is_some() {
+            let scalar = node.scalar.as_ref().unwrap();
 
             // TODO: add validation for input type as well. But input types are not checked
             // by async_graphql anyway so it should be done after replacing
