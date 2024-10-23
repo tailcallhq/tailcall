@@ -1,14 +1,12 @@
 # Test schema inspection with false flag
 
 ```graphql @config
-schema
-  @server(port: 8001, queryValidation: false, hostname: "0.0.0.0", introspection: false)
-  @upstream(baseURL: "http://upstream/", httpCache: 42) {
+schema @server(port: 8001, queryValidation: false, hostname: "0.0.0.0", introspection: false) @upstream(httpCache: 42) {
   query: Query
 }
 
 type Query {
-  me: User! @http(path: "/me")
+  me: User! @http(url: "http://upstream/me")
 }
 
 type User {

@@ -546,7 +546,8 @@
       "description": "The @graphQL operator allows to specify GraphQL API server request to fetch data from.",
       "type": "object",
       "required": [
-        "name"
+        "name",
+        "url"
       ],
       "properties": {
         "args": {
@@ -558,13 +559,6 @@
           "items": {
             "$ref": "#/definitions/KeyValue"
           }
-        },
-        "baseURL": {
-          "description": "This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator.",
-          "type": [
-            "string",
-            "null"
-          ]
         },
         "batch": {
           "description": "If the upstream GraphQL server supports request batching, you can specify the 'batch' argument to batch several requests into a single batch request.\n\nMake sure you have also specified batch settings to the `@upstream` and to the `@graphQL` operator.",
@@ -587,6 +581,10 @@
         "name": {
           "description": "Specifies the root field on the upstream to request data from. This maps a field in your schema to a field in the upstream schema. When a query is received for this field, Tailcall requests data from the corresponding upstream field.",
           "type": "string"
+        },
+        "url": {
+          "description": "This refers URL of the API.",
+          "type": "string"
         }
       },
       "additionalProperties": false
@@ -595,16 +593,10 @@
       "description": "The @grpc operator indicates that a field or node is backed by a gRPC API.\n\nFor instance, if you add the @grpc operator to the `users` field of the Query type with a service argument of `NewsService` and method argument of `GetAllNews`, it signifies that the `users` field is backed by a gRPC API. The `service` argument specifies the name of the gRPC service. The `method` argument specifies the name of the gRPC method. In this scenario, the GraphQL server will make a gRPC request to the gRPC endpoint specified when the `users` field is queried.",
       "type": "object",
       "required": [
-        "method"
+        "method",
+        "url"
       ],
       "properties": {
-        "baseURL": {
-          "description": "This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator.",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
         "batchKey": {
           "description": "The `batchKey` dictates the path Tailcall will follow to group the returned items from the batch request. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).",
           "type": "array",
@@ -635,6 +627,10 @@
         },
         "select": {
           "description": "You can use `select` with mustache syntax to re-construct the directives response to the desired format. This is useful when data are deeply nested or want to keep specific fields only from the response.\n\n* EXAMPLE 1: if we have a call that returns `{ \"user\": { \"items\": [...], ... } ... }` we can use `\"{{.user.items}}\"`, to extract the `items`. * EXAMPLE 2: if we have a call that returns `{ \"foo\": \"bar\", \"fizz\": { \"buzz\": \"eggs\", ... }, ... }` we can use { foo: \"{{.foo}}\", buzz: \"{{.fizz.buzz}}\" }`"
+        },
+        "url": {
+          "description": "This refers to URL of the API.",
+          "type": "string"
         }
       },
       "additionalProperties": false
@@ -691,16 +687,9 @@
       "description": "The @http operator indicates that a field or node is backed by a REST API.\n\nFor instance, if you add the @http operator to the `users` field of the Query type with a path argument of `\"/users\"`, it signifies that the `users` field is backed by a REST API. The path argument specifies the path of the REST API. In this scenario, the GraphQL server will make a GET request to the API endpoint specified when the `users` field is queried.",
       "type": "object",
       "required": [
-        "path"
+        "url"
       ],
       "properties": {
-        "baseURL": {
-          "description": "This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator.",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
         "batchKey": {
           "description": "The `batchKey` dictates the path Tailcall will follow to group the returned items from the batch request. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).",
           "type": "array",
@@ -774,10 +763,6 @@
             }
           ]
         },
-        "path": {
-          "description": "This refers to the API endpoint you're going to call. For instance `https://jsonplaceholder.typicode.com/users`.\n\nFor dynamic segments in your API endpoint, use Mustache templates for variable substitution. For instance, to fetch a specific user, use `/users/{{args.id}}`.",
-          "type": "string"
-        },
         "query": {
           "description": "This represents the query parameters of your API call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added to the URL. NOTE: Query parameter order is critical for batching in Tailcall. The first parameter referencing a field in the current value using mustache syntax is automatically selected as the batching parameter.",
           "type": "array",
@@ -787,6 +772,10 @@
         },
         "select": {
           "description": "You can use `select` with mustache syntax to re-construct the directives response to the desired format. This is useful when data are deeply nested or want to keep specific fields only from the response.\n\n* EXAMPLE 1: if we have a call that returns `{ \"user\": { \"items\": [...], ... } ... }` we can use `\"{{.user.items}}\"`, to extract the `items`. * EXAMPLE 2: if we have a call that returns `{ \"foo\": \"bar\", \"fizz\": { \"buzz\": \"eggs\", ... }, ... }` we can use { foo: \"{{.foo}}\", buzz: \"{{.fizz.buzz}}\" }`"
+        },
+        "url": {
+          "description": "This refers to URL of the API.",
+          "type": "string"
         }
       },
       "additionalProperties": false
@@ -1571,13 +1560,6 @@
             "type": "string"
           },
           "uniqueItems": true
-        },
-        "baseURL": {
-          "description": "This refers to the default base URL for your APIs. If it's not explicitly mentioned in the `@upstream` operator, then each [@http](#http) operator must specify its own `baseURL`. If neither `@upstream` nor [@http](#http) provides a `baseURL`, it results in a compilation error.",
-          "type": [
-            "string",
-            "null"
-          ]
         },
         "batch": {
           "description": "An object that specifies the batch settings, including `maxSize` (the maximum size of the batch), `delay` (the delay in milliseconds between each batch), and `headers` (an array of HTTP headers to be included in the batch).",

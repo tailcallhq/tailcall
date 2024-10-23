@@ -5,12 +5,12 @@ error: true
 # test-graphql-with-add-field
 
 ```graphql @config
-schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @server {
   query: Query
 }
 
 type Query @addField(name: "name", path: ["post", "user", "name"]) {
-  post: Post @graphQL(name: "posts")
+  post: Post @graphQL(url: "http://jsonplaceholder.typicode.com", name: "posts")
 }
 
 type Post {
@@ -18,7 +18,7 @@ type Post {
   title: String
   body: String
   userId: Int!
-  user: User @graphQL(name: "user")
+  user: User @graphQL(url: "http://jsonplaceholder.typicode.com", name: "user")
 }
 
 type User {

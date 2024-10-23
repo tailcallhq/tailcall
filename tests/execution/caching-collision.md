@@ -1,12 +1,12 @@
 # Caching Collision
 
 ```graphql @config
-schema @upstream(baseURL: "http://example.com", batch: {delay: 1, maxSize: 1000}) {
+schema @upstream(batch: {delay: 1, maxSize: 1000}) {
   query: Query
 }
 
 type Query @cache(maxAge: 100) {
-  bars: [Bar] @http(path: "/bars")
+  bars: [Bar] @http(url: "http://example.com/bars")
 }
 
 type Foo {
@@ -15,7 +15,7 @@ type Foo {
 
 type Bar {
   id: String!
-  foo: Foo @http(path: "/foo?id={{.value.id}}") @cache(maxAge: 300)
+  foo: Foo @http(url: "http://example.com/foo?id={{.value.id}}") @cache(maxAge: 300)
 }
 ```
 

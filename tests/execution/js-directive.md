@@ -12,12 +12,12 @@ function name(val) {
 ```
 
 ```graphql @config
-schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") @link(type: Script, src: "test.js") {
+schema @server @link(type: Script, src: "test.js") {
   query: Query
 }
 
 type Query {
-  hello: User! @http(path: "/users/1")
+  hello: User! @http(url: "http://jsonplaceholder.typicode.com/users/1")
 }
 
 type User {
@@ -29,7 +29,7 @@ type User {
 ```yml @mock
 - request:
     method: GET
-    url: https://jsonplaceholder.typicode.com/users/1
+    url: http://jsonplaceholder.typicode.com/users/1
   response:
     status: 200
     body:

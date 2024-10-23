@@ -7,7 +7,7 @@ schema @server(port: 8000, routes: {status: "/health", graphQL: "/tailcall-gql"}
 }
 
 type Query {
-  users: [User] @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users")
+  users: [User] @http(url: "http://jsonplaceholder.typicode.com/users")
 }
 
 type User {

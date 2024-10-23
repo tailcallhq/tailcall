@@ -17,8 +17,7 @@
             "name": "User"
           },
           "http": {
-            "path": "/users/1",
-            "baseURL": "http://jsonplaceholder.typicode.com"
+            "url": "http://jsonplaceholder.typicode.com/users/1"
           },
           "cache": null
         }

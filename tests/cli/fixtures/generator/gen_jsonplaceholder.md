@@ -74,7 +74,6 @@
   ],
   "preset": {
     "mergeType": 1.0,
-    "consolidateURL": 0.5,
     "treeShake": true,
     "inferTypeNames": true
   },
@@ -90,6 +89,6 @@
 
 ```json @env
 {
-  "BASE_URL": "https://jsonplaceholder.typicode.com"
+  "BASE_URL": "http://jsonplaceholder.typicode.com"
 }
 ```

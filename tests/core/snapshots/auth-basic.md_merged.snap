@@ -8,7 +8,7 @@ schema @server(port: 8000) @upstream @link(id: "htpasswd", src: ".htpasswd", typ
 }
 
 type Mutation {
-  protectedType: ProtectedType @http(baseURL: "http://upstream", path: "/protected")
+  protectedType: ProtectedType @http(url: "http://upstream/protected")
 }
 
 type Nested {

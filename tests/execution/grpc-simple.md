@@ -39,18 +39,20 @@ message NewsList {
 ```graphql @config
 schema
   @server(port: 8000)
-  @upstream(baseURL: "http://localhost:50051", httpCache: 42, batch: {delay: 10})
+  @upstream(httpCache: 42, batch: {delay: 10})
   @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
 }
 
 type Query {
-  news: NewsData! @grpc(method: "news.NewsService.GetAllNews")
-  newsById(news: NewsInput!): News! @grpc(method: "news.NewsService.GetNews", body: "{{.args.news}}")
+  news: NewsData! @grpc(url: "http://localhost:50051", method: "news.NewsService.GetAllNews")
+  newsById(news: NewsInput!): News!
+    @grpc(url: "http://localhost:50051", method: "news.NewsService.GetNews", body: "{{.args.news}}")
 }
 
 type Mutation {
-  deleteNews(news: NewsId!): Empty! @grpc(method: "news.NewsService.DeleteNews", body: "{{.args.news}}")
+  deleteNews(news: NewsId!): Empty!
+    @grpc(url: "http://localhost:50051", method: "news.NewsService.DeleteNews", body: "{{.args.news}}")
 }
 
 input NewsId {
