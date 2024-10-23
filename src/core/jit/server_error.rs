@@ -23,6 +23,7 @@ pub struct ServerError {
 
 impl From<async_graphql::ServerError> for ServerError {
     fn from(value: async_graphql::ServerError) -> Self {
+        // TODO: remove this once either extension are avail public or we migrate from async_graphql.
         // we can't copy extensions, bcoz it's private inside the async_graphql.
         // hack: serialize the value and deserialize it back to btreemap.
         let extensions = value.extensions.and_then(|ext| {
