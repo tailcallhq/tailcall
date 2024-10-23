@@ -164,7 +164,7 @@ pub struct Field<Input> {
     pub pos: Pos,
     pub directives: Vec<Directive<Input>>,
     pub is_enum: bool,
-    pub scalar: Option<Scalar>
+    pub scalar: Option<Scalar>,
 }
 
 pub struct DFS<'a, Input> {

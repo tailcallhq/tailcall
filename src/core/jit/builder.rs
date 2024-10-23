@@ -207,8 +207,12 @@ impl Builder {
                         };
 
                         let scalar = if self.index.type_is_scalar(type_of.name()) {
-                            Some(scalar::Scalar::find(type_of.name()).cloned().unwrap_or(scalar::Scalar::Empty))
-                        }else{
+                            Some(
+                                scalar::Scalar::find(type_of.name())
+                                    .cloned()
+                                    .unwrap_or(scalar::Scalar::Empty),
+                            )
+                        } else {
                             None
                         };
 
@@ -250,7 +254,7 @@ impl Builder {
                             selection: vec![], // __typename has no child selection
                             directives,
                             is_enum: false,
-                            scalar: Some(scalar::Scalar::Empty)
+                            scalar: Some(scalar::Scalar::Empty),
                         };
 
                         fields.push(typename_field);
