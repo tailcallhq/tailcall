@@ -15,7 +15,7 @@ type Query {
 ```
 
 ```graphql @file:link-enum.graphql
-schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @server {
   query: Query
 }
 
@@ -25,7 +25,7 @@ enum Foo {
 }
 
 type Query {
-  foo: Foo @http(path: "/foo")
+  foo: Foo @http(url: "http://jsonplaceholder.typicode.com/foo")
 }
 ```
 

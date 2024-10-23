@@ -2,7 +2,7 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @server @upstream {
   query: Query
 }
 
@@ -14,7 +14,7 @@ type Post {
 }
 
 type Query {
-  post1: Post @http(path: "/posts/{{.env.ID}}")
-  post2: Post @http(path: "/posts/{{.env.POST_ID}}")
-  post3: Post @http(path: "/posts/{{.env.NESTED_POST_ID}}")
+  post1: Post @http(url: "http://jsonplaceholder.typicode.com/posts/{{.env.ID}}")
+  post2: Post @http(url: "http://jsonplaceholder.typicode.com/posts/{{.env.POST_ID}}")
+  post3: Post @http(url: "http://jsonplaceholder.typicode.com/posts/{{.env.NESTED_POST_ID}}")
 }

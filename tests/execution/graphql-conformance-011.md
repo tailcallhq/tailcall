@@ -7,14 +7,13 @@ skip: true
 TODO: Skipped because tailcall does not send the `@log` directive to the remote server. Moreover it does not correctly format the scalar to string value.
 
 ```graphql @config
-schema
-  @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://upstream/graphql", httpCache: 42) {
+schema @server(port: 8001, queryValidation: false, hostname: "0.0.0.0") @upstream(httpCache: 42) {
   query: Query
 }
 
 type Query {
-  nearby(location: Location): Point @graphQL(name: "nearby", args: [{key: "location", value: "{{.args.location}}"}])
+  nearby(location: Location): Point
+    @graphQL(url: "http://upstream/graphql", name: "nearby", args: [{key: "location", value: "{{.args.location}}"}])
 }
 
 type Location {

@@ -1,33 +1,33 @@
 # Test API
 
 ```graphql @config
-schema @server(enableJIT: true) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @server(enableJIT: true) {
   query: Query
 }
 
 type Query {
-  basicPresent: Foo! @http(path: "/basic-present")
-  basicFieldMissing: Foo! @http(path: "/basic-field-missing")
-  basicMissing: Foo! @http(path: "/basic-missing")
-  relaxedPresent: Foo @http(path: "/relaxed-present")
-  relaxedFieldMissing: Foo @http(path: "/relaxed-field-missing")
-  relaxedMissing: Foo @http(path: "/relaxed-missing")
-  fullPresent: [Foo!]! @http(path: "/full-present")
-  fullMissing: [Foo!]! @http(path: "/full-missing")
-  fullFieldMissing: [Foo!]! @http(path: "/full-field-missing")
-  fullEntryMissing: [Foo!]! @http(path: "/full-entry-missing")
-  innerPresent: [Foo!] @http(path: "/inner-present")
-  innerMissing: [Foo!] @http(path: "/inner-missing")
-  innerFieldMissing: [Foo!] @http(path: "/inner-field-missing")
-  innerEntryMissing: [Foo!] @http(path: "/inner-entry-missing")
-  outerPresent: [Foo]! @http(path: "/outer-present")
-  outerMissing: [Foo]! @http(path: "/outer-missing")
-  outerFieldMissing: [Foo]! @http(path: "/outer-field-missing")
-  outerEntryMissing: [Foo]! @http(path: "/outer-entry-missing")
-  nonePresent: [Foo] @http(path: "/none-present")
-  noneMissing: [Foo] @http(path: "/none-missing")
-  noneFieldMissing: [Foo] @http(path: "/none-field-missing")
-  noneEntryMissing: [Foo] @http(path: "/none-entry-missing")
+  basicPresent: Foo! @http(url: "http://jsonplaceholder.typicode.com/basic-present")
+  basicFieldMissing: Foo! @http(url: "http://jsonplaceholder.typicode.com/basic-field-missing")
+  basicMissing: Foo! @http(url: "http://jsonplaceholder.typicode.com/basic-missing")
+  relaxedPresent: Foo @http(url: "http://jsonplaceholder.typicode.com/relaxed-present")
+  relaxedFieldMissing: Foo @http(url: "http://jsonplaceholder.typicode.com/relaxed-field-missing")
+  relaxedMissing: Foo @http(url: "http://jsonplaceholder.typicode.com/relaxed-missing")
+  fullPresent: [Foo!]! @http(url: "http://jsonplaceholder.typicode.com/full-present")
+  fullMissing: [Foo!]! @http(url: "http://jsonplaceholder.typicode.com/full-missing")
+  fullFieldMissing: [Foo!]! @http(url: "http://jsonplaceholder.typicode.com/full-field-missing")
+  fullEntryMissing: [Foo!]! @http(url: "http://jsonplaceholder.typicode.com/full-entry-missing")
+  innerPresent: [Foo!] @http(url: "http://jsonplaceholder.typicode.com/inner-present")
+  innerMissing: [Foo!] @http(url: "http://jsonplaceholder.typicode.com/inner-missing")
+  innerFieldMissing: [Foo!] @http(url: "http://jsonplaceholder.typicode.com/inner-field-missing")
+  innerEntryMissing: [Foo!] @http(url: "http://jsonplaceholder.typicode.com/inner-entry-missing")
+  outerPresent: [Foo]! @http(url: "http://jsonplaceholder.typicode.com/outer-present")
+  outerMissing: [Foo]! @http(url: "http://jsonplaceholder.typicode.com/outer-missing")
+  outerFieldMissing: [Foo]! @http(url: "http://jsonplaceholder.typicode.com/outer-field-missing")
+  outerEntryMissing: [Foo]! @http(url: "http://jsonplaceholder.typicode.com/outer-entry-missing")
+  nonePresent: [Foo] @http(url: "http://jsonplaceholder.typicode.com/none-present")
+  noneMissing: [Foo] @http(url: "http://jsonplaceholder.typicode.com/none-missing")
+  noneFieldMissing: [Foo] @http(url: "http://jsonplaceholder.typicode.com/none-field-missing")
+  noneEntryMissing: [Foo] @http(url: "http://jsonplaceholder.typicode.com/none-entry-missing")
 }
 
 type Foo {

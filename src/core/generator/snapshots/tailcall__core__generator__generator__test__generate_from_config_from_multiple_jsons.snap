@@ -2,7 +2,7 @@
 source: src/core/generator/generator.rs
 expression: cfg_module.config().to_sdl()
 ---
-schema @server @upstream(allowedHeaders: ["authorization"], baseURL: "https://example.com") {
+schema @server @upstream(allowedHeaders: ["authorization"]) {
   query: Query
 }
 
@@ -12,9 +12,9 @@ type InCompatibleProperty {
 }
 
 type Query {
-  inCompatibleObjects: [JSON] @http(path: "/api/v2/users")
-  inCompatibleProperties: InCompatibleProperty @http(path: "/")
-  userData: [Userdatum] @http(path: "/users")
+  inCompatibleObjects: [JSON] @http(url: "https://example.com/api/v2/users")
+  inCompatibleProperties: InCompatibleProperty @http(url: "https://example.com/")
+  userData: [Userdatum] @http(url: "https://example.com/users")
 }
 
 type Userdatum {

@@ -1,15 +1,13 @@
 # Complex fragments.
 
 ```graphql @config
-schema
-  @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://upstream/", httpCache: 42) {
+schema @server(port: 8001, queryValidation: false, hostname: "0.0.0.0") @upstream(httpCache: 42) {
   query: Query
 }
 
 type Query {
-  edibleAnimals: [EdibleAnimals] @http(path: "/edible-animals")
-  allAnimals: [Animal] @http(path: "/all-animals")
+  edibleAnimals: [EdibleAnimals] @http(url: "http://upstream/edible-animals")
+  allAnimals: [Animal] @http(url: "http://upstream/all-animals")
 }
 
 interface Animal {

@@ -2,23 +2,23 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema @server @upstream(baseURL: "http://example.com", batch: {delay: 1, headers: [], maxSize: 1000}) {
+schema @server @upstream(batch: {delay: 1, headers: [], maxSize: 1000}) {
   query: Query
 }
 
 type Bar {
-  foo: [Foo] @http(batchKey: ["id"], path: "/foos", query: [{key: "id", value: "{{.value.fooId}}"}])
+  foo: [Foo] @http(url: "http://example.com/foos", batchKey: ["id"], query: [{key: "id", value: "{{.value.fooId}}"}])
   fooId: Int!
   id: Int!
 }
 
 type Foo {
-  bar: Bar @http(batchKey: ["fooId"], path: "/bars", query: [{key: "fooId", value: "{{.value.id}}"}])
+  bar: Bar @http(url: "http://example.com/bars", batchKey: ["fooId"], query: [{key: "fooId", value: "{{.value.id}}"}])
   id: Int!
   name: String!
 }
 
 type Query {
-  bars: [Bar] @http(path: "/bars")
-  foos: [Foo] @http(path: "/foos")
+  bars: [Bar] @http(url: "http://example.com/bars")
+  foos: [Foo] @http(url: "http://example.com/foos")
 }

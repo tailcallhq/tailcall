@@ -18,6 +18,6 @@ type Address {
 }
 
 type Query @addField(name: "street", path: ["user", "address", "street"]) {
-  user: User @http(path: "/user/1", baseURL: "http://localhost:8000")
+  user: User @http(url: "http://localhost:8000/user/1")
 }
 ```
