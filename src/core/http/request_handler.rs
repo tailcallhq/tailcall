@@ -19,7 +19,7 @@ use super::request_context::RequestContext;
 use super::telemetry::{get_response_status_code, RequestCounter};
 use super::{showcase, telemetry, TAILCALL_HTTPS_ORIGIN, TAILCALL_HTTP_ORIGIN};
 use crate::core::app_context::AppContext;
-use crate::core::async_graphql_hyper::{GraphQLArcResponse, GraphQLRequestLike, GraphQLResponse};
+use crate::core::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::core::blueprint::telemetry::TelemetryExporter;
 use crate::core::config::{PrometheusExporter, PrometheusFormat};
 use crate::core::jit::JITExecutor;
@@ -58,32 +58,6 @@ fn create_request_context(req: &Request<Body>, app_ctx: &AppContext) -> RequestC
     let allowed_headers =
         create_allowed_headers(req.headers(), &app_ctx.blueprint.upstream.allowed_headers);
     RequestContext::from(app_ctx).allowed_headers(allowed_headers)
-}
-
-fn update_cache_control_header(
-    response: GraphQLResponse,
-    app_ctx: &AppContext,
-    req_ctx: Arc<RequestContext>,
-) -> GraphQLResponse {
-    if app_ctx.blueprint.server.enable_cache_control_header {
-        let ttl = req_ctx.get_min_max_age().unwrap_or(0);
-        let cache_public_flag = req_ctx.is_cache_public().unwrap_or(true);
-        return response.set_cache_control(ttl, cache_public_flag);
-    }
-    response
-}
-
-fn update_cache_control_header_for_arc(
-    response: GraphQLArcResponse,
-    app_ctx: &AppContext,
-    req_ctx: Arc<RequestContext>,
-) -> GraphQLArcResponse {
-    if app_ctx.blueprint.server.enable_cache_control_header {
-        let ttl = req_ctx.get_min_max_age().unwrap_or(0);
-        let cache_public_flag = req_ctx.is_cache_public().unwrap_or(true);
-        return response.with_cache_control(cache_public_flag, ttl);
-    }
-    response
 }
 
 pub fn update_response_headers(
@@ -148,15 +122,26 @@ async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
     let mut response = if app_ctx.blueprint.server.enable_jit {
         let operation_id = request.operation_id(&req.headers);
         let exec = JITExecutor::new(app_ctx.clone(), req_ctx.clone(), operation_id);
-        let mut response = request.execute_with_jit(exec).await;
-        response = update_cache_control_header_for_arc(response, app_ctx, req_ctx.clone());
-
-        response.into_response()?
+        request
+            .execute_with_jit(exec)
+            .await
+            .set_cache_control(
+                app_ctx.blueprint.server.enable_cache_control_header,
+                req_ctx.get_min_max_age().unwrap_or(0),
+                req_ctx.is_cache_public().unwrap_or(true),
+            )
+            .into_response()?
     } else {
-        let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
-        response = update_cache_control_header(response, app_ctx, req_ctx.clone());
-
-        response.into_response()?
+        request
+            .data(req_ctx.clone())
+            .execute(&app_ctx.schema)
+            .await
+            .set_cache_control(
+                app_ctx.blueprint.server.enable_cache_control_header,
+                req_ctx.get_min_max_age().unwrap_or(0),
+                req_ctx.is_cache_public().unwrap_or(true),
+            )
+            .into_response()?
     };
 
     update_response_headers(&mut response, req_ctx, app_ctx);
@@ -283,11 +268,15 @@ async fn handle_rest_apis(
             let mut response = graphql_request
                 .data(req_ctx.clone())
                 .execute(&app_ctx.schema)
-                .await;
-            response = update_cache_control_header(response, app_ctx.as_ref(), req_ctx.clone());
-            let mut resp = response.into_rest_response()?;
-            update_response_headers(&mut resp, &req_ctx, &app_ctx);
-            Ok(resp)
+                .await
+                .set_cache_control(
+                    app_ctx.blueprint.server.enable_cache_control_header,
+                    req_ctx.get_min_max_age().unwrap_or(0),
+                    req_ctx.is_cache_public().unwrap_or(true),
+                )
+                .into_rest_response()?;
+            update_response_headers(&mut response, &req_ctx, &app_ctx);
+            Ok(response)
         }
         .instrument(span)
         .await;
