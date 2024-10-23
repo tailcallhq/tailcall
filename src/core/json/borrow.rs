@@ -12,6 +12,11 @@ impl<'ctx> JsonObjectLike<'ctx> for ObjectAsVec<'ctx> {
         ObjectAsVec::default()
     }
 
+    fn with_capacity(_n: usize) -> Self {
+        // TODO: no way to define capacity on ObjectAsVec
+        ObjectAsVec::new()
+    }
+
     fn get_key(&self, key: &str) -> Option<&Self::Value> {
         self.get(key)
     }
