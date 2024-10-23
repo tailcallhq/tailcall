@@ -217,6 +217,8 @@ impl Builder {
                                 .map(|a| a.node.to_string())
                                 .unwrap_or(field_name.to_owned()),
                             ir,
+                            is_scalar: self.index.type_is_scalar(type_of.name()),
+                            is_enum: self.index.type_is_enum(type_of.name()),
                             type_of,
                             type_condition: Some(type_condition.to_string()),
                             skip,
@@ -241,6 +243,8 @@ impl Builder {
                             pos: selection.pos.into(),
                             selection: vec![], // __typename has no child selection
                             directives,
+                            is_scalar: true,
+                            is_enum: false,
                         };
 
                         fields.push(typename_field);

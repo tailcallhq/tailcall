@@ -162,6 +162,8 @@ pub struct Field<Input> {
     pub selection: Vec<Field<Input>>,
     pub pos: Pos,
     pub directives: Vec<Directive<Input>>,
+    pub is_scalar: bool,
+    pub is_enum: bool,
 }
 
 pub struct DFS<'a, Input> {
@@ -229,6 +231,8 @@ impl<Input> Field<Input> {
                 .into_iter()
                 .map(|directive| directive.try_map(map))
                 .collect::<Result<_, _>>()?,
+            is_scalar: self.is_scalar,
+            is_enum: self.is_enum,
         })
     }
 }
