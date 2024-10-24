@@ -111,6 +111,7 @@ impl JITExecutor {
             };
 
             let is_const = exec.plan.is_const;
+            let is_protected = exec.plan.is_protected;
 
             let response = if exec.plan.is_query() && (exec.plan.is_dedupe || exec.plan.is_const) {
                 self.dedupe_and_exec(exec, jit_request).await
@@ -118,8 +119,8 @@ impl JITExecutor {
                 self.exec(exec, jit_request).await
             };
 
-            // Cache the response if it's constant and not already cached
-            if is_const {
+            // Cache the response if it's constant and not wrapped with protected.
+            if is_const && !is_protected {
                 self.app_ctx
                     .const_execution_cache
                     .insert(hash, response.clone());

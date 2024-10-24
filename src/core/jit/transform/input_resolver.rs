@@ -75,6 +75,7 @@ where
             is_introspection_query: self.plan.is_introspection_query,
             is_dedupe: self.plan.is_dedupe,
             is_const: self.plan.is_const,
+            is_protected: self.plan.is_protected,
             selection,
         })
     }

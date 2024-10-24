@@ -285,6 +285,7 @@ pub struct OperationPlan<Input> {
     pub is_introspection_query: bool,
     pub is_dedupe: bool,
     pub is_const: bool,
+    pub is_protected: bool,
     pub selection: Vec<Field<Input>>,
 }
 
@@ -315,6 +316,7 @@ impl<Input> OperationPlan<Input> {
             is_introspection_query: self.is_introspection_query,
             is_dedupe: self.is_dedupe,
             is_const: self.is_const,
+            is_protected: self.is_protected,
         })
     }
 }
@@ -339,6 +341,7 @@ impl<Input> OperationPlan<Input> {
             is_introspection_query,
             is_dedupe: false,
             is_const: false,
+            is_protected: false,
         }
     }
 
