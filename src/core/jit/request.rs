@@ -47,6 +47,7 @@ impl Request<ConstValue> {
 
         transform::CheckConst::new()
             .pipe(transform::CheckDedupe::new())
+            .pipe(transform::CheckProtected::new())
             .transform(plan)
             .to_result()
             // both transformers are infallible right now
