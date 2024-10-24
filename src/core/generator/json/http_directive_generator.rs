@@ -94,7 +94,14 @@ impl<'a> HttpDirectiveGenerator<'a> {
                 });
 
         // add path in http directive.
-        self.http.path = mustache_compatible_url.to_string();
+        let mut url = self.url.clone();
+        url.set_path(&mustache_compatible_url);
+        url.set_query(None);
+
+        let url = url.to_string();
+        let decoded = urlencoding::decode(&url).unwrap();
+
+        self.http.url = decoded.to_string();
     }
 
     fn add_query_variables(&mut self, field: &mut Field) {
@@ -211,7 +218,10 @@ mod test {
         ]
         .into_iter()
         .collect::<HashMap<_, _>>();
-        assert_eq!("/foo/{{.args.GEN__2}}/bar/{{.args.GEN__1}}", http.path);
+        assert_eq!(
+            "http://example.com/foo/{{.args.GEN__2}}/bar/{{.args.GEN__1}}",
+            http.url
+        );
         assert_eq!(test_args, args);
     }
 }

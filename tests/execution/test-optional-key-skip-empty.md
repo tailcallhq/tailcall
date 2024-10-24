@@ -1,12 +1,12 @@
 # Setting SkipEmpty
 
 ```graphql @config
-schema @server(port: 8000) @upstream(baseURL: "http://example.com") {
+schema @server(port: 8000) {
   query: Query
 }
 
 type Query {
-  foos: [Foo] @http(path: "/foos")
+  foos: [Foo] @http(url: "http://example.com/foos")
 }
 
 type Foo {
@@ -14,7 +14,7 @@ type Foo {
   tag: String
   bar: Bar
     @http(
-      path: "/bar"
+      url: "http://example.com/bar"
       query: [
         # Ignores this query param
         {key: "tagEmpty", value: "{{.value.tag}}", skipEmpty: true}

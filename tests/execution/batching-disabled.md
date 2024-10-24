@@ -4,7 +4,6 @@
 {
   "server": {},
   "upstream": {
-    "baseURL": "http://jsonplaceholder.typicode.com",
     "httpCache": 42,
     "batch": {
       "maxSize": 100,
@@ -31,7 +30,7 @@
             }
           },
           "http": {
-            "path": "/users/{{.args.id}}"
+            "url": "http://jsonplaceholder.typicode.com/users/{{.args.id}}"
           },
           "cache": null
         }

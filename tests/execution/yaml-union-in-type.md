@@ -60,8 +60,7 @@ types:
             type:
               name: NNU
         http:
-          baseURL: http://localhost
-          path: /users/{{args.nu.u}}
+          url: http://localhost/users/{{args.nu.u}}
 
 unions:
   U:

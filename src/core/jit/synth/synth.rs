@@ -4,7 +4,6 @@ use crate::core::jit::model::{Field, OperationPlan, Variables};
 use crate::core::jit::store::{DataPath, Store};
 use crate::core::jit::{Error, PathSegment, Positioned, ValidationError};
 use crate::core::json::{JsonLike, JsonObjectLike};
-use crate::core::scalar;
 
 type ValueStore<Value> = Store<Result<Value, Positioned<Error>>>;
 
@@ -36,7 +35,7 @@ where
 
     #[inline(always)]
     pub fn synthesize(&'a self) -> Result<Value, Positioned<Error>> {
-        let mut data = Value::JsonObject::new();
+        let mut data = Value::JsonObject::with_capacity(self.plan.selection.len());
         let mut path = Vec::new();
         let root_name = self.plan.root_name();
 
@@ -139,9 +138,8 @@ where
             } else {
                 Err(ValidationError::ValueRequired.into())
             }
-        } else if self.plan.field_is_scalar(node) {
-            let scalar =
-                scalar::Scalar::find(node.type_of.name()).unwrap_or(&scalar::Scalar::Empty);
+        } else if node.scalar.is_some() {
+            let scalar = node.scalar.as_ref().unwrap();
 
             // TODO: add validation for input type as well. But input types are not checked
             // by async_graphql anyway so it should be done after replacing
@@ -154,7 +152,7 @@ where
                         .into(),
                 )
             }
-        } else if self.plan.field_is_enum(node) {
+        } else if node.is_enum {
             let check_valid_enum = |value: &Value| -> bool {
                 value
                     .as_str()
@@ -179,7 +177,7 @@ where
         } else {
             match (value.as_array(), value.as_object()) {
                 (_, Some(obj)) => {
-                    let mut ans = Value::JsonObject::new();
+                    let mut ans = Value::JsonObject::with_capacity(node.selection.len());
 
                     for child in node
                         .iter()
@@ -201,7 +199,7 @@ where
                     Ok(Value::object(ans))
                 }
                 (Some(arr), _) => {
-                    let mut ans = vec![];
+                    let mut ans = Vec::with_capacity(arr.len());
                     for (i, val) in arr.iter().enumerate() {
                         path.push(PathSegment::Index(i));
                         let val =

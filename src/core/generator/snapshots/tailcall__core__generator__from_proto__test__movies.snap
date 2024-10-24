@@ -400,17 +400,17 @@ type Query {
   """
   get all movies
   """
-  GEN__movies__AnotherExample__GetMovies(movieRequest: GEN__movies__MovieRequest!): GEN__movies__MoviesResult @grpc(body: "{{.args.movieRequest}}", method: "movies.AnotherExample.GetMovies")
+  GEN__movies__AnotherExample__GetMovies(movieRequest: GEN__movies__MovieRequest!): GEN__movies__MoviesResult @grpc(url: "http://localhost:50051", body: "{{.args.movieRequest}}", method: "movies.AnotherExample.GetMovies")
   """
   search movies by the name of the cast
   """
-  GEN__movies__AnotherExample__SearchMoviesByCast(searchByCastRequest: GEN__movies__SearchByCastRequest!): GEN__movies__Movie @grpc(body: "{{.args.searchByCastRequest}}", method: "movies.AnotherExample.SearchMoviesByCast")
+  GEN__movies__AnotherExample__SearchMoviesByCast(searchByCastRequest: GEN__movies__SearchByCastRequest!): GEN__movies__Movie @grpc(url: "http://localhost:50051", body: "{{.args.searchByCastRequest}}", method: "movies.AnotherExample.SearchMoviesByCast")
   """
   get all movies
   """
-  GEN__movies__Example__GetMovies(movieRequest: GEN__movies__MovieRequest!): GEN__movies__MoviesResult @grpc(body: "{{.args.movieRequest}}", method: "movies.Example.GetMovies")
+  GEN__movies__Example__GetMovies(movieRequest: GEN__movies__MovieRequest!): GEN__movies__MoviesResult @grpc(url: "http://localhost:50051", body: "{{.args.movieRequest}}", method: "movies.Example.GetMovies")
   """
   search movies by the name of the cast
   """
-  GEN__movies__Example__SearchMoviesByCast(searchByCastRequest: GEN__movies__SearchByCastRequest!): GEN__movies__Movie @grpc(body: "{{.args.searchByCastRequest}}", method: "movies.Example.SearchMoviesByCast")
+  GEN__movies__Example__SearchMoviesByCast(searchByCastRequest: GEN__movies__SearchByCastRequest!): GEN__movies__Movie @grpc(url: "http://localhost:50051", body: "{{.args.searchByCastRequest}}", method: "movies.Example.SearchMoviesByCast")
 }

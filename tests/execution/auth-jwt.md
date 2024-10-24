@@ -14,7 +14,7 @@ type Query {
 }
 
 type Mutation {
-  protectedType: ProtectedType @http(baseURL: "http://upstream", path: "/protected")
+  protectedType: ProtectedType @http(url: "http://upstream/protected")
 }
 
 type Nested {

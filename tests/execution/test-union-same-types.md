@@ -7,7 +7,7 @@ error: true
 In some cases, when the resolved data shape does not strongly correspond to GraphQL types, the discriminator may return the first possible type or no possible types at all.
 
 ```graphql @config
-schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @server {
   query: Query
 }
 
@@ -26,6 +26,6 @@ type Foo {
 }
 
 type Query {
-  fooBarBaz: FooBarBaz @http(path: "/path")
+  fooBarBaz: FooBarBaz @http(url: "http://jsonplaceholder.typicode.com/path")
 }
 ```
