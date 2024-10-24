@@ -112,7 +112,7 @@ impl JITExecutor {
 
             let is_const = exec.plan.is_const;
 
-            let response = if exec.plan.is_query() && exec.plan.is_dedupe {
+            let response = if exec.plan.is_query() && (exec.plan.is_dedupe || exec.plan.is_const) {
                 self.dedupe_and_exec(exec, jit_request).await
             } else {
                 self.exec(exec, jit_request).await
