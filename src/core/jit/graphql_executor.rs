@@ -107,9 +107,10 @@ impl JITExecutor {
             };
 
             let is_const = exec.plan.is_const;
-            let is_cached = self.app_ctx.const_execution_cache.contains_key(&hash);
+            let mut is_cached_response = false;
 
             let response = if let Some(response) = self.app_ctx.const_execution_cache.get(&hash) {
+                is_cached_response = true;
                 response.value().clone()
             } else if exec.plan.is_query() && exec.plan.is_dedupe {
                 self.dedupe_and_exec(exec, jit_request).await
@@ -117,7 +118,8 @@ impl JITExecutor {
                 self.exec(exec, jit_request).await
             };
 
-            if is_const && !is_cached {
+            // Cache the response if it's constant and not already cached
+            if is_const && !is_cached_response {
                 // cache the const result.
                 self.app_ctx
                     .const_execution_cache
