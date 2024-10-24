@@ -4,7 +4,7 @@ use std::sync::Arc;
 use derive_setters::Setters;
 use serde::Serialize;
 
-use super::server_error::ServerError;
+use super::graphql_error::GraphQLError;
 use super::Positioned;
 use crate::core::async_graphql_hyper::CacheControl;
 use crate::core::jit;
@@ -14,7 +14,7 @@ pub struct Response<Value> {
     #[serde(default)]
     pub data: Value,
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub errors: Vec<ServerError>,
+    pub errors: Vec<GraphQLError>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub extensions: Vec<(String, Value)>,
 
@@ -45,7 +45,7 @@ impl<Value: Default> Response<Value> {
         Self { data: value, ..self }
     }
 
-    pub fn with_errors<E: Into<ServerError>>(self, errors: Vec<E>) -> Self {
+    pub fn with_errors<E: Into<GraphQLError>>(self, errors: Vec<E>) -> Self {
         Self {
             errors: errors.into_iter().map(|e| e.into()).collect(),
             ..self
@@ -155,7 +155,7 @@ mod test {
     use async_graphql_value::ConstValue;
 
     use super::Response;
-    use crate::core::jit::server_error::ServerError;
+    use crate::core::jit::graphql_error::GraphQLError;
     use crate::core::jit::{self, Pos, Positioned};
 
     #[test]
@@ -275,7 +275,7 @@ mod test {
         resp1.errors.append(&mut err1);
 
         let mut resp2 = Response::new(Ok(ConstValue::default()));
-        let mut err2 = vec![ServerError::new("Error-2", Some(Pos::default()))];
+        let mut err2 = vec![GraphQLError::new("Error-2", Some(Pos::default()))];
         resp2.errors.append(&mut err2);
 
         let merged_resp = resp2.merge_with(resp1);

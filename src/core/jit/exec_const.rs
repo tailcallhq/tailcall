@@ -74,7 +74,6 @@ impl ConstValueExecutor {
         let exe = Executor::new(&plan, exec);
         let store = exe.store().await;
         let synth = Synth::new(&plan, store, vars);
-        
 
         exe.execute(synth).await
     }

@@ -7,7 +7,7 @@ use super::{PathSegment, Pos, Positioned};
 
 /// An error in a GraphQL server.
 #[derive(Clone, Serialize, Deserialize)]
-pub struct ServerError {
+pub struct GraphQLError {
     /// An explanatory message of the error.
     pub message: String,
     /// Where the error occurred.
@@ -21,7 +21,7 @@ pub struct ServerError {
     pub extensions: Option<ErrorExtensionValues>,
 }
 
-impl From<async_graphql::ServerError> for ServerError {
+impl From<async_graphql::ServerError> for GraphQLError {
     fn from(value: async_graphql::ServerError) -> Self {
         // TODO: remove this once either extension are avail public or we migrate from
         // async_graphql. we can't copy extensions, bcoz it's private inside the
@@ -43,7 +43,7 @@ impl From<async_graphql::ServerError> for ServerError {
     }
 }
 
-impl From<Positioned<super::Error>> for ServerError {
+impl From<Positioned<super::Error>> for GraphQLError {
     fn from(value: Positioned<super::Error>) -> Self {
         let inner_value = value.value;
         let position = value.pos;
@@ -54,7 +54,7 @@ impl From<Positioned<super::Error>> for ServerError {
         }
 
         let ext = inner_value.extend().extensions;
-        let mut server_error = ServerError::new(inner_value.to_string(), Some(position));
+        let mut server_error = GraphQLError::new(inner_value.to_string(), Some(position));
         server_error.extensions = ext;
         server_error.path = value.path;
 
@@ -62,7 +62,7 @@ impl From<Positioned<super::Error>> for ServerError {
     }
 }
 
-impl ServerError {
+impl GraphQLError {
     /// Create a new server error with the message.
     pub fn new(message: impl Into<String>, pos: Option<Pos>) -> Self {
         Self {
@@ -80,19 +80,19 @@ impl ServerError {
     }
 }
 
-impl Display for ServerError {
+impl Display for GraphQLError {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         f.write_str(&self.message)
     }
 }
 
-impl From<ServerError> for Vec<ServerError> {
-    fn from(single: ServerError) -> Self {
+impl From<GraphQLError> for Vec<GraphQLError> {
+    fn from(single: GraphQLError) -> Self {
         vec![single]
     }
 }
 
-impl From<async_graphql::parser::Error> for ServerError {
+impl From<async_graphql::parser::Error> for GraphQLError {
     fn from(e: async_graphql::parser::Error) -> Self {
         Self {
             message: e.to_string(),
@@ -103,7 +103,7 @@ impl From<async_graphql::parser::Error> for ServerError {
     }
 }
 
-impl Debug for ServerError {
+impl Debug for GraphQLError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ServerError")
             .field("message", &self.message)
@@ -114,7 +114,7 @@ impl Debug for ServerError {
     }
 }
 
-impl PartialEq for ServerError {
+impl PartialEq for GraphQLError {
     fn eq(&self, other: &Self) -> bool {
         self.message.eq(&other.message)
             && self.locations.eq(&other.locations)
@@ -188,8 +188,8 @@ impl Error {
 
     /// Convert the error to a server error.
     #[must_use]
-    pub fn into_server_error(self, pos: Pos) -> ServerError {
-        ServerError {
+    pub fn into_server_error(self, pos: Pos) -> GraphQLError {
+        GraphQLError {
             message: self.message,
             locations: vec![pos],
             path: Vec::new(),
@@ -249,7 +249,7 @@ mod test {
         async_server_err.extensions = Some(async_ext);
         let async_ext_str = serde_json::to_value(async_server_err.clone()).unwrap();
 
-        let owned_server_err = super::ServerError::from(async_server_err);
+        let owned_server_err = super::GraphQLError::from(async_server_err);
         let owned_ext_str = serde_json::to_value(owned_server_err).unwrap();
 
         assert_eq!(async_ext_str, owned_ext_str);

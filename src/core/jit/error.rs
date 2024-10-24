@@ -1,7 +1,7 @@
 use async_graphql::parser::types::OperationType;
 use thiserror::Error;
 
-use super::server_error::ErrorExtensions;
+use super::graphql_error::ErrorExtensions;
 
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
 #[error("Error while building the plan")]
@@ -57,14 +57,14 @@ pub enum Error {
 }
 
 impl ErrorExtensions for Error {
-    fn extend(&self) -> super::server_error::Error {
+    fn extend(&self) -> super::graphql_error::Error {
         match self {
             Error::BuildError(error) => error.extend(),
             Error::ParseError(error) => error.extend(),
             Error::IR(error) => error.extend(),
             Error::Validation(error) => error.extend(),
             Error::ServerError(error) => error.extend(),
-            Error::Unknown => super::server_error::Error::new(self.to_string()),
+            Error::Unknown => super::graphql_error::Error::new(self.to_string()),
         }
     }
 }

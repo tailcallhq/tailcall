@@ -8,7 +8,7 @@ mod tests {
     use tailcall::core::blueprint::Blueprint;
     use tailcall::core::config::{Config, ConfigModule};
     use tailcall::core::http::RequestContext;
-    use tailcall::core::jit::server_error::ServerError;
+    use tailcall::core::jit::graphql_error::GraphQLError;
     use tailcall::core::jit::{
         BuildError, ConstValueExecutor, Error, Positioned, Request, ResolveInputError, Response,
     };
@@ -170,7 +170,7 @@ mod tests {
         let executor = TestExecutor::try_new().await.unwrap();
 
         let resp = executor.run(request).await.unwrap();
-        let errs: Vec<ServerError> = vec![Positioned::new(
+        let errs: Vec<GraphQLError> = vec![Positioned::new(
             Error::BuildError(BuildError::ResolveInputError(
                 ResolveInputError::VariableIsNotFound("id".to_string()),
             )),
@@ -209,7 +209,7 @@ mod tests {
         let executor = TestExecutor::try_new().await.unwrap();
 
         let resp = executor.run(request).await.unwrap();
-        let errs: Vec<ServerError> = vec![Positioned::new(
+        let errs: Vec<GraphQLError> = vec![Positioned::new(
             Error::BuildError(BuildError::ResolveInputError(
                 ResolveInputError::VariableIsNotFound("id".to_string()),
             )),

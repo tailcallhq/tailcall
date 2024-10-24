@@ -1,6 +1,6 @@
 mod exec;
+pub mod graphql_error;
 mod model;
-pub mod server_error;
 mod store;
 mod synth;
 mod transform;
