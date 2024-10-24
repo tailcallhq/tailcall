@@ -16,7 +16,7 @@ impl<A> CheckProtected<A> {
 /// Checks if the IR will always evaluate to a Constant Value
 pub fn is_protected(ir: &IR) -> bool {
     match ir {
-        IR::Dynamic(dynamic_value) => false,
+        IR::Dynamic(_) => false,
         IR::IO(_) => false,
         IR::Cache(_) => false,
         IR::Path(ir, _) => is_protected(ir),
