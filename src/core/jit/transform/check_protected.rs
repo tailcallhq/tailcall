@@ -13,7 +13,7 @@ impl<A> CheckProtected<A> {
     }
 }
 
-/// Checks if the IR will always evaluate to a Constant Value
+/// Checks if the IR will always evaluate to a Protected Value
 pub fn is_protected(ir: &IR) -> bool {
     match ir {
         IR::Dynamic(_) => false,
@@ -35,12 +35,10 @@ impl<A> Transform for CheckProtected<A> {
     type Error = Infallible;
 
     fn transform(&self, mut plan: Self::Value) -> Valid<Self::Value, Self::Error> {
-        let is_protected = plan.iter_dfs().all(|field| match field.ir {
+        plan.is_protected = plan.iter_dfs().all(|field| match field.ir {
             Some(ref ir) => is_protected(ir),
             None => true,
         });
-
-        plan.is_protected = is_protected;
 
         Valid::succeed(plan)
     }
