@@ -4,64 +4,75 @@ use std::sync::Arc;
 use derive_setters::Setters;
 use serde::Serialize;
 
+use super::server_error::ServerError;
 use super::Positioned;
 use crate::core::async_graphql_hyper::CacheControl;
 use crate::core::jit;
-use crate::core::merge_right::MergeRight;
 
-#[derive(Clone, Setters, Serialize)]
-pub struct Response<Value, Error> {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub data: Option<Value>,
+#[derive(Clone, Setters, Serialize, Debug)]
+pub struct Response<Value> {
+    #[serde(default)]
+    pub data: Value,
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub errors: Vec<Positioned<Error>>,
+    pub errors: Vec<ServerError>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub extensions: Vec<(String, Value)>,
+
+    #[serde(skip)]
+    pub cache_control: CacheControl,
 }
 
-impl<Value, Error> Response<Value, Error> {
-    pub fn new(result: Result<Value, Positioned<Error>>) -> Self {
+impl<V: Default> Default for Response<V> {
+    fn default() -> Self {
+        Self {
+            data: Default::default(),
+            errors: Default::default(),
+            extensions: Default::default(),
+            cache_control: Default::default(),
+        }
+    }
+}
+
+impl<Value: Default> Response<Value> {
+    pub fn new(result: Result<Value, Positioned<jit::Error>>) -> Self {
         match result {
-            Ok(value) => Response {
-                data: Some(value),
-                errors: Vec::new(),
-                extensions: Vec::new(),
-            },
-            Err(error) => Response { data: None, errors: vec![error], extensions: Vec::new() },
+            Ok(value) => Response::default().with_value(value),
+            Err(error) => Response::default().with_errors(vec![error]),
         }
     }
 
-    pub fn add_errors(&mut self, new_errors: Vec<Positioned<Error>>) {
-        self.errors.extend(new_errors);
+    pub fn with_value(self, value: Value) -> Self {
+        Self { data: value, ..self }
+    }
+
+    pub fn with_errors<E: Into<ServerError>>(self, errors: Vec<E>) -> Self {
+        Self {
+            errors: errors.into_iter().map(|e| e.into()).collect(),
+            ..self
+        }
+    }
+
+    pub fn add_errors(&mut self, new_errors: Vec<Positioned<jit::Error>>) {
+        self.errors.extend(new_errors.into_iter().map(|e| e.into()));
     }
 }
 
-impl MergeRight for async_graphql::Response {
-    fn merge_right(mut self, other: Self) -> Self {
+impl Response<async_graphql::Value> {
+    pub fn merge_with(mut self, other: async_graphql::Response) -> Self {
         if let async_graphql::Value::Object(mut other_obj) = other.data {
             if let async_graphql::Value::Object(self_obj) = std::mem::take(self.data.borrow_mut()) {
                 other_obj.extend(self_obj);
                 self.data = async_graphql::Value::Object(other_obj);
+            } else {
+                self.data = async_graphql::Value::Object(other_obj);
             }
         }
 
-        self.errors.extend(other.errors);
+        self.errors
+            .extend(other.errors.into_iter().map(|e| e.into()));
         self.extensions.extend(other.extensions);
 
         self
-    }
-}
-
-impl Response<async_graphql::Value, jit::Error> {
-    pub fn into_async_graphql(self) -> async_graphql::Response {
-        let mut resp = async_graphql::Response::new(self.data.unwrap_or_default());
-        for (name, value) in self.extensions {
-            resp = resp.extension(name, value);
-        }
-        for error in self.errors {
-            resp.errors.push(error.into());
-        }
-        resp
     }
 }
 
@@ -92,8 +103,8 @@ where
     }
 }
 
-impl From<async_graphql::Response> for AnyResponse<Vec<u8>> {
-    fn from(response: async_graphql::Response) -> Self {
+impl<V: Serialize + Default> From<Response<V>> for AnyResponse<Vec<u8>> {
+    fn from(response: Response<V>) -> Self {
         Self {
             cache_control: CacheControl {
                 max_age: response.cache_control.max_age,
@@ -144,16 +155,15 @@ mod test {
     use async_graphql_value::ConstValue;
 
     use super::Response;
+    use crate::core::jit::server_error::ServerError;
     use crate::core::jit::{self, Pos, Positioned};
-    use crate::core::merge_right::MergeRight;
 
     #[test]
     fn test_with_response() {
         let value = ConstValue::String("Tailcall - Modern GraphQL Runtime".into());
-        let response = Response::<ConstValue, jit::Error>::new(Ok(value.clone()));
+        let response = Response::<ConstValue>::new(Ok(value.clone()));
 
-        assert!(response.data.is_some());
-        assert_eq!(response.data, Some(value));
+        assert_eq!(response.data, value);
         assert!(response.errors.is_empty());
         assert!(response.extensions.is_empty());
     }
@@ -164,19 +174,18 @@ mod test {
             jit::Error::Validation(jit::ValidationError::ValueRequired),
             Pos { line: 1, column: 2 },
         );
-        let response = Response::<ConstValue, jit::Error>::new(Err(error.clone()));
+        let response = Response::<ConstValue>::new(Err(error.clone()));
 
-        assert!(response.data.is_none());
         assert!(response.extensions.is_empty());
 
         assert_eq!(response.errors.len(), 1);
-        insta::assert_debug_snapshot!(response.into_async_graphql());
+        insta::assert_debug_snapshot!(response);
     }
 
     #[test]
     fn test_adding_errors() {
         let value = ConstValue::String("Tailcall - Modern GraphQL Runtime".into());
-        let mut response = Response::<ConstValue, jit::Error>::new(Ok(value.clone()));
+        let mut response = Response::<ConstValue>::new(Ok(value.clone()));
 
         // Initially no errors
         assert!(response.errors.is_empty());
@@ -189,7 +198,7 @@ mod test {
         response.add_errors(vec![error.clone()]);
 
         assert_eq!(response.errors.len(), 1);
-        insta::assert_debug_snapshot!(response.into_async_graphql());
+        insta::assert_debug_snapshot!(response);
     }
 
     #[test]
@@ -205,10 +214,10 @@ mod test {
             Pos { line: 3, column: 4 },
         );
 
-        let mut response = Response::<ConstValue, jit::Error>::new(Ok(ConstValue::Null));
+        let mut response = Response::<ConstValue>::new(Ok(ConstValue::Null));
         response.add_errors(vec![error2, error1]);
 
-        let async_response = response.into_async_graphql();
+        let async_response = response;
 
         assert_eq!(async_response.errors.len(), 2);
         insta::assert_debug_snapshot!(async_response);
@@ -250,11 +259,11 @@ mod test {
             }
         }
         "#;
-        let user_data =
-            ConstValue::from_json(serde_json::from_str(user_response).unwrap()).unwrap();
-        let query_response = async_graphql::Response::new(user_data);
+        let user_data = ConstValue::from_json(serde_json::from_str(user_response).unwrap())
+            .map_err(|_| Positioned::new(jit::Error::Unknown, Pos::default()));
+        let query_response = Response::new(user_data);
 
-        let merged_response = introspection_response.merge_right(query_response);
+        let merged_response = query_response.merge_with(introspection_response);
 
         insta::assert_json_snapshot!(merged_response);
     }
@@ -265,14 +274,11 @@ mod test {
         let mut err1 = vec![async_graphql::ServerError::new("Error-1", None)];
         resp1.errors.append(&mut err1);
 
-        let mut resp2 = async_graphql::Response::new(ConstValue::default());
-        let mut err2 = vec![async_graphql::ServerError::new(
-            "Error-2",
-            Some(async_graphql::Pos::default()),
-        )];
+        let mut resp2 = Response::new(Ok(ConstValue::default()));
+        let mut err2 = vec![ServerError::new("Error-2", Some(Pos::default()))];
         resp2.errors.append(&mut err2);
 
-        let merged_resp = resp1.merge_right(resp2);
+        let merged_resp = resp2.merge_with(resp1);
         insta::assert_json_snapshot!(merged_resp);
     }
 }

@@ -3,18 +3,17 @@ use std::future::Future;
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
-use async_graphql::{BatchRequest, Response, Value};
+use async_graphql::{BatchRequest, Value};
 use async_graphql_value::{ConstValue, Extensions};
 use futures_util::stream::FuturesOrdered;
 use futures_util::StreamExt;
 use tailcall_hasher::TailcallHasher;
 
-use super::{AnyResponse, BatchResponse};
+use super::{AnyResponse, BatchResponse, Response};
 use crate::core::app_context::AppContext;
 use crate::core::async_graphql_hyper::OperationId;
 use crate::core::http::RequestContext;
-use crate::core::jit::{self, ConstValueExecutor, OPHash};
-use crate::core::merge_right::MergeRight;
+use crate::core::jit::{self, ConstValueExecutor, OPHash, Pos, Positioned};
 
 #[derive(Clone)]
 pub struct JITExecutor {
@@ -40,16 +39,13 @@ impl JITExecutor {
     ) -> AnyResponse<Vec<u8>> {
         let is_introspection_query = self.app_ctx.blueprint.server.get_enable_introspection()
             && exec.plan.is_introspection_query;
-        let jit_resp = exec
-            .execute(&self.req_ctx, &jit_request)
-            .await
-            .into_async_graphql();
+        let response = exec.execute(&self.req_ctx, &jit_request).await;
         let response = if is_introspection_query {
             let async_req = async_graphql::Request::from(jit_request).only_introspection();
             let async_resp = self.app_ctx.execute(async_req).await;
-            jit_resp.merge_right(async_resp)
+            response.merge_with(async_resp)
         } else {
-            jit_resp
+            response
         };
 
         response.into()
@@ -92,25 +88,44 @@ impl JITExecutor {
         let hash = Self::req_hash(&request);
 
         async move {
+            if let Some(response) = self.app_ctx.const_execution_cache.get(&hash) {
+                return response.clone();
+            }
+
             let jit_request = jit::Request::from(request);
-            let mut exec = if let Some(op) = self.app_ctx.operation_plans.get(&hash) {
+            let exec = if let Some(op) = self.app_ctx.operation_plans.get(&hash) {
                 ConstValueExecutor::from(op.value().clone())
             } else {
                 let exec = match ConstValueExecutor::try_new(&jit_request, &self.app_ctx) {
                     Ok(exec) => exec,
-                    Err(error) => return Response::from_errors(vec![error.into()]).into(),
+                    Err(error) => {
+                        return Response::<async_graphql::Value>::default()
+                            .with_errors(vec![Positioned::new(error, Pos::default())])
+                            .into()
+                    }
                 };
-                self.app_ctx.operation_plans.insert(hash, exec.plan.clone());
+                self.app_ctx
+                    .operation_plans
+                    .insert(hash.clone(), exec.plan.clone());
                 exec
             };
 
-            if let Some(response) = std::mem::take(&mut exec.response) {
-                response.into_async_graphql().into()
-            } else if exec.plan.is_query() && exec.plan.is_dedupe {
+            let is_const = exec.plan.is_const;
+
+            let response = if exec.plan.is_query() && (exec.plan.is_dedupe || exec.plan.is_const) {
                 self.dedupe_and_exec(exec, jit_request).await
             } else {
                 self.exec(exec, jit_request).await
+            };
+
+            // Cache the response if it's constant and not already cached
+            if is_const {
+                self.app_ctx
+                    .const_execution_cache
+                    .insert(hash, response.clone());
             }
+
+            response
         }
     }
 

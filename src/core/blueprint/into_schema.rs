@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use async_graphql::dynamic::{self, FieldFuture, FieldValue, SchemaBuilder, TypeRef};
-use async_graphql::ErrorExtensions;
 use async_graphql_value::ConstValue;
 use futures_util::TryFutureExt;
 use tracing::Instrument;
@@ -9,6 +8,7 @@ use tracing::Instrument;
 use crate::core::blueprint::{Blueprint, Definition};
 use crate::core::http::RequestContext;
 use crate::core::ir::{EvalContext, ResolverContext, TypedValue};
+use crate::core::jit::server_error::ErrorExtensions;
 use crate::core::scalar::Scalar;
 
 /// We set the default value for an `InputValue` by reading it from the

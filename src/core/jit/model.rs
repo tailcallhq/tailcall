@@ -3,7 +3,7 @@ use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 
 use async_graphql::parser::types::{ConstDirective, OperationType};
-use async_graphql::{ErrorExtensions, Name, Positioned as AsyncPositioned, ServerError};
+use async_graphql::{Name, Positioned as AsyncPositioned, ServerError};
 use async_graphql_value::ConstValue;
 use serde::{Deserialize, Serialize};
 
@@ -467,15 +467,25 @@ impl<'a> From<&'a Directive<ConstValue>> for ConstDirective {
 ///
 /// You can serialize and deserialize it to the GraphQL `locations` format
 /// ([reference](https://spec.graphql.org/October2021/#sec-Errors)).
-#[derive(
-    Debug, PartialOrd, Ord, PartialEq, Eq, Clone, Copy, Default, Hash, Serialize, Deserialize,
-)]
+#[derive(PartialOrd, Ord, PartialEq, Eq, Clone, Copy, Default, Hash, Serialize, Deserialize)]
 pub struct Pos {
     /// One-based line number.
     pub line: usize,
 
     /// One-based column number.
     pub column: usize,
+}
+
+impl std::fmt::Debug for Pos {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Pos({}:{})", self.line, self.column)
+    }
+}
+
+impl std::fmt::Display for Pos {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}:{}", self.line, self.column)
+    }
 }
 
 impl From<async_graphql::Pos> for Pos {
@@ -491,6 +501,7 @@ impl From<Pos> for async_graphql::Pos {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(untagged)]
 pub enum PathSegment {
     /// A field in an object.
     Field(String),
@@ -550,34 +561,6 @@ impl From<ServerError> for Positioned<Error> {
                 .into_iter()
                 .map(PathSegment::from)
                 .collect::<Vec<_>>(),
-        }
-    }
-}
-
-impl From<Positioned<Error>> for ServerError {
-    fn from(val: Positioned<Error>) -> Self {
-        match val.value {
-            Error::ServerError(e) => e,
-            _ => {
-                let extensions = val.value.extend().extensions;
-                let mut server_error =
-                    ServerError::new(val.value.to_string(), Some(val.pos.into()));
-
-                server_error.extensions = extensions;
-
-                // TODO: in order to be compatible with async_graphql path is only set for
-                // validation errors here but in general we might consider setting it
-                // for every error
-                if let Error::Validation(_) = val.value {
-                    server_error.path = val
-                        .path
-                        .into_iter()
-                        .map(|path| path.into())
-                        .collect::<Vec<_>>();
-                }
-
-                server_error
-            }
         }
     }
 }

@@ -1,10 +1,11 @@
 use std::fmt::Display;
 use std::sync::Arc;
 
-use async_graphql::{ErrorExtensions, Value as ConstValue};
+use async_graphql::Value as ConstValue;
 use derive_more::From;
 use thiserror::Error;
 
+use crate::core::jit::server_error::{Error as ExtensionError, ErrorExtensions};
 use crate::core::{auth, cache, worker, Errata};
 
 #[derive(From, Debug, Error, Clone)]
@@ -72,8 +73,8 @@ impl From<Error> for Errata {
 }
 
 impl ErrorExtensions for Error {
-    fn extend(&self) -> async_graphql::Error {
-        async_graphql::Error::new(format!("{}", self)).extend_with(|_err, e| {
+    fn extend(&self) -> ExtensionError {
+        ExtensionError::new(format!("{}", self)).extend_with(|_err, e| {
             if let Error::GRPC {
                 grpc_code,
                 grpc_description,

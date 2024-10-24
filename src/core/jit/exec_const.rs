@@ -21,12 +21,11 @@ use crate::core::Transform;
 /// A specialized executor that executes with async_graphql::Value
 pub struct ConstValueExecutor {
     pub plan: OperationPlan<Value>,
-    pub response: Option<Response<ConstValue, Error>>,
 }
 
 impl From<OperationPlan<Value>> for ConstValueExecutor {
     fn from(plan: OperationPlan<Value>) -> Self {
-        Self { plan, response: None }
+        Self { plan }
     }
 }
 
@@ -37,12 +36,11 @@ impl ConstValueExecutor {
     }
 
     pub async fn execute(
-        mut self,
+        self,
         req_ctx: &RequestContext,
         request: &Request<ConstValue>,
-    ) -> Response<ConstValue, Error> {
+    ) -> Response<ConstValue> {
         let variables = &request.variables;
-        let is_const = self.plan.is_const;
 
         // Attempt to skip unnecessary fields
         let Ok(plan) = transform::Skip::new(variables)
@@ -50,11 +48,8 @@ impl ConstValueExecutor {
             .to_result()
         else {
             // this shouldn't actually ever happen
-            return Response {
-                data: None,
-                errors: vec![Positioned::new(Error::Unknown, Pos { line: 0, column: 0 })],
-                extensions: Default::default(),
-            };
+            return Response::default()
+                .with_errors(vec![Positioned::new(Error::Unknown, Pos::default())]);
         };
 
         // Attempt to replace variables in the plan with the actual values
@@ -66,15 +61,10 @@ impl ConstValueExecutor {
         let plan = match result {
             Ok(plan) => plan,
             Err(err) => {
-                return Response {
-                    data: None,
-                    // TODO: Position shouldn't be 0, 0
-                    errors: vec![Positioned::new(
-                        BuildError::from(err).into(),
-                        Pos { line: 0, column: 0 },
-                    )],
-                    extensions: Default::default(),
-                };
+                return Response::default().with_errors(vec![Positioned::new(
+                    BuildError::from(err).into(),
+                    Pos::default(),
+                )]);
             }
         };
 
@@ -84,14 +74,9 @@ impl ConstValueExecutor {
         let exe = Executor::new(&plan, exec);
         let store = exe.store().await;
         let synth = Synth::new(&plan, store, vars);
-        let response = exe.execute(synth).await;
+        
 
-        // Cache the response if we know the output is always the same
-        if is_const {
-            self.response = Some(response.clone());
-        }
-
-        response
+        exe.execute(synth).await
     }
 }
 
