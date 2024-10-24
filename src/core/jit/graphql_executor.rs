@@ -88,6 +88,10 @@ impl JITExecutor {
         let hash = Self::req_hash(&request);
 
         async move {
+            if let Some(response) = self.app_ctx.const_execution_cache.get(&hash) {
+                return response.clone();
+            }
+
             let jit_request = jit::Request::from(request);
             let exec = if let Some(op) = self.app_ctx.operation_plans.get(&hash) {
                 ConstValueExecutor::from(op.value().clone())
@@ -107,19 +111,15 @@ impl JITExecutor {
             };
 
             let is_const = exec.plan.is_const;
-            let mut is_cached_response = false;
 
-            let response = if let Some(response) = self.app_ctx.const_execution_cache.get(&hash) {
-                is_cached_response = true;
-                response.value().clone()
-            } else if exec.plan.is_query() && exec.plan.is_dedupe {
+            let response = if exec.plan.is_query() && exec.plan.is_dedupe {
                 self.dedupe_and_exec(exec, jit_request).await
             } else {
                 self.exec(exec, jit_request).await
             };
 
             // Cache the response if it's constant and not already cached
-            if is_const && !is_cached_response {
+            if is_const {
                 self.app_ctx
                     .const_execution_cache
                     .insert(hash, response.clone());
