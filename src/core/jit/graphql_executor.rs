@@ -89,7 +89,7 @@ impl JITExecutor {
 
         async move {
             let jit_request = jit::Request::from(request);
-            let mut exec = if let Some(op) = self.app_ctx.operation_plans.get(&hash) {
+            let exec = if let Some(op) = self.app_ctx.operation_plans.get(&hash) {
                 ConstValueExecutor::from(op.value().clone())
             } else {
                 let exec = match ConstValueExecutor::try_new(&jit_request, &self.app_ctx) {
@@ -100,17 +100,31 @@ impl JITExecutor {
                             .into()
                     }
                 };
-                self.app_ctx.operation_plans.insert(hash, exec.plan.clone());
+                self.app_ctx
+                    .operation_plans
+                    .insert(hash.clone(), exec.plan.clone());
                 exec
             };
 
-            if let Some(response) = std::mem::take(&mut exec.response) {
-                response.into()
+            let is_const = exec.plan.is_const;
+            let is_cached = self.app_ctx.const_execution_cache.contains_key(&hash);
+
+            let response = if let Some(response) = self.app_ctx.const_execution_cache.get(&hash) {
+                response.value().clone()
             } else if exec.plan.is_query() && exec.plan.is_dedupe {
                 self.dedupe_and_exec(exec, jit_request).await
             } else {
                 self.exec(exec, jit_request).await
+            };
+
+            if is_const && !is_cached {
+                // cache the const result.
+                self.app_ctx
+                    .const_execution_cache
+                    .insert(hash, response.clone());
             }
+
+            response
         }
     }
 
