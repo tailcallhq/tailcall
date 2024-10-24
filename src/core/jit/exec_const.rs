@@ -20,7 +20,7 @@ use crate::core::Transform;
 
 /// A specialized executor that executes with async_graphql::Value
 pub struct ConstValueExecutor {
-    plan: OperationPlan<Value>,
+    pub plan: OperationPlan<Value>,
 }
 
 impl From<OperationPlan<Value>> for ConstValueExecutor {
