@@ -120,7 +120,6 @@ impl JITExecutor {
 
             // Cache the response if it's constant and not already cached
             if is_const && !is_cached_response {
-                // cache the const result.
                 self.app_ctx
                     .const_execution_cache
                     .insert(hash, response.clone());
