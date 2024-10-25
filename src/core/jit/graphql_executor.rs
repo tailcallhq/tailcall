@@ -42,8 +42,9 @@ impl JITExecutor {
         let response = exec.execute(&self.req_ctx, &jit_request).await;
         let response = if is_introspection_query {
             let async_req = async_graphql::Request::from(jit_request).only_introspection();
-            let async_resp = self.app_ctx.execute(async_req).await;
-            response.merge_with(async_resp)
+            let _async_resp = self.app_ctx.execute(async_req).await;
+            todo!("introspection merge")
+            // response.merge_with(async_resp)
         } else {
             response
         };

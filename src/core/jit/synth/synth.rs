@@ -34,8 +34,11 @@ where
     }
 
     #[inline(always)]
-    pub fn synthesize(&'a self) -> Result<Value, Positioned<Error>> {
-        let mut data = Value::JsonObject::with_capacity(self.plan.selection.len());
+    pub fn synthesize<Output>(&'a self) -> Result<Output, Positioned<Error>>
+    where
+        Output: JsonLike<'a>,
+    {
+        let mut data = Output::JsonObject::with_capacity(self.plan.selection.len());
         let mut path = Vec::new();
         let root_name = self.plan.root_name();
 
@@ -49,19 +52,22 @@ where
             data.insert_key(&child.output_name, val);
         }
 
-        Ok(Value::object(data))
+        Ok(Output::object(data))
     }
 
     #[allow(clippy::too_many_arguments)]
     #[inline(always)]
-    fn iter(
+    fn iter<Output>(
         &'a self,
         node: &'a Field<Value>,
         value: Option<&'a Value>,
         data_path: &DataPath,
         path: &mut Vec<PathSegment>,
         root_name: Option<&'a str>,
-    ) -> Result<Value, Positioned<Error>> {
+    ) -> Result<Output, Positioned<Error>>
+    where
+        Output: JsonLike<'a>,
+    {
         path.push(PathSegment::Field(node.output_name.clone()));
 
         let result = match self.store.get(&node.id) {
@@ -72,7 +78,7 @@ where
                     if let Some(arr) = value.as_array() {
                         value = &arr[*index];
                     } else {
-                        return Ok(Value::null());
+                        return Ok(Output::null());
                     }
                 }
 
@@ -93,20 +99,23 @@ where
 
     /// This guard ensures to return Null value only if node type permits it, in
     /// case it does not it throws an Error
-    fn node_nullable_guard(
+    fn node_nullable_guard<Output>(
         &'a self,
         node: &'a Field<Value>,
         path: &[PathSegment],
         root_name: Option<&'a str>,
-    ) -> Result<Value, Positioned<Error>> {
+    ) -> Result<Output, Positioned<Error>>
+    where
+        Output: JsonLike<'a>,
+    {
         if let Some(root_name) = root_name {
             if node.name.eq("__typename") {
-                return Ok(Value::string(Cow::Borrowed(root_name)));
+                return Ok(Output::string(Cow::Borrowed(root_name)));
             }
         }
         // according to GraphQL spec https://spec.graphql.org/October2021/#sec-Handling-Field-Errors
         if node.type_of.is_nullable() {
-            Ok(Value::null())
+            Ok(Output::null())
         } else {
             Err(ValidationError::ValueRequired.into())
                 .map_err(|e| self.to_location_error(e, node, path))
@@ -115,16 +124,19 @@ where
 
     #[allow(clippy::too_many_arguments)]
     #[inline(always)]
-    fn iter_inner(
+    fn iter_inner<Output>(
         &'a self,
         node: &'a Field<Value>,
         value: &'a Value,
         data_path: &DataPath,
         path: &mut Vec<PathSegment>,
-    ) -> Result<Value, Positioned<Error>> {
+    ) -> Result<Output, Positioned<Error>>
+    where
+        Output: JsonLike<'a>,
+    {
         // skip the field if field is not included in schema
         if !self.include(node) {
-            return Ok(Value::null());
+            return Ok(Output::null());
         }
 
         let eval_result = if value.is_null() {
@@ -134,7 +146,7 @@ where
                 crate::core::Type::List { of_type, .. } => of_type.is_nullable(),
             };
             if is_nullable {
-                Ok(Value::null())
+                Ok(Output::null())
             } else {
                 Err(ValidationError::ValueRequired.into())
             }
@@ -145,7 +157,7 @@ where
             // by async_graphql anyway so it should be done after replacing
             // default engine with JIT
             if scalar.validate(value) {
-                Ok(value.clone())
+                Ok(Output::clone_from(value))
             } else {
                 Err(
                     ValidationError::ScalarInvalid { type_of: node.type_of.name().to_string() }
@@ -167,7 +179,7 @@ where
             };
 
             if is_valid_enum {
-                Ok(value.clone())
+                Ok(Output::clone_from(value))
             } else {
                 Err(
                     ValidationError::EnumInvalid { type_of: node.type_of.name().to_string() }
@@ -177,7 +189,7 @@ where
         } else {
             match (value.as_array(), value.as_object()) {
                 (_, Some(obj)) => {
-                    let mut ans = Value::JsonObject::with_capacity(node.selection.len());
+                    let mut fields = Vec::with_capacity(node.selection.len());
 
                     for child in node
                         .iter()
@@ -187,16 +199,16 @@ where
                         // and include be checked before calling `iter` or recursing.
                         if self.include(child) {
                             let value = if child.name == "__typename" {
-                                Value::string(node.value_type(value).into())
+                                Output::string(node.value_type(value).into())
                             } else {
                                 let val = obj.get_key(child.name.as_str());
                                 self.iter(child, val, data_path, path, None)?
                             };
-                            ans.insert_key(&child.output_name, value);
+                            fields.push((child.output_name.as_str(), value));
                         }
                     }
 
-                    Ok(Value::object(ans))
+                    Ok(Output::object(Output::JsonObject::from_vec(fields)))
                 }
                 (Some(arr), _) => {
                     let mut ans = Vec::with_capacity(arr.len());
@@ -207,9 +219,9 @@ where
                         path.pop();
                         ans.push(val);
                     }
-                    Ok(Value::array(ans))
+                    Ok(Output::array(ans))
                 }
-                _ => Ok(value.clone()),
+                _ => Ok(Output::clone_from(value)),
             }
         };
 
@@ -356,9 +368,9 @@ mod tests {
             make_store::<serde_json_borrow::Value>(query, store.clone());
         let synth_borrow = Synth::new(&plan, value_store, vars);
 
-        let val_const = synth_const.synthesize().unwrap();
+        let val_const: ConstValue = synth_const.synthesize().unwrap();
         let val_const = serde_json::to_string_pretty(&val_const).unwrap();
-        let val_borrow = synth_borrow.synthesize().unwrap();
+        let val_borrow: serde_json_borrow::Value = synth_borrow.synthesize().unwrap();
         let val_borrow = serde_json::to_string_pretty(&val_borrow).unwrap();
         assert_eq!(val_const, val_borrow);
     }
@@ -419,7 +431,8 @@ mod tests {
 
     #[test]
     fn test_json_placeholder() {
-        let jp = JP::init("{ posts { id title userId user { id name } } }", None);
+        let jp: JP<async_graphql::Value> =
+            JP::init("{ posts { id title userId user { id name } } }", None);
         let synth = jp.synth();
         let val: async_graphql::Value = synth.synthesize().unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())
@@ -427,7 +440,8 @@ mod tests {
 
     #[test]
     fn test_json_placeholder_borrowed() {
-        let jp = JP::init("{ posts { id title userId user { id name } } }", None);
+        let jp: JP<serde_json_borrow::Value> =
+            JP::init("{ posts { id title userId user { id name } } }", None);
         let synth = jp.synth();
         let val: serde_json_borrow::Value = synth.synthesize().unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())
@@ -435,7 +449,8 @@ mod tests {
 
     #[test]
     fn test_json_placeholder_typename() {
-        let jp = JP::init("{ posts { id __typename user { __typename id } } }", None);
+        let jp: JP<serde_json_borrow::Value> =
+            JP::init("{ posts { id __typename user { __typename id } } }", None);
         let synth = jp.synth();
         let val: serde_json_borrow::Value = synth.synthesize().unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())
@@ -443,7 +458,8 @@ mod tests {
 
     #[test]
     fn test_json_placeholder_typename_root_level() {
-        let jp = JP::init("{ __typename posts { id user { id }} }", None);
+        let jp: JP<serde_json_borrow::Value> =
+            JP::init("{ __typename posts { id user { id }} }", None);
         let synth = jp.synth();
         let val: serde_json_borrow::Value = synth.synthesize().unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())

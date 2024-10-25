@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use serde_json_borrow::{ObjectAsVec, Value};
 
-use super::{gather_path_matches, group_by_key, JsonLike, JsonObjectLike};
+use super::{gather_path_matches, group_by_key, JsonLike, JsonObjectLike, JsonPrimitive};
 
 // BorrowedValue
 impl<'ctx> JsonObjectLike<'ctx> for ObjectAsVec<'ctx> {
@@ -13,8 +13,11 @@ impl<'ctx> JsonObjectLike<'ctx> for ObjectAsVec<'ctx> {
     }
 
     fn with_capacity(n: usize) -> Self {
-        // TODO: no way to define capacity on ObjectAsVec
         ObjectAsVec::from(Vec::with_capacity(n))
+    }
+
+    fn from_vec(v: Vec<(&'ctx str, Self::Value)>) -> Self {
+        ObjectAsVec::from(v)
     }
 
     fn get_key(&self, key: &str) -> Option<&Self::Value> {
@@ -41,8 +44,39 @@ impl<'ctx> JsonLike<'ctx> for Value<'ctx> {
         Value::Array(arr)
     }
 
+    fn from_primitive(x: JsonPrimitive<'ctx>) -> Self {
+        match x {
+            JsonPrimitive::Null => Value::Null,
+            JsonPrimitive::Bool(x) => Value::Bool(x),
+            JsonPrimitive::Str(s) => Value::Str(s.into()),
+            JsonPrimitive::Number(n) => {
+                if let Some(n) = n.as_i64() {
+                    Value::Number(n.into())
+                } else if let Some(n) = n.as_u64() {
+                    Value::Number(n.into())
+                } else if let Some(n) = n.as_f64() {
+                    Value::Number(n.into())
+                } else {
+                    unreachable!()
+                }
+            }
+        }
+    }
+
     fn string(s: Cow<'ctx, str>) -> Self {
         Value::Str(s)
+    }
+
+    fn as_primitive(&self) -> Option<JsonPrimitive> {
+        let val = match self {
+            Value::Null => JsonPrimitive::Null,
+            Value::Bool(x) => JsonPrimitive::Bool(*x),
+            Value::Number(number) => JsonPrimitive::Number((*number).into()),
+            Value::Str(cow) => JsonPrimitive::Str(cow.as_ref()),
+            _ => return None,
+        };
+
+        Some(val)
     }
 
     fn as_array(&self) -> Option<&Vec<Self>> {

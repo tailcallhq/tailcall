@@ -1,4 +1,3 @@
-use std::borrow::BorrowMut;
 use std::sync::Arc;
 
 use derive_setters::Setters;
@@ -60,7 +59,7 @@ impl<Value: Default> Response<Value> {
 impl Response<async_graphql::Value> {
     pub fn merge_with(mut self, other: async_graphql::Response) -> Self {
         if let async_graphql::Value::Object(mut other_obj) = other.data {
-            if let async_graphql::Value::Object(self_obj) = std::mem::take(self.data.borrow_mut()) {
+            if let async_graphql::Value::Object(self_obj) = self.data {
                 other_obj.extend(self_obj);
                 self.data = async_graphql::Value::Object(other_obj);
             } else {
@@ -103,7 +102,7 @@ where
     }
 }
 
-impl<V: Serialize + Default> From<Response<V>> for AnyResponse<Vec<u8>> {
+impl<V: Serialize> From<Response<V>> for AnyResponse<Vec<u8>> {
     fn from(response: Response<V>) -> Self {
         Self {
             cache_control: CacheControl {

@@ -18,6 +18,10 @@ impl<'obj, Value: JsonLike<'obj> + Clone> JsonObjectLike<'obj> for IndexMap<Name
         IndexMap::with_capacity(n)
     }
 
+    fn from_vec(v: Vec<(&'obj str, Self::Value)>) -> Self {
+        IndexMap::from_iter(v.into_iter().map(|(k, v)| (Name::new(k), v)))
+    }
+
     fn get_key(&self, key: &str) -> Option<&Self::Value> {
         self.get(key)
     }
@@ -29,6 +33,28 @@ impl<'obj, Value: JsonLike<'obj> + Clone> JsonObjectLike<'obj> for IndexMap<Name
 
 impl<'json> JsonLike<'json> for ConstValue {
     type JsonObject = IndexMap<Name, ConstValue>;
+
+    fn from_primitive(x: JsonPrimitive<'json>) -> Self {
+        match x {
+            JsonPrimitive::Null => ConstValue::Null,
+            JsonPrimitive::Bool(x) => ConstValue::Boolean(x),
+            JsonPrimitive::Str(s) => ConstValue::String(s.to_string()),
+            JsonPrimitive::Number(number) => ConstValue::Number(number),
+        }
+    }
+
+    fn as_primitive(&self) -> Option<JsonPrimitive> {
+        let val = match self {
+            ConstValue::Null => JsonPrimitive::Null,
+            ConstValue::Boolean(x) => JsonPrimitive::Bool(*x),
+            ConstValue::Number(number) => JsonPrimitive::Number(number.clone()),
+            ConstValue::String(s) => JsonPrimitive::Str(s.as_ref()),
+            ConstValue::Enum(e) => JsonPrimitive::Str(e.as_str()),
+            _ => return None,
+        };
+
+        Some(val)
+    }
 
     fn as_array(&self) -> Option<&Vec<Self>> {
         match self {

@@ -3,8 +3,8 @@ use std::sync::Arc;
 use async_graphql_value::{ConstValue, Value};
 use futures_util::future::join_all;
 
-use super::context::Context;
 use super::exec::{Executor, IRExecutor};
+use super::{context::Context, AnyResponse};
 use super::{
     transform, BuildError, Error, OperationPlan, Pos, Positioned, Request, Response, Result,
 };
@@ -35,11 +35,11 @@ impl ConstValueExecutor {
         Ok(Self::from(plan))
     }
 
-    pub async fn execute(
+    pub async fn execute<'a>(
         self,
         req_ctx: &RequestContext,
         request: &Request<ConstValue>,
-    ) -> Response<ConstValue> {
+    ) -> AnyResponse<Vec<u8>> {
         let variables = &request.variables;
 
         // Attempt to skip unnecessary fields
@@ -47,9 +47,11 @@ impl ConstValueExecutor {
             .transform(self.plan)
             .to_result()
         else {
+            let resp: Response<ConstValue> = Response::default();
             // this shouldn't actually ever happen
-            return Response::default()
-                .with_errors(vec![Positioned::new(Error::Unknown, Pos::default())]);
+            return resp
+                .with_errors(vec![Positioned::new(Error::Unknown, Pos::default())])
+                .into();
         };
 
         // Attempt to replace variables in the plan with the actual values
@@ -61,10 +63,13 @@ impl ConstValueExecutor {
         let plan = match result {
             Ok(plan) => plan,
             Err(err) => {
-                return Response::default().with_errors(vec![Positioned::new(
-                    BuildError::from(err).into(),
-                    Pos::default(),
-                )]);
+                let resp: Response<ConstValue> = Response::default();
+                return resp
+                    .with_errors(vec![Positioned::new(
+                        BuildError::from(err).into(),
+                        Pos::default(),
+                    )])
+                    .into();
             }
         };
 
@@ -75,7 +80,9 @@ impl ConstValueExecutor {
         let store = exe.store().await;
         let synth = Synth::new(&plan, store, vars);
 
-        exe.execute(synth).await
+        let resp: Response<serde_json_borrow::Value> = exe.execute(&synth).await;
+
+        resp.into()
     }
 }
 

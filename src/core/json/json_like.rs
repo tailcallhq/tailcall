@@ -1,6 +1,13 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 
+pub enum JsonPrimitive<'a> {
+    Null,
+    Bool(bool),
+    Str(&'a str),
+    Number(serde_json::Number),
+}
+
 pub trait JsonLikeOwned: for<'json> JsonLike<'json> {}
 impl<T> JsonLikeOwned for T where T: for<'json> JsonLike<'json> {}
 
@@ -13,8 +20,23 @@ pub trait JsonLike<'json>: Sized {
     fn object(obj: Self::JsonObject) -> Self;
     fn array(arr: Vec<Self>) -> Self;
     fn string(s: Cow<'json, str>) -> Self;
+    fn from_primitive(x: JsonPrimitive<'json>) -> Self;
+    fn clone_from<T>(other: &'json T) -> Self where T: JsonLike<'json> {
+        if let Some(_obj) = other.as_object() {
+            todo!("clone_from obj")
+        } else if let Some(arr) = other.as_array() {
+            let v = arr.into_iter().map(Self::clone_from).collect();
+
+            Self::array(v)
+        } else if let Some(primitive) = other.as_primitive() {
+            Self::from_primitive(primitive)
+        } else {
+            unreachable!()
+        }
+    }
 
     // Operators
+    fn as_primitive(&self) -> Option<JsonPrimitive>;
     fn as_array(&self) -> Option<&Vec<Self>>;
     fn as_array_mut(&mut self) -> Option<&mut Vec<Self>>;
     fn into_array(self) -> Option<Vec<Self>>;
@@ -37,6 +59,7 @@ pub trait JsonObjectLike<'obj>: Sized {
     type Value;
     fn new() -> Self;
     fn with_capacity(n: usize) -> Self;
+    fn from_vec(v: Vec<(&'obj str, Self::Value)>) -> Self;
     fn get_key(&self, key: &str) -> Option<&Self::Value>;
     fn insert_key(&mut self, key: &'obj str, value: Self::Value);
 }
