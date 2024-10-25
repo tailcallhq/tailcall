@@ -2,6 +2,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
 use criterion::Criterion;
+use futures_util::future::join_all;
 use tailcall::core::data_loader::DedupeResult;
 
 pub fn benchmark_dedupe(c: &mut Criterion) {
@@ -24,10 +25,9 @@ pub fn benchmark_dedupe(c: &mut Criterion) {
                 handles.push(handle);
             }
 
-            for handle in handles {
-                let _ = handle.await.unwrap();
-            }
-
+           let results = join_all(handles).await;
+           let all_ok = results.into_iter().any(|r| r.unwrap().is_ok());
+            assert!(all_ok);
             assert_eq!(counter.load(Ordering::SeqCst), 1);
         });
     });
