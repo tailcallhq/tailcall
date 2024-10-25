@@ -2,6 +2,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 
 mod bench_synth;
 mod data_loader_bench;
+mod dedupe_bench;
 mod from_json_bench;
 mod handle_request_bench;
 mod http_execute_bench;
@@ -22,6 +23,7 @@ fn all_benchmarks(c: &mut Criterion) {
     from_json_bench::benchmark_from_json_method(c);
     bench_synth::bench_synth_nested(c);
     bench_synth::bench_synth_nested_borrow(c);
+    dedupe_bench::benchmark_dedupe(c);
 }
 
 criterion_group! {
