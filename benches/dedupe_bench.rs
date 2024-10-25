@@ -22,7 +22,7 @@ pub fn benchmark_dedupe(c: &mut Criterion) {
                 let counter = Arc::new(AtomicUsize::new(0));
                 let mut handles = Vec::new();
 
-                for _ in 0..10000000 {
+                for _ in 0..1000 {
                     let cache = cache.clone();
                     let counter = counter.clone();
                     let handle = tokio::spawn(async move {
