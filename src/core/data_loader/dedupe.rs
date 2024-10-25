@@ -74,7 +74,9 @@ impl<K: Key, V: Value> Dedupe<K, V> {
                     let value = or_else().await;
                     let thread_id = std::thread::current().id();
                     if let Some(mut inner_map) = self.cache.get_mut(&thread_id) {
-                        if !self.persist {
+                        if self.persist {
+                            inner_map.insert(key.to_owned(), State::Ready(value.clone()));
+                        } else {
                             inner_map.remove(&key);
                         }
                     }
