@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::sync::{Arc, RwLock, Weak};
+use std::sync::{Arc, Weak};
 
 use futures_util::Future;
-use tokio::sync::broadcast;
+use tokio::sync::{broadcast, RwLock};
 
 pub trait Key: Send + Sync + Eq + Hash + Clone {}
 impl<A: Send + Sync + Eq + Hash + Clone> Key for A {}
@@ -60,7 +60,7 @@ impl<K: Key, V: Value> Dedupe<K, V> {
     {
         let mut read = true;
         loop {
-            let value = match self.step(key, read) {
+            let value = match self.step(key, read).await {
                 Step::Return(value) => value,
                 Step::Await(mut rx) => match rx.recv().await {
                     Ok(value) => value,
@@ -74,7 +74,7 @@ impl<K: Key, V: Value> Dedupe<K, V> {
                 },
                 Step::Init(tx) => {
                     let value = or_else().await;
-                    let mut guard = self.cache.write().unwrap();
+                    let mut guard = self.cache.write().await;
                     if self.persist {
                         guard.insert(key.to_owned(), State::Ready(value.clone()));
                     } else {
@@ -93,9 +93,9 @@ impl<K: Key, V: Value> Dedupe<K, V> {
         }
     }
 
-    fn step(&self, key: &K, read: bool) -> Step<V> {
+    async fn step(&self, key: &K, read: bool) -> Step<V> {
         if read {
-            let this = self.cache.read().unwrap();
+            let this = self.cache.read().await;
             if let Some(state) = this.get(key) {
                 match state {
                     State::Ready(value) => return Step::Return(value.clone()),
@@ -113,7 +113,7 @@ impl<K: Key, V: Value> Dedupe<K, V> {
             }
         }
 
-        let mut this = self.cache.write().unwrap();
+        let mut this = self.cache.write().await;
 
         if let Some(state) = this.get(key) {
             match state {
