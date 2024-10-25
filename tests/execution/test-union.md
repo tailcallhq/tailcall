@@ -5,7 +5,7 @@ identity: true
 # Test union type resolve
 
 ```graphql @config
-schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @server @upstream {
   query: Query
 }
 
@@ -25,11 +25,11 @@ type Nested {
 }
 
 type Query {
-  arr: [FooBar] @http(path: "/arr")
-  bar: FooBar @http(path: "/bar")
-  foo: FooBar @http(path: "/foo")
-  nested: Nested @http(path: "/nested")
-  unknown: FooBar @http(path: "/unknown")
+  arr: [FooBar] @http(url: "http://jsonplaceholder.typicode.com/arr")
+  bar: FooBar @http(url: "http://jsonplaceholder.typicode.com/bar")
+  foo: FooBar @http(url: "http://jsonplaceholder.typicode.com/foo")
+  nested: Nested @http(url: "http://jsonplaceholder.typicode.com/nested")
+  unknown: FooBar @http(url: "http://jsonplaceholder.typicode.com/unknown")
 }
 ```
 

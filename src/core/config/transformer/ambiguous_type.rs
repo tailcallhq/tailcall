@@ -150,7 +150,6 @@ impl Transform for AmbiguousType {
 
 #[cfg(test)]
 mod tests {
-
     use insta::assert_snapshot;
     use prost_reflect::prost_types::FileDescriptorSet;
     use tailcall_fixtures::protobuf;
@@ -246,12 +245,13 @@ mod tests {
     async fn test_resolve_ambiguous_news_types() -> anyhow::Result<()> {
         let news_proto = tailcall_fixtures::protobuf::NEWS;
         let set = compile_protobuf(&[protobuf::NEWS])?;
+        let url = "http://localhost:50051".to_string();
 
         let cfg_module = Generator::default()
-            .inputs(vec![Input::Proto(ProtoMetadata {
-                descriptor_set: set,
-                path: news_proto.to_string(),
-            })])
+            .inputs(vec![Input::Proto {
+                metadata: ProtoMetadata { descriptor_set: set, path: news_proto.to_string() },
+                url,
+            }])
             .generate(false)?;
 
         let mut config = AmbiguousType::default()

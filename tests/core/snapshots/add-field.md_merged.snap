@@ -15,7 +15,7 @@ type Geo {
 }
 
 type Query {
-  user: User @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users/1")
+  user: User @http(url: "http://jsonplaceholder.typicode.com/users/1")
 }
 
 type User @addField(name: "lat", path: ["address", "geo", "lat"]) {

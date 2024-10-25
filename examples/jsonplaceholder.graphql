@@ -1,13 +1,11 @@
-schema
-  @server(port: 8000)
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 100}) {
+schema @server(port: 8000) @upstream(httpCache: 42, batch: {delay: 100}) {
   query: Query
 }
 
 type Query {
-  posts: [Post] @http(path: "/posts")
-  users: [User] @http(path: "/users")
-  user(id: Int!): User @http(path: "/users/{{.args.id}}")
+  posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts")
+  users: [User] @http(url: "http://jsonplaceholder.typicode.com/users")
+  user(id: Int!): User @http(url: "http://jsonplaceholder.typicode.com/users/{{.args.id}}")
   greet: String @expr(body: "Hello World!")
 }
 

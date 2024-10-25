@@ -5,7 +5,7 @@ identity: true
 # test-inline-list
 
 ```graphql @config
-schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+schema @server @upstream {
   query: Query
 }
 
@@ -22,6 +22,6 @@ type Foo {
 }
 
 type Query @addField(name: "foo", path: ["foo", "a", "0", "b"]) {
-  foo: [Foo] @http(path: "/foo") @modify(omit: true)
+  foo: [Foo] @http(url: "http://jsonplaceholder.typicode.com/foo") @modify(omit: true)
 }
 ```

@@ -45,10 +45,7 @@ service OneOfService {
 ```
 
 ```graphql @config
-schema
-  @server(port: 8000)
-  @upstream(baseURL: "http://localhost:50051", httpCache: 42, batch: {delay: 10})
-  @link(src: "oneof.proto", type: Protobuf) {
+schema @server(port: 8000) @upstream(httpCache: 42, batch: {delay: 10}) @link(src: "oneof.proto", type: Protobuf) {
   query: Query
 }
 
@@ -116,23 +113,23 @@ union oneof__Response = oneof__Response__Var | oneof__Response__Var0 | oneof__Re
 
 type Query {
   oneof__OneOfService__GetOneOfVar0(request: oneof__Request__Var0__Var!): oneof__Response!
-    @grpc(body: "{{.args.request}}", method: "oneof.OneOfService.GetOneOf")
+    @grpc(url: "http://localhost:50051", body: "{{.args.request}}", method: "oneof.OneOfService.GetOneOf")
   oneof__OneOfService__GetOneOfVar1(request: oneof__Request__Var0__Var0!): oneof__Response!
-    @grpc(body: "{{.args.request}}", method: "oneof.OneOfService.GetOneOf")
+    @grpc(url: "http://localhost:50051", body: "{{.args.request}}", method: "oneof.OneOfService.GetOneOf")
   oneof__OneOfService__GetOneOfVar2(request: oneof__Request__Var0__Var1!): oneof__Response!
-    @grpc(body: "{{.args.request}}", method: "oneof.OneOfService.GetOneOf")
+    @grpc(url: "http://localhost:50051", body: "{{.args.request}}", method: "oneof.OneOfService.GetOneOf")
   oneof__OneOfService__GetOneOfVar3(request: oneof__Request__Var1__Var!): oneof__Response!
-    @grpc(body: "{{.args.request}}", method: "oneof.OneOfService.GetOneOf")
+    @grpc(url: "http://localhost:50051", body: "{{.args.request}}", method: "oneof.OneOfService.GetOneOf")
   oneof__OneOfService__GetOneOfVar4(request: oneof__Request__Var1__Var0!): oneof__Response!
-    @grpc(body: "{{.args.request}}", method: "oneof.OneOfService.GetOneOf")
+    @grpc(url: "http://localhost:50051", body: "{{.args.request}}", method: "oneof.OneOfService.GetOneOf")
   oneof__OneOfService__GetOneOfVar5(request: oneof__Request__Var1__Var1!): oneof__Response!
-    @grpc(body: "{{.args.request}}", method: "oneof.OneOfService.GetOneOf")
+    @grpc(url: "http://localhost:50051", body: "{{.args.request}}", method: "oneof.OneOfService.GetOneOf")
   oneof__OneOfService__GetOneOfVar6(request: oneof__Request__Var__Var!): oneof__Response!
-    @grpc(body: "{{.args.request}}", method: "oneof.OneOfService.GetOneOf")
+    @grpc(url: "http://localhost:50051", body: "{{.args.request}}", method: "oneof.OneOfService.GetOneOf")
   oneof__OneOfService__GetOneOfVar7(request: oneof__Request__Var__Var0!): oneof__Response!
-    @grpc(body: "{{.args.request}}", method: "oneof.OneOfService.GetOneOf")
+    @grpc(url: "http://localhost:50051", body: "{{.args.request}}", method: "oneof.OneOfService.GetOneOf")
   oneof__OneOfService__GetOneOfVar8(request: oneof__Request__Var__Var1!): oneof__Response!
-    @grpc(body: "{{.args.request}}", method: "oneof.OneOfService.GetOneOf")
+    @grpc(url: "http://localhost:50051", body: "{{.args.request}}", method: "oneof.OneOfService.GetOneOf")
 }
 
 type oneof__Command {
