@@ -63,7 +63,9 @@ impl<K: Key, V: Value> Dedupe<K, V> {
     {
         let mut read = true;
         loop {
-            let value = match self.step(key, read) {
+            let step = self.step(key, read);
+            read = true;
+            let value = match step {
                 Step::Return(value) => value,
                 Step::Await(mut rx) => match rx.recv().await {
                     Ok(value) => value,
