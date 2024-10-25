@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::{Arc, Weak};
+use std::thread::ThreadId;
 
 use dashmap::DashMap;
 use futures_util::Future;
@@ -57,8 +58,9 @@ impl<K: Key, V: Value> Dedupe<K, V> {
         Fn: FnOnce() -> Fut,
         Fut: Future<Output = V>,
     {
+        let thread_id = std::thread::current().id();
         loop {
-            let value = match self.step(key) {
+            let value = match self.step(key, &thread_id) {
                 Step::Return(value) => value,
                 Step::Await(mut rx) => match rx.recv().await {
                     Ok(value) => value,
@@ -72,14 +74,20 @@ impl<K: Key, V: Value> Dedupe<K, V> {
                 },
                 Step::Init(tx) => {
                     let value = or_else().await;
-                    let thread_id = std::thread::current().id();
+                    let mut is_empty = false;
                     if let Some(mut inner_map) = self.cache.get_mut(&thread_id) {
                         if self.persist {
                             inner_map.insert(key.to_owned(), State::Ready(value.clone()));
                         } else {
                             inner_map.remove(key);
                         }
+                        is_empty = inner_map.is_empty();
                     }
+
+                    if is_empty {
+                        self.cache.remove(&thread_id);
+                    }
+
                     let _ = tx.send(value.clone());
                     value
                 }
@@ -89,9 +97,7 @@ impl<K: Key, V: Value> Dedupe<K, V> {
         }
     }
 
-    fn step(&self, key: &K) -> Step<V> {
-        let thread_id = std::thread::current().id();
-
+    fn step(&self, key: &K, thread_id: &ThreadId) -> Step<V> {
         // Fast path: Try read-only access first
         if let Some(inner_data) = self.cache.get(&thread_id) {
             if let Some(state) = inner_data.get(key) {
@@ -109,10 +115,10 @@ impl<K: Key, V: Value> Dedupe<K, V> {
         self.initialize_cache(thread_id, key)
     }
 
-    fn initialize_cache(&self, thread_id: std::thread::ThreadId, key: &K) -> Step<V> {
+    fn initialize_cache(&self, thread_id: &std::thread::ThreadId, key: &K) -> Step<V> {
         let (tx, _) = broadcast::channel(self.size);
         let tx = Arc::new(tx);
-        
+
         if let Some(mut inner_data) = self.cache.get_mut(&thread_id) {
             inner_data.insert(key.to_owned(), State::Pending(Arc::downgrade(&tx)));
             return Step::Init(tx);
@@ -120,7 +126,7 @@ impl<K: Key, V: Value> Dedupe<K, V> {
 
         let mut local_map = HashMap::default(); // Pre-allocate with reasonable size
         local_map.insert(key.to_owned(), State::Pending(Arc::downgrade(&tx)));
-        self.cache.insert(thread_id, local_map);
+        self.cache.insert(thread_id.to_owned(), local_map);
         Step::Init(tx)
     }
 }
