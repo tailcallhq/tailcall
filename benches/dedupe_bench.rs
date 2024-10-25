@@ -1,7 +1,5 @@
-use std::sync::{
-    atomic::{AtomicUsize, Ordering},
-    Arc,
-};
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
 
 use criterion::Criterion;
 use tailcall::core::data_loader::DedupeResult;
