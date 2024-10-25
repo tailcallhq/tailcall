@@ -25,8 +25,8 @@ pub fn benchmark_dedupe(c: &mut Criterion) {
                 handles.push(handle);
             }
 
-           let results = join_all(handles).await;
-           let all_ok = results.into_iter().any(|r| r.unwrap().is_ok());
+            let results = join_all(handles).await;
+            let all_ok = results.into_iter().all(|r| r.unwrap().is_ok());
             assert!(all_ok);
             assert_eq!(counter.load(Ordering::SeqCst), 1);
         });
