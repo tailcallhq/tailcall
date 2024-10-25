@@ -1,6 +1,5 @@
-use std::collections::HashSet;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use criterion::Criterion;
 use futures_util::future::join_all;
@@ -27,10 +26,10 @@ pub fn benchmark_dedupe(c: &mut Criterion) {
                     let cache = cache.clone();
                     let counter = counter.clone();
                     let handle = tokio::spawn(async move {
-                        let result = cache
+                        
+                        cache
                             .dedupe(&key, || Box::pin(compute_value(counter)))
-                            .await;
-                        result
+                            .await
                     });
                     handles.push(handle);
                 }
