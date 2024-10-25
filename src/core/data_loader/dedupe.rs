@@ -99,7 +99,7 @@ impl<K: Key, V: Value> Dedupe<K, V> {
 
     fn step(&self, key: &K, thread_id: &ThreadId) -> Step<V> {
         // Fast path: Try read-only access first
-        if let Some(inner_data) = self.cache.get(&thread_id) {
+        if let Some(inner_data) = self.cache.get(thread_id) {
             if let Some(state) = inner_data.get(key) {
                 match state {
                     State::Ready(value) => return Step::Return(value.clone()),
@@ -119,7 +119,7 @@ impl<K: Key, V: Value> Dedupe<K, V> {
         let (tx, _) = broadcast::channel(self.size);
         let tx = Arc::new(tx);
 
-        if let Some(mut inner_data) = self.cache.get_mut(&thread_id) {
+        if let Some(mut inner_data) = self.cache.get_mut(thread_id) {
             inner_data.insert(key.to_owned(), State::Pending(Arc::downgrade(&tx)));
             return Step::Init(tx);
         }
