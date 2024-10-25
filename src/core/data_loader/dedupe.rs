@@ -92,41 +92,36 @@ impl<K: Key, V: Value> Dedupe<K, V> {
     fn step(&self, key: &K) -> Step<V> {
         let thread_id = std::thread::current().id();
 
-        if let Some(mut inner_data) = self.cache.get_mut(&thread_id) {
+        // Fast path: Try read-only access first
+        if let Some(inner_data) = self.cache.get(&thread_id) {
             if let Some(state) = inner_data.get(key) {
                 match state {
                     State::Ready(value) => return Step::Return(value.clone()),
                     State::Pending(tx) => {
-                        // We can upgrade from Weak to Arc only in case when
-                        // original tx is still alive
-                        // otherwise we will create in the code below
                         if let Some(tx) = tx.upgrade() {
                             return Step::Await(tx.subscribe());
                         }
                     }
                 }
             }
-            let (tx, _) = broadcast::channel(self.size);
-            let tx = Arc::new(tx);
-            // Store a Weak version of tx and pass actual tx to further handling
-            // to control if tx is still alive and will be able to handle the request.
-            // Only single `strong` reference to tx should exist so we can
-            // understand when the execution is still alive and we'll get the response
-            inner_data.insert(key.to_owned(), State::Pending(Arc::downgrade(&tx)));
-            Step::Init(tx)
-        } else {
-            let mut local_map = HashMap::default();
-
-            let (tx, _) = broadcast::channel(self.size);
-            let tx = Arc::new(tx);
-            // Store a Weak version of tx and pass actual tx to further handling
-            // to control if tx is still alive and will be able to handle the request.
-            // Only single `strong` reference to tx should exist so we can
-            // understand when the execution is still alive and we'll get the response
-            local_map.insert(key.to_owned(), State::Pending(Arc::downgrade(&tx)));
-            self.cache.insert(thread_id, local_map);
-            Step::Init(tx)
         }
+
+        self.initialize_cache(thread_id, key)
+    }
+
+    fn initialize_cache(&self, thread_id: std::thread::ThreadId, key: &K) -> Step<V> {
+        let (tx, _) = broadcast::channel(self.size);
+        let tx = Arc::new(tx);
+        
+        if let Some(mut inner_data) = self.cache.get_mut(&thread_id) {
+            inner_data.insert(key.to_owned(), State::Pending(Arc::downgrade(&tx)));
+            return Step::Init(tx);
+        }
+
+        let mut local_map = HashMap::default(); // Pre-allocate with reasonable size
+        local_map.insert(key.to_owned(), State::Pending(Arc::downgrade(&tx)));
+        self.cache.insert(thread_id, local_map);
+        Step::Init(tx)
     }
 }
 
