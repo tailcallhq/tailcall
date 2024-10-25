@@ -77,7 +77,7 @@ impl<K: Key, V: Value> Dedupe<K, V> {
                         if self.persist {
                             inner_map.insert(key.to_owned(), State::Ready(value.clone()));
                         } else {
-                            inner_map.remove(&key);
+                            inner_map.remove(key);
                         }
                     }
                     let _ = tx.send(value.clone());
@@ -152,6 +152,7 @@ impl<K: Key, V: Value, E: Value> DedupeResult<K, V, E> {
 mod tests {
     use std::ops::Deref;
     use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Mutex;
     use std::time::Duration;
 
     use assert_eq;
