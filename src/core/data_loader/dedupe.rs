@@ -1,9 +1,11 @@
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::sync::{Arc, RwLock, Weak};
+use std::sync::{Arc, Weak};
 
 use futures_util::Future;
 use tokio::sync::broadcast;
+
+use crate::core::lrwlock::LrwLock;
 
 pub trait Key: Send + Sync + Eq + Hash + Clone {}
 impl<A: Send + Sync + Eq + Hash + Clone> Key for A {}
@@ -13,9 +15,9 @@ impl<A: Send + Sync + Clone> Value for A {}
 
 ///
 /// Allows deduplication of async operations based on a key.
-pub struct Dedupe<Key, Value> {
+pub struct Dedupe<Key: Send, Value: Send> {
     /// Cache storage for the operations.
-    cache: Arc<RwLock<HashMap<Key, State<Value>>>>,
+    cache: Arc<LrwLock<HashMap<Key, State<Value>>>>,
     /// Initial size of the multi-producer, multi-consumer channel.
     size: usize,
     /// When enabled allows the operations to be cached forever.
@@ -23,6 +25,7 @@ pub struct Dedupe<Key, Value> {
 }
 
 /// Represents the current state of the operation.
+#[derive(Clone)]
 enum State<Value> {
     /// Means that the operation has been executed and the result is stored.
     Ready(Value),
@@ -50,7 +53,7 @@ enum Step<Value> {
 
 impl<K: Key, V: Value> Dedupe<K, V> {
     pub fn new(size: usize, persist: bool) -> Self {
-        Self { cache: Arc::new(RwLock::new(HashMap::new())), size, persist }
+        Self { cache: Arc::new(LrwLock::new(HashMap::new())), size, persist }
     }
 
     pub async fn dedupe<'a, Fn, Fut>(&'a self, key: &'a K, or_else: Fn) -> V
@@ -140,7 +143,7 @@ impl<K: Key, V: Value> Dedupe<K, V> {
     }
 }
 
-pub struct DedupeResult<K, V, E>(Dedupe<K, Result<V, E>>);
+pub struct DedupeResult<K: Send, V: Send, E: Send>(Dedupe<K, Result<V, E>>);
 
 impl<K: Key, V: Value, E: Value> DedupeResult<K, V, E> {
     pub fn new(persist: bool) -> Self {
