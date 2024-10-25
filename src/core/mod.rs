@@ -24,6 +24,7 @@ pub mod ir;
 pub mod jit;
 pub mod json;
 mod lift;
+mod lrwlock;
 pub mod merge_right;
 pub mod mustache;
 pub mod path;
