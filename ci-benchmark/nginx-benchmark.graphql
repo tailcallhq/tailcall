@@ -5,7 +5,7 @@ schema
 }
 
 type Query {
-  posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts")
+  posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts", dedupe: true)
 }
 
 type User {
