@@ -356,27 +356,11 @@ mod tests {
             make_store::<serde_json_borrow::Value>(query, store.clone());
         let synth_borrow = Synth::new(&plan, value_store, vars);
 
-<<<<<<< HEAD
-    impl Synths<'_> {
-        fn init(query: &str, store: Vec<(FieldId, TestData)>) -> Self {
-            let synth_const = make_store::<ConstValue>(query, store.clone());
-            let synth_borrow = make_store::<serde_json_borrow::Value>(query, store.clone());
-            Self { synth_const, synth_borrow }
-        }
-        fn assert(self) {
-            let val_const = self.synth_const.synthesize().unwrap();
-            let val_const = serde_json::to_string_pretty(&val_const).unwrap();
-            let val_borrow = self.synth_borrow.synthesize().unwrap();
-            let val_borrow = serde_json::to_string_pretty(&val_borrow).unwrap();
-            assert_eq!(val_const, val_borrow);
-        }
-=======
         let val_const = synth_const.synthesize().unwrap();
         let val_const = serde_json::to_string_pretty(&val_const).unwrap();
         let val_borrow = synth_borrow.synthesize().unwrap();
         let val_borrow = serde_json::to_string_pretty(&val_borrow).unwrap();
         assert_eq!(val_const, val_borrow);
->>>>>>> origin/main
     }
 
     #[test]
