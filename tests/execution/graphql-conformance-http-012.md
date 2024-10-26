@@ -41,14 +41,16 @@ type Page {
   response:
     status: 200
     body:
-      - name: Person
-        age: 80
-      - height: 100
-        width: 200
-        meta:
-          iso: 200
-          aparture: 3
-          shutter: 250
+      - Person:
+          name: Person
+          age: 80
+      - Photo:
+          height: 100
+          width: 200
+          meta:
+            iso: 200
+            aparture: 3
+            shutter: 250
 ```
 
 ```yml @test
