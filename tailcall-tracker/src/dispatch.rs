@@ -1,6 +1,10 @@
+use std::collections::HashSet;
+use std::process::Output;
+
 use chrono::{DateTime, Utc};
 use machineid_rs::{Encryption, HWIDComponent, IdBuilder};
 use sysinfo::System;
+use tokio::process::Command;
 use tokio::time::Duration;
 
 use super::Result;
@@ -74,6 +78,7 @@ impl Tracker {
                 cwd: cwd(),
                 user: user(),
                 version: version(),
+                email: email().await.into_iter().collect(),
             };
 
             // Dispatch the event to all collectors
@@ -86,6 +91,66 @@ impl Tracker {
 
         Ok(())
     }
+}
+
+// Get the email address
+async fn email() -> HashSet<String> {
+    fn parse(output: Output) -> Option<String> {
+        if output.status.success() {
+            let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            if !text.is_empty() {
+                return Some(text);
+            }
+        }
+
+        return None;
+    }
+
+    // From Git
+    async fn git() -> Option<String> {
+        let output = Command::new("git")
+            .args(&["config", "--global", "user.email"])
+            .output()
+            .await
+            .ok()?;
+
+        parse(output)
+    }
+
+    // From SSH Keys
+    async fn ssh() -> Option<String> {
+        let output = Command::new("cat")
+            .args(&["~/.ssh/id_rsa.pub"])
+            .output()
+            .await
+            .ok()?;
+
+        let pub_key = parse(output)?;
+
+        let parts: Vec<&str> = pub_key.trim().split_whitespace().collect();
+
+        // SSH public keys typically have at least three parts
+        if parts.len() < 3 {
+            return None;
+        }
+
+        // The comment part is usually the third element
+        let comment = parts.get(2)?;
+
+        // Optional: Validate the email format using a simple check
+        if comment.contains('@') && comment.contains('.') {
+            Some(comment.to_string())
+        } else {
+            None
+        }
+    }
+
+    [git().await, ssh().await]
+        .into_iter()
+        .flatten()
+        .map(|a| a.trim().to_string())
+        .filter(|a| !a.is_empty())
+        .collect::<HashSet<_>>()
 }
 
 // Generates a random client ID
@@ -142,6 +207,7 @@ fn os_name() -> String {
 #[cfg(test)]
 mod tests {
     use lazy_static::lazy_static;
+    use std::process::Command;
 
     use super::*;
 
