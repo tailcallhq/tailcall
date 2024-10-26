@@ -1,7 +1,7 @@
 # Field with resolver in one of the possible types of Union
 
 ```graphql @config
-schema @server(port: 8030) @upstream(baseURL: "https://example.com/") {
+schema @server(port: 8030) @upstream {
   query: Query
 }
 
@@ -36,7 +36,7 @@ type Buzz {
 
 type Spam {
   identifier: Int!
-  value: String! @http(path: "/spam", query: [{key: "identifier", value: "{{.value.identifier}}"}])
+  value: String! @http(url: "https://example.com/spam", query: [{key: "identifier", value: "{{.value.identifier}}"}])
 }
 ```
 

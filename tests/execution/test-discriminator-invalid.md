@@ -5,7 +5,7 @@ error: true
 # Test union type resolve
 
 ```graphql @config
-schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @server @upstream {
   query: Query
 }
 
@@ -25,6 +25,6 @@ type Nested {
 }
 
 type Query {
-  foo: FooBar @http(path: "/foo") @discriminate(field: "")
+  foo: FooBar @http(url: "http://jsonplaceholder.typicode.com/foo") @discriminate(field: "")
 }
 ```

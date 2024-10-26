@@ -2,7 +2,7 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema @server(port: 8030) @upstream(baseURL: "https://example.com/") {
+schema @server(port: 8030) @upstream {
   query: Query
 }
 
@@ -36,5 +36,5 @@ type Query {
 
 type Spam {
   identifier: Int!
-  value: String! @http(path: "/spam", query: [{key: "identifier", value: "{{.value.identifier}}"}])
+  value: String! @http(url: "https://example.com/spam", query: [{key: "identifier", value: "{{.value.identifier}}"}])
 }
