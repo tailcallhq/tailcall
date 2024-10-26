@@ -2,7 +2,7 @@
 source: src/core/generator/generator.rs
 expression: cfg_module.config().to_sdl()
 ---
-schema @server(hostname: "0.0.0.0", port: 8000) @upstream(allowedHeaders: ["authorization"], baseURL: "https://example.com", httpCache: 42) @link(src: "../../../tailcall-fixtures/fixtures/protobuf/news.proto", type: Protobuf) {
+schema @server(hostname: "0.0.0.0", port: 8000) @upstream(allowedHeaders: ["authorization"], httpCache: 42) @link(src: "../../../tailcall-fixtures/fixtures/protobuf/news.proto", type: Protobuf) {
   query: Query
 }
 
@@ -30,7 +30,7 @@ enum Status {
 
 type Album {
   id: Int!
-  photos: [Photo] @http(path: "/albums/{{.value.id}}/photos?_limit=3")
+  photos: [Photo] @http(url: "https://jsonplaceholder.typicode.com/albums/{{.value.id}}/photos?_limit=3")
   title: Int
   userId: Int!
 }
@@ -69,30 +69,30 @@ type Photo {
 
 type Post {
   body: String!
-  comments: [Comment] @http(path: "/posts/{{.value.id}}/comments")
+  comments: [Comment] @http(url: "https://jsonplaceholder.typicode.com/posts/{{.value.id}}/comments")
   id: Int!
   title: String!
-  user: User @http(path: "/users/{{.value.userId}}")
+  user: User @http(url: "https://jsonplaceholder.typicode.com/users/{{.value.userId}}")
   userId: Int!
-  users: [User] @http(path: "/users")
+  users: [User] @http(url: "https://jsonplaceholder.typicode.com/users")
 }
 
 type Query {
-  GEN__news__NewsService__AddNews(news: GEN__news__NewsInput!): News @grpc(body: "{{.args.news}}", method: "news.NewsService.AddNews")
-  GEN__news__NewsService__DeleteNews(newsId: Id!): Empty @grpc(body: "{{.args.newsId}}", method: "news.NewsService.DeleteNews")
-  GEN__news__NewsService__EditNews(news: GEN__news__NewsInput!): News @grpc(body: "{{.args.news}}", method: "news.NewsService.EditNews")
-  GEN__news__NewsService__GetAllNews: GEN__news__NewsList @grpc(method: "news.NewsService.GetAllNews")
-  GEN__news__NewsService__GetMultipleNews(multipleNewsId: GEN__news__MultipleNewsId!): GEN__news__NewsList @grpc(body: "{{.args.multipleNewsId}}", method: "news.NewsService.GetMultipleNews")
-  GEN__news__NewsService__GetNews(newsId: Id!): News @grpc(body: "{{.args.newsId}}", method: "news.NewsService.GetNews")
-  inCompatibleProperties: InCompatibleProperty @http(path: "/")
-  post(id: Int! = 1): Post @http(path: "/posts/{{.args.id}}")
-  posts: [Post] @http(path: "/posts?_limit=11")
-  user(id: Int!): User @http(path: "/users/{{.args.id}}")
-  users: [User] @http(path: "/users")
+  GEN__news__NewsService__AddNews(news: GEN__news__NewsInput!): News @grpc(url: "http://localhost:50051", body: "{{.args.news}}", method: "news.NewsService.AddNews")
+  GEN__news__NewsService__DeleteNews(newsId: Id!): Empty @grpc(url: "http://localhost:50051", body: "{{.args.newsId}}", method: "news.NewsService.DeleteNews")
+  GEN__news__NewsService__EditNews(news: GEN__news__NewsInput!): News @grpc(url: "http://localhost:50051", body: "{{.args.news}}", method: "news.NewsService.EditNews")
+  GEN__news__NewsService__GetAllNews: GEN__news__NewsList @grpc(url: "http://localhost:50051", method: "news.NewsService.GetAllNews")
+  GEN__news__NewsService__GetMultipleNews(multipleNewsId: GEN__news__MultipleNewsId!): GEN__news__NewsList @grpc(url: "http://localhost:50051", body: "{{.args.multipleNewsId}}", method: "news.NewsService.GetMultipleNews")
+  GEN__news__NewsService__GetNews(newsId: Id!): News @grpc(url: "http://localhost:50051", body: "{{.args.newsId}}", method: "news.NewsService.GetNews")
+  inCompatibleProperties: InCompatibleProperty @http(url: "https://example.com/")
+  post(id: Int! = 1): Post @http(url: "https://jsonplaceholder.typicode.com/posts/{{.args.id}}")
+  posts: [Post] @http(url: "https://jsonplaceholder.typicode.com/posts?_limit=11")
+  user(id: Int!): User @http(url: "https://jsonplaceholder.typicode.com/users/{{.args.id}}")
+  users: [User] @http(url: "https://jsonplaceholder.typicode.com/users")
 }
 
 type User {
-  albums: [Album] @http(path: "/users/{{.value.id}}/albums?_limit=2")
+  albums: [Album] @http(url: "https://jsonplaceholder.typicode.com/users/{{.value.id}}/albums?_limit=2")
   blog: String @expr(body: "https://test.blog/users/website/{{.value.username}}")
   email: String!
   id: Int!

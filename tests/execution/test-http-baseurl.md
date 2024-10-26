@@ -2,15 +2,15 @@
 identity: true
 ---
 
-# test-http-baseurl
+# test-http-url
 
 ```graphql @config
-schema @server @upstream(baseURL: "http://abc.com") {
+schema @server @upstream {
   query: Query
 }
 
 type Query {
-  bar: String @http(path: "/bar")
-  foo: String @http(baseURL: "http://foo.com", path: "/foo")
+  bar: String @http(url: "http://abc.com/bar")
+  foo: String @http(url: "http://foo.com/foo")
 }
 ```

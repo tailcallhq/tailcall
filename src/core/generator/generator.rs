@@ -39,7 +39,10 @@ pub enum Input {
         is_mutation: bool,
         headers: Option<BTreeMap<String, String>>,
     },
-    Proto(ProtoMetadata),
+    Proto {
+        url: String,
+        metadata: ProtoMetadata,
+    },
     Config {
         schema: String,
         source: config::Source,
@@ -84,9 +87,10 @@ impl Generator {
         &self,
         metadata: &ProtoMetadata,
         operation_name: &str,
+        url: &str,
     ) -> anyhow::Result<Config> {
         let descriptor_set = resolve_file_descriptor_set(metadata.descriptor_set.clone())?;
-        let mut config = from_proto(&[descriptor_set], operation_name)?;
+        let mut config = from_proto(&[descriptor_set], operation_name, url)?;
         config.links.push(Link {
             id: None,
             src: metadata.path.to_owned(),
@@ -129,9 +133,9 @@ impl Generator {
                     config = config
                         .merge_right(self.generate_from_json(&type_name_generator, &[req_sample])?);
                 }
-                Input::Proto(proto_input) => {
+                Input::Proto { metadata, url } => {
                     config =
-                        config.merge_right(self.generate_from_proto(proto_input, &self.query)?);
+                        config.merge_right(self.generate_from_proto(metadata, &self.query, url)?);
                 }
             }
         }
@@ -254,10 +258,13 @@ pub mod test {
         let set = compile_protobuf(&[news_proto])?;
 
         let cfg_module = Generator::default()
-            .inputs(vec![Input::Proto(ProtoMetadata {
-                descriptor_set: set,
-                path: "../../../tailcall-fixtures/fixtures/protobuf/news.proto".to_string(),
-            })])
+            .inputs(vec![Input::Proto {
+                metadata: ProtoMetadata {
+                    descriptor_set: set,
+                    path: "../../../tailcall-fixtures/fixtures/protobuf/news.proto".to_string(),
+                },
+                url: "http://localhost:50051".to_string(),
+            }])
             .generate(false)?;
 
         insta::assert_snapshot!(cfg_module.config().to_sdl());
@@ -304,10 +311,13 @@ pub mod test {
         // Proto input
         let news_proto = tailcall_fixtures::protobuf::NEWS;
         let proto_set = compile_protobuf(&[news_proto])?;
-        let proto_input = Input::Proto(ProtoMetadata {
-            descriptor_set: proto_set,
-            path: "../../../tailcall-fixtures/fixtures/protobuf/news.proto".to_string(),
-        });
+        let proto_input = Input::Proto {
+            metadata: ProtoMetadata {
+                descriptor_set: proto_set,
+                path: "../../../tailcall-fixtures/fixtures/protobuf/news.proto".to_string(),
+            },
+            url: "http://localhost:50051".to_string(),
+        };
 
         // Config input
         let config_input = Input::Config {

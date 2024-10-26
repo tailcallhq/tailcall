@@ -1,14 +1,13 @@
 # Test inline fragments.
 
 ```graphql @config
-schema
-  @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://upstream/", httpCache: 42) {
+schema @server(port: 8001, queryValidation: false, hostname: "0.0.0.0") @upstream(httpCache: 42) {
   query: Query
 }
 
 type Query {
-  profiles(handles: [ID!]!): [Profile!]! @http(path: "/profiles", query: [{key: "handles", value: "{{.args.handles}}"}])
+  profiles(handles: [ID!]!): [Profile!]!
+    @http(url: "http://upstream/profiles", query: [{key: "handles", value: "{{.args.handles}}"}])
 }
 
 interface Profile {
@@ -46,14 +45,16 @@ type Counter {
   response:
     status: 200
     body:
-      - id: 1
-        handle: user-1
-        friends:
-          count: 2
-      - id: 2
-        handle: page-1
-        likers:
-          count: 4
+      - User:
+          id: 1
+          handle: user-1
+          friends:
+            count: 2
+      - Page:
+          id: 2
+          handle: page-1
+          likers:
+            count: 4
 # - request:
 #     method: GET
 #     url: http://upstream/profiles?handles=user-3&handles=user-4&handles=event-1

@@ -2,9 +2,7 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema
-  @server(hostname: "0.0.0.0", port: 8001, queryValidation: false)
-  @upstream(baseURL: "http://upstream/", httpCache: 42) {
+schema @server(hostname: "0.0.0.0", port: 8001, queryValidation: false) @upstream(httpCache: 42) {
   query: Query
 }
 
@@ -16,11 +14,11 @@ type Admin {
 }
 
 type Query {
-  users: [[Role!]!]! @http(path: "/users")
+  users: [[Role!]!]! @http(url: "http://upstream/users")
 }
 
 type User {
-  accountRef: String! @http(path: "/refs/{{.value.id}}")
+  accountRef: String! @http(url: "http://upstream/refs/{{.value.id}}")
   id: ID!
   name: String!
 }

@@ -2,7 +2,6 @@ server:
   hostname: 0.0.0.0
   port: 8000
 upstream:
-  baseURL: http://jsonplaceholder.typicode.com
   httpCache: 42
 schema:
   query: Query
@@ -25,7 +24,7 @@ types:
         type:
           name: User
         http:
-          path: /users/{{value.userId}}
+          url: http://jsonplaceholder.typicode.com/users/{{value.userId}}
       userId:
         type:
           name: Int
@@ -37,7 +36,7 @@ types:
           list:
             name: Post
         http:
-          path: /posts
+          url: http://jsonplaceholder.typicode.com/posts
       user:
         type:
           name: User
@@ -47,7 +46,7 @@ types:
               name: Int
               required: true
         http:
-          path: /users/{{args.id}}
+          url: http://jsonplaceholder.typicode.com/users/{{args.id}}
   User:
     fields:
       email:

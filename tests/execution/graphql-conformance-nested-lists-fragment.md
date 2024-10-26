@@ -1,20 +1,18 @@
 # List of lists.
 
 ```graphql @config
-schema
-  @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://upstream/", httpCache: 42) {
+schema @server(port: 8001, queryValidation: false, hostname: "0.0.0.0") @upstream(httpCache: 42) {
   query: Query
 }
 
 type Query {
-  users: [[Role!]!]! @http(path: "/users")
+  users: [[Role!]!]! @http(url: "http://upstream/users")
 }
 
 type User {
   id: ID!
   name: String!
-  accountRef: String! @http(path: "/refs/{{.value.id}}")
+  accountRef: String! @http(url: "http://upstream/refs/{{.value.id}}")
 }
 
 type Admin {
@@ -32,16 +30,21 @@ union Role = User | Admin
   response:
     status: 200
     body:
-      - - id: 1
-          name: user-1
-        - id: 2
-          name: user-2
-        - id: 3
-          name: user-3
-      - - name: admin-1
-          region: eu
-        - name: admin-2
-          region: us
+      - - User:
+            id: 1
+            name: user-1
+        - User:
+            id: 2
+            name: user-2
+        - User:
+            id: 3
+            name: user-3
+      - - Admin:
+            name: admin-1
+            region: eu
+        - Admin:
+            name: admin-2
+            region: us
 
 # refs
 - request:

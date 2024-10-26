@@ -26,5 +26,5 @@ type Post {
 }
 
 type Query {
-  f1: [Author] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/users")
+  f1: [Author] @http(url: "https://jsonplaceholder.typicode.com/users")
 }

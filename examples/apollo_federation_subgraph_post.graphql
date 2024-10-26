@@ -1,18 +1,26 @@
-schema
-  @server(port: 8001, enableFederation: true)
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 100}) {
+schema @server(port: 8001, enableFederation: true) @upstream(httpCache: 42, batch: {delay: 100}) {
   query: Query
 }
 
 type Query {
-  posts: [Post] @http(path: "/posts")
+  posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts")
 }
 
-type User @http(path: "/users", query: [{key: "id", value: "{{.value.id}}"}], batchKey: ["id"]) {
+type User
+  @http(
+    url: "http://jsonplaceholder.typicode.com/users"
+    query: [{key: "id", value: "{{.value.id}}"}]
+    batchKey: ["id"]
+  ) {
   id: Int!
 }
 
-type Post @http(path: "/posts", query: [{key: "id", value: "{{.value.id}}"}], batchKey: ["id"]) {
+type Post
+  @http(
+    url: "http://jsonplaceholder.typicode.com/posts"
+    query: [{key: "id", value: "{{.value.id}}"}]
+    batchKey: ["id"]
+  ) {
   id: Int!
   userId: Int!
   title: String!

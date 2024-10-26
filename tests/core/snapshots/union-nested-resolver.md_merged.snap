@@ -1,0 +1,40 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server(port: 8030) @upstream {
+  query: Query
+}
+
+union Foo = Buzz | Fizz | Hazz
+
+type Buzz {
+  spam: Spam
+  uuid: String!
+}
+
+type Fizz {
+  id: Int!
+}
+
+type Hazz {
+  uuid: String!
+}
+
+type Query {
+  data: [Foo!]!
+    @expr(
+      body: [
+        {id: 1, object_type: "Fizz"}
+        {uuid: "hazz-1", object_type: "Hazz"}
+        {uuid: "buzz-1", object_type: "Buzz", spam: {identifier: 1}}
+        {uuid: "buzz-2", object_type: "Buzz", spam: {identifier: 2}}
+        {uuid: "buzz-3", object_type: "Buzz", spam: {identifier: 3}}
+      ]
+    )
+}
+
+type Spam {
+  identifier: Int!
+  value: String! @http(url: "https://example.com/spam", query: [{key: "identifier", value: "{{.value.identifier}}"}])
+}

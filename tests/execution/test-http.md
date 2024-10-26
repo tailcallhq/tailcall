@@ -5,12 +5,12 @@ identity: true
 # test-http
 
 ```graphql @config
-schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+schema @server @upstream {
   query: Query
 }
 
 type Query {
-  foo: [User] @http(path: "/users")
+  foo: [User] @http(url: "http://jsonplaceholder.typicode.com/users")
 }
 
 type User {

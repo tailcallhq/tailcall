@@ -16,5 +16,5 @@ type Post implements NodeTest {
 }
 
 type Query {
-  posts: [Post] @http(path: "/posts")
+  posts: [Post] @http(url: "/posts")
 }

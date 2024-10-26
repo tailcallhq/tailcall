@@ -2,11 +2,7 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema
-  @server
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com")
-  @link(src: "link-expr.graphql", type: Config)
-  @link(src: "link-enum.graphql", type: Config) {
+schema @server @upstream @link(src: "link-expr.graphql", type: Config) @link(src: "link-enum.graphql", type: Config) {
   query: Query
 }
 
@@ -16,6 +12,6 @@ enum Foo {
 }
 
 type Query {
-  foo: Foo @http(path: "/foo")
+  foo: Foo @http(url: "http://jsonplaceholder.typicode.com/foo")
   hello: String @expr(body: "Hello from server")
 }

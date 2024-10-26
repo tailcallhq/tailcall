@@ -10,12 +10,7 @@ type Post {
   title: String
   userId: Int
   user: User
-    @graphQL(
-      args: [{key: "id", value: "{{.value.userId}}"}]
-      baseURL: "http://upstream/graphql"
-      batch: true
-      name: "user"
-    )
+    @graphQL(args: [{key: "id", value: "{{.value.userId}}"}], url: "http://upstream/graphql", batch: true, name: "user")
 }
 
 type User {
@@ -24,7 +19,7 @@ type User {
 }
 
 type Query {
-  posts: [Post] @http(path: "/posts", baseURL: "http://jsonplaceholder.typicode.com")
+  posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts")
 }
 ```
 

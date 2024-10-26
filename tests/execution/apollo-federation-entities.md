@@ -3,13 +3,13 @@
 ```graphql @config
 schema
   @server(port: 8000, enableFederation: true)
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 100})
+  @upstream(httpCache: 42, batch: {delay: 100})
   @link(src: "./posts.graphql") {
   query: Query
 }
 
 type Query {
-  user(id: Int!): User @http(path: "/users/{{.args.id}}")
+  user(id: Int!): User @http(url: "http://jsonplaceholder.typicode.com/users/{{.args.id}}")
 }
 
 type User @call(steps: [{query: "user", args: {id: "{{.value.id}}"}}]) {

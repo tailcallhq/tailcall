@@ -4,7 +4,7 @@ expression: formatter
 ---
 schema
   @server(enableFederation: true, port: 8000)
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", batch: {delay: 100, headers: []}, httpCache: 42)
+  @upstream(batch: {delay: 100, headers: []}, httpCache: 42)
   @link(src: "./posts.graphql", type: Config) {
   query: Query
 }
@@ -27,7 +27,7 @@ type Query {
   Apollo federation Query._service resolver
   """
   _service: _Service!
-  user(id: Int!): User @http(path: "/users/{{.args.id}}")
+  user(id: Int!): User @http(url: "http://jsonplaceholder.typicode.com/users/{{.args.id}}")
 }
 
 type User @call(steps: [{query: "user", args: {id: "{{.value.id}}"}}]) @key(fields: "id") {
