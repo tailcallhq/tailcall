@@ -2,7 +2,7 @@
 identity: true
 ---
 
-# test-http-baseurl
+# test-http-url
 
 ```graphql @config
 schema @server @upstream {
