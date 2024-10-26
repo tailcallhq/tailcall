@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
@@ -505,27 +506,18 @@ impl From<Pos> for async_graphql::Pos {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum PathSegment {
+pub enum PathSegment<'a> {
     /// A field in an object.
-    Field(String),
+    Field(Cow<'a, String>),
     /// An index in a list.
     Index(usize),
 }
 
-impl From<async_graphql::PathSegment> for PathSegment {
+impl From<async_graphql::PathSegment> for PathSegment<'static> {
     fn from(value: async_graphql::PathSegment) -> Self {
         match value {
-            async_graphql::PathSegment::Field(field) => PathSegment::Field(field),
+            async_graphql::PathSegment::Field(field) => PathSegment::Field(Cow::Owned(field)),
             async_graphql::PathSegment::Index(index) => PathSegment::Index(index),
-        }
-    }
-}
-
-impl From<PathSegment> for async_graphql::PathSegment {
-    fn from(val: PathSegment) -> Self {
-        match val {
-            PathSegment::Field(field) => async_graphql::PathSegment::Field(field),
-            PathSegment::Index(index) => async_graphql::PathSegment::Index(index),
         }
     }
 }
@@ -534,7 +526,7 @@ impl From<PathSegment> for async_graphql::PathSegment {
 pub struct Positioned<Value> {
     pub value: Value,
     pub pos: Pos,
-    pub path: Vec<PathSegment>,
+    pub path: Vec<PathSegment<'static>>,
 }
 
 impl<Value> Positioned<Value> {
@@ -547,7 +539,7 @@ impl<Value> Positioned<Value>
 where
     Value: Clone,
 {
-    pub fn with_path(&mut self, path: Vec<PathSegment>) -> Self {
+    pub fn with_path(&mut self, path: Vec<PathSegment<'static>>) -> Self {
         Self { value: self.value.clone(), pos: self.pos, path }
     }
 }
