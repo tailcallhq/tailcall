@@ -15,7 +15,7 @@ pub struct GraphQLError {
     pub locations: Vec<Pos>,
     /// If the error occurred in a resolver, the path to the error.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub path: Vec<PathSegment>,
+    pub path: Vec<PathSegment<'static>>,
     /// Extensions to the error.
     #[serde(skip_serializing_if = "error_extensions_is_empty", default)]
     pub extensions: Option<ErrorExtensionValues>,
@@ -75,7 +75,7 @@ impl GraphQLError {
 
     #[doc(hidden)]
     #[must_use]
-    pub fn with_path(self, path: Vec<PathSegment>) -> Self {
+    pub fn with_path(self, path: Vec<PathSegment<'static>>) -> Self {
         Self { path, ..self }
     }
 }
