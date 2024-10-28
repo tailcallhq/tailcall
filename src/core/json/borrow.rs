@@ -27,6 +27,14 @@ impl<'ctx> JsonObjectLike<'ctx> for ObjectAsVec<'ctx> {
     fn insert_key(&mut self, key: &'ctx str, value: Self::Value) {
         self.insert(key, value);
     }
+
+    fn iter<'slf>(&'slf self) -> impl Iterator<Item = (&'slf str, &'slf Self::Value)>
+    where
+        Self::Value: 'ctx,
+        'ctx: 'slf,
+    {
+        self.iter()
+    }
 }
 
 impl<'ctx> JsonLike<'ctx> for Value<'ctx> {

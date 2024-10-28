@@ -7,7 +7,7 @@ use indexmap::IndexMap;
 
 use super::*;
 
-impl<'obj, Value: JsonLike<'obj> + Clone> JsonObjectLike<'obj> for IndexMap<Name, Value> {
+impl<'obj, Value: JsonLike<'obj>> JsonObjectLike<'obj> for IndexMap<Name, Value> {
     type Value = Value;
 
     fn new() -> Self {
@@ -28,6 +28,14 @@ impl<'obj, Value: JsonLike<'obj> + Clone> JsonObjectLike<'obj> for IndexMap<Name
 
     fn insert_key(&mut self, key: &'obj str, value: Self::Value) {
         self.insert(Name::new(key), value);
+    }
+
+    fn iter<'slf>(&'slf self) -> impl Iterator<Item = (&'slf str, &'slf Self::Value)>
+    where
+        Self::Value: 'slf,
+        'obj: 'slf,
+    {
+        self.iter().map(|(k, v)| (k.as_str(), v))
     }
 }
 

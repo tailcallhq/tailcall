@@ -27,6 +27,14 @@ impl<'obj> JsonObjectLike<'obj> for serde_json::Map<String, Value> {
     fn insert_key(&mut self, key: &'obj str, value: Self::Value) {
         self.insert(key.to_owned(), value);
     }
+
+    fn iter<'slf>(&'slf self) -> impl Iterator<Item = (&'slf str, &'slf Self::Value)>
+    where
+        Self::Value: 'obj,
+        'obj: 'slf,
+    {
+        self.iter().map(|(k, v)| (k.as_str(), v))
+    }
 }
 
 impl<'json> JsonLike<'json> for Value {
