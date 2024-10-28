@@ -161,7 +161,7 @@ tailcall-typedefs-common = { path = "./tailcall-typedefs-common" }
 tonic-types = "0.12.1"
 base64 = "0.22.1"
 tailcall-hasher = { path = "tailcall-hasher" }
-serde_json_borrow = "0.6.0"
+serde_json_borrow = "0.7.0"
 pluralizer = "0.4.0"
 path-clean = "=1.0.1"
 pathdiff = "0.2.1"
