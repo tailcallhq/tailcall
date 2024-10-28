@@ -119,7 +119,10 @@ impl<'a, Value: Deserialize<'a> + Clone + 'a + JsonLike<'a> + std::fmt::Debug> J
         let ProcessedTestData { posts, users } = self.test_data.to_processed();
         let vars = self.vars.clone();
 
-        let posts_id = find_field_path(&self.plan, &["posts"]).unwrap().id.to_owned();
+        let posts_id = find_field_path(&self.plan, &["posts"])
+            .unwrap()
+            .id
+            .to_owned();
         let users_id = find_field_path(&self.plan, &["posts", "user"])
             .unwrap()
             .id
@@ -137,7 +140,10 @@ impl<'a, Value: Deserialize<'a> + Clone + 'a + JsonLike<'a> + std::fmt::Debug> J
 }
 
 /// Search for a field by specified path of nested fields
-pub fn find_field_path<'a, S: AsRef<str>, T>(plan: &'a OperationPlan<T>, path: &[S]) -> Option<&'a Field<T>> {
+pub fn find_field_path<'a, S: AsRef<str>, T>(
+    plan: &'a OperationPlan<T>,
+    path: &[S],
+) -> Option<&'a Field<T>> {
     match path.split_first() {
         None => None,
         Some((name, path)) => {
