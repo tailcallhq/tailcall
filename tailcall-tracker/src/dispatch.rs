@@ -103,13 +103,13 @@ async fn email() -> HashSet<String> {
             }
         }
 
-        return None;
+        None
     }
 
     // From Git
     async fn git() -> Option<String> {
         let output = Command::new("git")
-            .args(&["config", "--global", "user.email"])
+            .args(["config", "--global", "user.email"])
             .output()
             .await
             .ok()?;
@@ -129,13 +129,7 @@ async fn email() -> HashSet<String> {
             .await
             .ok()?;
 
-        Some(
-            parse(output)?
-                .lines()
-                .into_iter()
-                .map(|o| o.to_owned())
-                .collect(),
-        )
+        Some(parse(output)?.lines().map(|o| o.to_owned()).collect())
     }
 
     let git_email = git().await;
@@ -213,7 +207,7 @@ fn os_name() -> String {
 
 #[cfg(test)]
 mod tests {
-    use std::process::Command;
+    
 
     use lazy_static::lazy_static;
 
