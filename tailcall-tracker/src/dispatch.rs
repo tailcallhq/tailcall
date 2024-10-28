@@ -119,45 +119,19 @@ async fn email() -> HashSet<String> {
 
     // From SSH Keys
     async fn ssh() -> Option<HashSet<String>> {
-        let home_dir = std::env::var("HOME").ok()?;
-        let ssh_dir = format!("{}/.ssh", home_dir);
+        // Single command to find all unique email addresses from .pub files
+        let output = Command::new("sh")
+            .args([
+                "-c",
+                "cat ~/.ssh/*.pub | grep -o '[^ ]\\+@[^ ]\\+\\.[^ ]\\+'",
+            ])
+            .output()
+            .await
+            .ok()?;
 
-        // List all files in .ssh directory using ls command
-        let ls_output = Command::new("ls").arg(&ssh_dir).output().await.ok()?;
+        let output = parse(output)?;
 
-        let files = parse(ls_output)?;
-        let mut email_ids = HashSet::default();
-
-        // Process each file
-        for file in files.lines() {
-            // if it's pub ssh file, read it to collect email id.
-            if file.ends_with(".pub") {
-                let key_path = format!("{}/{}", ssh_dir, file);
-                if let Ok(output) = Command::new("cat").arg(&key_path).output().await {
-                    if let Some(pub_key) = parse(output) {
-                        let parts: Vec<&str> = pub_key.trim().split_whitespace().collect();
-
-                        // SSH public keys typically have at least three parts
-                        if parts.len() >= 3 {
-                            // The comment part is usually the third element
-                            let comment = parts[2];
-
-                            // Validate the email format using a simple check
-                            if comment.contains('@') && comment.contains('.') {
-                                let email_id = comment.to_string();
-                                email_ids.insert(email_id);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        if email_ids.is_empty() {
-            None
-        } else {
-            Some(email_ids)
-        }
+        Some(output.lines().into_iter().map(|o| o.to_owned()).collect())
     }
 
     let git_email = git().await;
