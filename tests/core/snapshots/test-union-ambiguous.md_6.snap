@@ -11,7 +11,7 @@ expression: response
     "data": null,
     "errors": [
       {
-        "message": "IOException: Value expected to be object",
+        "message": "IOException: Cannot discriminate the type of a non object type.",
         "locations": [
           {
             "line": 2,
