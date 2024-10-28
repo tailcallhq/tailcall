@@ -62,13 +62,13 @@ where
         node: &'a Field<Value>,
         value: Option<&'a Value>,
         data_path: &DataPath,
-        path: &mut Vec<PathSegment>,
+        path: &mut Vec<PathSegment<'a>>,
         root_name: Option<&'a str>,
     ) -> Result<Output, Positioned<Error>>
     where
         Output: JsonLike<'a>,
     {
-        path.push(PathSegment::Field(node.output_name.clone()));
+        path.push(PathSegment::Field(Cow::Borrowed(&node.output_name)));
 
         let result = match self.store.get(&node.id) {
             Some(value) => {
@@ -129,7 +129,7 @@ where
         node: &'a Field<Value>,
         value: &'a Value,
         data_path: &DataPath,
-        path: &mut Vec<PathSegment>,
+        path: &mut Vec<PathSegment<'a>>,
     ) -> Result<Output, Positioned<Error>>
     where
         Output: JsonLike<'a>,
@@ -234,7 +234,16 @@ where
         node: &'a Field<Value>,
         path: &[PathSegment],
     ) -> Positioned<Error> {
-        Positioned::new(error, node.pos).with_path(path.to_vec())
+        Positioned::new(error, node.pos).with_path(
+            path.iter()
+                .map(|x| match x {
+                    PathSegment::Field(cow) => {
+                        PathSegment::Field(Cow::Owned(cow.clone().into_owned()))
+                    }
+                    PathSegment::Index(i) => PathSegment::Index(*i),
+                })
+                .collect(),
+        )
     }
 }
 

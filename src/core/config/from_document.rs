@@ -11,7 +11,7 @@ use async_graphql_value::ConstValue;
 use indexmap::IndexMap;
 
 use super::directive::{to_directive, Directive};
-use super::{Alias, Resolver, Telemetry, FEDERATION_DIRECTIVES};
+use super::{Alias, Discriminate, Resolver, Telemetry, FEDERATION_DIRECTIVES};
 use crate::core::config::{
     self, Cache, Config, Enum, Link, Modify, Omit, Protected, RootSchema, Server, Union, Upstream,
     Variant,
@@ -185,30 +185,25 @@ fn to_types(
 fn to_scalar_type() -> config::Type {
     config::Type { ..Default::default() }
 }
-
 fn to_union_types(
     type_definitions: &[&Positioned<TypeDefinition>],
 ) -> Valid<BTreeMap<String, Union>, String> {
-    Valid::succeed(
-        type_definitions
-            .iter()
-            .filter_map(|type_definition| {
-                let type_name = pos_name_to_string(&type_definition.node.name);
-                let type_opt = match type_definition.node.kind.clone() {
-                    TypeKind::Union(union_type) => to_union(
-                        union_type,
-                        &type_definition
-                            .node
-                            .description
-                            .to_owned()
-                            .map(|pos| pos.node),
-                    ),
-                    _ => return None,
-                };
-                Some((type_name, type_opt))
-            })
-            .collect(),
-    )
+    Valid::from_iter(type_definitions.iter(), |type_definition| {
+        let type_name = pos_name_to_string(&type_definition.node.name);
+        let type_opt = match type_definition.node.kind.clone() {
+            TypeKind::Union(union_type) => to_union(
+                union_type,
+                &type_definition
+                    .node
+                    .description
+                    .to_owned()
+                    .map(|pos| pos.node),
+            ),
+            _ => return Valid::succeed(None),
+        };
+        type_opt.map(|type_opt| Some((type_name, type_opt)))
+    })
+    .map(|values| values.into_iter().flatten().collect())
 }
 
 fn to_enum_types(
@@ -339,10 +334,20 @@ where
         .fuse(Omit::from_directives(directives.iter()))
         .fuse(Modify::from_directives(directives.iter()))
         .fuse(Protected::from_directives(directives.iter()))
+        .fuse(Discriminate::from_directives(directives.iter()))
         .fuse(default_value)
         .fuse(to_federation_directives(directives))
         .map(
-            |(resolver, cache, omit, modify, protected, default_value, directives)| config::Field {
+            |(
+                resolver,
+                cache,
+                omit,
+                modify,
+                protected,
+                discriminate,
+                default_value,
+                directives,
+            )| config::Field {
                 type_of: type_of.into(),
                 args,
                 doc,
@@ -350,6 +355,7 @@ where
                 omit,
                 cache,
                 protected,
+                discriminate,
                 default_value,
                 resolver,
                 directives,
@@ -388,13 +394,14 @@ fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
     config::Arg { type_of: type_of.into(), doc, modify, default_value }
 }
 
-fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {
+fn to_union(union_type: UnionType, doc: &Option<String>) -> Valid<Union, String> {
     let types = union_type
         .members
         .iter()
         .map(|member| member.node.to_string())
         .collect();
-    Union { types, doc: doc.clone() }
+
+    Valid::succeed(Union { types, doc: doc.clone() })
 }
 
 fn to_enum(enum_type: EnumType, doc: Option<String>) -> Valid<Enum, String> {
