@@ -42,7 +42,10 @@ where
         store
     }
 
-    pub async fn execute<Output>(self, synth: &'a Synth<'a, Value>) -> Response<Output> where Output: JsonLike<'a> + Default {
+    pub async fn execute<Output>(self, synth: &'a Synth<'a, Value>) -> Response<Output>
+    where
+        Output: JsonLike<'a> + Default,
+    {
         let mut response = Response::new(synth.synthesize());
         response.add_errors(self.ctx.errors().clone());
         response

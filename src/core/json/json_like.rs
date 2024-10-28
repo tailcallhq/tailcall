@@ -34,7 +34,7 @@ pub trait JsonLike<'json>: Sized {
 
             Self::object(Self::JsonObject::from_vec(fields))
         } else if let Some(arr) = other.as_array() {
-            let v = arr.into_iter().map(Self::clone_from).collect();
+            let v = arr.iter().map(Self::clone_from).collect();
 
             Self::array(v)
         } else if let Some(primitive) = other.as_primitive() {

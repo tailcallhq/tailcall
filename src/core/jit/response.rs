@@ -5,11 +5,9 @@ use serde::Serialize;
 
 use super::graphql_error::GraphQLError;
 use super::Positioned;
+use crate::core::async_graphql_hyper::CacheControl;
 use crate::core::jit;
-use crate::core::{
-    async_graphql_hyper::CacheControl,
-    json::{JsonLike, JsonObjectLike},
-};
+use crate::core::json::{JsonLike, JsonObjectLike};
 
 #[derive(Clone, Setters, Serialize, Debug)]
 pub struct Response<Value> {

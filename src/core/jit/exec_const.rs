@@ -3,10 +3,11 @@ use std::sync::Arc;
 use async_graphql_value::{ConstValue, Value};
 use futures_util::future::join_all;
 
+use super::context::Context;
 use super::exec::{Executor, IRExecutor};
-use super::{context::Context, AnyResponse};
 use super::{
-    transform, BuildError, Error, OperationPlan, Pos, Positioned, Request, Response, Result,
+    transform, AnyResponse, BuildError, Error, OperationPlan, Pos, Positioned, Request, Response,
+    Result,
 };
 use crate::core::app_context::AppContext;
 use crate::core::http::RequestContext;

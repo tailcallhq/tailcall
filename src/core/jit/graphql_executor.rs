@@ -37,7 +37,8 @@ impl JITExecutor {
         exec: ConstValueExecutor,
         jit_request: jit::Request<ConstValue>,
     ) -> AnyResponse<Vec<u8>> {
-        exec.execute(&self.app_ctx, &self.req_ctx, jit_request).await
+        exec.execute(&self.app_ctx, &self.req_ctx, jit_request)
+            .await
     }
 
     #[inline(always)]
