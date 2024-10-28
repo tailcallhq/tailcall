@@ -129,9 +129,13 @@ async fn email() -> HashSet<String> {
             .await
             .ok()?;
 
-        let output = parse(output)?;
-
-        Some(output.lines().into_iter().map(|o| o.to_owned()).collect())
+        Some(
+            parse(output)?
+                .lines()
+                .into_iter()
+                .map(|o| o.to_owned())
+                .collect(),
+        )
     }
 
     let git_email = git().await;
@@ -209,8 +213,9 @@ fn os_name() -> String {
 
 #[cfg(test)]
 mod tests {
-    use lazy_static::lazy_static;
     use std::process::Command;
+
+    use lazy_static::lazy_static;
 
     use super::*;
 
