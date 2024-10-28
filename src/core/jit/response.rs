@@ -5,8 +5,11 @@ use serde::Serialize;
 
 use super::graphql_error::GraphQLError;
 use super::Positioned;
-use crate::core::async_graphql_hyper::CacheControl;
 use crate::core::jit;
+use crate::core::{
+    async_graphql_hyper::CacheControl,
+    json::{JsonLike, JsonObjectLike},
+};
 
 #[derive(Clone, Setters, Serialize, Debug)]
 pub struct Response<Value> {
@@ -56,20 +59,34 @@ impl<Value: Default> Response<Value> {
     }
 }
 
-impl Response<async_graphql::Value> {
-    pub fn merge_with(mut self, other: async_graphql::Response) -> Self {
-        if let async_graphql::Value::Object(mut other_obj) = other.data {
-            if let async_graphql::Value::Object(self_obj) = self.data {
-                other_obj.extend(self_obj);
-                self.data = async_graphql::Value::Object(other_obj);
+impl<'a, Value> Response<Value>
+where
+    Value: JsonLike<'a>,
+{
+    pub fn merge_with(mut self, other: &'a async_graphql::Response) -> Self {
+        if let async_graphql::Value::Object(other_obj) = &other.data {
+            if let Some(self_obj) = self.data.as_object_mut() {
+                for (k, v) in other_obj {
+                    // this function is mostly used for merging the usual response with
+                    // introspection result from async_graphql.
+                    // But async_graphql response in that case
+                    if self_obj.get_key(k.as_str()).is_none() {
+                        self_obj.insert_key(k.as_str(), Value::clone_from(v))
+                    }
+                }
             } else {
-                self.data = async_graphql::Value::Object(other_obj);
+                self.data = Value::clone_from(&other.data);
             }
         }
 
         self.errors
-            .extend(other.errors.into_iter().map(|e| e.into()));
-        self.extensions.extend(other.extensions);
+            .extend(other.errors.iter().cloned().map(|e| e.into()));
+        self.extensions.extend(
+            other
+                .extensions
+                .iter()
+                .map(|(k, v)| (k.to_string(), Value::clone_from(v))),
+        );
 
         self
     }
@@ -262,7 +279,7 @@ mod test {
             .map_err(|_| Positioned::new(jit::Error::Unknown, Pos::default()));
         let query_response = Response::new(user_data);
 
-        let merged_response = query_response.merge_with(introspection_response);
+        let merged_response = query_response.merge_with(&introspection_response);
 
         insta::assert_json_snapshot!(merged_response);
     }
@@ -277,7 +294,7 @@ mod test {
         let mut err2 = vec![GraphQLError::new("Error-2", Some(Pos::default()))];
         resp2.errors.append(&mut err2);
 
-        let merged_resp = resp2.merge_with(resp1);
+        let merged_resp = resp2.merge_with(&resp1);
         insta::assert_json_snapshot!(merged_resp);
     }
 }

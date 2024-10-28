@@ -37,19 +37,7 @@ impl JITExecutor {
         exec: ConstValueExecutor,
         jit_request: jit::Request<ConstValue>,
     ) -> AnyResponse<Vec<u8>> {
-        let is_introspection_query = self.app_ctx.blueprint.server.get_enable_introspection()
-            && exec.plan.is_introspection_query;
-        let response = exec.execute(&self.req_ctx, &jit_request).await;
-        let response = if is_introspection_query {
-            let async_req = async_graphql::Request::from(jit_request).only_introspection();
-            let _async_resp = self.app_ctx.execute(async_req).await;
-            todo!("introspection merge")
-            // response.merge_with(async_resp)
-        } else {
-            response
-        };
-
-        response.into()
+        exec.execute(&self.app_ctx, &self.req_ctx, jit_request).await
     }
 
     #[inline(always)]
