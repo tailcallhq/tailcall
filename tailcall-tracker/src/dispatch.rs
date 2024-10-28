@@ -125,7 +125,7 @@ async fn email() -> HashSet<String> {
         // List all files in .ssh directory using ls command
         let ls_output = Command::new("ls").arg(&ssh_dir).output().await.ok()?;
 
-        let files = String::from_utf8_lossy(&ls_output.stdout);
+        let files = parse(ls_output)?;
         let mut email_ids = HashSet::default();
 
         // Process each file
