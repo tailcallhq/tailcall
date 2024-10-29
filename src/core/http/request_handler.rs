@@ -19,7 +19,7 @@ use super::request_context::RequestContext;
 use super::telemetry::{get_response_status_code, RequestCounter};
 use super::{showcase, telemetry, TAILCALL_HTTPS_ORIGIN, TAILCALL_HTTP_ORIGIN};
 use crate::core::app_context::AppContext;
-use crate::core::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
+use crate::core::async_graphql_hyper::{GraphQLArcResponse, GraphQLRequestLike, GraphQLResponse};
 use crate::core::blueprint::telemetry::TelemetryExporter;
 use crate::core::config::{PrometheusExporter, PrometheusFormat};
 use crate::core::jit::JITExecutor;
@@ -122,26 +122,15 @@ async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
     let mut response = if app_ctx.blueprint.server.enable_jit {
         let operation_id = request.operation_id(&req.headers);
         let exec = JITExecutor::new(app_ctx.clone(), req_ctx.clone(), operation_id);
-        request
-            .execute_with_jit(exec)
-            .await
-            .set_cache_control(
-                app_ctx.blueprint.server.enable_cache_control_header,
-                req_ctx.get_min_max_age().unwrap_or(0),
-                req_ctx.is_cache_public().unwrap_or(true),
-            )
+        set_cache_control_jit(app_ctx, req_ctx, request.execute_with_jit(exec).await)
             .into_response()?
     } else {
-        request
-            .data(req_ctx.clone())
-            .execute(&app_ctx.schema)
-            .await
-            .set_cache_control(
-                app_ctx.blueprint.server.enable_cache_control_header,
-                req_ctx.get_min_max_age().unwrap_or(0),
-                req_ctx.is_cache_public().unwrap_or(true),
-            )
-            .into_response()?
+        set_cache_control(
+            app_ctx,
+            req_ctx,
+            request.data(req_ctx.clone()).execute(&app_ctx.schema).await,
+        )
+        .into_response()?
     };
 
     update_response_headers(&mut response, req_ctx, app_ctx);
@@ -246,6 +235,36 @@ async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
     }
 }
 
+fn set_cache_control(
+    app_ctx: &AppContext,
+    req_ctx: &RequestContext,
+    response: GraphQLResponse,
+) -> GraphQLResponse {
+    if app_ctx.blueprint.server.enable_cache_control_header {
+        response.set_cache_control(
+            req_ctx.get_min_max_age().unwrap_or(0),
+            req_ctx.is_cache_public().unwrap_or(true),
+        )
+    } else {
+        response
+    }
+}
+
+fn set_cache_control_jit(
+    app_ctx: &AppContext,
+    req_ctx: &RequestContext,
+    response: GraphQLArcResponse,
+) -> GraphQLArcResponse {
+    if app_ctx.blueprint.server.enable_cache_control_header {
+        response.set_cache_control(
+            req_ctx.get_min_max_age().unwrap_or(0),
+            req_ctx.is_cache_public().unwrap_or(true),
+        )
+    } else {
+        response
+    }
+}
+
 async fn handle_rest_apis(
     mut request: Request<Body>,
     app_ctx: Arc<AppContext>,
@@ -265,16 +284,15 @@ async fn handle_rest_apis(
         );
         return async {
             let graphql_request = p_request.into_request(request).await?;
-            let mut response = graphql_request
-                .data(req_ctx.clone())
-                .execute(&app_ctx.schema)
-                .await
-                .set_cache_control(
-                    app_ctx.blueprint.server.enable_cache_control_header,
-                    req_ctx.get_min_max_age().unwrap_or(0),
-                    req_ctx.is_cache_public().unwrap_or(true),
-                )
-                .into_rest_response()?;
+            let mut response = set_cache_control(
+                &app_ctx,
+                &req_ctx,
+                graphql_request
+                    .data(req_ctx.clone())
+                    .execute(&app_ctx.schema)
+                    .await,
+            )
+            .into_rest_response()?;
             update_response_headers(&mut response, &req_ctx, &app_ctx);
             Ok(response)
         }
