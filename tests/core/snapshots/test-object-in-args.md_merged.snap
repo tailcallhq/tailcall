@@ -1,0 +1,23 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server @upstream {
+  query: Query
+}
+
+input Nested {
+  hasChildren: Boolean
+}
+
+type Employee {
+  id: ID!
+}
+
+type Query {
+  findEmployees(criteria: Nested): [Employee!]!
+    @http(
+      url: "http://localhost:8081/family/employees"
+      query: [{key: "nested", value: "{{.args.criteria}}", skipEmpty: true}]
+    )
+}
