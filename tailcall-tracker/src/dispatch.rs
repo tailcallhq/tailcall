@@ -1,11 +1,11 @@
 use std::collections::HashSet;
 use std::process::Output;
-use tokio::sync::Mutex;
 
 use chrono::{DateTime, Utc};
 use machineid_rs::{Encryption, HWIDComponent, IdBuilder};
 use sysinfo::System;
 use tokio::process::Command;
+use tokio::sync::Mutex;
 use tokio::time::Duration;
 
 use super::Result;
