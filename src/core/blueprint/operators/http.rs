@@ -15,7 +15,7 @@ use crate::core::{config, helpers, Mustache};
 fn check_ty(mut iter: Iter<String>, module: &ConfigModule, cur_ty: &str) -> bool {
     let type_ = module.types.get(cur_ty);
     if type_.is_none() {
-        return module.find_enum(cur_ty).is_some();
+        return Scalar::is_predefined(cur_ty) || module.find_enum(cur_ty).is_some();
     }
     let type_ = type_.unwrap();
 
