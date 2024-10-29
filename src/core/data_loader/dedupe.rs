@@ -148,6 +148,7 @@ impl<K: Key, V: Value, E: Value> DedupeResult<K, V, E> {
 mod tests {
     use std::ops::Deref;
     use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Mutex;
     use std::time::Duration;
 
     use assert_eq;
