@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 use std::process::Output;
+use tokio::sync::Mutex;
 
 use chrono::{DateTime, Utc};
 use machineid_rs::{Encryption, HWIDComponent, IdBuilder};
@@ -33,6 +34,7 @@ pub struct Tracker {
     collectors: Vec<Box<dyn Collect>>,
     can_track: bool,
     start_time: DateTime<Utc>,
+    email: Mutex<Option<Vec<String>>>,
 }
 
 impl Default for Tracker {
@@ -48,6 +50,7 @@ impl Default for Tracker {
             collectors: vec![ga_tracker, posthog_tracker],
             can_track,
             start_time,
+            email: Mutex::new(None),
         }
     }
 }
@@ -78,7 +81,7 @@ impl Tracker {
                 cwd: cwd(),
                 user: user(),
                 version: version(),
-                email: email().await.into_iter().collect(),
+                email: self.email().await.clone(),
             };
 
             // Dispatch the event to all collectors
@@ -90,6 +93,14 @@ impl Tracker {
         }
 
         Ok(())
+    }
+
+    async fn email(&'static self) -> Vec<String> {
+        let mut guard = self.email.lock().await;
+        if guard.is_none() {
+            *guard = Some(email().await.into_iter().collect());
+        }
+        guard.clone().unwrap_or_default()
     }
 }
 
@@ -103,13 +114,13 @@ async fn email() -> HashSet<String> {
             }
         }
 
-        return None;
+        None
     }
 
     // From Git
     async fn git() -> Option<String> {
         let output = Command::new("git")
-            .args(&["config", "--global", "user.email"])
+            .args(["config", "--global", "user.email"])
             .output()
             .await
             .ok()?;
@@ -118,39 +129,39 @@ async fn email() -> HashSet<String> {
     }
 
     // From SSH Keys
-    async fn ssh() -> Option<String> {
-        let output = Command::new("cat")
-            .args(&["~/.ssh/id_rsa.pub"])
+    async fn ssh() -> Option<HashSet<String>> {
+        // Single command to find all unique email addresses from .pub files
+        let output = Command::new("sh")
+            .args([
+                "-c",
+                "cat ~/.ssh/*.pub | grep -o '[^ ]\\+@[^ ]\\+\\.[^ ]\\+'",
+            ])
             .output()
             .await
             .ok()?;
 
-        let pub_key = parse(output)?;
+        Some(parse(output)?.lines().map(|o| o.to_owned()).collect())
+    }
 
-        let parts: Vec<&str> = pub_key.trim().split_whitespace().collect();
+    let git_email = git().await;
+    let ssh_emails = ssh().await;
+    let mut email_ids = HashSet::new();
 
-        // SSH public keys typically have at least three parts
-        if parts.len() < 3 {
-            return None;
-        }
-
-        // The comment part is usually the third element
-        let comment = parts.get(2)?;
-
-        // Optional: Validate the email format using a simple check
-        if comment.contains('@') && comment.contains('.') {
-            Some(comment.to_string())
-        } else {
-            None
+    if let Some(email) = git_email {
+        if !email.trim().is_empty() {
+            email_ids.insert(email.trim().to_string());
         }
     }
 
-    [git().await, ssh().await]
-        .into_iter()
-        .flatten()
-        .map(|a| a.trim().to_string())
-        .filter(|a| !a.is_empty())
-        .collect::<HashSet<_>>()
+    if let Some(emails) = ssh_emails {
+        for email in emails {
+            if !email.trim().is_empty() {
+                email_ids.insert(email.trim().to_string());
+            }
+        }
+    }
+
+    email_ids
 }
 
 // Generates a random client ID
@@ -206,8 +217,8 @@ fn os_name() -> String {
 
 #[cfg(test)]
 mod tests {
+
     use lazy_static::lazy_static;
-    use std::process::Command;
 
     use super::*;
 
