@@ -1,5 +1,6 @@
-use tailcall_valid::Valid;
+use std::convert::Infallible;
 
+use tailcall_valid::Valid;
 use crate::core::ir::model::IR;
 use crate::core::jit::OperationPlan;
 use crate::core::Transform;
@@ -30,7 +31,7 @@ fn check_dedupe(ir: &IR) -> bool {
 
 impl<A> Transform for CheckDedupe<A> {
     type Value = OperationPlan<A>;
-    type Error = ();
+    type Error = Infallible;
 
     fn transform(&self, mut plan: Self::Value) -> Valid<Self::Value, Self::Error> {
         let dedupe = plan.selection.iter().all(|field| {

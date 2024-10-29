@@ -100,6 +100,7 @@ impl Contravariant for Field {
                 cache: self.cache.merge_right(other.cache),
                 default_value: self.default_value.or(other.default_value),
                 protected: self.protected.merge_right(other.protected),
+                discriminate: self.discriminate.merge_right(other.discriminate),
                 resolver: self.resolver.merge_right(other.resolver),
                 directives: self.directives.merge_right(other.directives),
             })
@@ -121,6 +122,7 @@ impl Covariant for Field {
                 cache: self.cache.merge_right(other.cache),
                 default_value: self.default_value.or(other.default_value),
                 protected: self.protected.merge_right(other.protected),
+                discriminate: self.discriminate.merge_right(other.discriminate),
                 resolver: self.resolver.merge_right(other.resolver),
                 directives: self.directives.merge_right(other.directives),
             })

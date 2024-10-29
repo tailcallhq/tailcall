@@ -16,12 +16,8 @@ use crate::core::mustache::Mustache;
 use crate::core::try_fold::TryFold;
 use crate::core::{config, helpers};
 
-fn to_url(grpc: &Grpc, method: &GrpcMethod, config: &Config) -> Valid<Mustache, String> {
-    Valid::from_option(
-        grpc.base_url.as_ref().or(config.upstream.base_url.as_ref()),
-        "No base URL defined".to_string(),
-    )
-    .and_then(|base_url| {
+fn to_url(grpc: &Grpc, method: &GrpcMethod) -> Valid<Mustache, String> {
+    Valid::succeed(grpc.url.as_str()).and_then(|base_url| {
         let mut base_url = base_url.trim_end_matches('/').to_owned();
         base_url.push('/');
         base_url.push_str(format!("{}.{}", method.package, method.service).as_str());
@@ -172,7 +168,7 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
             }
 
             to_operation(&method, file_descriptor_set)
-                .fuse(to_url(grpc, &method, config_module))
+                .fuse(to_url(grpc, &method))
                 .fuse(helpers::headers::to_mustache_headers(&grpc.headers))
                 .fuse(helpers::body::to_body(grpc.body.as_ref()))
                 .into()

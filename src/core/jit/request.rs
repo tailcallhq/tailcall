@@ -45,12 +45,15 @@ impl Request<ConstValue> {
         let builder = Builder::new(blueprint, doc);
         let plan = builder.build(self.operation_name.as_deref())?;
 
-        Ok(transform::CheckConst::new()
+        transform::CheckConst::new()
             .pipe(transform::CheckDedupe::new())
+            .pipe(transform::CheckProtected::new())
             .transform(plan)
             .to_result()
-            // NOTE: Unwrapping because these transformations fail with () error
-            .unwrap())
+            // both transformers are infallible right now
+            // but we can't just unwrap this in stable rust
+            // so convert to the Unknown error
+            .map_err(|_| super::Error::Unknown)
     }
 }
 

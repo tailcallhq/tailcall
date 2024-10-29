@@ -306,18 +306,18 @@ mod tests {
     #[test]
     fn test_title_trace_caused_by() {
         let error = Errata::new("Configuration Error").caused_by(vec![Errata::new(
-            "Base URL needs to be specified",
+            "URL needs to be specified",
         )
         .trace(vec![
             "User".into(),
             "posts".into(),
             "@http".into(),
-            "baseURL".into(),
+            "url".into(),
         ])]);
 
         let expected = r"|Configuration Error
                      |Caused by:
-                     |  • Base URL needs to be specified [at User.posts.@http.baseURL]"
+                     |  • URL needs to be specified [at User.posts.@http.url]"
             .strip_margin();
 
         assert_eq!(error.to_string(), expected);
@@ -326,40 +326,40 @@ mod tests {
     #[test]
     fn test_title_trace_multiple_caused_by() {
         let error = Errata::new("Configuration Error").caused_by(vec![
-            Errata::new("Base URL needs to be specified").trace(vec![
+            Errata::new("URL needs to be specified").trace(vec![
                 "User".into(),
                 "posts".into(),
                 "@http".into(),
-                "baseURL".into(),
+                "url".into(),
             ]),
-            Errata::new("Base URL needs to be specified").trace(vec![
+            Errata::new("URL needs to be specified").trace(vec![
                 "Post".into(),
                 "users".into(),
                 "@http".into(),
-                "baseURL".into(),
+                "url".into(),
             ]),
-            Errata::new("Base URL needs to be specified")
-                .description("Set `baseURL` in @http or @server directives".into())
+            Errata::new("URL needs to be specified")
+                .description("Set `url` in @http or @server directives".into())
                 .trace(vec![
                     "Query".into(),
                     "users".into(),
                     "@http".into(),
-                    "baseURL".into(),
+                    "url".into(),
                 ]),
-            Errata::new("Base URL needs to be specified").trace(vec![
+            Errata::new("URL needs to be specified").trace(vec![
                 "Query".into(),
                 "posts".into(),
                 "@http".into(),
-                "baseURL".into(),
+                "url".into(),
             ]),
         ]);
 
         let expected = r"|Configuration Error
                      |Caused by:
-                     |  • Base URL needs to be specified [at User.posts.@http.baseURL]
-                     |  • Base URL needs to be specified [at Post.users.@http.baseURL]
-                     |  • Base URL needs to be specified: Set `baseURL` in @http or @server directives [at Query.users.@http.baseURL]
-                     |  • Base URL needs to be specified [at Query.posts.@http.baseURL]"
+                     |  • URL needs to be specified [at User.posts.@http.url]
+                     |  • URL needs to be specified [at Post.users.@http.url]
+                     |  • URL needs to be specified: Set `url` in @http or @server directives [at Query.users.@http.url]
+                     |  • URL needs to be specified [at Query.posts.@http.url]"
             .strip_margin();
 
         assert_eq!(error.to_string(), expected);
@@ -367,14 +367,14 @@ mod tests {
 
     #[test]
     fn test_from_validation() {
-        let cause = Cause::new("Base URL needs to be specified")
-            .description("Set `baseURL` in @http or @server directives")
-            .trace(vec!["Query", "users", "@http", "baseURL"]);
+        let cause = Cause::new("URL needs to be specified")
+            .description("Set `url` in @http or @server directives")
+            .trace(vec!["Query", "users", "@http", "url"]);
         let valid = ValidationError::from(cause);
         let error = Errata::from(valid);
         let expected = r"|Invalid Configuration
                      |Caused by:
-                     |  • Base URL needs to be specified: Set `baseURL` in @http or @server directives [at Query.users.@http.baseURL]"
+                     |  • URL needs to be specified: Set `url` in @http or @server directives [at Query.users.@http.url]"
             .strip_margin();
 
         assert_eq!(error.to_string(), expected);

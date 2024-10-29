@@ -4,7 +4,7 @@ expression: formatter
 ---
 schema
   @server(port: 8000)
-  @upstream(baseURL: "http://localhost:50051", batch: {delay: 10, headers: []}, httpCache: 42)
+  @upstream(batch: {delay: 10, headers: []}, httpCache: 42)
   @link(src: "map.proto", type: Protobuf) {
   query: Query
 }
@@ -15,7 +15,7 @@ input map__MapRequest {
 
 type Query {
   map__MapService__GetMap(mapRequest: map__MapRequest!): map__MapResponse!
-    @grpc(body: "{{.args.mapRequest}}", method: "map.MapService.GetMap")
+    @grpc(url: "http://localhost:50051", body: "{{.args.mapRequest}}", method: "map.MapService.GetMap")
 }
 
 type map__MapResponse {

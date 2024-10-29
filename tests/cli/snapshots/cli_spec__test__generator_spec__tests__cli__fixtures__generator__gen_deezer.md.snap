@@ -2,7 +2,7 @@
 source: tests/cli/gen.rs
 expression: config.to_sdl()
 ---
-schema @server @upstream(baseURL: "https://api.deezer.com") {
+schema @server @upstream {
   query: Query
 }
 
@@ -286,6 +286,7 @@ type GEN__4 {
   title_short: String
   title_version: String
   track_position: Int
+  track_token: String
   type: String
 }
 
@@ -383,14 +384,14 @@ type Podcast {
 }
 
 type Query {
-  album(GEN__1: Int!): GEN__39 @http(path: "/album/{{.args.GEN__1}}")
-  artist(GEN__1: Int!): GEN__40 @http(path: "/artist/{{.args.GEN__1}}")
-  chart: Chart @http(path: "/chart")
-  editorial: Editorial @http(path: "/editorial")
-  playlist(GEN__1: Int!): Playlist @http(path: "/playlist/{{.args.GEN__1}}")
-  search(q: String): Search @http(path: "/search", query: [{key: "q", value: "{{.args.q}}"}])
-  track(GEN__1: Int!): GEN__4 @http(path: "/track/{{.args.GEN__1}}")
-  user(GEN__1: Int!): User @http(path: "/user/{{.args.GEN__1}}")
+  album(GEN__1: Int!): GEN__39 @http(url: "https://api.deezer.com/album/{{.args.GEN__1}}")
+  artist(GEN__1: Int!): GEN__40 @http(url: "https://api.deezer.com/artist/{{.args.GEN__1}}")
+  chart: Chart @http(url: "https://api.deezer.com/chart")
+  editorial: Editorial @http(url: "https://api.deezer.com/editorial")
+  playlist(GEN__1: Int!): Playlist @http(url: "https://api.deezer.com/playlist/{{.args.GEN__1}}")
+  search(q: String): Search @http(url: "https://api.deezer.com/search", query: [{key: "q", value: "{{.args.q}}"}])
+  track(GEN__1: Int!): GEN__4 @http(url: "https://api.deezer.com/track/{{.args.GEN__1}}")
+  user(GEN__1: Int!): User @http(url: "https://api.deezer.com/user/{{.args.GEN__1}}")
 }
 
 type Search {

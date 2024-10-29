@@ -66,14 +66,6 @@ pub struct Upstream {
     /// security but possibly limiting data flow.
     pub allowed_headers: Option<BTreeSet<String>>,
 
-    #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
-    /// This refers to the default base URL for your APIs. If it's not
-    /// explicitly mentioned in the `@upstream` operator, then each
-    /// [@http](#http) operator must specify its own `baseURL`. If neither
-    /// `@upstream` nor [@http](#http) provides a `baseURL`, it results in a
-    /// compilation error.
-    pub base_url: Option<String>,
-
     #[serde(default, skip_serializing_if = "is_default")]
     /// An object that specifies the batch settings, including `maxSize` (the
     /// maximum size of the batch), `delay` (the delay in milliseconds between

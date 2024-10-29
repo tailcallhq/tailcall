@@ -2,7 +2,7 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema @server(port: 8000) @upstream(baseURL: "http://abc.com", proxy: {url: "http://localhost:3000"}) {
+schema @server(port: 8000) @upstream(proxy: {url: "http://localhost:3000"}) {
   query: Query
 }
 

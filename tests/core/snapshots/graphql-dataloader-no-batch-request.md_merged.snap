@@ -9,12 +9,12 @@ schema @server @upstream(batch: {delay: 1, headers: []}) {
 type Post {
   id: Int
   title: String
-  user: User @graphQL(args: [{key: "id", value: "{{.value.userId}}"}], baseURL: "http://upstream/graphql", name: "user")
+  user: User @graphQL(args: [{key: "id", value: "{{.value.userId}}"}], url: "http://upstream/graphql", name: "user")
   userId: Int
 }
 
 type Query {
-  posts: [Post] @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/posts")
+  posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts")
 }
 
 type User {

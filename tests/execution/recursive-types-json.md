@@ -4,7 +4,6 @@
 {
   "$schema": "./.tailcallrc.schema.json",
   "upstream": {
-    "baseURL": "https://jsonplaceholder.typicode.com",
     "httpCache": 42
   },
   "schema": {
@@ -19,7 +18,7 @@
             "name": "User"
           },
           "http": {
-            "path": "/users/1"
+            "url": "http://jsonplaceholder.typicode.com/users/1"
           }
         }
       }
@@ -38,7 +37,7 @@
             "name": "User"
           },
           "http": {
-            "path": "/user",
+            "url": "http://jsonplaceholder.typicode.com/user",
             "method": "POST",
             "body": "{{.args.user}}"
           }
@@ -66,7 +65,7 @@
             }
           },
           "http": {
-            "path": "/connections/{{.value.id}}"
+            "url": "http://jsonplaceholder.typicode.com/connections/{{.value.id}}"
           }
         }
       }
@@ -92,7 +91,7 @@
 ```yml @mock
 - request:
     method: GET
-    url: https://jsonplaceholder.typicode.com/users/1
+    url: http://jsonplaceholder.typicode.com/users/1
   response:
     status: 200
     body:
@@ -100,7 +99,7 @@
       name: User1
 - request:
     method: GET
-    url: https://jsonplaceholder.typicode.com/connections/1
+    url: http://jsonplaceholder.typicode.com/connections/1
   response:
     status: 200
     body:
@@ -111,7 +110,7 @@
 
 - request:
     method: GET
-    url: https://jsonplaceholder.typicode.com/connections/2
+    url: http://jsonplaceholder.typicode.com/connections/2
   response:
     status: 200
     body:
@@ -126,7 +125,7 @@
 
 - request:
     method: POST
-    url: https://jsonplaceholder.typicode.com/user
+    url: http://jsonplaceholder.typicode.com/user
     body:
       id: 111
       name: NewUser
@@ -143,7 +142,7 @@
 
 - request:
     method: GET
-    url: https://jsonplaceholder.typicode.com/connections/111
+    url: http://jsonplaceholder.typicode.com/connections/111
   response:
     status: 200
     body:

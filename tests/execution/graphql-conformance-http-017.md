@@ -1,15 +1,13 @@
 # Complex fragments.
 
 ```graphql @config
-schema
-  @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://upstream/", httpCache: 42) {
+schema @server(port: 8001, queryValidation: false, hostname: "0.0.0.0") @upstream(httpCache: 42) {
   query: Query
 }
 
 type Query {
-  edibleAnimals: [EdibleAnimals] @http(path: "/edible-animals")
-  allAnimals: [Animal] @http(path: "/all-animals")
+  edibleAnimals: [EdibleAnimals] @http(url: "http://upstream/edible-animals")
+  allAnimals: [Animal] @http(url: "http://upstream/all-animals")
 }
 
 interface Animal {
@@ -117,36 +115,42 @@ type Cat implements Animal & DomesticAnimal & Pet {
   response:
     status: 200
     body:
-      - id: cat-1
-        legs: 4
-        sound: meow
-        weight: 2
-        owner: John
-        hasFur: true
-      - id: dog-2
-        legs: 4
-        sound: woof
-        weight: 2
-        owner: Steve
-        size: 12
-      - id: salmon-1
-        legs: 0
-        sound: ...
-        length: 2
-      - id: salmon-2
-        legs: 0
-        sound: ...
-        length: 1
-      - id: pig-1
-        legs: 4
-        sound: oik
-        weight: 24
-        isForBacon: false
-      - id: pig-2
-        legs: 4
-        sound: oik
-        weight: 41
-        isForBacon: true
+      - Cat:
+          id: cat-1
+          legs: 4
+          sound: meow
+          weight: 2
+          owner: John
+          hasFur: true
+      - Dog:
+          id: dog-2
+          legs: 4
+          sound: woof
+          weight: 2
+          owner: Steve
+          size: 12
+      - Salmon:
+          id: salmon-1
+          legs: 0
+          sound: ...
+          length: 2
+      - Salmon:
+          id: salmon-2
+          legs: 0
+          sound: ...
+          length: 1
+      - Pig:
+          id: pig-1
+          legs: 4
+          sound: oik
+          weight: 24
+          isForBacon: false
+      - Pig:
+          id: pig-2
+          legs: 4
+          sound: oik
+          weight: 41
+          isForBacon: true
 - request:
     method: GET
     url: http://upstream/edible-animals
@@ -154,23 +158,27 @@ type Cat implements Animal & DomesticAnimal & Pet {
   response:
     status: 200
     body:
-      - id: salmon-1
-        legs: 0
-        sound: ...
-        length: 2
-      - id: salmon-2
-        legs: 0
-        sound: ...
-        length: 1
-      - id: pig-1
-        legs: 4
-        sound: oik
-        weight: 24
-      - id: pig-2
-        legs: 4
-        sound: oik
-        weight: 41
-        isForBacon: false
+      - Salmon:
+          id: salmon-1
+          legs: 0
+          sound: ...
+          length: 2
+      - Salmon:
+          id: salmon-2
+          legs: 0
+          sound: ...
+          length: 1
+      - Pig:
+          id: pig-1
+          legs: 4
+          sound: oik
+          weight: 24
+      - Pig:
+          id: pig-2
+          legs: 4
+          sound: oik
+          weight: 41
+          isForBacon: false
 ```
 
 ```yml @test

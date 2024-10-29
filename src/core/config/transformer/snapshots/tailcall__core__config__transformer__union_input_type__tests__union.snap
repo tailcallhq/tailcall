@@ -22,7 +22,7 @@ input T3 {
 union U = T1 | T2 | T3
 
 type Query {
-  testVar0(u: T1!): U @http(baseURL: "http://localhost", path: "/users/{{args.u}}")
-  testVar1(u: T2!): U @http(baseURL: "http://localhost", path: "/users/{{args.u}}")
-  testVar2(u: T3!): U @http(baseURL: "http://localhost", path: "/users/{{args.u}}")
+  testVar0(u: T1!): U @http(url: "http://localhost/users/{{args.u}}")
+  testVar1(u: T2!): U @http(url: "http://localhost/users/{{args.u}}")
+  testVar2(u: T3!): U @http(url: "http://localhost/users/{{args.u}}")
 }

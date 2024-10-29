@@ -1,9 +1,10 @@
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 
 use async_graphql::parser::types::{ConstDirective, OperationType};
-use async_graphql::{ErrorExtensions, Name, Positioned as AsyncPositioned, ServerError};
+use async_graphql::{Name, Positioned as AsyncPositioned, ServerError};
 use async_graphql_value::ConstValue;
 use serde::{Deserialize, Serialize};
 
@@ -12,6 +13,7 @@ use crate::core::blueprint::Index;
 use crate::core::ir::model::IR;
 use crate::core::ir::TypedValue;
 use crate::core::json::JsonLike;
+use crate::core::scalar::Scalar;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Variables<Value>(HashMap<String, Value>);
@@ -162,6 +164,8 @@ pub struct Field<Input> {
     pub selection: Vec<Field<Input>>,
     pub pos: Pos,
     pub directives: Vec<Directive<Input>>,
+    pub is_enum: bool,
+    pub scalar: Option<Scalar>,
 }
 
 pub struct DFS<'a, Input> {
@@ -229,6 +233,8 @@ impl<Input> Field<Input> {
                 .into_iter()
                 .map(|directive| directive.try_map(map))
                 .collect::<Result<_, _>>()?,
+            is_enum: self.is_enum,
+            scalar: self.scalar,
         })
     }
 }
@@ -280,6 +286,7 @@ pub struct OperationPlan<Input> {
     pub is_introspection_query: bool,
     pub is_dedupe: bool,
     pub is_const: bool,
+    pub is_protected: bool,
     pub selection: Vec<Field<Input>>,
 }
 
@@ -310,6 +317,7 @@ impl<Input> OperationPlan<Input> {
             is_introspection_query: self.is_introspection_query,
             is_dedupe: self.is_dedupe,
             is_const: self.is_const,
+            is_protected: self.is_protected,
         })
     }
 }
@@ -334,6 +342,7 @@ impl<Input> OperationPlan<Input> {
             is_introspection_query,
             is_dedupe: false,
             is_const: false,
+            is_protected: false,
         }
     }
 
@@ -355,21 +364,6 @@ impl<Input> OperationPlan<Input> {
     /// Returns a flat [Field] representation
     pub fn iter_dfs(&self) -> DFS<Input> {
         DFS { stack: vec![self.selection.iter()] }
-    }
-
-    /// Search for a field by specified path of nested fields
-    pub fn find_field_path<S: AsRef<str>>(&self, path: &[S]) -> Option<&Field<Input>> {
-        match path.split_first() {
-            None => None,
-            Some((name, path)) => {
-                let field = self.iter_dfs().find(|field| field.name == name.as_ref())?;
-                if path.is_empty() {
-                    Some(field)
-                } else {
-                    self.find_field_path(path)
-                }
-            }
-        }
     }
 
     /// Returns number of fields in plan
@@ -462,15 +456,25 @@ impl<'a> From<&'a Directive<ConstValue>> for ConstDirective {
 ///
 /// You can serialize and deserialize it to the GraphQL `locations` format
 /// ([reference](https://spec.graphql.org/October2021/#sec-Errors)).
-#[derive(
-    Debug, PartialOrd, Ord, PartialEq, Eq, Clone, Copy, Default, Hash, Serialize, Deserialize,
-)]
+#[derive(PartialOrd, Ord, PartialEq, Eq, Clone, Copy, Default, Hash, Serialize, Deserialize)]
 pub struct Pos {
     /// One-based line number.
     pub line: usize,
 
     /// One-based column number.
     pub column: usize,
+}
+
+impl std::fmt::Debug for Pos {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Pos({}:{})", self.line, self.column)
+    }
+}
+
+impl std::fmt::Display for Pos {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}:{}", self.line, self.column)
+    }
 }
 
 impl From<async_graphql::Pos> for Pos {
@@ -486,27 +490,19 @@ impl From<Pos> for async_graphql::Pos {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub enum PathSegment {
+#[serde(untagged)]
+pub enum PathSegment<'a> {
     /// A field in an object.
-    Field(String),
+    Field(Cow<'a, String>),
     /// An index in a list.
     Index(usize),
 }
 
-impl From<async_graphql::PathSegment> for PathSegment {
+impl From<async_graphql::PathSegment> for PathSegment<'static> {
     fn from(value: async_graphql::PathSegment) -> Self {
         match value {
-            async_graphql::PathSegment::Field(field) => PathSegment::Field(field),
+            async_graphql::PathSegment::Field(field) => PathSegment::Field(Cow::Owned(field)),
             async_graphql::PathSegment::Index(index) => PathSegment::Index(index),
-        }
-    }
-}
-
-impl From<PathSegment> for async_graphql::PathSegment {
-    fn from(val: PathSegment) -> Self {
-        match val {
-            PathSegment::Field(field) => async_graphql::PathSegment::Field(field),
-            PathSegment::Index(index) => async_graphql::PathSegment::Index(index),
         }
     }
 }
@@ -515,7 +511,7 @@ impl From<PathSegment> for async_graphql::PathSegment {
 pub struct Positioned<Value> {
     pub value: Value,
     pub pos: Pos,
-    pub path: Vec<PathSegment>,
+    pub path: Vec<PathSegment<'static>>,
 }
 
 impl<Value> Positioned<Value> {
@@ -528,7 +524,7 @@ impl<Value> Positioned<Value>
 where
     Value: Clone,
 {
-    pub fn with_path(&mut self, path: Vec<PathSegment>) -> Self {
+    pub fn with_path(&mut self, path: Vec<PathSegment<'static>>) -> Self {
         Self { value: self.value.clone(), pos: self.pos, path }
     }
 }
@@ -545,34 +541,6 @@ impl From<ServerError> for Positioned<Error> {
                 .into_iter()
                 .map(PathSegment::from)
                 .collect::<Vec<_>>(),
-        }
-    }
-}
-
-impl From<Positioned<Error>> for ServerError {
-    fn from(val: Positioned<Error>) -> Self {
-        match val.value {
-            Error::ServerError(e) => e,
-            _ => {
-                let extensions = val.value.extend().extensions;
-                let mut server_error =
-                    ServerError::new(val.value.to_string(), Some(val.pos.into()));
-
-                server_error.extensions = extensions;
-
-                // TODO: in order to be compatible with async_graphql path is only set for
-                // validation errors here but in general we might consider setting it
-                // for every error
-                if let Error::Validation(_) = val.value {
-                    server_error.path = val
-                        .path
-                        .into_iter()
-                        .map(|path| path.into())
-                        .collect::<Vec<_>>();
-                }
-
-                server_error
-            }
         }
     }
 }

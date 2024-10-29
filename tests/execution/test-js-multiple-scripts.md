@@ -18,7 +18,7 @@ schema @server @link(type: Script, src: "test1.js") @link(type: Script, src: "te
 }
 
 type Query {
-  hello: String @http(baseURL: "http://localhost:3000", path: "/hello")
-  hi: String @http(baseURL: "http://localhost:3000", path: "/hi")
+  hello: String @http(url: "http://localhost:3000/hello")
+  hi: String @http(url: "http://localhost:3000/hi")
 }
 ```

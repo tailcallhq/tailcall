@@ -2,7 +2,7 @@
 source: src/core/config/transformer/merge_types/type_merger.rs
 expression: config.to_sdl()
 ---
-schema @server(hostname: "0.0.0.0", port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42) {
+schema @server(hostname: "0.0.0.0", port: 8000) @upstream(httpCache: 42) {
   query: Query
 }
 
@@ -15,8 +15,8 @@ type F3 {
 }
 
 type Query {
-  user(id: Int!): F3 @http(path: "/users/{{.args.id}}")
-  users: F2 @http(path: "/users")
+  user(id: Int!): F3 @http(url: "http://jsonplaceholder.typicode.com/users/{{.args.id}}")
+  users: F2 @http(url: "http://jsonplaceholder.typicode.com/users")
 }
 
 type User {

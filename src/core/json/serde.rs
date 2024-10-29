@@ -10,6 +10,10 @@ impl<'obj> JsonObjectLike<'obj> for serde_json::Map<String, serde_json::Value> {
         serde_json::Map::new()
     }
 
+    fn with_capacity(n: usize) -> Self {
+        serde_json::Map::with_capacity(n)
+    }
+
     fn get_key(&self, key: &str) -> Option<&serde_json::Value> {
         self.get(key)
     }

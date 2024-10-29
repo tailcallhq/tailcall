@@ -1,3 +1,4 @@
+use std::convert::Infallible;
 use std::marker::PhantomData;
 
 use tailcall_valid::Valid;
@@ -32,7 +33,7 @@ pub fn is_const(ir: &IR) -> bool {
 
 impl<A> Transform for CheckConst<A> {
     type Value = OperationPlan<A>;
-    type Error = ();
+    type Error = Infallible;
 
     fn transform(&self, mut plan: Self::Value) -> Valid<Self::Value, Self::Error> {
         let is_const = plan.iter_dfs().all(|field| match field.ir {
