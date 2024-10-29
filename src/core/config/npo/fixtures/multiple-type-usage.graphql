@@ -7,23 +7,23 @@ type T1 {
 }
 
 type T2 {
-  t2: [N] @http(path: "")
+  t2: [N] @http(url: "")
 }
 
 type T3 {
-  t3: [N] @http(path: "", batchKey: ["id"])
+  t3: [N] @http(url: "", batchKey: ["id"])
 }
 
 type N {
-  n: Int @http(path: "")
+  n: Int @http(url: "")
 }
 
 type Query {
   x: String
-  t1: T1 @http(path: "")
-  t2: T2 @http(path: "")
-  t3: T3 @http(path: "")
-  t1_ls: [T1] @http(path: "")
-  t2_ls: [T2] @http(path: "")
-  t3_ls: [T3] @http(path: "")
+  t1: T1 @http(url: "")
+  t2: T2 @http(url: "")
+  t3: T3 @http(url: "")
+  t1_ls: [T1] @http(url: "")
+  t2_ls: [T2] @http(url: "")
+  t3_ls: [T3] @http(url: "")
 }

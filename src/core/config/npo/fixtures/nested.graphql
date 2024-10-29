@@ -1,4 +1,4 @@
-schema @server(port: 8030) @upstream(baseURL: "https://example.com") {
+schema @server(port: 8030) {
   query: Query
 }
 
@@ -17,5 +17,5 @@ type Foo {
 type Foo {
   fizz: String!
   c: Int
-  spam: [String!]! @http(path: "/spam", query: [{key: "id", value: "{{.value.fizz}}"}])
+  spam: [String!]! @http(url: "https://example.com/spam", query: [{key: "id", value: "{{.value.fizz}}"}])
 }
