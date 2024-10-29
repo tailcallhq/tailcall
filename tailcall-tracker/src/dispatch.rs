@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 use std::process::Output;
+use tokio::sync::Mutex;
 
 use chrono::{DateTime, Utc};
 use machineid_rs::{Encryption, HWIDComponent, IdBuilder};
@@ -33,6 +34,7 @@ pub struct Tracker {
     collectors: Vec<Box<dyn Collect>>,
     can_track: bool,
     start_time: DateTime<Utc>,
+    email: Mutex<Option<Vec<String>>>,
 }
 
 impl Default for Tracker {
@@ -48,6 +50,7 @@ impl Default for Tracker {
             collectors: vec![ga_tracker, posthog_tracker],
             can_track,
             start_time,
+            email: Mutex::new(None),
         }
     }
 }
@@ -78,7 +81,7 @@ impl Tracker {
                 cwd: cwd(),
                 user: user(),
                 version: version(),
-                email: email().await.into_iter().collect(),
+                email: self.email().await.clone(),
             };
 
             // Dispatch the event to all collectors
@@ -90,6 +93,14 @@ impl Tracker {
         }
 
         Ok(())
+    }
+
+    async fn email(&'static self) -> Vec<String> {
+        let mut guard = self.email.lock().await;
+        if guard.is_none() {
+            *guard = Some(email().await.into_iter().collect());
+        }
+        guard.clone().unwrap_or_default()
     }
 }
 
@@ -134,7 +145,6 @@ async fn email() -> HashSet<String> {
 
     let git_email = git().await;
     let ssh_emails = ssh().await;
-
     let mut email_ids = HashSet::new();
 
     if let Some(email) = git_email {
@@ -207,7 +217,6 @@ fn os_name() -> String {
 
 #[cfg(test)]
 mod tests {
-    
 
     use lazy_static::lazy_static;
 
