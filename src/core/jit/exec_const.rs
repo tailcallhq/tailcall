@@ -21,12 +21,11 @@ use crate::core::Transform;
 /// A specialized executor that executes with async_graphql::Value
 pub struct ConstValueExecutor {
     pub plan: OperationPlan<Value>,
-    pub response: Option<Response<ConstValue, Error>>,
 }
 
 impl From<OperationPlan<Value>> for ConstValueExecutor {
     fn from(plan: OperationPlan<Value>) -> Self {
-        Self { plan, response: None }
+        Self { plan }
     }
 }
 
@@ -37,12 +36,11 @@ impl ConstValueExecutor {
     }
 
     pub async fn execute(
-        mut self,
+        self,
         req_ctx: &RequestContext,
         request: &Request<ConstValue>,
-    ) -> Response<ConstValue, Error> {
+    ) -> Response<ConstValue> {
         let variables = &request.variables;
-        let is_const = self.plan.is_const;
 
         // Attempt to skip unnecessary fields
         let Ok(plan) = transform::Skip::new(variables)
@@ -50,11 +48,8 @@ impl ConstValueExecutor {
             .to_result()
         else {
             // this shouldn't actually ever happen
-            return Response {
-                data: None,
-                errors: vec![Positioned::new(Error::Unknown, Pos { line: 0, column: 0 })],
-                extensions: Default::default(),
-            };
+            return Response::default()
+                .with_errors(vec![Positioned::new(Error::Unknown, Pos::default())]);
         };
 
         // Attempt to replace variables in the plan with the actual values
@@ -66,15 +61,10 @@ impl ConstValueExecutor {
         let plan = match result {
             Ok(plan) => plan,
             Err(err) => {
-                return Response {
-                    data: None,
-                    // TODO: Position shouldn't be 0, 0
-                    errors: vec![Positioned::new(
-                        BuildError::from(err).into(),
-                        Pos { line: 0, column: 0 },
-                    )],
-                    extensions: Default::default(),
-                };
+                return Response::default().with_errors(vec![Positioned::new(
+                    BuildError::from(err).into(),
+                    Pos::default(),
+                )]);
             }
         };
 
@@ -84,14 +74,8 @@ impl ConstValueExecutor {
         let exe = Executor::new(&plan, exec);
         let store = exe.store().await;
         let synth = Synth::new(&plan, store, vars);
-        let response = exe.execute(synth).await;
 
-        // Cache the response if we know the output is always the same
-        if is_const {
-            self.response = Some(response.clone());
-        }
-
-        response
+        exe.execute(synth).await
     }
 }
 
@@ -107,13 +91,18 @@ impl<'a> ConstValueExec<'a> {
 
     async fn call(
         &self,
-        ctx: &'a Context<
-            'a,
-            <ConstValueExec<'a> as IRExecutor>::Input,
-            <ConstValueExec<'a> as IRExecutor>::Output,
-        >,
+        ctx: &'a Context<'a, <Self as IRExecutor>::Input, <Self as IRExecutor>::Output>,
         ir: &'a IR,
-    ) -> Result<<ConstValueExec<'a> as IRExecutor>::Output> {
+    ) -> Result<<Self as IRExecutor>::Output>
+    where
+        <Self as IRExecutor>::Input: JsonLike<'a>,
+        <Self as IRExecutor>::Output: JsonLike<'a>,
+    {
+        // if parent value is null do not try to resolve child fields
+        if matches!(ctx.value(), Some(v) if v.is_null()) {
+            return Ok(Default::default());
+        }
+
         let req_context = &self.req_context;
         let mut eval_ctx = EvalContext::new(req_context, ctx);
 
@@ -144,11 +133,7 @@ impl<'ctx> IRExecutor for ConstValueExec<'ctx> {
                     // for fragments on union/interface
                     if self.plan.field_is_part_of_value(field, value) {
                         let ctx = ctx.with_value(value);
-                        tasks.push(async move {
-                            let req_context = &self.req_context;
-                            let mut eval_ctx = EvalContext::new(req_context, &ctx);
-                            ir.eval(&mut eval_ctx).await
-                        })
+                        tasks.push(async move { self.call(&ctx, ir).await })
                     }
                 });
 
@@ -165,7 +150,8 @@ impl<'ctx> IRExecutor for ConstValueExec<'ctx> {
                     if self.plan.field_is_part_of_value(field, value) {
                         iter.next().unwrap_or(Err(ir::Error::IO(
                             "Expected value to be present".to_string(),
-                        )))
+                        )
+                        .into()))
                     } else {
                         Ok(Self::Output::default())
                     }

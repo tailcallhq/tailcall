@@ -4,11 +4,6 @@ expression: async_response
 ---
 Response {
     data: Null,
-    extensions: {},
-    cache_control: CacheControl {
-        public: true,
-        max_age: 0,
-    },
     errors: [
         ServerError {
             message: "internal: invalid item for enum \"EnumDef\"",
@@ -27,5 +22,9 @@ Response {
             extensions: None,
         },
     ],
-    http_headers: {},
+    extensions: [],
+    cache_control: CacheControl {
+        max_age: 0,
+        public: true,
+    },
 }

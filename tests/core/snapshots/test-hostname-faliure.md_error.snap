@@ -4,12 +4,11 @@ expression: errors
 ---
 [
   {
-    "message": "Parsing failed because of unknown field `path`, expected one of `onRequest`, `url`, `body`, `encoding`, `batchKey`, `headers`, `input`, `method`, `output`, `query`, `dedupe`, `select`",
+    "message": "Parsing failed because of invalid IP address syntax",
     "trace": [
-      "Query",
-      "user",
-      "@http",
-      "path"
+      "schema",
+      "@server",
+      "hostname"
     ],
     "description": null
   }

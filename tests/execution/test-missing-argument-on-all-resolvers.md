@@ -65,7 +65,7 @@ type Query {
     @graphQL(url: "http://jsonplaceholder.typicode.com", name: "post", args: [{key: "id", value: "{{.args.id}}"}])
   postGraphQLHeaders: Post
     @graphQL(url: "http://jsonplaceholder.typicode.com", name: "post", headers: [{key: "id", value: "{{.args.id}}"}])
-  postHttp: Post @http(path: "http://jsonplaceholder.typicode.com/posts/{{.args.id}}")
+  postHttp: Post @http(url: "http://jsonplaceholder.typicode.com/posts/{{.args.id}}")
   newsGrpcHeaders: NewsData!
     @grpc(
       url: "http://jsonplaceholder.typicode.com"

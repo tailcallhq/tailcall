@@ -45,7 +45,8 @@ type Query {
   response:
     status: 200
     body:
-      foo: test-foo
+      Foo:
+        foo: test-foo
 
 - request:
     method: GET
@@ -53,7 +54,8 @@ type Query {
   response:
     status: 200
     body:
-      bar: test-bar
+      Bar:
+        bar: test-bar
 
 - request:
     method: GET
@@ -62,9 +64,11 @@ type Query {
     status: 200
     body:
       foo:
-        foo: nested-foo
+        Foo:
+          foo: nested-foo
       bar:
-        bar: nested-bar
+        Bar:
+          bar: nested-bar
 
 - request:
     method: GET
@@ -72,11 +76,16 @@ type Query {
   response:
     status: 200
     body:
-      - foo: foo1
-      - bar: bar2
-      - foo: foo3
-      - foo: foo4
-      - bar: bar5
+      - Foo:
+          foo: foo1
+      - Bar:
+          bar: bar2
+      - Foo:
+          foo: foo3
+      - Foo:
+          foo: foo4
+      - Bar:
+          bar: bar5
 
 - request:
     method: GET
@@ -84,7 +93,8 @@ type Query {
   response:
     status: 200
     body:
-      unknown: baz
+      Bar:
+        unknown: baz
 
 - request:
     method: GET
@@ -92,15 +102,17 @@ type Query {
   response:
     status: 200
     body:
-      foo: test-foo
-      bar: test-bar
+      Baz:
+        foo: test-foo
+        bar: test-bar
 
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/string
   response:
     status: 200
-    body: "test-string"
+    body:
+      Foo: "test-string"
 ```
 
 ```yml @test
@@ -184,6 +196,7 @@ type Query {
       query {
         wrong {
           foo
+          __typename
         }
       }
 
@@ -194,6 +207,7 @@ type Query {
       query {
         string {
           foo
+          __typename
         }
       }
 ```

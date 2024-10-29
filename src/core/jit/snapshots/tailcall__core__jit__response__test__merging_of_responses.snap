@@ -4,11 +4,6 @@ expression: merged_response
 ---
 {
   "data": {
-    "me": {
-      "id": 1,
-      "name": "John Smith",
-      "birthday": "2023-03-08T12:45:26-05:00"
-    },
     "__type": {
       "name": "User",
       "fields": [
@@ -25,6 +20,11 @@ expression: merged_response
           }
         }
       ]
+    },
+    "me": {
+      "id": 1,
+      "name": "John Smith",
+      "birthday": "2023-03-08T12:45:26-05:00"
     }
   }
 }

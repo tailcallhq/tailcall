@@ -25,7 +25,7 @@ pub struct Executor<'a, IRExec, Input> {
 
 impl<'a, Input, Output, Exec> Executor<'a, Exec, Input>
 where
-    Output: for<'b> JsonLike<'b> + Debug + Clone,
+    Output: for<'b> JsonLike<'b> + Debug + Clone + Default,
     Input: Clone + Debug,
     Exec: IRExecutor<Input = Input, Output = Output, Error = jit::Error>,
 {
@@ -42,7 +42,7 @@ where
         store
     }
 
-    pub async fn execute(self, synth: Synth<'a, Output>) -> Response<Output, jit::Error> {
+    pub async fn execute(self, synth: Synth<'a, Output>) -> Response<Output> {
         let mut response = Response::new(synth.synthesize());
         response.add_errors(self.ctx.errors().clone());
         response

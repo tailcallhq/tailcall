@@ -1,4 +1,5 @@
 mod exec;
+pub mod graphql_error;
 mod model;
 mod store;
 mod synth;
