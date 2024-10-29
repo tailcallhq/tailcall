@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::{Arc, Mutex, Weak};
 
+use dashmap::{DashMap, Entry};
 use futures_util::Future;
 use tokio::sync::broadcast;
 
@@ -15,7 +16,7 @@ impl<A: Send + Sync + Clone> Value for A {}
 /// Allows deduplication of async operations based on a key.
 pub struct Dedupe<Key, Value> {
     /// Cache storage for the operations.
-    cache: Arc<Mutex<HashMap<Key, State<Value>>>>,
+    cache: Arc<DashMap<Key, State<Value>>>,
     /// Initial size of the multi-producer, multi-consumer channel.
     size: usize,
     /// When enabled allows the operations to be cached forever.
@@ -48,7 +49,7 @@ enum Step<Value> {
 
 impl<K: Key, V: Value> Dedupe<K, V> {
     pub fn new(size: usize, persist: bool) -> Self {
-        Self { cache: Arc::new(Mutex::new(HashMap::new())), size, persist }
+        Self { cache: Arc::new(DashMap::new()), size, persist }
     }
 
     pub async fn dedupe<'a, Fn, Fut>(&'a self, key: &'a K, or_else: Fn) -> V
@@ -71,11 +72,11 @@ impl<K: Key, V: Value> Dedupe<K, V> {
                 },
                 Step::Init(tx) => {
                     let value = or_else().await;
-                    let mut guard = self.cache.lock().unwrap();
                     if self.persist {
-                        guard.insert(key.to_owned(), State::Ready(value.clone()));
+                        self.cache
+                            .insert(key.to_owned(), State::Ready(value.clone()));
                     } else {
-                        guard.remove(key);
+                        self.cache.remove(key);
                     }
                     let _ = tx.send(value.clone());
                     value
@@ -87,29 +88,41 @@ impl<K: Key, V: Value> Dedupe<K, V> {
     }
 
     fn step(&self, key: &K) -> Step<V> {
-        let mut this = self.cache.lock().unwrap();
-
-        if let Some(state) = this.get(key) {
-            match state {
-                State::Ready(value) => return Step::Return(value.clone()),
-                State::Pending(tx) => {
-                    // We can upgrade from Weak to Arc only in case when
-                    // original tx is still alive
-                    // otherwise we will create in the code below
-                    if let Some(tx) = tx.upgrade() {
-                        return Step::Await(tx.subscribe());
+        match self.cache.entry(key.clone()) {
+            Entry::Occupied(entry) => {
+                match entry.get() {
+                    State::Ready(value) => return Step::Return(value.clone()),
+                    State::Pending(tx) => {
+                        // We can upgrade from Weak to Arc only in case when
+                        // original tx is still alive
+                        // otherwise we will create in the code below
+                        if let Some(tx) = tx.upgrade() {
+                            return Step::Await(tx.subscribe());
+                        }
                     }
                 }
             }
-        }
+            Entry::Vacant(entry) => {
+                let (tx, _) = broadcast::channel(self.size);
+                let tx = Arc::new(tx);
+                // Store a Weak version of tx and pass actual tx to further handling
+                // to control if tx is still alive and will be able to handle the request.
+                // Only single `strong` reference to tx should exist so we can
+                // understand when the execution is still alive and we'll get the response
+                entry.insert(State::Pending(Arc::downgrade(&tx)));
+                return Step::Init(tx);
+            }
+        };
 
+        // TODO: ideally, we won't reach here.
         let (tx, _) = broadcast::channel(self.size);
         let tx = Arc::new(tx);
         // Store a Weak version of tx and pass actual tx to further handling
         // to control if tx is still alive and will be able to handle the request.
         // Only single `strong` reference to tx should exist so we can
         // understand when the execution is still alive and we'll get the response
-        this.insert(key.to_owned(), State::Pending(Arc::downgrade(&tx)));
+        self.cache
+            .insert(key.to_owned(), State::Pending(Arc::downgrade(&tx)));
         Step::Init(tx)
     }
 }
