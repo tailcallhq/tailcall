@@ -1,18 +1,75 @@
+use std::slice::Iter;
+
 use crate::core::blueprint::*;
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::{Field, Resolver};
 use crate::core::endpoint::Endpoint;
 use crate::core::http::{HttpFilter, Method, RequestTemplate};
 use crate::core::ir::model::{IO, IR};
+use crate::core::mustache::Segment;
+use crate::core::scalar::Scalar;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
 use crate::core::{config, helpers, Mustache};
 
+fn check_ty(mut iter: Iter<String>, module: &ConfigModule, cur_ty: &str) -> bool {
+    let type_ = module.types.get(cur_ty);
+    if type_.is_none() {
+        return module.find_enum(cur_ty).is_some();
+    }
+    let type_ = type_.unwrap();
+
+    let cur = iter.next();
+    if cur.is_none() {
+        return Scalar::is_predefined(cur_ty) || module.find_enum(cur_ty).is_some();
+    }
+
+    let cur = cur.unwrap();
+    if type_.fields.contains_key(cur) {
+        let next = type_.fields.get(cur).unwrap().type_of.name();
+        check_ty(iter, module, next)
+    } else {
+        false
+    }
+}
+
+fn check_args(mut iter: Iter<String>, module: &ConfigModule, field: &Field) -> bool {
+    let cur = iter.next();
+    if cur.is_none() {
+        return Scalar::is_predefined(field.type_of.name())
+            || module.find_enum(field.type_of.name()).is_some();
+    }
+    let cur = cur.unwrap();
+    field.args.contains_key(cur)
+        && check_ty(
+            iter,
+            module,
+            field.args.get(cur).as_ref().unwrap().type_of.name(),
+        )
+}
+
+fn check_scalar(value: &Mustache, module: &ConfigModule, field: &Field) -> bool {
+    let mut ans = true;
+    for segment in value.segments() {
+        match segment {
+            Segment::Literal(_) => {}
+            Segment::Expression(value) => {
+                if !value.is_empty() && value[0].as_str() == "args" {
+                    ans = check_args(value[1..].iter().clone(), module, field);
+                }
+            }
+        }
+    }
+    ans
+}
+
 pub fn compile_http(
     config_module: &config::ConfigModule,
     http: &config::Http,
-    is_list: bool,
+    field: &Field,
+    is_federation: bool,
 ) -> Valid<IR, String> {
+    let is_list = field.type_of.is_list();
     let dedupe = http.dedupe.unwrap_or_default();
 
     Valid::<(), String>::fail("GroupBy is only supported for GET requests".to_string())
@@ -30,19 +87,22 @@ pub fn compile_http(
         .and(Valid::succeed(http.url.as_str()))
         .zip(helpers::headers::to_mustache_headers(&http.headers))
         .and_then(|(base_url, headers)| {
-            let query = http
-                .query
-                .clone()
-                .iter()
-                .map(|key_value| {
-                    (
-                        key_value.key.clone(),
-                        key_value.value.clone(),
-                        key_value.skip_empty.unwrap_or_default(),
-                    )
-                })
-                .collect();
+            Valid::from_iter(http.query.clone(), |key_value| {
+                let mustache = Mustache::parse(key_value.value.as_str());
+                let mut ans = Valid::succeed((
+                    key_value.key,
+                    key_value.value,
+                    key_value.skip_empty.unwrap_or_default(),
+                ));
+                if !is_federation && !check_scalar(&mustache, config_module, field) {
+                    ans = Valid::fail("Query parameter must be a scalar".to_string());
+                }
 
+                ans
+            })
+            .and_then(|query| Valid::succeed((base_url, headers, query)))
+        })
+        .and_then(|(base_url, headers, query)| {
             RequestTemplate::try_from(
                 Endpoint::new(base_url.to_string())
                     .method(http.method.clone())
@@ -101,7 +161,7 @@ pub fn update_http<'a>(
                 return Valid::succeed(b_field);
             };
 
-            compile_http(config_module, http, field.type_of.is_list())
+            compile_http(config_module, http, field, false)
                 .map(|resolver| b_field.resolver(Some(resolver)))
                 .and_then(|b_field| {
                     b_field
