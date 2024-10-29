@@ -366,21 +366,6 @@ impl<Input> OperationPlan<Input> {
         DFS { stack: vec![self.selection.iter()] }
     }
 
-    /// Search for a field by specified path of nested fields
-    pub fn find_field_path<S: AsRef<str>>(&self, path: &[S]) -> Option<&Field<Input>> {
-        match path.split_first() {
-            None => None,
-            Some((name, path)) => {
-                let field = self.iter_dfs().find(|field| field.name == name.as_ref())?;
-                if path.is_empty() {
-                    Some(field)
-                } else {
-                    self.find_field_path(path)
-                }
-            }
-        }
-    }
-
     /// Returns number of fields in plan
     pub fn size(&self) -> usize {
         fn count<A>(field: &Field<A>) -> usize {
