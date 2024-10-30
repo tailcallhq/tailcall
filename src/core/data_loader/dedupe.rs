@@ -97,6 +97,16 @@ impl<K: Key, V: Value> Dedupe<K, V> {
                         // otherwise we will create in the code below
                         if let Some(tx) = tx.upgrade() {
                             return Step::Await(tx.subscribe());
+                        } else {
+                            let (tx, _) = broadcast::channel(self.size);
+                            let tx = Arc::new(tx);
+                            // Store a Weak version of tx and pass actual tx to further handling
+                            // to control if tx is still alive and will be able to handle the request.
+                            // Only single `strong` reference to tx should exist so we can
+                            // understand when the execution is still alive and we'll get the response
+                            self.cache
+                                .insert(key.to_owned(), State::Pending(Arc::downgrade(&tx)));
+                            Step::Init(tx)
                         }
                     }
                 }
@@ -111,18 +121,7 @@ impl<K: Key, V: Value> Dedupe<K, V> {
                 entry.insert(State::Pending(Arc::downgrade(&tx)));
                 return Step::Init(tx);
             }
-        };
-
-        // TODO: ideally, we won't reach here.
-        let (tx, _) = broadcast::channel(self.size);
-        let tx = Arc::new(tx);
-        // Store a Weak version of tx and pass actual tx to further handling
-        // to control if tx is still alive and will be able to handle the request.
-        // Only single `strong` reference to tx should exist so we can
-        // understand when the execution is still alive and we'll get the response
-        self.cache
-            .insert(key.to_owned(), State::Pending(Arc::downgrade(&tx)));
-        Step::Init(tx)
+        }
     }
 }
 
