@@ -595,6 +595,14 @@
             "null"
           ]
         },
+        "depth": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0.0
+        },
         "headers": {
           "description": "The headers parameter allows you to customize the headers of the GraphQL request made by the `@graphQL` operator. It is used by specifying a key-value map of header names and their values.",
           "type": "array",

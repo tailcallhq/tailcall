@@ -79,6 +79,7 @@ directive @graphQL(
   as nonce-based APIs.
   """
   dedupe: Boolean
+  depth: Int
   """
   The headers parameter allows you to customize the headers of the GraphQL request 
   made by the `@graphQL` operator. It is used by specifying a key-value map of header 
@@ -797,6 +798,7 @@ input GraphQL {
   as nonce-based APIs.
   """
   dedupe: Boolean
+  depth: Int
   """
   The headers parameter allows you to customize the headers of the GraphQL request 
   made by the `@graphQL` operator. It is used by specifying a key-value map of header 

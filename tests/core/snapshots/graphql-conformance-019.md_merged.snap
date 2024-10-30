@@ -1,0 +1,29 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server(hostname: "0.0.0.0", port: 8000) @upstream {
+  query: Query
+}
+
+type NodeA {
+  name: String
+  nodeB: NodeB
+  nodeC: NodeC
+}
+
+type NodeB {
+  name: String
+  nodeA: NodeA
+  nodeC: NodeC
+}
+
+type NodeC {
+  name: String
+  nodeA: NodeA
+  nodeB: NodeB
+}
+
+type Query {
+  queryNodeA: NodeA @graphQL(url: "http://upstream/graphql", name: "nodeA", depth: 3)
+}
