@@ -56,8 +56,8 @@ pub struct GraphQL {
     /// with APIs that expect unique results for identical inputs, such as
     /// nonce-based APIs.
     pub dedupe: Option<bool>,
+
     /// Specifies the maximum depth for nested queries.
-    ///
     /// When set, this value determines the depth of nested queries beyond which
     /// no further subfields will be returned. This helps to limit the complexity
     /// and size of the query results. If this value is not set, the default depth
