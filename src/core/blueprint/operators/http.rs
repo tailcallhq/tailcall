@@ -12,6 +12,7 @@ use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
 use crate::core::{config, helpers, Mustache};
 
+// Recursively check if the leaf type is a scalar
 fn check_ty(mut iter: Iter<String>, module: &ConfigModule, cur_ty: &str) -> bool {
     let type_ = module.types.get(cur_ty);
     if type_.is_none() {
@@ -25,14 +26,15 @@ fn check_ty(mut iter: Iter<String>, module: &ConfigModule, cur_ty: &str) -> bool
     }
 
     let cur = cur.unwrap();
-    if type_.fields.contains_key(cur) {
-        let next = type_.fields.get(cur).unwrap().type_of.name();
+    if let Some(next_field) = type_.fields.get(cur) {
+        let next = next_field.type_of.name();
         check_ty(iter, module, next)
     } else {
         false
     }
 }
 
+// Check if args are scalar
 fn check_args(mut iter: Iter<String>, module: &ConfigModule, field: &Field) -> bool {
     let cur = iter.next();
     if cur.is_none() {
@@ -40,14 +42,16 @@ fn check_args(mut iter: Iter<String>, module: &ConfigModule, field: &Field) -> b
             || module.find_enum(field.type_of.name()).is_some();
     }
     let cur = cur.unwrap();
-    field.args.contains_key(cur)
-        && check_ty(
-            iter,
-            module,
-            field.args.get(cur).as_ref().unwrap().type_of.name(),
-        )
+
+    if let Some(next) = field.args.get(cur).as_ref() {
+        check_ty(iter, module, next.type_of.name())
+    } else {
+        false
+    }
 }
 
+// Pattern matching on the Mustache segments and iterate over nested types
+// to check if the leaf type is a scalar
 fn check_scalar(value: &Mustache, module: &ConfigModule, field: &Field) -> bool {
     let mut ans = true;
     for segment in value.segments() {
@@ -94,6 +98,10 @@ pub fn compile_http(
                     key_value.value,
                     key_value.skip_empty.unwrap_or_default(),
                 ));
+
+                // in the case when directive is defined on type
+                // we don't have any args to check for, so we can
+                // skip this check
                 if !is_federation && !check_scalar(&mustache, config_module, field) {
                     ans = Valid::fail("Query parameter must be a scalar".to_string());
                 }
