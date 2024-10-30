@@ -161,7 +161,8 @@ tailcall-typedefs-common = { path = "./tailcall-typedefs-common" }
 tonic-types = "0.12.1"
 base64 = "0.22.1"
 tailcall-hasher = { path = "tailcall-hasher" }
-serde_json_borrow = "0.7.0"
+# TODO: drop git ref when new version is released
+serde_json_borrow = { version = "0.7.0", default-features = false, git = "https://github.com/meskill/serde_json_borrow", branch = "perf/object-vec-initializer" }
 pluralizer = "0.4.0"
 path-clean = "=1.0.1"
 pathdiff = "0.2.1"

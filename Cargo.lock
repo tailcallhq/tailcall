@@ -4972,8 +4972,7 @@ dependencies = [
 [[package]]
 name = "serde_json_borrow"
 version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "44c8dc27b181f9294b9cd937ae4375414cd0a77f542a34e063ced1e47ed2ceaa"
+source = "git+https://github.com/meskill/serde_json_borrow?branch=perf/object-vec-initializer#d7f0d39da5e457d57612f4d32501053710c56adc"
 dependencies = [
  "serde",
  "serde_json",
