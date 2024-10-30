@@ -16,8 +16,8 @@ impl<'obj> JsonObjectLike<'obj> for serde_json::Map<String, Value> {
         serde_json::Map::with_capacity(n)
     }
 
-    fn from_vec(v: Vec<(&'obj str, Self::Value)>) -> Self {
-        Map::from_iter(v.into_iter().map(|(k, v)| (k.to_string(), v)))
+    fn from_iter(iter: impl IntoIterator<Item = (&'obj str, Self::Value)>) -> Self {
+        <Map<_, _> as FromIterator<_>>::from_iter(iter.into_iter().map(|(k, v)| (k.to_string(), v)))
     }
 
     fn get_key(&self, key: &str) -> Option<&Value> {

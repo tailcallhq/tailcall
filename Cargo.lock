@@ -1580,6 +1580,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e8c02a5121d4ea3eb16a80748c74f5549a5665e4c21333c6098f283870fbdea6"
 
 [[package]]
+name = "first-err"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "17b3a093cdda09f5fbd75a2f0a894fa15891c16c42a71cc01c76cfe34239dcd8"
+
+[[package]]
 name = "fixedbitset"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4972,8 +4978,7 @@ dependencies = [
 [[package]]
 name = "serde_json_borrow"
 version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "44c8dc27b181f9294b9cd937ae4375414cd0a77f542a34e063ced1e47ed2ceaa"
+source = "git+https://github.com/PSeitz/serde_json_borrow#d7f0d39da5e457d57612f4d32501053710c56adc"
 dependencies = [
  "serde",
  "serde_json",
@@ -5402,6 +5407,7 @@ dependencies = [
  "derive_setters",
  "dotenvy",
  "exitcode",
+ "first-err",
  "flate2",
  "fnv",
  "futures-channel",

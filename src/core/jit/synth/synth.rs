@@ -1,5 +1,7 @@
 use std::borrow::Cow;
 
+use first_err::FirstErr;
+
 use crate::core::jit::model::{Field, OperationPlan, Variables};
 use crate::core::jit::store::{DataPath, Store};
 use crate::core::jit::{Error, PathSegment, Positioned, ValidationError};
@@ -189,26 +191,27 @@ where
         } else {
             match (value.as_array(), value.as_object()) {
                 (_, Some(obj)) => {
-                    let mut fields = Vec::with_capacity(node.selection.len());
-
-                    for child in node
+                    let fields = node
                         .iter()
-                        .filter(|field| self.plan.field_is_part_of_value(field, value))
-                    {
-                        // all checks for skip must occur in `iter_inner`
-                        // and include be checked before calling `iter` or recursing.
-                        if self.include(child) {
+                        .filter(|child| {
+                            self.plan.field_is_part_of_value(child, value) && self.include(child)
+                        })
+                        .map(|child| {
+                            // all checks for skip must occur in `iter_inner`
+                            // and include be checked before calling `iter` or recursing.
                             let value = if child.name == "__typename" {
                                 Output::string(node.value_type(value).into())
                             } else {
                                 let val = obj.get_key(child.name.as_str());
                                 self.iter(child, val, data_path, path, None)?
                             };
-                            fields.push((child.output_name.as_str(), value));
-                        }
-                    }
 
-                    Ok(Output::object(Output::JsonObject::from_vec(fields)))
+                            Ok::<_, Positioned<Error>>((child.output_name.as_str(), value))
+                        });
+
+                    Ok(fields.first_err_or_else(|iter| {
+                        Output::object(Output::JsonObject::from_iter(iter))
+                    })?)
                 }
                 (Some(arr), _) => {
                     let mut ans = Vec::with_capacity(arr.len());

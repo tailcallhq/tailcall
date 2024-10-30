@@ -18,8 +18,10 @@ impl<'obj, Value: JsonLike<'obj>> JsonObjectLike<'obj> for IndexMap<Name, Value>
         IndexMap::with_capacity(n)
     }
 
-    fn from_vec(v: Vec<(&'obj str, Self::Value)>) -> Self {
-        IndexMap::from_iter(v.into_iter().map(|(k, v)| (Name::new(k), v)))
+    fn from_iter(iter: impl IntoIterator<Item = (&'obj str, Self::Value)>) -> Self {
+        <IndexMap<_, _> as FromIterator<_>>::from_iter(
+            iter.into_iter().map(|(k, v)| (Name::new(k), v)),
+        )
     }
 
     fn get_key(&self, key: &str) -> Option<&Self::Value> {

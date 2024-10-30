@@ -32,7 +32,7 @@ pub trait JsonLike<'json>: Sized {
                 fields.push((k, Self::clone_from(v)));
             }
 
-            Self::object(Self::JsonObject::from_vec(fields))
+            Self::object(Self::JsonObject::from_iter(fields))
         } else if let Some(arr) = other.as_array() {
             let v = arr.iter().map(Self::clone_from).collect();
 
@@ -68,7 +68,7 @@ pub trait JsonObjectLike<'obj>: Sized {
     type Value;
     fn new() -> Self;
     fn with_capacity(n: usize) -> Self;
-    fn from_vec(v: Vec<(&'obj str, Self::Value)>) -> Self;
+    fn from_iter(iter: impl IntoIterator<Item = (&'obj str, Self::Value)>) -> Self;
     fn get_key(&self, key: &str) -> Option<&Self::Value>;
     fn insert_key(&mut self, key: &'obj str, value: Self::Value);
     fn iter<'slf>(&'slf self) -> impl Iterator<Item = (&'slf str, &'slf Self::Value)>

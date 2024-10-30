@@ -16,8 +16,8 @@ impl<'ctx> JsonObjectLike<'ctx> for ObjectAsVec<'ctx> {
         ObjectAsVec::from(Vec::with_capacity(n))
     }
 
-    fn from_vec(v: Vec<(&'ctx str, Self::Value)>) -> Self {
-        ObjectAsVec::from(v)
+    fn from_iter(iter: impl IntoIterator<Item = (&'ctx str, Self::Value)>) -> Self {
+        <ObjectAsVec<'_> as FromIterator<_>>::from_iter(iter)
     }
 
     fn get_key(&self, key: &str) -> Option<&Self::Value> {
