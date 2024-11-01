@@ -1,4 +1,3 @@
-use anyhow::{bail, Result};
 use http::{HeaderMap, Method};
 use reqwest::Request;
 use url::Url;
@@ -21,7 +20,7 @@ pub async fn execute_grpc_request(
     runtime: &TargetRuntime,
     operation: &ProtobufOperation,
     request: Request,
-) -> Result<Response<async_graphql::Value>> {
+) -> miette::Result<Response<async_graphql::Value>> {
     let response = runtime.http2_only.execute(request).await?;
 
     let grpc_status = response
@@ -33,21 +32,21 @@ pub async fn execute_grpc_request(
         return if grpc_status.is_none() || grpc_status == Some("0") {
             response.to_grpc_value(operation)
         } else {
-            Err(response.to_grpc_error(operation))
+            Err(response.to_grpc_error(operation).into())
         };
     }
-    bail!("Failed to execute request");
+    Err(miette::miette!("Failed to execute request"))
 }
 
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
 
-    use anyhow::Result;
     use async_trait::async_trait;
     use http::header::HeaderMap;
     use http::{Method, StatusCode};
     use hyper::body::Bytes;
+    use miette::{IntoDiagnostic, Result};
     use reqwest::Request;
     use serde_json::json;
     use tailcall_fixtures::protobuf;
@@ -85,13 +84,13 @@ mod tests {
                 }
                 TestScenario::SuccessWithOkGrpcStatus => {
                     let status = Status::ok("");
-                    status.add_header(&mut headers)?;
+                    status.add_header(&mut headers).into_diagnostic()?;
                     Ok(Response { status: StatusCode::OK, headers, body: message })
                 }
                 TestScenario::SuccessWithErrorGrpcStatus => {
                     let status =
                         Status::with_details(Code::InvalidArgument, "description message", error);
-                    status.add_header(&mut headers)?;
+                    status.add_header(&mut headers).into_diagnostic()?;
                     Ok(Response { status: StatusCode::OK, headers, body: Bytes::default() })
                 }
                 TestScenario::Error => Ok(Response {
@@ -172,7 +171,7 @@ mod tests {
                     assert_eq!(*grpc_description, code.description());
                     assert_eq!(*grpc_status_message, "description message");
                     assert_eq!(
-                        serde_json::to_value(grpc_status_details)?,
+                        serde_json::to_value(grpc_status_details).into_diagnostic()?,
                         json!({
                             "code": 3,
                             "message": "error message",

@@ -34,7 +34,7 @@ impl GraphqlDataLoader {
 #[async_trait::async_trait]
 impl Loader<DataLoaderRequest> for GraphqlDataLoader {
     type Value = Response<async_graphql::Value>;
-    type Error = Arc<anyhow::Error>;
+    type Error = Arc<miette::Report>;
 
     #[allow(clippy::mutable_key_type)]
     async fn load(
@@ -92,7 +92,7 @@ fn create_batched_request(dataloader_requests: &[DataLoaderRequest]) -> reqwest:
 
 #[allow(clippy::mutable_key_type)]
 fn extract_responses(
-    result: Result<Response<async_graphql::Value>, anyhow::Error>,
+    result: Result<Response<async_graphql::Value>, miette::Report>,
     keys: &[DataLoaderRequest],
 ) -> HashMap<DataLoaderRequest, Response<async_graphql::Value>> {
     let mut hashmap = HashMap::new();

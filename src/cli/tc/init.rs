@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::path::Path;
 
-use anyhow::Result;
+use miette::{IntoDiagnostic, Result};
 
 use super::helpers::{GRAPHQL_RC, TAILCALL_RC, TAILCALL_RC_SCHEMA};
 use crate::cli::runtime::{confirm_and_write, create_directory, select_prompt};
@@ -10,7 +10,7 @@ use crate::core::merge_right::MergeRight;
 use crate::core::runtime::TargetRuntime;
 use crate::core::{config, Type};
 
-pub(super) async fn init_command(runtime: TargetRuntime, folder_path: &str) -> Result<()> {
+pub(super) async fn init_command(runtime: TargetRuntime, folder_path: &str) -> miette::Result<()> {
     create_directory(folder_path).await?;
 
     let selection = select_prompt(
@@ -68,20 +68,21 @@ fn default_graphqlrc() -> serde_yaml::Value {
 async fn confirm_and_write_yml(
     runtime: TargetRuntime,
     yml_file_path: impl AsRef<Path>,
-) -> Result<()> {
+) -> miette::Result<()> {
     let yml_file_path = yml_file_path.as_ref().display().to_string();
 
     let mut final_graphqlrc = default_graphqlrc();
 
     match runtime.file.read(yml_file_path.as_ref()).await {
         Ok(yml_content) => {
-            let graphqlrc: serde_yaml::Value = serde_yaml::from_str(&yml_content)?;
+            let graphqlrc: serde_yaml::Value =
+                serde_yaml::from_str(&yml_content).into_diagnostic()?;
             final_graphqlrc = graphqlrc.merge_right(final_graphqlrc);
-            let content = serde_yaml::to_string(&final_graphqlrc)?;
+            let content = serde_yaml::to_string(&final_graphqlrc).into_diagnostic()?;
             confirm_and_write(runtime.clone(), &yml_file_path, content.as_bytes()).await
         }
         Err(_) => {
-            let content = serde_yaml::to_string(&final_graphqlrc)?;
+            let content = serde_yaml::to_string(&final_graphqlrc).into_diagnostic()?;
             runtime.file.write(&yml_file_path, content.as_bytes()).await
         }
     }

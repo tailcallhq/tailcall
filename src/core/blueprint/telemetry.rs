@@ -31,26 +31,27 @@ pub struct Telemetry {
     pub request_headers: Vec<String>,
 }
 
-fn to_url(url: &str) -> Valid<Url, String> {
-    Valid::from(Url::parse(url).map_err(|e| ValidationError::new(e.to_string()))).trace("url")
+fn to_url(url: &str) -> Valid<Url, miette::MietteDiagnostic> {
+    Valid::from(Url::parse(url).map_err(|e| ValidationError::new(miette::diagnostic!("{}", e))))
+        .trace("url")
 }
 
-fn to_headers(headers: Vec<KeyValue>) -> Valid<HeaderMap, String> {
+fn to_headers(headers: Vec<KeyValue>) -> Valid<HeaderMap, miette::MietteDiagnostic> {
     Valid::from_iter(headers.iter(), |key_value| {
         Valid::from(
             HeaderName::from_str(&key_value.key)
-                .map_err(|err| ValidationError::new(err.to_string())),
+                .map_err(|err| ValidationError::new(miette::diagnostic!("{}", err))),
         )
         .zip(Valid::from(
             HeaderValue::from_str(&key_value.value)
-                .map_err(|err| ValidationError::new(err.to_string())),
+                .map_err(|err| ValidationError::new(miette::diagnostic!("{}", err))),
         ))
     })
     .map(HeaderMap::from_iter)
     .trace("headers")
 }
 
-pub fn to_opentelemetry<'a>() -> TryFold<'a, ConfigModule, Telemetry, String> {
+pub fn to_opentelemetry<'a>() -> TryFold<'a, ConfigModule, Telemetry, miette::MietteDiagnostic> {
     TryFoldConfig::<Telemetry>::new(|config, up| {
         if let Some(export) = config.telemetry.export.as_ref() {
             let export = match export {
@@ -80,25 +81,26 @@ pub fn to_opentelemetry<'a>() -> TryFold<'a, ConfigModule, Telemetry, String> {
     })
 }
 
-fn validate_apollo(apollo: Apollo) -> Valid<Apollo, String> {
+fn validate_apollo(apollo: Apollo) -> Valid<Apollo, miette::MietteDiagnostic> {
     validate_graph_ref(&apollo.graph_ref)
         .map(|_| apollo)
         .trace("apollo.graph_ref")
 }
 
-fn validate_graph_ref(graph_ref: &str) -> Valid<(), String> {
+fn validate_graph_ref(graph_ref: &str) -> Valid<(), miette::MietteDiagnostic> {
     let is_valid = regex::Regex::new(r"^[A-Za-z0-9-_]+@[A-Za-z0-9-_]+$")
         .unwrap()
         .is_match(graph_ref);
     if is_valid {
         Valid::succeed(())
     } else {
-        Valid::fail(format!("`graph_ref` should be in the format <graph_id>@<variant> where `graph_id` and `variant` can only contain letters, numbers, '-' and '_'. Found {graph_ref}").to_string())
+        Valid::fail(miette::diagnostic!("`graph_ref` should be in the format <graph_id>@<variant> where `graph_id` and `variant` can only contain letters, numbers, '-' and '_'. Found {graph_ref}"))
     }
 }
 
 #[cfg(test)]
 mod tests {
+
     use super::validate_graph_ref;
     use crate::core::valid::Valid;
 
@@ -106,7 +108,7 @@ mod tests {
     fn test_validate_graph_ref() {
         let success = || Valid::succeed(());
         let failure = |graph_ref| {
-            Valid::fail(format!("`graph_ref` should be in the format <graph_id>@<variant> where `graph_id` and `variant` can only contain letters, numbers, '-' and '_'. Found {graph_ref}").to_string())
+            Valid::fail(miette::diagnostic!("`graph_ref` should be in the format <graph_id>@<variant> where `graph_id` and `variant` can only contain letters, numbers, '-' and '_'. Found {graph_ref}"))
         };
 
         assert_eq!(validate_graph_ref("graph_id@variant"), success());

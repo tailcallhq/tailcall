@@ -1,8 +1,8 @@
 use std::hash::{Hash, Hasher};
 
-use anyhow::Result;
 use derive_setters::Setters;
 use http::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
+use miette::{IntoDiagnostic, Result};
 use tailcall_hasher::TailcallHasher;
 use url::Url;
 
@@ -59,7 +59,7 @@ impl Hash for RenderedRequestTemplate {
 
 impl RequestTemplate {
     fn create_url<C: PathString>(&self, ctx: &C) -> Result<Url> {
-        let url = url::Url::parse(self.url.render(ctx).as_str())?;
+        let url = url::Url::parse(self.url.render(ctx).as_str()).into_diagnostic()?;
 
         Ok(url)
     }

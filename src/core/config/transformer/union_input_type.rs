@@ -26,9 +26,9 @@ pub struct UnionInputType;
 
 impl Transform for UnionInputType {
     type Value = Config;
-    type Error = String;
+    type Error = miette::MietteDiagnostic;
 
-    fn transform(&self, mut config: Config) -> Valid<Config, String> {
+    fn transform(&self, mut config: Config) -> Valid<Config, miette::MietteDiagnostic> {
         let visitor = Visitor::new(&config);
 
         let new_types = visitor.visit();

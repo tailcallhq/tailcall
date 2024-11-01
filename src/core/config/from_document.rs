@@ -17,7 +17,7 @@ use crate::core::config::{
     Variant,
 };
 use crate::core::directive::DirectiveCodec;
-use crate::core::valid::{Valid, ValidationError, Validator};
+use crate::core::valid::{Valid, Validator};
 
 const DEFAULT_SCHEMA_DEFINITION: &SchemaDefinition = &SchemaDefinition {
     extend: false,
@@ -27,7 +27,7 @@ const DEFAULT_SCHEMA_DEFINITION: &SchemaDefinition = &SchemaDefinition {
     subscription: None,
 };
 
-pub fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
+pub fn from_document(doc: ServiceDocument) -> Valid<Config, miette::MietteDiagnostic> {
     let type_definitions: Vec<_> = doc
         .definitions
         .iter()
@@ -65,7 +65,7 @@ pub fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
     })
 }
 
-fn schema_definition(doc: &ServiceDocument) -> Valid<&SchemaDefinition, String> {
+fn schema_definition(doc: &ServiceDocument) -> Valid<&SchemaDefinition, miette::MietteDiagnostic> {
     doc.definitions
         .iter()
         .find_map(|def| match def {
@@ -78,7 +78,7 @@ fn schema_definition(doc: &ServiceDocument) -> Valid<&SchemaDefinition, String> 
 fn process_schema_directives<T: DirectiveCodec + Default>(
     schema_definition: &SchemaDefinition,
     directive_name: &str,
-) -> Valid<T, String> {
+) -> Valid<T, miette::MietteDiagnostic> {
     let mut res = Valid::succeed(T::default());
     for directive in schema_definition.directives.iter() {
         if directive.node.name.node.as_ref() == directive_name {
@@ -91,8 +91,8 @@ fn process_schema_directives<T: DirectiveCodec + Default>(
 fn process_schema_multiple_directives<T: DirectiveCodec + Default>(
     schema_definition: &SchemaDefinition,
     directive_name: &str,
-) -> Valid<Vec<T>, String> {
-    let directives: Vec<Valid<T, String>> = schema_definition
+) -> Valid<Vec<T>, miette::MietteDiagnostic> {
+    let directives: Vec<Valid<T, miette::MietteDiagnostic>> = schema_definition
         .directives
         .iter()
         .filter_map(|directive| {
@@ -107,22 +107,22 @@ fn process_schema_multiple_directives<T: DirectiveCodec + Default>(
     Valid::from_iter(directives, |item| item)
 }
 
-fn server(schema_definition: &SchemaDefinition) -> Valid<Server, String> {
+fn server(schema_definition: &SchemaDefinition) -> Valid<Server, miette::MietteDiagnostic> {
     process_schema_directives(schema_definition, config::Server::directive_name().as_str())
 }
 
-fn upstream(schema_definition: &SchemaDefinition) -> Valid<Upstream, String> {
+fn upstream(schema_definition: &SchemaDefinition) -> Valid<Upstream, miette::MietteDiagnostic> {
     process_schema_directives(
         schema_definition,
         config::Upstream::directive_name().as_str(),
     )
 }
 
-fn links(schema_definition: &SchemaDefinition) -> Valid<Vec<Link>, String> {
+fn links(schema_definition: &SchemaDefinition) -> Valid<Vec<Link>, miette::MietteDiagnostic> {
     process_schema_multiple_directives(schema_definition, config::Link::directive_name().as_str())
 }
 
-fn telemetry(schema_definition: &SchemaDefinition) -> Valid<Telemetry, String> {
+fn telemetry(schema_definition: &SchemaDefinition) -> Valid<Telemetry, miette::MietteDiagnostic> {
     process_schema_directives(
         schema_definition,
         super::Telemetry::directive_name().as_str(),
@@ -144,7 +144,7 @@ fn pos_name_to_string(pos: &Positioned<Name>) -> String {
 }
 fn to_types(
     type_definitions: &Vec<&Positioned<TypeDefinition>>,
-) -> Valid<BTreeMap<String, config::Type>, String> {
+) -> Valid<BTreeMap<String, config::Type>, miette::MietteDiagnostic> {
     Valid::from_iter(type_definitions, |type_definition| {
         let type_name = pos_name_to_string(&type_definition.node.name);
         match type_definition.node.kind.clone() {
@@ -168,7 +168,6 @@ fn to_types(
                 &type_definition.node.description,
                 &type_definition.node.directives,
             )
-            .trace(&type_name)
             .some(),
             TypeKind::Union(_) => Valid::none(),
             TypeKind::Scalar => Valid::succeed(Some(to_scalar_type())),
@@ -187,7 +186,7 @@ fn to_scalar_type() -> config::Type {
 }
 fn to_union_types(
     type_definitions: &[&Positioned<TypeDefinition>],
-) -> Valid<BTreeMap<String, Union>, String> {
+) -> Valid<BTreeMap<String, Union>, miette::MietteDiagnostic> {
     Valid::from_iter(type_definitions.iter(), |type_definition| {
         let type_name = pos_name_to_string(&type_definition.node.name);
         let type_opt = match type_definition.node.kind.clone() {
@@ -208,7 +207,7 @@ fn to_union_types(
 
 fn to_enum_types(
     type_definitions: &[&Positioned<TypeDefinition>],
-) -> Valid<BTreeMap<String, Enum>, String> {
+) -> Valid<BTreeMap<String, Enum>, miette::MietteDiagnostic> {
     Valid::from_iter(type_definitions.iter(), |type_definition| {
         let type_name = pos_name_to_string(&type_definition.node.name);
         let type_opt = match type_definition.node.kind.clone() {
@@ -231,7 +230,7 @@ fn to_object_type<T>(
     object: &T,
     description: &Option<Positioned<String>>,
     directives: &[Positioned<ConstDirective>],
-) -> Valid<config::Type, String>
+) -> Valid<config::Type, miette::MietteDiagnostic>
 where
     T: ObjectLike,
 {
@@ -265,7 +264,7 @@ fn to_input_object(
     input_object_type: InputObjectType,
     description: &Option<Positioned<String>>,
     directives: &[Positioned<ConstDirective>],
-) -> Valid<config::Type, String> {
+) -> Valid<config::Type, miette::MietteDiagnostic> {
     to_input_object_fields(&input_object_type.fields)
         .fuse(Protected::from_directives(directives.iter()))
         .map(|(fields, protected)| {
@@ -277,9 +276,9 @@ fn to_input_object(
 fn to_fields_inner<T, F>(
     fields: &Vec<Positioned<T>>,
     transform: F,
-) -> Valid<BTreeMap<String, config::Field>, String>
+) -> Valid<BTreeMap<String, config::Field>, miette::MietteDiagnostic>
 where
-    F: Fn(&T) -> Valid<config::Field, String>,
+    F: Fn(&T) -> Valid<config::Field, miette::MietteDiagnostic>,
     T: HasName,
 {
     Valid::from_iter(fields, |field| {
@@ -290,18 +289,20 @@ where
 }
 fn to_fields(
     fields: &Vec<Positioned<FieldDefinition>>,
-) -> Valid<BTreeMap<String, config::Field>, String> {
+) -> Valid<BTreeMap<String, config::Field>, miette::MietteDiagnostic> {
     to_fields_inner(fields, to_field)
 }
 fn to_input_object_fields(
     input_object_fields: &Vec<Positioned<InputValueDefinition>>,
-) -> Valid<BTreeMap<String, config::Field>, String> {
+) -> Valid<BTreeMap<String, config::Field>, miette::MietteDiagnostic> {
     to_fields_inner(input_object_fields, to_input_object_field)
 }
-fn to_field(field_definition: &FieldDefinition) -> Valid<config::Field, String> {
+fn to_field(field_definition: &FieldDefinition) -> Valid<config::Field, miette::MietteDiagnostic> {
     to_common_field(field_definition, to_args(field_definition), None)
 }
-fn to_input_object_field(field_definition: &InputValueDefinition) -> Valid<config::Field, String> {
+fn to_input_object_field(
+    field_definition: &InputValueDefinition,
+) -> Valid<config::Field, miette::MietteDiagnostic> {
     to_common_field(
         field_definition,
         IndexMap::new(),
@@ -315,7 +316,7 @@ fn to_common_field<F>(
     field: &F,
     args: IndexMap<String, config::Arg>,
     default_value: Option<ConstValue>,
-) -> Valid<config::Field, String>
+) -> Valid<config::Field, miette::MietteDiagnostic>
 where
     F: FieldLike + HasName,
 {
@@ -325,7 +326,14 @@ where
     let default_value = default_value
         .map(ConstValue::into_json)
         .transpose()
-        .map_err(|err| ValidationError::new(err.to_string()))
+        .map_err(|err| {
+            miette::diagnostic!(
+                code = "config::from_document::to_common_field",
+                help = "Check the json values provided to field",
+                "{}",
+                err
+            )
+        })
         .into();
     let doc = description.to_owned().map(|pos| pos.node);
 
@@ -394,7 +402,7 @@ fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
     config::Arg { type_of: type_of.into(), doc, modify, default_value }
 }
 
-fn to_union(union_type: UnionType, doc: &Option<String>) -> Valid<Union, String> {
+fn to_union(union_type: UnionType, doc: &Option<String>) -> Valid<Union, miette::MietteDiagnostic> {
     let types = union_type
         .members
         .iter()
@@ -404,7 +412,7 @@ fn to_union(union_type: UnionType, doc: &Option<String>) -> Valid<Union, String>
     Valid::succeed(Union { types, doc: doc.clone() })
 }
 
-fn to_enum(enum_type: EnumType, doc: Option<String>) -> Valid<Enum, String> {
+fn to_enum(enum_type: EnumType, doc: Option<String>) -> Valid<Enum, miette::MietteDiagnostic> {
     let variants = Valid::from_iter(enum_type.values.iter(), |member| {
         let name = member.node.value.node.as_str().to_owned();
         let alias = member
@@ -423,7 +431,7 @@ fn to_enum(enum_type: EnumType, doc: Option<String>) -> Valid<Enum, String> {
 
 fn to_add_fields_from_directives(
     directives: &[Positioned<ConstDirective>],
-) -> Valid<Vec<config::AddField>, String> {
+) -> Valid<Vec<config::AddField>, miette::MietteDiagnostic> {
     Valid::from_iter(
         directives
             .iter()
@@ -437,7 +445,7 @@ fn to_add_fields_from_directives(
 
 fn to_federation_directives(
     directives: &[Positioned<ConstDirective>],
-) -> Valid<Vec<Directive>, String> {
+) -> Valid<Vec<Directive>, miette::MietteDiagnostic> {
     Valid::from_iter(directives.iter(), |directive| {
         if FEDERATION_DIRECTIVES
             .iter()

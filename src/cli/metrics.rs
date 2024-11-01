@@ -1,8 +1,8 @@
-use anyhow::{anyhow, Result};
+use miette::IntoDiagnostic;
 
 use crate::core::runtime::TargetRuntime;
 
-fn cache_metrics(runtime: &TargetRuntime) -> Result<()> {
+fn cache_metrics(runtime: &TargetRuntime) -> miette::Result<()> {
     let meter = opentelemetry::global::meter("cache");
     let cache = runtime.cache.clone();
     let counter = meter
@@ -10,22 +10,25 @@ fn cache_metrics(runtime: &TargetRuntime) -> Result<()> {
         .with_description("Cache hit rate ratio")
         .init();
 
-    meter.register_callback(&[counter.as_any()], move |observer| {
-        if let Some(hit_rate) = cache.hit_rate() {
-            observer.observe_f64(&counter, hit_rate, &[]);
-        }
-    })?;
+    meter
+        .register_callback(&[counter.as_any()], move |observer| {
+            if let Some(hit_rate) = cache.hit_rate() {
+                observer.observe_f64(&counter, hit_rate, &[]);
+            }
+        })
+        .into_diagnostic()?;
 
     Ok(())
 }
 
-fn process_resources_metrics() -> Result<()> {
+fn process_resources_metrics() -> miette::Result<()> {
     let meter = opentelemetry::global::meter("process-resources");
 
-    opentelemetry_system_metrics::init_process_observer(meter).map_err(|err| anyhow!(err))
+    Ok(opentelemetry_system_metrics::init_process_observer(meter)
+        .map_err(|err| miette::diagnostic!("{}", err))?)
 }
 
-pub fn init_metrics(runtime: &TargetRuntime) -> Result<()> {
+pub fn init_metrics(runtime: &TargetRuntime) -> miette::Result<()> {
     cache_metrics(runtime)?;
     process_resources_metrics()?;
 

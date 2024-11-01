@@ -235,7 +235,7 @@ fn merge_type(type_: &Type, mut merge_into: Type) -> Type {
 
 impl Transform for TypeMerger {
     type Value = Config;
-    type Error = String;
+    type Error = miette::MietteDiagnostic;
     fn transform(&self, config: Config) -> Valid<Self::Value, Self::Error> {
         let config = self.merger(1, config);
         Valid::succeed(config)
@@ -244,6 +244,7 @@ impl Transform for TypeMerger {
 
 #[cfg(test)]
 mod test {
+    use miette::IntoDiagnostic;
     use tailcall_fixtures;
 
     use super::TypeMerger;
@@ -252,7 +253,7 @@ mod test {
     use crate::core::valid::Validator;
 
     #[test]
-    fn test_cyclic_merge_case() -> anyhow::Result<()> {
+    fn test_cyclic_merge_case() -> miette::Result<()> {
         let str_field = Field { type_of: "String".to_owned().into(), ..Default::default() };
         let int_field = Field { type_of: "Int".to_owned().into(), ..Default::default() };
         let bool_field = Field { type_of: "Boolean".to_owned().into(), ..Default::default() };
@@ -292,7 +293,10 @@ mod test {
         config.types.insert("Query".to_owned(), q_type);
         config = config.query("Query");
 
-        config = TypeMerger::new(0.5).transform(config).to_result()?;
+        config = TypeMerger::new(0.5)
+            .transform(config)
+            .to_result()
+            .into_diagnostic()?;
 
         insta::assert_snapshot!(config.to_sdl());
 
@@ -300,7 +304,7 @@ mod test {
     }
 
     #[test]
-    fn test_type_merger() -> anyhow::Result<()> {
+    fn test_type_merger() -> miette::Result<()> {
         let str_field = Field { type_of: "String".to_owned().into(), ..Default::default() };
         let int_field = Field { type_of: "Int".to_owned().into(), ..Default::default() };
         let bool_field = Field { type_of: "Boolean".to_owned().into(), ..Default::default() };

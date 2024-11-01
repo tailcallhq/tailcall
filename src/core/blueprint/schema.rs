@@ -7,14 +7,15 @@ use crate::core::config::{Config, Field, Type};
 use crate::core::directive::DirectiveCodec;
 use crate::core::valid::{Valid, Validator};
 
-fn validate_query(config: &Config) -> Valid<(), String> {
+fn validate_query(config: &Config) -> Valid<(), miette::MietteDiagnostic> {
     Valid::from_option(
         config.schema.query.clone(),
-        "Query root is missing".to_owned(),
+        miette::diagnostic!("Query root is missing"),
     )
     .and_then(|ref query_type_name| {
         let Some(query) = config.find_type(query_type_name) else {
-            return Valid::fail("Query type is not defined".to_owned()).trace(query_type_name);
+            return Valid::fail(miette::diagnostic!("Query type is not defined"))
+                .trace(query_type_name);
         };
         let mut set = HashSet::new();
         validate_type_has_resolvers(query_type_name, query, &config.types, &mut set)
@@ -29,7 +30,7 @@ fn validate_type_has_resolvers(
     ty: &Type,
     types: &BTreeMap<String, Type>,
     visited: &mut HashSet<String>,
-) -> Valid<(), String> {
+) -> Valid<(), miette::MietteDiagnostic> {
     if ty.scalar() || visited.contains(name) {
         return Valid::succeed(());
     }
@@ -48,29 +49,31 @@ pub fn validate_field_has_resolver(
     field: &Field,
     types: &BTreeMap<String, Type>,
     visited: &mut HashSet<String>,
-) -> Valid<(), String> {
-    Valid::<(), String>::fail("No resolver has been found in the schema".to_owned())
-        .when(|| {
-            if !field.has_resolver() {
-                let type_name = field.type_of.name();
-                if let Some(ty) = types.get(type_name) {
-                    let res = validate_type_has_resolvers(type_name, ty, types, visited);
-                    return !res.is_succeed();
-                }
-
-                return true;
+) -> Valid<(), miette::MietteDiagnostic> {
+    Valid::<(), miette::MietteDiagnostic>::fail(miette::diagnostic!(
+        "No resolver has been found in the schema"
+    ))
+    .when(|| {
+        if !field.has_resolver() {
+            let type_name = field.type_of.name();
+            if let Some(ty) = types.get(type_name) {
+                let res = validate_type_has_resolvers(type_name, ty, types, visited);
+                return !res.is_succeed();
             }
-            false
-        })
-        .trace(name)
+
+            return true;
+        }
+        false
+    })
+    .trace(name)
 }
 
-fn validate_mutation(config: &Config) -> Valid<(), String> {
+fn validate_mutation(config: &Config) -> Valid<(), miette::MietteDiagnostic> {
     let mutation_type_name = config.schema.mutation.as_ref();
 
     if let Some(mutation_type_name) = mutation_type_name {
         let Some(mutation) = config.find_type(mutation_type_name) else {
-            return Valid::fail("Mutation type is not defined".to_owned())
+            return Valid::fail(miette::diagnostic!("Mutation type is not defined"))
                 .trace(mutation_type_name);
         };
         let mut set = HashSet::new();
@@ -86,7 +89,7 @@ pub fn to_schema<'a>() -> TryFoldConfig<'a, SchemaDefinition> {
             .and(validate_mutation(config))
             .and(Valid::from_option(
                 config.schema.query.as_ref(),
-                "Query root is missing".to_owned(),
+                miette::diagnostic!("Query root is missing"),
             ))
             .zip(to_directive(config.server.to_directive()))
             .map(|(query_type_name, directive)| SchemaDefinition {

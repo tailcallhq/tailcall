@@ -5,9 +5,9 @@ use std::str::FromStr;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
-use anyhow::anyhow;
 use http::header::{HeaderName, HeaderValue};
 use hyper::body::Bytes;
+use miette::IntoDiagnostic;
 use tailcall::core::http::Response;
 use tailcall::core::HttpIO;
 
@@ -54,7 +54,7 @@ impl Http {
 
 #[async_trait::async_trait]
 impl HttpIO for Http {
-    async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response<Bytes>> {
+    async fn execute(&self, req: reqwest::Request) -> miette::Result<Response<Bytes>> {
         // Try to find a matching mock for the incoming request.
         let execution_mock = self
             .mocks
@@ -94,7 +94,7 @@ impl HttpIO for Http {
                     });
                 method_match && url_match && headers_match && body_match
             })
-            .ok_or(anyhow!(
+            .ok_or(miette::miette!(
                 "No mock found for request: {:?} {} in {}",
                 req.method(),
                 req.url(),
@@ -107,18 +107,19 @@ impl HttpIO for Http {
         let mock_response = execution_mock.mock.response.clone();
 
         // Build the response with the status code from the mock.
-        let status_code = reqwest::StatusCode::from_u16(mock_response.0.status)?;
+        let status_code =
+            reqwest::StatusCode::from_u16(mock_response.0.status).into_diagnostic()?;
 
         if status_code.is_client_error() || status_code.is_server_error() {
-            return Err(anyhow::format_err!("Status code error"));
+            return Err(miette::miette!("Status code error"));
         }
 
         let mut response = Response { status: status_code, ..Default::default() };
 
         // Insert headers from the mock into the response.
         for (key, value) in mock_response.0.headers {
-            let header_name = HeaderName::from_str(&key)?;
-            let header_value = HeaderValue::from_str(&value)?;
+            let header_name = HeaderName::from_str(&key).into_diagnostic()?;
+            let header_value = HeaderValue::from_str(&value).into_diagnostic()?;
             response.headers.insert(header_name, header_value);
         }
 

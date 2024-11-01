@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use anyhow::{anyhow, Result};
+use miette::IntoDiagnostic;
 use once_cell::sync::Lazy;
 use opentelemetry::logs::{LogError, LogResult};
 use opentelemetry::metrics::{MetricsError, Result as MetricsResult};
@@ -44,12 +44,12 @@ static RESOURCE: Lazy<Resource> = Lazy::new(|| {
     ]))
 });
 
-fn pretty_encoder<T: Serialize>(writer: &mut dyn Write, data: T) -> Result<()> {
+fn pretty_encoder<T: Serialize>(writer: &mut dyn Write, data: T) -> miette::Result<()> {
     // convert to buffer first to use write_all and minimize
     // interleaving for std stream output
-    let buf = serde_json::to_vec_pretty(&data)?;
+    let buf = serde_json::to_vec_pretty(&data).into_diagnostic()?;
 
-    Ok(writer.write_all(&buf)?)
+    writer.write_all(&buf).into_diagnostic()
 }
 
 // TODO: add more options for otlp exporter if needed
@@ -89,7 +89,7 @@ fn set_trace_provider(
             .install_batch(runtime::Tokio)?
             .provider()
             .ok_or(TraceError::Other(
-                anyhow!("Failed to instantiate OTLP provider").into(),
+                miette::diagnostic!("Failed to instantiate OTLP provider").into(),
             ))?,
         // Prometheus works only with metrics
         TelemetryExporter::Prometheus(_) => return Ok(None),
@@ -192,7 +192,7 @@ fn set_tracing_subscriber(subscriber: impl Subscriber + Send + Sync) {
     let _ = tracing::subscriber::set_global_default(subscriber);
 }
 
-pub fn init_opentelemetry(config: Telemetry, runtime: &TargetRuntime) -> anyhow::Result<()> {
+pub fn init_opentelemetry(config: Telemetry, runtime: &TargetRuntime) -> miette::Result<()> {
     if let Some(export) = &config.export {
         global::set_error_handler(|error| {
             if !matches!(
@@ -212,11 +212,12 @@ pub fn init_opentelemetry(config: Telemetry, runtime: &TargetRuntime) -> anyhow:
                     tracing::error!("{}", cli.color(true));
                 });
             }
-        })?;
+        })
+        .into_diagnostic()?;
 
-        let trace_layer = set_trace_provider(export)?;
-        let log_layer = set_logger_provider(export)?;
-        set_meter_provider(export)?;
+        let trace_layer = set_trace_provider(export).into_diagnostic()?;
+        let log_layer = set_logger_provider(export).into_diagnostic()?;
+        set_meter_provider(export).into_diagnostic()?;
 
         global::set_text_map_propagator(TraceContextPropagator::new());
 

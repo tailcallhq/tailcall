@@ -2,6 +2,7 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 
 use async_graphql_extension_apollo_tracing::ApolloTracing;
+use miette::IntoDiagnostic;
 
 use crate::cli::runtime::init;
 use crate::core::app_context::AppContext;
@@ -19,7 +20,7 @@ impl ServerConfig {
     pub async fn new(
         blueprint: Blueprint,
         endpoints: EndpointSet<Unchecked>,
-    ) -> anyhow::Result<Self> {
+    ) -> miette::Result<Self> {
         let mut rt = init(&blueprint);
 
         let mut extensions = vec![];
@@ -36,7 +37,10 @@ impl ServerConfig {
         }
         rt.add_extensions(extensions);
 
-        let endpoints = endpoints.into_checked(&blueprint, rt.clone()).await?;
+        let endpoints = endpoints
+            .into_checked(&blueprint, rt.clone())
+            .await
+            .into_diagnostic()?;
         let app_context = Arc::new(AppContext::new(blueprint.clone(), rt, endpoints));
 
         Ok(Self { app_ctx: app_context, blueprint })

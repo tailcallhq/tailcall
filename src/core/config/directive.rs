@@ -6,7 +6,7 @@ use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::core::valid::{Valid, ValidationError, Validator};
+use crate::core::valid::{Valid, Validator};
 use crate::core::{is_default, pos};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
@@ -17,18 +17,25 @@ pub struct Directive {
     pub arguments: IndexMap<String, Value>,
 }
 
-pub fn to_const_directive(directive: &Directive) -> Valid<ConstDirective, String> {
+pub fn to_const_directive(
+    directive: &Directive,
+) -> Valid<ConstDirective, miette::MietteDiagnostic> {
     Valid::from_iter(directive.arguments.iter(), |(k, v)| {
         let name = pos(Name::new(k.clone()));
         Valid::from(serde_json::from_value(v.clone()).map(pos).map_err(|e| {
-            ValidationError::new(e.to_string()).trace(format!("@{}", directive.name).as_str())
+            miette::diagnostic!(
+                code = "config::directive::to_const_directive",
+                help = "Check the json values provided to the directive",
+                "{}",
+                e
+            )
         }))
         .map(|value| (name, value))
     })
     .map(|arguments| ConstDirective { name: pos(Name::new(directive.name.clone())), arguments })
 }
 
-pub fn to_directive(const_directive: ConstDirective) -> Valid<Directive, String> {
+pub fn to_directive(const_directive: ConstDirective) -> Valid<Directive, miette::MietteDiagnostic> {
     const_directive
         .arguments
         .into_iter()
@@ -38,7 +45,14 @@ pub fn to_directive(const_directive: ConstDirective) -> Valid<Directive, String>
             value.map(|value| (k.node.to_string(), value))
         })
         .collect::<Result<_, _>>()
-        .map_err(|e| ValidationError::new(e.to_string()))
+        .map_err(|e| {
+            miette::diagnostic!(
+                code = "config::directive::to_directive",
+                help = "Check the json values provided to the directive",
+                "{}",
+                e
+            )
+        })
         .map(|arguments| Directive { name: const_directive.name.node.to_string(), arguments })
         .into()
 }

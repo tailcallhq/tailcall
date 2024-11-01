@@ -67,8 +67,7 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
                 .endpoint
                 .output
                 .validate(&response.body)
-                .to_result()
-                .map_err(Error::from)?;
+                .to_result()?;
         }
 
         set_headers(ctx, &response);
@@ -116,7 +115,7 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
 pub async fn execute_request_with_dl<
     'ctx,
     Ctx: ResolverContextLike,
-    Dl: Loader<DataLoaderRequest, Value = Response<async_graphql::Value>, Error = Arc<anyhow::Error>>,
+    Dl: Loader<DataLoaderRequest, Value = Response<async_graphql::Value>, Error = Arc<miette::Report>>,
 >(
     ctx: &EvalContext<'ctx, Ctx>,
     req: Request,
@@ -206,7 +205,7 @@ pub async fn execute_grpc_request_with_dl<
     Dl: Loader<
         grpc::DataLoaderRequest,
         Value = Response<async_graphql::Value>,
-        Error = Arc<anyhow::Error>,
+        Error = Arc<miette::Report>,
     >,
 >(
     ctx: &EvalContext<'_, Ctx>,

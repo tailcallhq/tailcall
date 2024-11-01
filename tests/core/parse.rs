@@ -7,10 +7,10 @@ use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use anyhow::anyhow;
 use async_graphql_value::ConstValue;
 use markdown::mdast::Node;
 use markdown::ParseOptions;
+use miette::IntoDiagnostic;
 use tailcall::cli::javascript;
 use tailcall::core::app_context::AppContext;
 use tailcall::core::blueprint::Blueprint;
@@ -42,7 +42,7 @@ impl Env {
 }
 
 impl ExecutionSpec {
-    pub async fn from_source(path: &Path, contents: String) -> anyhow::Result<Self> {
+    pub async fn from_source(path: &Path, contents: String) -> miette::Result<Self> {
         let ast = markdown::to_mdast(&contents, &ParseOptions::default()).unwrap();
         let mut children = ast
             .children()
@@ -69,14 +69,14 @@ impl ExecutionSpec {
                             if let Some(Node::Text(text)) = heading.children.first() {
                                 name = Some(text.value.clone());
                             } else {
-                                return Err(anyhow!(
+                                return Err(miette::miette!(
                                     "Unexpected content of level 1 heading in {:?}: {:#?}",
                                     path,
                                     heading
                                 ));
                             }
                         } else {
-                            return Err(anyhow!(
+                            return Err(miette::miette!(
                                 "Unexpected double-declaration of test name in {:?}",
                                 path
                             ));
@@ -99,7 +99,7 @@ impl ExecutionSpec {
                                     }
                                 }
                                 _ => {
-                                    return Err(anyhow!(
+                                    return Err(miette::miette!(
                                         "Unexpected header annotation {:?} in {:?}",
                                         expect.value,
                                         path,
@@ -111,27 +111,27 @@ impl ExecutionSpec {
                         // Parse annotation
                         return if runner.is_none() {
                             if let Some(Node::Text(text)) = heading.children.first() {
-                                Err(anyhow!(
+                                Err(miette::miette!(
                                     "Unexpected runner annotation {:?} in {:?}",
                                     text.value,
                                     path,
                                 ))
                             } else {
-                                Err(anyhow!(
+                                Err(miette::miette!(
                                     "Unexpected content of level 5 heading in {:?}: {:#?}",
                                     path,
                                     heading
                                 ))
                             }
                         } else {
-                            Err(anyhow!(
+                            Err(miette::miette!(
                                 "Unexpected double-declaration of runner annotation in {:?}",
                                 path
                             ))
                         };
                     } else if heading.depth == 4 {
                     } else {
-                        return Err(anyhow!(
+                        return Err(miette::miette!(
                             "Unexpected level {} heading in {:?}: {:#?}",
                             heading.depth,
                             path,
@@ -153,7 +153,7 @@ impl ExecutionSpec {
                         let name: &str = &temp_cleaned_meta;
                         if let Some(name) = name.strip_prefix("file:") {
                             if files.insert(name.to_string(), content).is_some() {
-                                return Err(anyhow!(
+                                return Err(miette::miette!(
                                     "Double declaration of file {:?} in {:#?}",
                                     name,
                                     path
@@ -162,7 +162,7 @@ impl ExecutionSpec {
                         } else {
                             let lang = match lang {
                                 Some(x) => Ok(x),
-                                None => Err(anyhow!(
+                                None => Err(miette::miette!(
                                     "Unexpected code block with no specific language in {:?}",
                                     path
                                 )),
@@ -178,38 +178,38 @@ impl ExecutionSpec {
                                 "mock" => {
                                     if mock.is_none() {
                                         mock = match source {
-                                            Source::Json => Ok(serde_json::from_str(&content)?),
-                                            Source::Yml => Ok(serde_yaml::from_str(&content)?),
-                                            _ => Err(anyhow!("Unexpected language in mock block in {:?} (only JSON and YAML are supported)", path)),
+                                            Source::Json => Ok(serde_json::from_str(&content).into_diagnostic()?),
+                                            Source::Yml => Ok(serde_yaml::from_str(&content).into_diagnostic()?),
+                                            _ => Err(miette::miette!("Unexpected language in mock block in {:?} (only JSON and YAML are supported)", path)),
                                         }?;
                                     } else {
-                                        return Err(anyhow!("Unexpected number of mock blocks in {:?} (only one is allowed)", path));
+                                        return Err(miette::miette!("Unexpected number of mock blocks in {:?} (only one is allowed)", path));
                                     }
                                 }
                                 "env" => {
                                     if env.is_none() {
                                         env = match source {
-                                            Source::Json => Ok(serde_json::from_str(&content)?),
-                                            Source::Yml => Ok(serde_yaml::from_str(&content)?),
-                                            _ => Err(anyhow!("Unexpected language in env block in {:?} (only JSON and YAML are supported)", path)),
+                                            Source::Json => Ok(serde_json::from_str(&content).into_diagnostic()?),
+                                            Source::Yml => Ok(serde_yaml::from_str(&content).into_diagnostic()?),
+                                            _ => Err(miette::miette!("Unexpected language in env block in {:?} (only JSON and YAML are supported)", path)),
                                         }?;
                                     } else {
-                                        return Err(anyhow!("Unexpected number of env blocks in {:?} (only one is allowed)", path));
+                                        return Err(miette::miette!("Unexpected number of env blocks in {:?} (only one is allowed)", path));
                                     }
                                 }
                                 "test" => {
                                     if test.is_none() {
                                         test = match source {
-                                            Source::Json => Ok(serde_json::from_str(&content)?),
-                                            Source::Yml => Ok(serde_yaml::from_str(&content)?),
-                                            _ => Err(anyhow!("Unexpected language in test block in {:?} (only JSON and YAML are supported)", path)),
+                                            Source::Json => Ok(serde_json::from_str(&content).into_diagnostic()?),
+                                            Source::Yml => Ok(serde_yaml::from_str(&content).into_diagnostic()?),
+                                            _ => Err(miette::miette!("Unexpected language in test block in {:?} (only JSON and YAML are supported)", path)),
                                         }?;
                                     } else {
-                                        return Err(anyhow!("Unexpected number of test blocks in {:?} (only one is allowed)", path));
+                                        return Err(miette::miette!("Unexpected number of test blocks in {:?} (only one is allowed)", path));
                                     }
                                 }
                                 _ => {
-                                    return Err(anyhow!(
+                                    return Err(miette::miette!(
                                         "Unexpected component {:?} in {:?}: {:#?}",
                                         name,
                                         path,
@@ -219,7 +219,7 @@ impl ExecutionSpec {
                             }
                         }
                     } else {
-                        return Err(anyhow!(
+                        return Err(miette::miette!(
                             "Unexpected content of code in {:?}: {:#?}",
                             path,
                             meta
@@ -236,12 +236,18 @@ impl ExecutionSpec {
                     // above to escape ThematicBreaks like
                     // `---`, `***` or `___`
                 }
-                _ => return Err(anyhow!("Unexpected node in {:?}: {:#?}", path, node)),
+                _ => {
+                    return Err(miette::miette!(
+                        "Unexpected node in {:?}: {:#?}",
+                        path,
+                        node
+                    ))
+                }
             }
         }
 
         if server.is_empty() {
-            return Err(anyhow!(
+            return Err(miette::miette!(
                 "Unexpected blocks in {:?}: You must define a GraphQL Config in an execution test.",
                 path,
             ));
@@ -264,7 +270,7 @@ impl ExecutionSpec {
             sdl_error,
         };
 
-        anyhow::Ok(spec)
+        Ok(spec)
     }
 
     pub async fn app_context(

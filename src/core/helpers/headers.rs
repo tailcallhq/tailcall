@@ -6,11 +6,13 @@ use crate::core::valid::{Valid, ValidationError, Validator};
 
 pub type MustacheHeaders = Vec<(HeaderName, Mustache)>;
 
-pub fn to_mustache_headers(headers: &[KeyValue]) -> Valid<MustacheHeaders, String> {
+pub fn to_mustache_headers(
+    headers: &[KeyValue],
+) -> Valid<MustacheHeaders, miette::MietteDiagnostic> {
     Valid::from_iter(headers.iter(), |key_value| {
         let name = Valid::from(
             HeaderName::from_bytes(key_value.key.as_bytes())
-                .map_err(|e| ValidationError::new(e.to_string())),
+                .map_err(|e| ValidationError::new(miette::diagnostic!("{}", e))),
         )
         .trace(&key_value.key);
 
@@ -23,8 +25,8 @@ pub fn to_mustache_headers(headers: &[KeyValue]) -> Valid<MustacheHeaders, Strin
 
 #[cfg(test)]
 mod tests {
-    use anyhow::Result;
     use http::header::HeaderName;
+    use miette::{IntoDiagnostic, Result};
 
     use super::to_mustache_headers;
     use crate::core::config::KeyValue;
@@ -33,17 +35,23 @@ mod tests {
 
     #[test]
     fn valid_headers() -> Result<()> {
-        let input: Vec<KeyValue> = serde_json::from_str(
-            r#"[{"key": "a", "value": "str"}, {"key": "b", "value": "123"}]"#,
-        )?;
+        let input: Vec<KeyValue> =
+            serde_json::from_str(r#"[{"key": "a", "value": "str"}, {"key": "b", "value": "123"}]"#)
+                .into_diagnostic()?;
 
-        let headers = to_mustache_headers(&input).to_result()?;
+        let headers = to_mustache_headers(&input).to_result().into_diagnostic()?;
 
         assert_eq!(
             headers,
             vec![
-                (HeaderName::from_bytes(b"a")?, Mustache::parse("str")),
-                (HeaderName::from_bytes(b"b")?, Mustache::parse("123"))
+                (
+                    HeaderName::from_bytes(b"a").into_diagnostic()?,
+                    Mustache::parse("str")
+                ),
+                (
+                    HeaderName::from_bytes(b"b").into_diagnostic()?,
+                    Mustache::parse("123")
+                )
             ]
         );
 

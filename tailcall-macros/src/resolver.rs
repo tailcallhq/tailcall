@@ -100,7 +100,7 @@ pub fn expand_resolver_derive(input: DeriveInput) -> syn::Result<TokenStream> {
         impl #name {
             pub fn from_directives(
                 directives: &[Positioned<ConstDirective>],
-            ) -> Valid<Option<Self>, String> {
+            ) -> Valid<Option<Self>, miette::MietteDiagnostic> {
                 let mut result = None;
                 let mut resolvable_directives = Vec::new();
                 let mut valid = Valid::succeed(());
@@ -109,10 +109,9 @@ pub fn expand_resolver_derive(input: DeriveInput) -> syn::Result<TokenStream> {
 
                 valid.and_then(|_| {
                     if resolvable_directives.len() > 1 {
-                        Valid::fail(format!(
-                            "Multiple resolvers detected [{}]",
-                            resolvable_directives.join(", ")
-                        ))
+                        Valid::fail(
+                            miette::diagnostic!( "Multiple resolvers detected [{}]",
+                            resolvable_directives.join(", ")))
                     } else {
                         Valid::succeed(result)
                     }

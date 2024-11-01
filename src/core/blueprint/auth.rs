@@ -33,7 +33,7 @@ pub enum Auth {
 }
 
 impl Auth {
-    pub fn make(config_module: &ConfigModule) -> Valid<Option<Auth>, String> {
+    pub fn make(config_module: &ConfigModule) -> Valid<Option<Auth>, miette::MietteDiagnostic> {
         let htpasswd = config_module.extensions().htpasswd.iter().map(|htpasswd| {
             Auth::Provider(Provider::Basic(Basic {
                 htpasswd: htpasswd.content.clone(),

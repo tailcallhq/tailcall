@@ -83,7 +83,7 @@ impl Server {
 }
 
 impl TryFrom<crate::core::config::ConfigModule> for Server {
-    type Error = ValidationError<String>;
+    type Error = ValidationError<miette::MietteDiagnostic>;
 
     fn try_from(config_module: config::ConfigModule) -> Result<Self, Self::Error> {
         let config_server = config_module.server.clone();
@@ -91,7 +91,7 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
         let http_server = match config_server.clone().get_version() {
             HttpVersion::HTTP2 => {
                 if config_module.extensions().cert.is_empty() {
-                    return Valid::fail("Certificate is required for HTTP2".to_string())
+                    return Valid::fail(miette::diagnostic!("Certificate is required for HTTP2"))
                         .to_result();
                 }
 
@@ -101,7 +101,9 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
                     .extensions()
                     .keys
                     .first()
-                    .ok_or_else(|| ValidationError::new("Key is required for HTTP2".to_string()))?
+                    .ok_or_else(|| {
+                        ValidationError::new(miette::diagnostic!("Key is required for HTTP2"))
+                    })?
                     .clone();
 
                 Valid::succeed(Http::HTTP2 { cert, key })
@@ -157,7 +159,9 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
     }
 }
 
-fn to_script(config_module: &crate::core::config::ConfigModule) -> Valid<Option<Script>, String> {
+fn to_script(
+    config_module: &crate::core::config::ConfigModule,
+) -> Valid<Option<Script>, miette::MietteDiagnostic> {
     config_module.extensions().script.as_ref().map_or_else(
         || Valid::succeed(None),
         |script| {
@@ -174,20 +178,26 @@ fn to_script(config_module: &crate::core::config::ConfigModule) -> Valid<Option<
     )
 }
 
-fn validate_cors(cors: Option<config::cors::Cors>) -> Valid<Option<Cors>, String> {
-    Valid::from(cors.map(|cors| cors.try_into()).transpose())
+fn validate_cors(
+    cors: Option<config::cors::Cors>,
+) -> Valid<Option<Cors>, miette::MietteDiagnostic> {
+    let cors: Option<Cors> = match cors.map(|cors| cors.try_into()).transpose() {
+        Ok(cors) => cors,
+        Err(e) => return Valid::from_validation_err(e),
+    };
+    Valid::succeed(cors)
         .trace("cors")
         .trace("headers")
         .trace("@server")
         .trace("schema")
 }
 
-fn validate_hostname(hostname: String) -> Valid<IpAddr, String> {
+fn validate_hostname(hostname: String) -> Valid<IpAddr, miette::MietteDiagnostic> {
     if hostname == "localhost" {
         Valid::succeed(IpAddr::from([127, 0, 0, 1]))
     } else {
         Valid::from(hostname.parse().map_err(|e: AddrParseError| {
-            ValidationError::new(format!("Parsing failed because of {}", e))
+            ValidationError::new(miette::diagnostic!("Parsing failed because of {}", e))
         }))
         .trace("hostname")
         .trace("@server")
@@ -195,16 +205,16 @@ fn validate_hostname(hostname: String) -> Valid<IpAddr, String> {
     }
 }
 
-fn handle_response_headers(resp_headers: Vec<(String, String)>) -> Valid<HeaderMap, String> {
+fn handle_response_headers(
+    resp_headers: Vec<(String, String)>,
+) -> Valid<HeaderMap, miette::MietteDiagnostic> {
     Valid::from_iter(resp_headers.iter(), |(k, v)| {
-        let name = Valid::from(
-            HeaderName::from_bytes(k.as_bytes())
-                .map_err(|e| ValidationError::new(format!("Parsing failed because of {}", e))),
-        );
-        let value = Valid::from(
-            HeaderValue::from_str(v.as_str())
-                .map_err(|e| ValidationError::new(format!("Parsing failed because of {}", e))),
-        );
+        let name = Valid::from(HeaderName::from_bytes(k.as_bytes()).map_err(|e| {
+            ValidationError::new(miette::diagnostic!("Parsing failed because of {}", e))
+        }));
+        let value = Valid::from(HeaderValue::from_str(v.as_str()).map_err(|e| {
+            ValidationError::new(miette::diagnostic!("Parsing failed because of {}", e))
+        }));
         name.zip(value)
     })
     .map(|headers| headers.into_iter().collect::<HeaderMap>())
@@ -214,18 +224,20 @@ fn handle_response_headers(resp_headers: Vec<(String, String)>) -> Valid<HeaderM
     .trace("schema")
 }
 
-fn handle_experimental_headers(headers: BTreeSet<String>) -> Valid<HashSet<HeaderName>, String> {
+fn handle_experimental_headers(
+    headers: BTreeSet<String>,
+) -> Valid<HashSet<HeaderName>, miette::MietteDiagnostic> {
     Valid::from_iter(headers.iter(), |h| {
         if !h.to_lowercase().starts_with("x-") {
-            Valid::fail(
-                format!(
-                    "Experimental headers must start with 'x-' or 'X-'. Got: '{}'",
-                    h
-                )
-                .to_string(),
-            )
+            Valid::fail(miette::diagnostic!(
+                "Experimental headers must start with 'x-' or 'X-'. Got: '{}'",
+                h
+            ))
         } else {
-            Valid::from(HeaderName::from_str(h).map_err(|e| ValidationError::new(e.to_string())))
+            Valid::from(
+                HeaderName::from_str(h)
+                    .map_err(|e| ValidationError::new(miette::diagnostic!("{}", e))),
+            )
         }
     })
     .map(HashSet::from_iter)

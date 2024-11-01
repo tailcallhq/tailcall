@@ -3,6 +3,7 @@
 
 use std::cell::Cell;
 
+use miette::IntoDiagnostic;
 use tailcall::core::tracing::default_tracing_tailcall;
 use tailcall::core::Errata;
 use tracing::subscriber::DefaultGuard;
@@ -11,7 +12,7 @@ thread_local! {
     static TRACING_GUARD: Cell<Option<DefaultGuard>> = const { Cell::new(None) };
 }
 
-fn run_blocking() -> anyhow::Result<()> {
+fn run_blocking() -> miette::Result<()> {
     let rt = tokio::runtime::Builder::new_current_thread()
         .on_thread_start(|| {
             // initialize default tracing setup for the cli execution for every thread that
@@ -29,11 +30,12 @@ fn run_blocking() -> anyhow::Result<()> {
             TRACING_GUARD.take();
         })
         .enable_all()
-        .build()?;
+        .build()
+        .into_diagnostic()?;
     rt.block_on(async { tailcall::cli::run().await })
 }
 
-fn main() -> anyhow::Result<()> {
+fn main() -> miette::Result<()> {
     // enable tracing subscriber for current thread until this block ends
     // that will show any logs from cli itself to the user
     // despite of @telemetry settings that

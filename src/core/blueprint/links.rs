@@ -5,14 +5,14 @@ use crate::core::valid::{Valid, ValidationError, Validator};
 pub struct Links;
 
 impl TryFrom<Vec<Link>> for Links {
-    type Error = ValidationError<String>;
+    type Error = ValidationError<miette::MietteDiagnostic>;
 
     fn try_from(links: Vec<Link>) -> Result<Self, Self::Error> {
         Valid::from_iter(links.iter().enumerate(), |(pos, link)| {
             Valid::succeed(link.to_owned())
                 .and_then(|link| {
                     if link.src.is_empty() {
-                        Valid::fail("Link src cannot be empty".to_string())
+                        Valid::fail(miette::diagnostic!("Link src cannot be empty"))
                     } else {
                         Valid::succeed(link)
                     }
@@ -20,7 +20,7 @@ impl TryFrom<Vec<Link>> for Links {
                 .and_then(|link| {
                     if let Some(id) = &link.id {
                         if links.iter().filter(|l| l.id.as_ref() == Some(id)).count() > 1 {
-                            return Valid::fail(format!("Duplicated id: {}", id));
+                            return Valid::fail(miette::diagnostic!("Duplicated id: {}", id));
                         }
                     }
                     Valid::succeed(link)
@@ -34,7 +34,7 @@ impl TryFrom<Vec<Link>> for Links {
                 .collect::<Vec<&Link>>();
 
             if script_links.len() > 1 {
-                Valid::fail("Only one script link is allowed".to_string())
+                Valid::fail(miette::diagnostic!("Only one script link is allowed"))
             } else {
                 Valid::succeed(links)
             }
@@ -46,7 +46,7 @@ impl TryFrom<Vec<Link>> for Links {
                 .collect::<Vec<&Link>>();
 
             if key_links.len() > 1 {
-                Valid::fail("Only one key link is allowed".to_string())
+                Valid::fail(miette::diagnostic!("Only one key link is allowed"))
             } else {
                 Valid::succeed(links)
             }

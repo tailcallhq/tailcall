@@ -57,7 +57,7 @@ fn insert_resolution(
 
 impl Transform for AmbiguousType {
     type Value = Config;
-    type Error = String;
+    type Error = miette::MietteDiagnostic;
     fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
         let mut input_types = config.input_types();
         let mut output_types = config.output_types();
@@ -66,11 +66,11 @@ impl Transform for AmbiguousType {
             let resolution = (self.resolver)(current_name);
 
             if !resolution.is_unique() {
-                Valid::fail(format!(
-                    "Unable to auto resolve Input: {} and Output: {} are same",
-                    resolution.input, resolution.output,
+                Valid::fail(miette::diagnostic!(
+                    code = "config::transformer::ambiguous_type::transform",
+                    help = "The specified types are ambiguous, its advised to differentiate them in some way",
+                    "Unable to auto resolve Input: {} and Output: {} are same",resolution.input, resolution.output,
                 ))
-                .trace(current_name)
             } else {
                 let mut resolution_map = HashMap::new();
                 if let Some(ty) = config.types.get(current_name) {
@@ -237,12 +237,12 @@ mod tests {
         assert_snapshot!(config.to_sdl());
     }
 
-    fn compile_protobuf(files: &[&str]) -> anyhow::Result<FileDescriptorSet> {
+    fn compile_protobuf(files: &[&str]) -> miette::Result<FileDescriptorSet> {
         Ok(protox::compile(files, [protobuf::SELF])?)
     }
 
     #[tokio::test]
-    async fn test_resolve_ambiguous_news_types() -> anyhow::Result<()> {
+    async fn test_resolve_ambiguous_news_types() -> miette::Result<()> {
         let news_proto = tailcall_fixtures::protobuf::NEWS;
         let set = compile_protobuf(&[protobuf::NEWS])?;
         let url = "http://localhost:50051".to_string();

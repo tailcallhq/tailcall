@@ -1,3 +1,4 @@
+use miette::Diagnostic;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -29,7 +30,7 @@ const YML_EXT: &str = "yml";
 const GRAPHQL_EXT: &str = "graphql";
 const ALL: [Source; 3] = [Source::Json, Source::Yml, Source::GraphQL];
 
-#[derive(Debug, Error, PartialEq)]
+#[derive(Debug, Error, PartialEq, Diagnostic)]
 #[error("Unsupported config extension: {0}")]
 pub struct UnsupportedConfigFormat(pub String);
 
@@ -68,7 +69,7 @@ impl Source {
     }
 
     /// Encode the config to the given format
-    pub fn encode(&self, config: &Config) -> Result<String, anyhow::Error> {
+    pub fn encode(&self, config: &Config) -> miette::Result<String> {
         match self {
             Source::Yml => Ok(config.to_yaml()?),
             Source::GraphQL => Ok(config.to_sdl()),
@@ -77,13 +78,25 @@ impl Source {
     }
 
     /// Decode the config from the given data
-    pub fn decode(&self, data: &str) -> Result<Config, ValidationError<String>> {
+    pub fn decode(&self, data: &str) -> Result<Config, ValidationError<miette::MietteDiagnostic>> {
         match self {
-            Source::Yml => Config::from_yaml(data).map_err(|e| ValidationError::new(e.to_string())),
+            Source::Yml => Config::from_yaml(data).map_err(|e| {
+                ValidationError::new(miette::diagnostic!(
+                    code = "config::source::decode::yml",
+                    help = "Check the yaml file and fix the errors.",
+                    "{}",
+                    e
+                ))
+            }),
             Source::GraphQL => Config::from_sdl(data).to_result(),
-            Source::Json => {
-                Config::from_json(data).map_err(|e| ValidationError::new(e.to_string()))
-            }
+            Source::Json => Config::from_json(data).map_err(|e| {
+                ValidationError::new(miette::diagnostic!(
+                    code = "config::source::decode::Json",
+                    help = "Check the json file and fix the errors.",
+                    "{}",
+                    e
+                ))
+            }),
         }
     }
 }

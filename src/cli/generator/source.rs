@@ -1,3 +1,4 @@
+use miette::Diagnostic;
 use thiserror::Error;
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -29,6 +30,6 @@ impl ConfigSource {
     }
 }
 
-#[derive(Debug, Error, PartialEq)]
+#[derive(Debug, Error, PartialEq, Diagnostic)]
 #[error("Unsupported config extension: {0}")]
 pub struct UnsupportedFileFormat(String);

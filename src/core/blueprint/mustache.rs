@@ -46,12 +46,12 @@ impl<'a> MustachePartsValidator<'a> {
         Ok(())
     }
 
-    fn validate(&self, parts: &[String], is_query: bool) -> Valid<(), String> {
+    fn validate(&self, parts: &[String], is_query: bool) -> Valid<(), miette::MietteDiagnostic> {
         let config = self.config;
         let args = &self.field.args;
 
         if parts.len() < 2 {
-            return Valid::fail("too few parts in template".to_string());
+            return Valid::fail(miette::diagnostic!("too few parts in template"));
         }
 
         let head = parts[0].as_str();
@@ -63,7 +63,7 @@ impl<'a> MustachePartsValidator<'a> {
                 let tail = &parts[1..];
 
                 if let Err(e) = self.validate_type(tail, is_query) {
-                    return Valid::fail(e);
+                    return Valid::fail(miette::diagnostic!("{}", e));
                 }
             }
             "args" => {
@@ -72,20 +72,26 @@ impl<'a> MustachePartsValidator<'a> {
                 // most cases
                 if let Some(arg) = args.iter().find(|arg| arg.name == tail) {
                     if !is_query && arg.of_type.is_list() {
-                        return Valid::fail(format!("can't use list type '{tail}' here"));
+                        return Valid::fail(miette::diagnostic!(
+                            "can't use list type '{tail}' here"
+                        ));
                     }
 
                     // we can use non-scalar types in args
                     if !is_query && arg.default_value.is_none() && arg.of_type.is_nullable() {
-                        return Valid::fail(format!("argument '{tail}' is a nullable type"));
+                        return Valid::fail(miette::diagnostic!(
+                            "argument '{tail}' is a nullable type"
+                        ));
                     }
                 } else {
-                    return Valid::fail(format!("no argument '{tail}' found"));
+                    return Valid::fail(miette::diagnostic!("no argument '{tail}' found"));
                 }
             }
             "vars" => {
                 if !config.server.vars.iter().any(|vars| vars.key == tail) {
-                    return Valid::fail(format!("var '{tail}' is not set in the server config"));
+                    return Valid::fail(miette::diagnostic!(
+                        "var '{tail}' is not set in the server config"
+                    ));
                 }
             }
             "headers" | "env" => {
@@ -93,7 +99,7 @@ impl<'a> MustachePartsValidator<'a> {
                 // we can't validate here
             }
             _ => {
-                return Valid::fail(format!("unknown template directive '{head}'"));
+                return Valid::fail(miette::diagnostic!("unknown template directive '{head}'"));
             }
         }
 
@@ -102,7 +108,11 @@ impl<'a> MustachePartsValidator<'a> {
 }
 
 impl FieldDefinition {
-    pub fn validate_field(&self, type_of: &config::Type, config: &Config) -> Valid<(), String> {
+    pub fn validate_field(
+        &self,
+        type_of: &config::Type,
+        config: &Config,
+    ) -> Valid<(), miette::MietteDiagnostic> {
         // XXX we could use `Mustache`'s `render` method with a mock
         // struct implementing the `PathString` trait encapsulating `validation_map`
         // but `render` simply falls back to the default value for a given

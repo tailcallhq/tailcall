@@ -204,9 +204,9 @@ impl<'js> FromJs<'js> for WorkerResponse {
 mod test {
     use std::collections::BTreeMap;
 
-    use anyhow::Result;
     use http::header::{HeaderMap, HeaderName, HeaderValue};
     use hyper::body::Bytes;
+    use miette::Result;
     use pretty_assertions::assert_eq;
     use reqwest::Request;
     use rquickjs::{Context, FromJs, IntoJs, Object, Runtime, String as JsString};

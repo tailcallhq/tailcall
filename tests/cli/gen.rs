@@ -72,6 +72,7 @@ pub mod file {
     use std::sync::Arc;
 
     use async_trait::async_trait;
+    use miette::IntoDiagnostic;
     use tailcall::core::FileIO;
     use tokio::sync::RwLock;
 
@@ -79,7 +80,7 @@ pub mod file {
     pub struct NativeFileTest(Arc<RwLock<HashMap<String, String>>>);
     #[async_trait]
     impl FileIO for NativeFileTest {
-        async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
+        async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> miette::Result<()> {
             self.0.write().await.insert(
                 path.to_string(),
                 String::from_utf8_lossy(content).to_string(),
@@ -87,11 +88,11 @@ pub mod file {
             Ok(())
         }
 
-        async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String> {
+        async fn read<'a>(&'a self, path: &'a str) -> miette::Result<String> {
             let val = if let Some(val) = self.0.read().await.get(path).cloned() {
                 val
             } else {
-                std::fs::read_to_string(path)?
+                std::fs::read_to_string(path).into_diagnostic()?
             };
             Ok(val)
         }
@@ -99,9 +100,9 @@ pub mod file {
 }
 
 pub mod http {
-    use anyhow::Result;
     use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
     use hyper::body::Bytes;
+    use miette::{IntoDiagnostic, Result};
     use reqwest::Client;
     use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
     use tailcall::core::http::Response;
@@ -132,9 +133,11 @@ pub mod http {
         async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
             let response = self.client.execute(request).await;
             Ok(Response::from_reqwest(
-                response?
+                response
+                    .into_diagnostic()?
                     .error_for_status()
-                    .map_err(|err| err.without_url())?,
+                    .map_err(|err| err.without_url())
+                    .into_diagnostic()?,
             )
             .await?)
         }
@@ -229,9 +232,9 @@ pub mod test {
     }
 
     mod http {
-        use anyhow::Result;
         use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
         use hyper::body::Bytes;
+        use miette::{IntoDiagnostic, Result};
         use reqwest::Client;
         use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
         use tailcall::core::http::Response;
@@ -262,9 +265,11 @@ pub mod test {
             async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
                 let response = self.client.execute(request).await;
                 Ok(Response::from_reqwest(
-                    response?
+                    response
+                        .into_diagnostic()?
                         .error_for_status()
-                        .map_err(|err| err.without_url())?,
+                        .map_err(|err| err.without_url())
+                        .into_diagnostic()?,
                 )
                 .await?)
             }
@@ -285,7 +290,7 @@ pub mod test {
         use crate::env::Env;
         use crate::parser::{ExecutionSpec, IO};
 
-        pub async fn run_test(original_path: &Path, spec: ExecutionSpec) -> anyhow::Result<()> {
+        pub async fn run_test(original_path: &Path, spec: ExecutionSpec) -> miette::Result<()> {
             let snapshot_name = original_path.to_string_lossy().to_string();
 
             let IO { fs, paths } = spec.configs.into_io().await;

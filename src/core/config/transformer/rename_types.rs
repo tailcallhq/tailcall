@@ -22,7 +22,7 @@ impl RenameTypes {
 
 impl Transform for RenameTypes {
     type Value = Config;
-    type Error = String;
+    type Error = miette::MietteDiagnostic;
 
     fn transform(&self, config: Self::Value) -> Valid<Self::Value, Self::Error> {
         let mut config = config;
@@ -61,7 +61,9 @@ impl Transform for RenameTypes {
 
                 Valid::succeed(())
             } else {
-                Valid::fail(format!(
+                Valid::fail(miette::diagnostic!(
+                    code = "config::transformer::rename_types::transform",
+                    help = "You should define the specified type in the GraphQL schema",
                     "Type '{}' not found in configuration.",
                     existing_name
                 ))
@@ -252,8 +254,16 @@ mod test {
             .transform(config)
             .to_result();
 
-        let b_err = ValidationError::new("Type 'B' not found in configuration.".to_string());
-        let c_err = ValidationError::new("Type 'C' not found in configuration.".to_string());
+        let b_err = ValidationError::new(miette::diagnostic!(
+            code = "config::transformer::rename_types::transform",
+            help = "You should define the specified type in the GraphQL schema",
+            "Type 'B' not found in configuration."
+        ));
+        let c_err = ValidationError::new(miette::diagnostic!(
+            code = "config::transformer::rename_types::transform",
+            help = "You should define the specified type in the GraphQL schema",
+            "Type 'C' not found in configuration."
+        ));
         let expected = Err(b_err.combine(c_err));
         assert_eq!(actual, expected);
     }

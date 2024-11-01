@@ -1,7 +1,7 @@
 use std::ops::Deref;
 use std::sync::Arc;
 
-use anyhow::Result;
+use miette::{IntoDiagnostic, Result};
 use tokio::sync::oneshot::{self};
 
 use super::http_1::start_http_1;
@@ -10,7 +10,6 @@ use super::server_config::ServerConfig;
 use crate::cli::telemetry::init_opentelemetry;
 use crate::core::blueprint::{Blueprint, Http};
 use crate::core::config::ConfigModule;
-use crate::core::Errata;
 
 pub struct Server {
     config_module: ConfigModule,
@@ -32,7 +31,7 @@ impl Server {
 
     /// Starts the server in the current Runtime
     pub async fn start(self) -> Result<()> {
-        let blueprint = Blueprint::try_from(&self.config_module).map_err(Errata::from)?;
+        let blueprint = Blueprint::try_from(&self.config_module)?;
         let endpoints = self.config_module.extensions().endpoint_set.clone();
         let server_config = Arc::new(ServerConfig::new(blueprint.clone(), endpoints).await?);
 
@@ -51,9 +50,13 @@ impl Server {
         let runtime = tokio::runtime::Builder::new_multi_thread()
             .worker_threads(self.config_module.deref().server.get_workers())
             .enable_all()
-            .build()?;
+            .build()
+            .into_diagnostic()?;
 
-        let result = runtime.spawn(async { self.start().await }).await?;
+        let result = runtime
+            .spawn(async { self.start().await })
+            .await
+            .into_diagnostic()?;
         runtime.shutdown_background();
 
         result

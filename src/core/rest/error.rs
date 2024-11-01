@@ -40,7 +40,7 @@ pub enum Error {
     UndefinedParam { key: String, input: String },
 
     #[error("Validation Error : {}", _0)]
-    Validation(ValidationError<std::string::String>),
+    Validation(ValidationError<miette::MietteDiagnostic>),
 
     #[error("Async Graphql Parser Error: {}", _0)]
     ParseGraphQL(async_graphql::parser::Error),

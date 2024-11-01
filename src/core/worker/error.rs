@@ -2,9 +2,10 @@ use std::fmt::Display;
 use std::sync::Arc;
 
 use derive_more::{DebugCustom, From};
+use miette::Diagnostic;
 use tokio::task::JoinError;
 
-#[derive(From, DebugCustom, Clone)]
+#[derive(From, DebugCustom, Clone, Diagnostic, thiserror::Error)]
 pub enum Error {
     #[debug(fmt = "Failed to initialize worker")]
     InitializationFailed,
@@ -57,7 +58,7 @@ pub enum Error {
     FunctionValueParseError(String, String),
 
     #[debug(fmt = "Error : {}", _0)]
-    Anyhow(Arc<anyhow::Error>),
+    Miette(Arc<miette::Error>),
 }
 
 impl From<serde_json::Error> for Error {
@@ -78,9 +79,9 @@ impl From<JoinError> for Error {
     }
 }
 
-impl From<anyhow::Error> for Error {
-    fn from(error: anyhow::Error) -> Self {
-        Error::Anyhow(Arc::new(error))
+impl From<miette::Error> for Error {
+    fn from(error: miette::Error) -> Self {
+        Error::Miette(Arc::new(error))
     }
 }
 
@@ -107,7 +108,7 @@ impl Display for Error {
             Error::DeserializeFailed(error) => write!(f, "Deserialize Failed: {}", error),
             Error::GlobalThisNotInitialised(error) => write!(f, "globalThis not initialized: {}", error),
             Error::FunctionValueParseError(error, name) => write!(f, "Error: {}\nUnable to parse value from js function: {} maybe because it's not returning a string?", error, name),
-            Error::Anyhow(msg) => write!(f, "Error: {}", msg),
+            Error::Miette(msg) => write!(f, "Error: {}", msg),
         }
     }
 }

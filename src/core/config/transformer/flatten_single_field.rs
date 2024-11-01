@@ -53,7 +53,7 @@ fn get_single_field_path(
 
 impl Transform for FlattenSingleField {
     type Value = Config;
-    type Error = String;
+    type Error = miette::MietteDiagnostic;
     fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
         let origin_config = config.clone();
 

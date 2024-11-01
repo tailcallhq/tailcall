@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use anyhow::Result;
 use async_graphql::ServerError;
 use http::{Request, Response};
 use hyper::Body;
+use miette::Result;
 use serde::de::DeserializeOwned;
 use url::Url;
 

@@ -14,9 +14,14 @@ use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, Validator};
 use crate::core::{config, scalar, Type};
 
-pub fn to_scalar_type_definition(name: &str) -> Valid<Definition, String> {
+pub fn to_scalar_type_definition(name: &str) -> Valid<Definition, miette::MietteDiagnostic> {
     if scalar::Scalar::is_predefined(name) {
-        Valid::fail(format!("Scalar type {} is predefined", name))
+        Valid::fail(miette::diagnostic!(
+            code = "blueprint::definitions::to_scalar_type_definition",
+            help = "This type is already defined",
+            "Scalar type {} is predefined",
+            name
+        ))
     } else {
         Valid::succeed(Definition::Scalar(ScalarTypeDefinition {
             name: name.to_string(),
@@ -40,7 +45,7 @@ pub fn to_union_type_definition((name, u): (&String, &Union)) -> Definition {
 
 pub fn to_input_object_type_definition(
     definition: ObjectTypeDefinition,
-) -> Valid<Definition, String> {
+) -> Valid<Definition, miette::MietteDiagnostic> {
     Valid::succeed(Definition::InputObject(InputObjectTypeDefinition {
         name: definition.name,
         fields: definition
@@ -58,7 +63,9 @@ pub fn to_input_object_type_definition(
     }))
 }
 
-pub fn to_interface_type_definition(definition: ObjectTypeDefinition) -> Valid<Definition, String> {
+pub fn to_interface_type_definition(
+    definition: ObjectTypeDefinition,
+) -> Valid<Definition, miette::MietteDiagnostic> {
     Valid::succeed(Definition::Interface(InterfaceTypeDefinition {
         name: definition.name,
         fields: definition.fields,
@@ -68,8 +75,10 @@ pub fn to_interface_type_definition(definition: ObjectTypeDefinition) -> Valid<D
     }))
 }
 
-type InvalidPathHandler = dyn Fn(&str, &[String], &[String]) -> Valid<Type, String>;
-type PathResolverErrorHandler = dyn Fn(&str, &str, &str, &[String]) -> Valid<Type, String>;
+type InvalidPathHandler =
+    dyn Fn(&str, &[String], &[String]) -> Valid<Type, miette::MietteDiagnostic>;
+type PathResolverErrorHandler =
+    dyn Fn(&str, &str, &str, &[String]) -> Valid<Type, miette::MietteDiagnostic>;
 
 struct ProcessFieldWithinTypeContext<'a> {
     field: &'a config::Field,
@@ -96,7 +105,9 @@ struct ProcessPathContext<'a> {
     original_path: &'a [String],
 }
 
-fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Type, String> {
+fn process_field_within_type(
+    context: ProcessFieldWithinTypeContext,
+) -> Valid<Type, miette::MietteDiagnostic> {
     let field = context.field;
     let field_name = context.field_name;
     let remaining_path = context.remaining_path;
@@ -179,7 +190,7 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Ty
 
 // Helper function to recursively process the path and return the corresponding
 // type
-fn process_path(context: ProcessPathContext) -> Valid<Type, String> {
+fn process_path(context: ProcessPathContext) -> Valid<Type, miette::MietteDiagnostic> {
     let path = context.path;
     let field = context.field;
     let type_info = context.type_info;
@@ -254,7 +265,7 @@ fn to_object_type_definition(
     name: &str,
     type_of: &config::Type,
     config_module: &ConfigModule,
-) -> Valid<Definition, String> {
+) -> Valid<Definition, miette::MietteDiagnostic> {
     to_fields(name, type_of, config_module).map(|fields| {
         Definition::Object(ObjectTypeDefinition {
             name: name.to_string(),
@@ -266,10 +277,13 @@ fn to_object_type_definition(
     })
 }
 
-fn update_args<'a>(
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
+fn update_args<'a>() -> TryFold<
+    'a,
+    (&'a ConfigModule, &'a Field, &'a config::Type, &'a str),
+    FieldDefinition,
+    miette::MietteDiagnostic,
+> {
+    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, miette::MietteDiagnostic>::new(
         move |(_, field, _typ, name), _| {
             // TODO: assert type name
             Valid::from_iter(field.args.iter(), |(name, arg)| {
@@ -303,7 +317,7 @@ fn item_is_numeric(list: &[String]) -> bool {
 fn update_resolver_from_path(
     context: &ProcessPathContext,
     base_field: blueprint::FieldDefinition,
-) -> Valid<blueprint::FieldDefinition, String> {
+) -> Valid<blueprint::FieldDefinition, miette::MietteDiagnostic> {
     let has_index = item_is_numeric(context.path);
 
     process_path(context.clone()).and_then(|of_type| {
@@ -328,10 +342,13 @@ fn update_resolver_from_path(
 /// resolvers that cannot be resolved from the root of the schema. This function
 /// finds such dangling resolvers and creates a resolvable path from the root
 /// schema.
-pub fn fix_dangling_resolvers<'a>(
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
+pub fn fix_dangling_resolvers<'a>() -> TryFold<
+    'a,
+    (&'a ConfigModule, &'a Field, &'a config::Type, &'a str),
+    FieldDefinition,
+    miette::MietteDiagnostic,
+> {
+    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, miette::MietteDiagnostic>::new(
         move |(config, field, _, name), mut b_field| {
             let mut set = HashSet::new();
             if !field.has_resolver()
@@ -349,10 +366,13 @@ pub fn fix_dangling_resolvers<'a>(
 
 /// Wraps the IO Expression with Expression::Cached
 /// if `Field::cache` is present for that field
-pub fn update_cache_resolvers<'a>(
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
+pub fn update_cache_resolvers<'a>() -> TryFold<
+    'a,
+    (&'a ConfigModule, &'a Field, &'a config::Type, &'a str),
+    FieldDefinition,
+    miette::MietteDiagnostic,
+> {
+    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, miette::MietteDiagnostic>::new(
         move |(_config, field, typ, _name), mut b_field| {
             if let Some(config::Cache { max_age }) = field.cache.as_ref().or(typ.cache.as_ref()) {
                 b_field.map_expr(|expression| Cache::wrap(*max_age, expression))
@@ -363,10 +383,17 @@ pub fn update_cache_resolvers<'a>(
     )
 }
 
-fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String> {
+fn validate_field_type_exist(
+    config: &Config,
+    field: &Field,
+) -> Valid<(), miette::MietteDiagnostic> {
     let field_type = field.type_of.name();
     if !scalar::Scalar::is_predefined(field_type) && !config.contains(field_type) {
-        Valid::fail(format!("Undeclared type '{field_type}' was found"))
+        Valid::fail(miette::diagnostic!(
+            code = "blueprint::definitions::validate_field_type_exist",
+            help = "You should define the required type, or drop the field that uses that type",
+            "Undeclared type '{field_type}' was found"
+        ))
     } else {
         Valid::succeed(())
     }
@@ -376,7 +403,7 @@ fn to_fields(
     object_name: &str,
     type_of: &config::Type,
     config_module: &ConfigModule,
-) -> Valid<Vec<FieldDefinition>, String> {
+) -> Valid<Vec<FieldDefinition>, miette::MietteDiagnostic> {
     let operation_type = if config_module
         .schema
         .mutation
@@ -409,7 +436,7 @@ fn to_fields(
 
     let to_added_field = |add_field: &config::AddField,
                           type_of: &config::Type|
-     -> Valid<blueprint::FieldDefinition, String> {
+     -> Valid<blueprint::FieldDefinition, miette::MietteDiagnostic> {
         let source_field = type_of
             .fields
             .iter()
@@ -431,31 +458,30 @@ fn to_fields(
                         .collect::<Vec<_>>(),
                     None => add_field.path.clone(),
                 };
-                let invalid_path_handler = |field_name: &str,
+                let invalid_path_handler = |_field_name: &str,
                                             _added_field_path: &[String],
                                             original_path: &[String]|
-                 -> Valid<Type, String> {
-                    Valid::fail_with(
-                        "Cannot add field".to_string(),
-                        format!("Path [{}] does not exist", original_path.join(", ")),
-                    )
-                    .trace(field_name)
+                 -> Valid<Type, miette::MietteDiagnostic> {
+
+                    Valid::fail(miette::diagnostic!(
+                        code = "blueprint::definitions::to_fields",
+                        help = "You should define the required type, or drop the field that uses that type",
+                        "Cannot add field because path [{}] does not exist", original_path.join(", ")
+                    ))
                 };
                 let path_resolver_error_handler = |resolver_name: &str,
                                                    field_type: &str,
                                                    field_name: &str,
                                                    original_path: &[String]|
-                 -> Valid<Type, String> {
-                    Valid::<Type, String>::fail_with(
-                        "Cannot add field".to_string(),
-                        format!(
-                            "Path: [{}] contains resolver {} at [{}.{}]",
-                            original_path.join(", "),
-                            resolver_name,
-                            field_type,
-                            field_name
-                        ),
-                    )
+                 -> Valid<Type, miette::MietteDiagnostic> {
+                    Valid::fail(miette::diagnostic!(
+                        code = "blueprint::definitions::to_fields",
+                        help = "You should define the required type, or drop the field that uses that type",
+                        "Cannot add field because path [{}] contains resolver {} at [{}.{}]", original_path.join(", "),
+                        resolver_name,
+                        field_type,
+                        field_name
+                    ))
                 };
                 update_resolver_from_path(
                     &ProcessPathContext {
@@ -472,11 +498,15 @@ fn to_fields(
                 )
             })
             .trace(config::AddField::trace_name().as_str()),
-            None => Valid::fail(format!(
-                "Could not find field {} in path {}",
-                add_field.path[0],
-                add_field.path.join(",")
-            )),
+            None => {
+                Valid::fail(miette::diagnostic!(
+                    code = "blueprint::definitions::to_fields",
+                    help = "TODO",
+                    "Could not find field {} in path {}",
+                    add_field.path[0],
+                    add_field.path.join(",")
+                ))
+            },
         }
     };
 
@@ -497,7 +527,7 @@ pub fn to_field_definition(
     config_module: &ConfigModule,
     type_of: &config::Type,
     name: &String,
-) -> Valid<FieldDefinition, String> {
+) -> Valid<FieldDefinition, miette::MietteDiagnostic> {
     update_args()
         .and(update_http().trace(config::Http::trace_name().as_str()))
         .and(update_grpc(operation_type).trace(config::Grpc::trace_name().as_str()))
@@ -518,8 +548,9 @@ pub fn to_field_definition(
         )
 }
 
-pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String> {
-    TryFold::<ConfigModule, Vec<Definition>, String>::new(|config_module, _| {
+pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, miette::MietteDiagnostic>
+{
+    TryFold::<ConfigModule, Vec<Definition>, miette::MietteDiagnostic>::new(|config_module, _| {
         Valid::from_iter(config_module.types.iter(), |(name, type_)| {
             if type_.scalar() {
                 to_scalar_type_definition(name).trace(name)
@@ -548,7 +579,11 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
             config_module.enums.iter(),
             |(name, type_)| {
                 if type_.variants.is_empty() {
-                    Valid::fail("No variants found for enum".to_string())
+                    Valid::fail(miette::diagnostic!(
+                        code = "blueprint::definitions::to_definitions",
+                        help = "At least one enum variant is required",
+                        "No variants found for enum"
+                    ))
                 } else {
                     Valid::succeed(to_enum_type_definition((name, type_)))
                 }

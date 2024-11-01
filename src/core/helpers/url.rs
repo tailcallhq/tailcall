@@ -1,7 +1,7 @@
 use crate::core::mustache::Mustache;
 use crate::core::valid::Valid;
 
-pub fn to_url(url: &str) -> Valid<Mustache, String> {
+pub fn to_url(url: &str) -> Valid<Mustache, miette::MietteDiagnostic> {
     Valid::succeed(Mustache::parse(url))
 }
 

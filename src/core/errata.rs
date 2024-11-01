@@ -150,28 +150,15 @@ impl From<hyper::Error> for Errata {
     }
 }
 
-impl From<anyhow::Error> for Errata {
-    fn from(error: anyhow::Error) -> Self {
-        // Convert other errors to Errata
-        let cli_error = match error.downcast::<Errata>() {
-            Ok(cli_error) => cli_error,
-            Err(error) => {
-                // Convert other errors to Errata
-                let cli_error = match error.downcast::<ValidationError<String>>() {
-                    Ok(validation_error) => Errata::from(validation_error),
-                    Err(error) => {
-                        let sources = error
-                            .source()
-                            .map(|error| vec![Errata::new(error.to_string().as_str())])
-                            .unwrap_or_default();
+impl From<miette::MietteDiagnostic> for Errata {
+    fn from(error: miette::MietteDiagnostic) -> Self {
+        Errata::new(&error.to_string())
+    }
+}
 
-                        Errata::new(&error.to_string()).caused_by(sources)
-                    }
-                };
-                cli_error
-            }
-        };
-        cli_error
+impl From<miette::Report> for Errata {
+    fn from(error: miette::Report) -> Self {
+        Errata::new(&error.to_string())
     }
 }
 
@@ -211,23 +198,9 @@ impl<'a> From<ValidationError<&'a str>> for Errata {
     }
 }
 
-impl From<ValidationError<String>> for Errata {
-    fn from(error: ValidationError<String>) -> Self {
-        Errata::new("Invalid Configuration").caused_by(
-            error
-                .as_vec()
-                .iter()
-                .map(|cause| {
-                    Errata::new(cause.message.as_str()).trace(Vec::from(cause.trace.clone()))
-                })
-                .collect(),
-        )
-    }
-}
-
-impl From<Box<dyn std::error::Error>> for Errata {
-    fn from(value: Box<dyn std::error::Error>) -> Self {
-        Errata::new(value.to_string().as_str())
+impl From<Errata> for miette::MietteDiagnostic {
+    fn from(value: Errata) -> Self {
+        miette::diagnostic!("{}", value)
     }
 }
 
@@ -385,7 +358,7 @@ mod tests {
         let cli_error = Errata::new("Server could not be started")
             .description("The port is already in use".to_string())
             .trace(vec!["@server".into(), "port".into()]);
-        let anyhow_error: anyhow::Error = cli_error.clone().into();
+        let anyhow_error: miette::MietteDiagnostic = cli_error.clone().into();
 
         let actual = Errata::from(anyhow_error);
         let expected = cli_error;
@@ -394,21 +367,8 @@ mod tests {
     }
 
     #[test]
-    fn test_validation_error_identity() {
-        let validation_error = ValidationError::from(
-            Cause::new("Test Error".to_string()).trace(vec!["Query".to_string()]),
-        );
-        let anyhow_error: anyhow::Error = validation_error.clone().into();
-
-        let actual = Errata::from(anyhow_error);
-        let expected = Errata::from(validation_error);
-
-        assert_eq!(actual, expected);
-    }
-
-    #[test]
     fn test_generic_error() {
-        let anyhow_error = anyhow::anyhow!("Some error msg");
+        let anyhow_error = miette::diagnostic!("Some error msg");
 
         let actual: Errata = Errata::from(anyhow_error);
         let expected = Errata::new("Some error msg");

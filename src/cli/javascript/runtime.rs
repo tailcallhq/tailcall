@@ -3,6 +3,7 @@ use std::fmt::{Debug, Formatter};
 use std::thread;
 
 use async_graphql_value::ConstValue;
+use miette::IntoDiagnostic;
 use rquickjs::{Context, Ctx, FromJs, Function, IntoJs, Value};
 
 use crate::core::worker::{Command, Event, WorkerRequest};
@@ -34,16 +35,18 @@ fn setup_builtins(ctx: &Ctx<'_>) -> rquickjs::Result<()> {
 }
 
 impl TryFrom<blueprint::Script> for LocalRuntime {
-    type Error = anyhow::Error;
+    type Error = miette::Report;
 
     fn try_from(script: blueprint::Script) -> Result<Self, Self::Error> {
         let source = script.source;
-        let js_runtime = rquickjs::Runtime::new()?;
-        let context = Context::full(&js_runtime)?;
-        let _: () = context.with(|ctx| {
-            setup_builtins(&ctx)?;
-            ctx.eval(source)
-        })?;
+        let js_runtime = rquickjs::Runtime::new().into_diagnostic()?;
+        let context = Context::full(&js_runtime).into_diagnostic()?;
+        let _: () = context
+            .with(|ctx| {
+                setup_builtins(&ctx)?;
+                ctx.eval(source)
+            })
+            .into_diagnostic()?;
 
         tracing::debug!("JS Runtime created: {:?}", thread::current().name());
         Ok(Self(context))
@@ -125,16 +128,16 @@ impl WorkerIO<ConstValue, ConstValue> for Runtime {
     }
 }
 
-fn init_rt(script: blueprint::Script) -> anyhow::Result<()> {
+fn init_rt(script: blueprint::Script) -> miette::Result<()> {
     // initialize runtime if this is the first call
     // exit if failed to initialize
     LOCAL_RUNTIME.with(move |cell| {
         if cell.borrow().get().is_none() {
-            LocalRuntime::try_from(script).and_then(|runtime| {
-                cell.borrow().set(runtime).map_err(|_| {
-                    anyhow::anyhow!("trying to reinitialize an already initialized QuickJS runtime")
-                })
-            })
+            let runtime = LocalRuntime::try_from(script)?;
+            cell.borrow().set(runtime).map_err(|_| {
+                miette::diagnostic!("trying to reinitialize an already initialized QuickJS runtime")
+            })?;
+            Ok(())
         } else {
             Ok(())
         }

@@ -116,7 +116,7 @@ impl Cors {
     }
 }
 
-fn ensure_usable_cors_rules(layer: &Cors) -> Result<(), ValidationError<String>> {
+fn ensure_usable_cors_rules(layer: &Cors) -> Result<(), ValidationError<miette::MietteDiagnostic>> {
     if layer.allow_credentials {
         let allowing_all_headers = layer
             .allow_headers
@@ -125,8 +125,8 @@ fn ensure_usable_cors_rules(layer: &Cors) -> Result<(), ValidationError<String>>
             .is_some();
 
         if allowing_all_headers {
-            Err(ValidationError::new("Invalid CORS configuration: Cannot combine `Access-Control-Allow-Credentials: true` \
-                with `Access-Control-Allow-Headers: *`".into()))?
+            Err(ValidationError::new(miette::diagnostic!("Invalid CORS configuration: Cannot combine `Access-Control-Allow-Credentials: true` \
+            with `Access-Control-Allow-Headers: *`")))?
         }
 
         let allowing_all_methods = layer
@@ -136,29 +136,31 @@ fn ensure_usable_cors_rules(layer: &Cors) -> Result<(), ValidationError<String>>
             .is_some();
 
         if allowing_all_methods {
-            Err(ValidationError::new("Invalid CORS configuration: Cannot combine `Access-Control-Allow-Credentials: true` \
-                with `Access-Control-Allow-Methods: *`".into()))?
+            Err(ValidationError::new(miette::diagnostic!("Invalid CORS configuration: Cannot combine `Access-Control-Allow-Credentials: true` \
+            with `Access-Control-Allow-Methods: *`")))?
         }
 
         let allowing_all_origins = layer.allow_origins.iter().any(is_wildcard);
 
         if allowing_all_origins {
-            Err(ValidationError::new("Invalid CORS configuration: Cannot combine `Access-Control-Allow-Credentials: true` \
-             with `Access-Control-Allow-Origin: *`".into()))?
+            Err(ValidationError::new(miette::diagnostic!("Invalid CORS configuration: Cannot combine `Access-Control-Allow-Credentials: true` \
+            with `Access-Control-Allow-Origin: *`")))?
         }
 
         if layer.expose_headers_is_wildcard() {
-            Err(ValidationError::new("Invalid CORS configuration: Cannot combine `Access-Control-Allow-Credentials: true` \
-             with `Access-Control-Expose-Headers: *`".into()))?
+            Err(ValidationError::new(miette::diagnostic!("Invalid CORS configuration: Cannot combine `Access-Control-Allow-Credentials: true` \
+            with `Access-Control-Expose-Headers: *`")))?
         }
     }
     Ok(())
 }
 
 impl TryFrom<config::cors::Cors> for Cors {
-    type Error = ValidationError<String>;
+    type Error = ValidationError<miette::MietteDiagnostic>;
 
-    fn try_from(value: config::cors::Cors) -> Result<Self, ValidationError<String>> {
+    fn try_from(
+        value: config::cors::Cors,
+    ) -> Result<Self, ValidationError<miette::MietteDiagnostic>> {
         let cors = Cors {
             allow_credentials: value.allow_credentials.unwrap_or_default(),
             allow_headers: (!value.allow_headers.is_empty())
@@ -180,7 +182,7 @@ impl TryFrom<config::cors::Cors> for Cors {
                 .allow_origins
                 .into_iter()
                 .map(|val| Ok(val.parse()?))
-                .collect::<Result<_, ValidationError<String>>>()?,
+                .collect::<Result<_, ValidationError<miette::MietteDiagnostic>>>()?,
             allow_private_network: value.allow_private_network.unwrap_or_default(),
             expose_headers: Some(value.expose_headers.join(", ").parse()?),
             max_age: value.max_age.map(|val| val.into()),
@@ -188,7 +190,7 @@ impl TryFrom<config::cors::Cors> for Cors {
                 .vary
                 .iter()
                 .map(|val| Ok(val.parse()?))
-                .collect::<Result<_, ValidationError<String>>>()?,
+                .collect::<Result<_, ValidationError<miette::MietteDiagnostic>>>()?,
         };
         ensure_usable_cors_rules(&cors)?;
         Ok(cors)

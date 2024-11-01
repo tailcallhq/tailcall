@@ -60,7 +60,7 @@ impl HttpDataLoader {
 #[async_trait::async_trait]
 impl Loader<DataLoaderRequest> for HttpDataLoader {
     type Value = Response<async_graphql::Value>;
-    type Error = Arc<anyhow::Error>;
+    type Error = Arc<miette::Report>;
 
     async fn load(
         &self,
@@ -111,7 +111,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
             for dl_req in dl_requests.iter() {
                 let url = dl_req.url();
                 let query_set: HashMap<_, _> = url.query_pairs().collect();
-                let id = query_set.get(query_name).ok_or(anyhow::anyhow!(
+                let id = query_set.get(query_name).ok_or(miette::miette!(
                     "Unable to find key {} in query params",
                     query_name
                 ))?;

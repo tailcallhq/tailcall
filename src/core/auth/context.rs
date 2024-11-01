@@ -20,7 +20,7 @@ impl GlobalAuthContext {
     // TODO: it could be better to return async_graphql::Error to make it more
     // graphql way with additional info. But this actually requires rewrites to
     // expression to work with that type since otherwise any additional info
-    // will be lost during conversion to anyhow::Error
+    // will be lost during conversion to miette::MietteDiagnostic
     async fn validate(&self, request: &RequestContext) -> Verification {
         if let Some(verifier) = self.verifier.as_ref() {
             verifier.verify(request).await

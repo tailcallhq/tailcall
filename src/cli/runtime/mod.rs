@@ -8,6 +8,7 @@ use std::sync::Arc;
 
 pub use http::NativeHttp;
 use inquire::{Confirm, Select};
+use miette::IntoDiagnostic;
 
 use crate::core::blueprint::Blueprint;
 use crate::core::cache::InMemoryCache;
@@ -89,13 +90,14 @@ pub async fn confirm_and_write(
     runtime: TargetRuntime,
     path: &str,
     content: &[u8],
-) -> anyhow::Result<()> {
+) -> miette::Result<()> {
     let file_exists = fs::metadata(path).is_ok();
 
     if file_exists {
         let confirm = Confirm::new(&format!("Do you want to overwrite the file {path}?"))
             .with_default(false)
-            .prompt()?;
+            .prompt()
+            .into_diagnostic()?;
 
         if !confirm {
             return Ok(());
@@ -107,7 +109,7 @@ pub async fn confirm_and_write(
     Ok(())
 }
 
-pub async fn create_directory(folder_path: &str) -> anyhow::Result<()> {
+pub async fn create_directory(folder_path: &str) -> miette::Result<()> {
     let folder_exists = fs::metadata(folder_path).is_ok();
 
     if !folder_exists {
@@ -116,10 +118,11 @@ pub async fn create_directory(folder_path: &str) -> anyhow::Result<()> {
             folder_path
         ))
         .with_default(false)
-        .prompt()?;
+        .prompt()
+        .into_diagnostic()?;
 
         if confirm {
-            fs::create_dir_all(folder_path)?;
+            fs::create_dir_all(folder_path).into_diagnostic()?;
         } else {
             return Ok(());
         };
@@ -128,6 +131,6 @@ pub async fn create_directory(folder_path: &str) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn select_prompt<T: std::fmt::Display>(message: &str, options: Vec<T>) -> anyhow::Result<T> {
-    Ok(Select::new(message, options).prompt()?)
+pub fn select_prompt<T: std::fmt::Display>(message: &str, options: Vec<T>) -> miette::Result<T> {
+    Select::new(message, options).prompt().into_diagnostic()
 }

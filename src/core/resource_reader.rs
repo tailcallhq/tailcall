@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex};
 
 use futures_util::future::join_all;
 use futures_util::TryFutureExt;
+use miette::IntoDiagnostic;
 use tailcall_hasher::TailcallHasher;
 use url::Url;
 
@@ -69,14 +70,14 @@ impl From<String> for Resource {
 
 #[async_trait::async_trait]
 pub trait Reader {
-    async fn read<T: Into<Resource> + Send>(&self, file: T) -> anyhow::Result<FileRead>;
+    async fn read<T: Into<Resource> + Send>(&self, file: T) -> miette::Result<FileRead>;
 }
 
 #[derive(Clone)]
 pub struct ResourceReader<A>(A);
 
 impl<A: Reader + Send + Sync> ResourceReader<A> {
-    pub async fn read_files<T>(&self, paths: &[T]) -> anyhow::Result<Vec<FileRead>>
+    pub async fn read_files<T>(&self, paths: &[T]) -> miette::Result<Vec<FileRead>>
     where
         T: Into<Resource> + Clone + Send,
     {
@@ -88,10 +89,10 @@ impl<A: Reader + Send + Sync> ResourceReader<A> {
         }))
         .await;
 
-        files.into_iter().collect::<anyhow::Result<Vec<_>>>()
+        files.into_iter().collect::<miette::Result<Vec<_>>>()
     }
 
-    pub async fn read_file<T>(&self, path: T) -> anyhow::Result<FileRead>
+    pub async fn read_file<T>(&self, path: T) -> miette::Result<FileRead>
     where
         T: Into<Resource> + Send,
     {
@@ -129,7 +130,7 @@ impl Direct {
 #[async_trait::async_trait]
 impl Reader for Direct {
     /// Reads a file from the filesystem or from an HTTP URL
-    async fn read<T: Into<Resource> + Send>(&self, file: T) -> anyhow::Result<FileRead> {
+    async fn read<T: Into<Resource> + Send>(&self, file: T) -> miette::Result<FileRead> {
         let content = match file.into() {
             Resource::RawPath(file_path) => {
                 // Is an HTTP URL
@@ -141,7 +142,8 @@ impl Reader for Direct {
                             .execute(reqwest::Request::new(reqwest::Method::GET, url))
                             .await?;
 
-                        let content = String::from_utf8(response.body.to_vec())?;
+                        let content =
+                            String::from_utf8(response.body.to_vec()).into_diagnostic()?;
                         FileRead { path: file_path, content }
                     } else {
                         // Is a file path on Windows
@@ -157,7 +159,7 @@ impl Reader for Direct {
             Resource::Request(request) => {
                 let request_url = request.url().to_string();
                 let response = self.runtime.http.execute(request).await?;
-                let content = String::from_utf8(response.body.to_vec())?;
+                let content = String::from_utf8(response.body.to_vec()).into_diagnostic()?;
 
                 FileRead { path: request_url, content }
             }
@@ -183,7 +185,7 @@ impl Cached {
 #[async_trait::async_trait]
 impl Reader for Cached {
     /// Reads a file from the filesystem or from an HTTP URL with cache
-    async fn read<T: Into<Resource> + Send>(&self, file: T) -> anyhow::Result<FileRead> {
+    async fn read<T: Into<Resource> + Send>(&self, file: T) -> miette::Result<FileRead> {
         // check cache
         let resource: Resource = file.into();
         let file_path = resource.to_string();

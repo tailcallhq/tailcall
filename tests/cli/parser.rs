@@ -2,9 +2,9 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::str::FromStr;
 
-use anyhow::anyhow;
 use markdown::mdast::Node;
 use markdown::ParseOptions;
+use miette::IntoDiagnostic;
 use tailcall::core::config::Source;
 use tailcall::core::FileIO;
 
@@ -45,7 +45,7 @@ impl ConfigHolder {
 }
 
 impl ExecutionSpec {
-    pub fn from_source(path: &Path, contents: String) -> anyhow::Result<Self> {
+    pub fn from_source(path: &Path, contents: String) -> miette::Result<Self> {
         let ast = markdown::to_mdast(&contents, &ParseOptions::default()).unwrap();
         let children = ast
             .children()
@@ -69,7 +69,7 @@ impl ExecutionSpec {
                                         a.contains("debug_assert") && b.ends_with("true");
                                 }
                                 _ => {
-                                    return Err(anyhow!(
+                                    return Err(miette::miette!(
                                         "Unexpected header annotation {:?} in {:?}",
                                         expect.value,
                                         path,
@@ -93,7 +93,7 @@ impl ExecutionSpec {
 
                         let lang = match lang {
                             Some(x) => Ok(x),
-                            None => Err(anyhow!(
+                            None => Err(miette::miette!(
                                 "Unexpected code block with no specific language in {:?}",
                                 path
                             )),
@@ -105,15 +105,15 @@ impl ExecutionSpec {
                             }
                             "env" => {
                                 let vars: HashMap<String, String> = match source {
-                                    Source::Json => Ok(serde_json::from_str(&content)?),
-                                    Source::Yml => Ok(serde_yaml::from_str(&content)?),
-                                    _ => Err(anyhow!("Unexpected language in env block in {:?} (only JSON and YAML are supported)", path)),
+                                    Source::Json => Ok(serde_json::from_str(&content).into_diagnostic()?),
+                                    Source::Yml => Ok(serde_yaml::from_str(&content).into_diagnostic()?),
+                                    _ => Err(miette::miette!("Unexpected language in env block in {:?} (only JSON and YAML are supported)", path)),
                                 }?;
 
                                 env = Some(vars);
                             }
                             _ => {
-                                return Err(anyhow!(
+                                return Err(miette::miette!(
                                     "Unexpected component {:?} in {:?}: {:#?}",
                                     name,
                                     path,
@@ -123,7 +123,13 @@ impl ExecutionSpec {
                         }
                     }
                 }
-                _ => return Err(anyhow!("Unexpected node in {:?}: {:#?}", path, node)),
+                _ => {
+                    return Err(miette::miette!(
+                        "Unexpected node in {:?}: {:#?}",
+                        path,
+                        node
+                    ))
+                }
             }
         }
 

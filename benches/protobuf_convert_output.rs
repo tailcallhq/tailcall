@@ -1,7 +1,7 @@
 use std::path::Path;
 
-use anyhow::Result;
 use criterion::{black_box, Criterion};
+use miette::{IntoDiagnostic, Result};
 use rand::{thread_rng, Fill};
 use serde_json::{json, Value};
 use tailcall::core::blueprint::GrpcMethod;
@@ -22,15 +22,15 @@ fn create_dummy_value(n: usize, m: usize) -> Result<Value> {
         .map(|_| {
             let mut chars = vec![' '; m];
 
-            chars.try_fill(rng)?;
+            chars.try_fill(rng).into_diagnostic()?;
 
             Ok(chars.into_iter().collect::<String>())
         })
         .collect::<Result<_>>()?;
 
-    ints.try_fill(rng)?;
-    floats.try_fill(rng)?;
-    flags.try_fill(rng)?;
+    ints.try_fill(rng).into_diagnostic()?;
+    floats.try_fill(rng).into_diagnostic()?;
+    flags.try_fill(rng).into_diagnostic()?;
 
     let value = json!({
         "ints": ints,

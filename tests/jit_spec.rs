@@ -22,9 +22,10 @@ mod tests {
     }
 
     impl TestExecutor {
-        async fn try_new() -> anyhow::Result<Self> {
-            let sdl =
-                tokio::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER).await?;
+        async fn try_new() -> miette::Result<Self> {
+            let sdl = tokio::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER)
+                .await
+                .map_err(|e| miette::miette!("{}", e))?;
             let config = Config::from_sdl(&sdl).to_result()?;
             let blueprint = Blueprint::try_from(&ConfigModule::from(config))?;
             let runtime = tailcall::cli::runtime::init(&blueprint);
@@ -34,8 +35,9 @@ mod tests {
             Ok(Self { app_ctx, req_ctx })
         }
 
-        async fn run(&self, request: Request<ConstValue>) -> anyhow::Result<Response<ConstValue>> {
-            let executor = ConstValueExecutor::try_new(&request, &self.app_ctx)?;
+        async fn run(&self, request: Request<ConstValue>) -> miette::Result<Response<ConstValue>> {
+            let executor = ConstValueExecutor::try_new(&request, &self.app_ctx)
+                .map_err(|e| miette::miette!("{}", e))?;
 
             Ok(executor.execute(&self.req_ctx, &request).await)
         }

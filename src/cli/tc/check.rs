@@ -1,4 +1,4 @@
-use anyhow::Result;
+use miette::{IntoDiagnostic, Result};
 
 use super::helpers::{display_schema, log_endpoint_set};
 use crate::cli::fmt::Fmt;
@@ -6,7 +6,6 @@ use crate::core::blueprint::Blueprint;
 use crate::core::config::reader::ConfigReader;
 use crate::core::config::Source;
 use crate::core::runtime::TargetRuntime;
-use crate::core::Errata;
 
 pub(super) struct CheckParams {
     pub(super) file_paths: Vec<String>,
@@ -24,7 +23,7 @@ pub(super) async fn check_command(params: CheckParams, config_reader: &ConfigRea
     if let Some(format) = format {
         Fmt::display(format.encode(&config_module)?);
     }
-    let blueprint = Blueprint::try_from(&config_module).map_err(Errata::from);
+    let blueprint = Blueprint::try_from(&config_module);
 
     match blueprint {
         Ok(blueprint) => {
@@ -36,7 +35,8 @@ pub(super) async fn check_command(params: CheckParams, config_reader: &ConfigRea
                 .endpoint_set
                 .clone()
                 .into_checked(&blueprint, runtime)
-                .await?;
+                .await
+                .into_diagnostic()?;
             if schema {
                 display_schema(&blueprint);
             }

@@ -1,5 +1,6 @@
 use std::path::Path;
 
+use miette::IntoDiagnostic;
 use rustls_pemfile;
 use rustls_pki_types::{
     CertificateDer, PrivateKeyDer, PrivatePkcs1KeyDer, PrivatePkcs8KeyDer, PrivateSec1KeyDer,
@@ -39,7 +40,7 @@ impl ConfigReader {
         &self,
         config_module: ConfigModule,
         parent_dir: Option<&'async_recursion Path>,
-    ) -> anyhow::Result<ConfigModule> {
+    ) -> miette::Result<ConfigModule> {
         let links: Vec<Link> = config_module
             .config()
             .links
@@ -106,7 +107,7 @@ impl ConfigReader {
                     let source = self.resource_reader.read_file(path).await?;
                     let content = source.content;
 
-                    extensions.endpoint_set = EndpointSet::try_new(&content)?;
+                    extensions.endpoint_set = EndpointSet::try_new(&content).into_diagnostic()?;
                 }
                 LinkType::Htpasswd => {
                     let source = self.resource_reader.read_file(path).await?;
@@ -124,7 +125,7 @@ impl ConfigReader {
 
                     extensions.jwks.push(Content {
                         id: link.id.clone(),
-                        content: serde_path_to_error::deserialize(de)?,
+                        content: serde_path_to_error::deserialize(de).into_diagnostic()?,
                     })
                 }
                 LinkType::Grpc => {
@@ -146,15 +147,15 @@ impl ConfigReader {
     }
 
     /// Reads the certificate from a given file
-    async fn load_cert(&self, content: String) -> anyhow::Result<Vec<CertificateDer<'static>>> {
-        let certificates = rustls_pemfile::certs(&mut content.as_bytes())?;
+    async fn load_cert(&self, content: String) -> miette::Result<Vec<CertificateDer<'static>>> {
+        let certificates = rustls_pemfile::certs(&mut content.as_bytes()).into_diagnostic()?;
 
         Ok(certificates.into_iter().map(CertificateDer::from).collect())
     }
 
     /// Reads a private key from a given file
-    async fn load_private_key(&self, content: String) -> anyhow::Result<Vec<PrivateKey>> {
-        let keys = rustls_pemfile::read_all(&mut content.as_bytes())?;
+    async fn load_private_key(&self, content: String) -> miette::Result<Vec<PrivateKey>> {
+        let keys = rustls_pemfile::read_all(&mut content.as_bytes()).into_diagnostic()?;
 
         Ok(keys
             .into_iter()
@@ -178,7 +179,7 @@ impl ConfigReader {
     pub async fn read<T: Into<Resource> + Clone + ToString + Send + Sync>(
         &self,
         file: T,
-    ) -> anyhow::Result<ConfigModule> {
+    ) -> miette::Result<ConfigModule> {
         self.read_all(&[file]).await
     }
 
@@ -186,7 +187,7 @@ impl ConfigReader {
     pub async fn read_all<T: Into<Resource> + Clone + ToString + Send + Sync>(
         &self,
         files: &[T],
-    ) -> anyhow::Result<ConfigModule> {
+    ) -> miette::Result<ConfigModule> {
         let files = self.resource_reader.read_files(files).await?;
         let mut config_module = Valid::succeed(ConfigModule::default());
 
@@ -215,7 +216,7 @@ impl ConfigReader {
         &self,
         mut config: Config,
         parent_dir: Option<&Path>,
-    ) -> anyhow::Result<ConfigModule> {
+    ) -> miette::Result<ConfigModule> {
         // Setup telemetry in Config
         let reader_ctx = ConfigReaderContext {
             runtime: &self.runtime,

@@ -1,6 +1,5 @@
 use std::collections::{BTreeSet, HashSet};
 
-use anyhow::{bail, Result};
 use derive_setters::Setters;
 use prost_reflect::prost_types::field_descriptor_proto::Label;
 use prost_reflect::prost_types::{
@@ -223,7 +222,7 @@ impl Context {
         messages: &[DescriptorProto],
         parent_path: &PathBuilder,
         is_nested: bool,
-    ) -> Result<Self> {
+    ) -> miette::Result<Self> {
         for (index, message) in messages.iter().enumerate() {
             let msg_name = message.name();
 
@@ -328,7 +327,7 @@ impl Context {
         services: &[ServiceDescriptorProto],
         parent_path: &PathBuilder,
         url: &str,
-    ) -> Result<Self> {
+    ) -> miette::Result<Self> {
         if services.is_empty() {
             return Ok(self);
         }
@@ -397,9 +396,11 @@ impl Context {
     }
 }
 
-fn graphql_type_from_ref(name: &str) -> Result<GraphQLType<Unparsed>> {
+fn graphql_type_from_ref(name: &str) -> miette::Result<GraphQLType<Unparsed>> {
     if !name.starts_with('.') {
-        bail!("Expected fully-qualified name for reference type but got {name}. This is a bug!");
+        miette::diagnostic!(
+            "Expected fully-qualified name for reference type but got {name}. This is a bug!"
+        );
     }
 
     let name = &name[1..];
@@ -433,7 +434,7 @@ fn convert_primitive_type(proto_ty: &str) -> String {
 }
 
 /// Determines the output type for a service method.
-fn get_output_type(output_ty: &str) -> Result<GraphQLType<Unparsed>> {
+fn get_output_type(output_ty: &str) -> miette::Result<GraphQLType<Unparsed>> {
     // type, required
     match output_ty {
         ".google.protobuf.Empty" => {
@@ -447,7 +448,7 @@ fn get_output_type(output_ty: &str) -> Result<GraphQLType<Unparsed>> {
     }
 }
 
-fn get_input_type(input_ty: &str) -> Result<Option<GraphQLType<Unparsed>>> {
+fn get_input_type(input_ty: &str) -> miette::Result<Option<GraphQLType<Unparsed>>> {
     match input_ty {
         ".google.protobuf.Empty" | "" => Ok(None),
         _ => graphql_type_from_ref(input_ty).map(Some),
@@ -455,7 +456,11 @@ fn get_input_type(input_ty: &str) -> Result<Option<GraphQLType<Unparsed>>> {
 }
 
 /// The main entry point that builds a Config object from proto descriptor sets.
-pub fn from_proto(descriptor_sets: &[FileDescriptorSet], query: &str, url: &str) -> Result<Config> {
+pub fn from_proto(
+    descriptor_sets: &[FileDescriptorSet],
+    query: &str,
+    url: &str,
+) -> miette::Result<Config> {
     let mut ctx = Context::new(query);
     for descriptor_set in descriptor_sets.iter() {
         for file_descriptor in descriptor_set.file.iter() {
@@ -484,14 +489,14 @@ pub fn from_proto(descriptor_sets: &[FileDescriptorSet], query: &str, url: &str)
 
 #[cfg(test)]
 mod test {
-    use anyhow::Result;
+
     use prost_reflect::prost_types::FileDescriptorSet;
     use tailcall_fixtures::protobuf;
 
     use super::from_proto;
     use crate::core::config::ConfigModule;
 
-    fn compile_protobuf(files: &[&str]) -> Result<FileDescriptorSet> {
+    fn compile_protobuf(files: &[&str]) -> miette::Result<FileDescriptorSet> {
         Ok(protox::compile(files, [protobuf::SELF])?)
     }
 
@@ -535,7 +540,7 @@ mod test {
     }
 
     #[test]
-    fn test_config_from_sdl() -> Result<()> {
+    fn test_config_from_sdl() -> miette::Result<()> {
         let set =
             compile_protobuf(&[protobuf::NEWS, protobuf::GREETINGS_A, protobuf::GREETINGS_B])?;
 

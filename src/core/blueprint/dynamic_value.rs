@@ -1,5 +1,6 @@
 use async_graphql_value::{ConstValue, Name};
 use indexmap::IndexMap;
+use miette::IntoDiagnostic;
 use serde_json::Value;
 
 use crate::core::mustache::Mustache;
@@ -48,23 +49,23 @@ impl<A> DynamicValue<A> {
 }
 
 impl TryFrom<&DynamicValue<ConstValue>> for ConstValue {
-    type Error = anyhow::Error;
+    type Error = miette::MietteDiagnostic;
 
     fn try_from(value: &DynamicValue<ConstValue>) -> Result<Self, Self::Error> {
         match value {
             DynamicValue::Value(v) => Ok(v.to_owned()),
-            DynamicValue::Mustache(_) => Err(anyhow::anyhow!(
+            DynamicValue::Mustache(_) => Err(miette::diagnostic!(
                 "mustache cannot be converted to const value"
             )),
             DynamicValue::Object(obj) => {
-                let out: Result<IndexMap<Name, ConstValue>, anyhow::Error> = obj
+                let out: Result<IndexMap<Name, ConstValue>, miette::MietteDiagnostic> = obj
                     .into_iter()
                     .map(|(k, v)| Ok((k.to_owned(), ConstValue::try_from(v)?.to_owned())))
                     .collect();
                 Ok(ConstValue::Object(out?))
             }
             DynamicValue::Array(arr) => {
-                let out: Result<Vec<ConstValue>, anyhow::Error> =
+                let out: Result<Vec<ConstValue>, miette::MietteDiagnostic> =
                     arr.iter().map(ConstValue::try_from).collect();
                 Ok(ConstValue::List(out?))
             }
@@ -85,7 +86,7 @@ impl<A> DynamicValue<A> {
 }
 
 impl TryFrom<&Value> for DynamicValue<ConstValue> {
-    type Error = anyhow::Error;
+    type Error = miette::Report;
 
     fn try_from(value: &Value) -> Result<Self, Self::Error> {
         match value {
@@ -105,12 +106,16 @@ impl TryFrom<&Value> for DynamicValue<ConstValue> {
             Value::String(s) => {
                 let m = Mustache::parse(s.as_str());
                 if m.is_const() {
-                    Ok(DynamicValue::Value(ConstValue::from_json(value.clone())?))
+                    Ok(DynamicValue::Value(
+                        ConstValue::from_json(value.clone()).into_diagnostic()?,
+                    ))
                 } else {
                     Ok(DynamicValue::Mustache(m))
                 }
             }
-            _ => Ok(DynamicValue::Value(ConstValue::from_json(value.clone())?)),
+            _ => Ok(DynamicValue::Value(
+                ConstValue::from_json(value.clone()).into_diagnostic()?,
+            )),
         }
     }
 }

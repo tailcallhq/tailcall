@@ -59,7 +59,7 @@ mod tests {
         ]);
 
         let value = value
-            .map(&mut |_| anyhow::Ok(serde_json::Value::Object(Default::default())))
+            .map(&mut |_| Result::<_, ()>::Ok(serde_json::Value::Object(Default::default())))
             .unwrap();
 
         assert_eq!(
@@ -76,7 +76,7 @@ mod tests {
         ]);
 
         let value = value
-            .map_ref(&mut |_| anyhow::Ok(serde_json::Value::Object(Default::default())))
+            .map_ref(&mut |_| Result::<_, ()>::Ok(serde_json::Value::Object(Default::default())))
             .unwrap();
 
         assert_eq!(

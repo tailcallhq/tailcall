@@ -1,10 +1,10 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::fmt::{self, Display};
 
-use anyhow::Result;
 use async_graphql::parser::types::ServiceDocument;
 use derive_setters::Setters;
 use indexmap::IndexMap;
+use miette::{IntoDiagnostic, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use strum::IntoEnumIterator;
@@ -381,15 +381,15 @@ impl Config {
         self.enums.get(name)
     }
 
-    pub fn to_yaml(&self) -> Result<String> {
-        Ok(serde_yaml::to_string(self)?)
+    pub fn to_yaml(&self) -> miette::Result<String> {
+        serde_yaml::to_string(self).into_diagnostic()
     }
 
-    pub fn to_json(&self, pretty: bool) -> Result<String> {
+    pub fn to_json(&self, pretty: bool) -> miette::Result<String> {
         if pretty {
-            Ok(serde_json::to_string_pretty(self)?)
+            Ok(serde_json::to_string_pretty(self).into_diagnostic()?)
         } else {
-            Ok(serde_json::to_string(self)?)
+            Ok(serde_json::to_string(self).into_diagnostic()?)
         }
     }
 
@@ -418,19 +418,27 @@ impl Config {
             || self.enums.contains_key(name)
     }
 
-    pub fn from_json(json: &str) -> Result<Self> {
-        Ok(serde_json::from_str(json)?)
+    pub fn from_json(json: &str) -> miette::Result<Self> {
+        serde_json::from_str(json).into_diagnostic()
     }
 
-    pub fn from_yaml(yaml: &str) -> Result<Self> {
-        Ok(serde_yaml::from_str(yaml)?)
+    pub fn from_yaml(yaml: &str) -> miette::Result<Self> {
+        serde_yaml::from_str(yaml).into_diagnostic()
     }
 
-    pub fn from_sdl(sdl: &str) -> Valid<Self, String> {
+    pub fn from_sdl(sdl: &str) -> Valid<Self, miette::MietteDiagnostic> {
         let doc = async_graphql::parser::parse_schema(sdl);
         match doc {
             Ok(doc) => from_document(doc),
-            Err(e) => Valid::fail(e.to_string()),
+            Err(e) => Valid::fail(
+                // TODO: ERROR
+                miette::diagnostic!(
+                    code = "config::config::from_sdl",
+                    help = "Check the graphql syntax",
+                    "{}",
+                    e
+                ),
+            ),
         }
     }
 

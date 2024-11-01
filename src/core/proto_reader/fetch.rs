@@ -1,9 +1,9 @@
 use std::str::FromStr;
 
-use anyhow::{Context, Result};
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
 use http::header::HeaderName;
+use miette::{Context, IntoDiagnostic};
 use nom::AsBytes;
 use prost::Message;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
@@ -27,7 +27,7 @@ const REFLECTION_PROTO: &str = include_str!(concat!(
 ));
 
 /// This function is just used for better exception handling
-fn get_protobuf_set() -> Result<ProtobufSet> {
+fn get_protobuf_set() -> miette::Result<ProtobufSet> {
     let descriptor = protox_parse::parse("reflection", REFLECTION_PROTO)?;
     let mut descriptor_set = FileDescriptorSet::default();
     descriptor_set.file.push(descriptor);
@@ -51,15 +51,16 @@ struct FileDescriptorProtoResponse {
 }
 
 impl FileDescriptorProtoResponse {
-    fn get(self) -> Result<Vec<u8>> {
+    fn get(self) -> miette::Result<Vec<u8>> {
         let file_descriptor_proto = self
             .file_descriptor_proto
             .first()
-            .context("Received empty fileDescriptorProto")?;
+            .ok_or(miette::diagnostic!("Received empty fileDescriptorProto"))?;
 
         BASE64_STANDARD
             .decode(file_descriptor_proto)
-            .context("Failed to decode fileDescriptorProto from BASE64")
+            .into_diagnostic()
+            .wrap_err("Failed to decode fileDescriptorProto from BASE64")
     }
 }
 
@@ -97,13 +98,15 @@ impl GrpcReflection {
         }
     }
     /// Makes `ListService` request to the grpc reflection server
-    pub async fn list_all_files(&self) -> Result<Vec<String>> {
+    pub async fn list_all_files(&self) -> miette::Result<Vec<String>> {
         // Extracting names from services
         let methods: Vec<String> = self
             .execute(json!({"list_services": ""}))
             .await?
             .list_services_response
-            .context("Couldn't find definitions for service ServerReflection")?
+            .ok_or(miette::diagnostic!(
+                "Couldn't find definitions for service ServerReflection"
+            ))?
             .service
             .iter()
             .map(|s| s.name.clone())
@@ -113,7 +116,7 @@ impl GrpcReflection {
     }
 
     /// Makes `Get Service` request to the grpc reflection server
-    pub async fn get_by_service(&self, service: &str) -> Result<FileDescriptorProto> {
+    pub async fn get_by_service(&self, service: &str) -> miette::Result<FileDescriptorProto> {
         let resp = self
             .execute(json!({"file_containing_symbol": service}))
             .await?;
@@ -122,18 +125,18 @@ impl GrpcReflection {
     }
 
     /// Makes `Get File` request to grpc reflection server
-    pub async fn get_file(&self, file_path: &str) -> Result<FileDescriptorProto> {
+    pub async fn get_file(&self, file_path: &str) -> miette::Result<FileDescriptorProto> {
         let resp = self.execute(json!({"file_by_filename": file_path})).await?;
 
         request_proto(resp)
     }
 
-    async fn execute(&self, body: serde_json::Value) -> Result<ReflectionResponse> {
+    async fn execute(&self, body: serde_json::Value) -> miette::Result<ReflectionResponse> {
         let server_reflection_method = &self.server_reflection_method;
         let protobuf_set = get_protobuf_set()?;
         let reflection_service = protobuf_set.find_service(server_reflection_method)?;
         let operation = reflection_service.find_operation(server_reflection_method)?;
-        let mut url: url::Url = self.url.parse()?;
+        let mut url: url::Url = self.url.parse().into_diagnostic()?;
         url.set_path(
             format!(
                 "{}.{}/{}",
@@ -148,7 +151,7 @@ impl GrpcReflection {
         if let Some(custom_headers) = &self.headers {
             for header in custom_headers {
                 headers.push((
-                    HeaderName::from_str(&header.key)?,
+                    HeaderName::from_str(&header.key).into_diagnostic()?,
                     Mustache::parse(header.value.as_str()),
                 ));
             }
@@ -185,12 +188,14 @@ impl GrpcReflection {
 }
 
 /// For extracting `FileDescriptorProto` from `CustomResponse`
-fn request_proto(response: ReflectionResponse) -> Result<FileDescriptorProto> {
+fn request_proto(response: ReflectionResponse) -> miette::Result<FileDescriptorProto> {
     let file_descriptor_resp = response
         .file_descriptor_response
-        .context("Expected fileDescriptorResponse but found none")?;
+        .ok_or(miette::diagnostic!(
+            "Expected fileDescriptorResponse but found none"
+        ))?;
     let file_descriptor_proto =
-        FileDescriptorProto::decode(file_descriptor_resp.get()?.as_bytes())?;
+        FileDescriptorProto::decode(file_descriptor_resp.get()?.as_bytes()).into_diagnostic()?;
 
     Ok(file_descriptor_proto)
 }
@@ -198,8 +203,6 @@ fn request_proto(response: ReflectionResponse) -> Result<FileDescriptorProto> {
 #[cfg(test)]
 mod grpc_fetch {
     use std::path::PathBuf;
-
-    use anyhow::Result;
 
     use super::*;
 
@@ -238,7 +241,7 @@ mod grpc_fetch {
     }
 
     #[tokio::test]
-    async fn test_resp_service() -> Result<()> {
+    async fn test_resp_service() -> miette::Result<()> {
         let server = start_mock_server();
 
         let http_reflection_file_mock = server.mock(|when, then| {
@@ -267,7 +270,7 @@ mod grpc_fetch {
     }
 
     #[tokio::test]
-    async fn test_dto_file() -> Result<()> {
+    async fn test_dto_file() -> miette::Result<()> {
         let server = start_mock_server();
 
         let http_reflection_file_mock = server.mock(|when, then| {
@@ -299,7 +302,7 @@ mod grpc_fetch {
     }
 
     #[tokio::test]
-    async fn test_resp_list_all() -> Result<()> {
+    async fn test_resp_list_all() -> miette::Result<()> {
         let server = start_mock_server();
 
         let http_reflection_list_all = server.mock(|when, then| {
@@ -331,7 +334,7 @@ mod grpc_fetch {
     }
 
     #[tokio::test]
-    async fn test_list_all_files_empty_response() -> Result<()> {
+    async fn test_list_all_files_empty_response() -> miette::Result<()> {
         let server = start_mock_server();
 
         let http_reflection_list_all_empty = server.mock(|when, then| {
@@ -359,7 +362,7 @@ mod grpc_fetch {
     }
 
     #[tokio::test]
-    async fn test_get_by_service_not_found() -> Result<()> {
+    async fn test_get_by_service_not_found() -> miette::Result<()> {
         let server = start_mock_server();
 
         let http_reflection_service_not_found = server.mock(|when, then| {
@@ -382,7 +385,7 @@ mod grpc_fetch {
     }
 
     #[tokio::test]
-    async fn test_custom_headers_resp_list_all() -> Result<()> {
+    async fn test_custom_headers_resp_list_all() -> miette::Result<()> {
         let server = start_mock_server();
 
         let http_reflection_service_not_found = server.mock(|when, then| {

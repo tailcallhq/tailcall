@@ -11,9 +11,9 @@ pub struct NestedUnions;
 
 impl Transform for NestedUnions {
     type Value = Config;
-    type Error = String;
+    type Error = miette::MietteDiagnostic;
 
-    fn transform(&self, mut config: Config) -> Valid<Config, String> {
+    fn transform(&self, mut config: Config) -> Valid<Config, miette::MietteDiagnostic> {
         let visitor = Visitor { unions: &config.unions };
 
         visitor.visit().map(|unions| {
@@ -28,7 +28,7 @@ struct Visitor<'cfg> {
 }
 
 impl<'cfg> Visitor<'cfg> {
-    fn visit(self) -> Valid<BTreeMap<String, Union>, String> {
+    fn visit(self) -> Valid<BTreeMap<String, Union>, miette::MietteDiagnostic> {
         let mut result = BTreeMap::new();
 
         Valid::from_iter(self.unions.iter(), |(union_name, union_)| {
@@ -50,11 +50,15 @@ impl<'cfg> Visitor<'cfg> {
         union_: &'cfg Union,
         union_types: &mut BTreeSet<String>,
         seen: &mut HashSet<&'cfg String>,
-    ) -> Valid<(), String> {
+    ) -> Valid<(), miette::MietteDiagnostic> {
         Valid::from_iter(union_.types.iter(), |type_name| {
             if let Some(union_) = self.unions.get(type_name) {
                 if seen.contains(type_name) {
-                    return Valid::fail(format!("Recursive type {type_name}"));
+                    return Valid::fail(miette::diagnostic!(
+                        code = "config::transformer::nested_unions::walk_union",
+                        help = "You are not allowed to have recursive types",
+                        "Recursive type {type_name}"
+                    ));
                 }
 
                 seen.insert(type_name);

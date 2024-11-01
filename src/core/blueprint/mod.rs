@@ -37,4 +37,4 @@ pub use upstream::*;
 use crate::core::config::ConfigModule;
 use crate::core::try_fold::TryFold;
 
-pub type TryFoldConfig<'a, A> = TryFold<'a, ConfigModule, A, String>;
+pub type TryFoldConfig<'a, A> = TryFold<'a, ConfigModule, A, miette::MietteDiagnostic>;

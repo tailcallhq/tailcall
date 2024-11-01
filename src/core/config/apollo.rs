@@ -28,7 +28,7 @@ pub struct Apollo {
 }
 
 impl Apollo {
-    pub fn render_mustache(&mut self, reader_ctx: &ConfigReaderContext) -> anyhow::Result<()> {
+    pub fn render_mustache(&mut self, reader_ctx: &ConfigReaderContext) -> miette::Result<()> {
         let Apollo { api_key, graph_ref, user_version, platform, version } = self;
 
         let api_key_tmpl = Mustache::parse(api_key);

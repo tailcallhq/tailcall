@@ -32,7 +32,7 @@ pub struct Subgraph;
 impl Transform for Subgraph {
     type Value = Config;
 
-    type Error = String;
+    type Error = miette::MietteDiagnostic;
 
     fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
         if !config.server.get_enable_federation() {
@@ -192,7 +192,7 @@ fn combine_keys(v: Vec<Keys>) -> Keys {
 struct KeysExtractor;
 
 impl KeysExtractor {
-    fn extract_keys(resolver: &Resolver) -> Valid<Option<String>, String> {
+    fn extract_keys(resolver: &Resolver) -> Valid<Option<String>, miette::MietteDiagnostic> {
         // TODO: add validation for available fields from the type
         match resolver {
             Resolver::Http(http) => {
@@ -231,7 +231,7 @@ impl KeysExtractor {
             .trace(GraphQL::directive_name().as_str()),
             Resolver::Call(call) => Valid::from_option(
                 call.steps.first(),
-                "Call should define at least one step".to_string(),
+                miette::diagnostic!("Call should define at least one step"),
             )
             .and_then(|step| {
                 Valid::from_iter(step.args.iter(), |(key, value)| {
@@ -255,7 +255,7 @@ impl KeysExtractor {
         })
     }
 
-    fn parse_str(s: &str) -> Valid<Keys, String> {
+    fn parse_str(s: &str) -> Valid<Keys, miette::MietteDiagnostic> {
         let mustache = Mustache::parse(s);
         let mut keys = Keys::new();
 
@@ -266,9 +266,9 @@ impl KeysExtractor {
                         keys.set_path(expr[1..].iter().map(String::to_string));
                     }
                     Some("args") => {
-                        return Valid::fail(
-                            "Type resolver can't use `.args`, use `.value` instead".to_string(),
-                        );
+                        return Valid::fail(miette::diagnostic!(
+                            "Type resolver can't use `.args`, use `.value` instead"
+                        ));
                     }
                     _ => {}
                 }
@@ -279,7 +279,7 @@ impl KeysExtractor {
         .map_to(keys)
     }
 
-    fn parse_str_option(s: Option<&str>) -> Valid<Keys, String> {
+    fn parse_str_option(s: Option<&str>) -> Valid<Keys, miette::MietteDiagnostic> {
         if let Some(s) = s {
             Self::parse_str(s)
         } else {
@@ -289,7 +289,7 @@ impl KeysExtractor {
 
     fn parse_key_value_iter<T: Borrow<KeyValue>>(
         it: impl Iterator<Item = T>,
-    ) -> Valid<Keys, String> {
+    ) -> Valid<Keys, miette::MietteDiagnostic> {
         let mut keys = Keys::new();
 
         Valid::from_iter(it, |key_value| {
@@ -304,7 +304,7 @@ impl KeysExtractor {
 
     fn parse_key_value_iter_option<T: Borrow<KeyValue>>(
         it: Option<impl Iterator<Item = T>>,
-    ) -> Valid<Keys, String> {
+    ) -> Valid<Keys, miette::MietteDiagnostic> {
         if let Some(it) = it {
             Self::parse_key_value_iter(it)
         } else {
@@ -312,7 +312,7 @@ impl KeysExtractor {
         }
     }
 
-    fn parse_value(value: &serde_json::Value) -> Valid<Keys, String> {
+    fn parse_value(value: &serde_json::Value) -> Valid<Keys, miette::MietteDiagnostic> {
         match value {
             serde_json::Value::String(s) => return Self::parse_str(s),
             serde_json::Value::Array(v) => Valid::from_iter(v.iter(), Self::parse_value),
@@ -330,7 +330,9 @@ impl KeysExtractor {
         })
     }
 
-    fn parse_value_option(value: &Option<serde_json::Value>) -> Valid<Keys, String> {
+    fn parse_value_option(
+        value: &Option<serde_json::Value>,
+    ) -> Valid<Keys, miette::MietteDiagnostic> {
         if let Some(value) = value {
             Self::parse_value(value)
         } else {

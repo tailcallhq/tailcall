@@ -1,6 +1,6 @@
-use anyhow::Result;
 use clap::Parser;
 use dotenvy::dotenv;
+use miette::Result;
 
 use super::helpers::TRACKER;
 use super::{check, gen, init, start};

@@ -10,6 +10,7 @@ use http::header::{HeaderMap, HeaderValue};
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
 use hyper::body::Bytes;
 use indexmap::IndexMap;
+use miette::IntoDiagnostic;
 use once_cell::sync::Lazy;
 use reqwest::{Client, Request};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
@@ -69,11 +70,11 @@ impl Http {
 
 #[async_trait]
 impl HttpIO for Http {
-    async fn execute(&self, mut request: Request) -> anyhow::Result<Response<Bytes>> {
+    async fn execute(&self, mut request: Request) -> miette::Result<Response<Bytes>> {
         if self.http2_only {
             *request.version_mut() = reqwest::Version::HTTP_2;
         }
-        let resp = self.client.execute(request).await?;
+        let resp = self.client.execute(request).await.into_diagnostic()?;
         Response::from_reqwest(resp).await
     }
 }
@@ -89,11 +90,11 @@ impl EnvIO for Env {
 struct File;
 #[async_trait]
 impl FileIO for File {
-    async fn write<'a>(&'a self, _: &'a str, _: &'a [u8]) -> anyhow::Result<()> {
+    async fn write<'a>(&'a self, _: &'a str, _: &'a [u8]) -> miette::Result<()> {
         unimplemented!("Not needed for this bench")
     }
 
-    async fn read<'a>(&'a self, _: &'a str) -> anyhow::Result<String> {
+    async fn read<'a>(&'a self, _: &'a str) -> miette::Result<String> {
         unimplemented!("Not needed for this bench")
     }
 }

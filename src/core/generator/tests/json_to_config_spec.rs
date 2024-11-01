@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 
+use miette::IntoDiagnostic;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::core::generator::{Generator, Input};
@@ -58,13 +59,13 @@ pub fn run_json_to_config_spec(path: &Path) -> datatest_stable::Result<()> {
     Ok(())
 }
 
-fn load_json(path: &Path) -> anyhow::Result<JsonFixture> {
-    let contents = fs::read_to_string(path)?;
+fn load_json(path: &Path) -> miette::Result<JsonFixture> {
+    let contents = fs::read_to_string(path).into_diagnostic()?;
     let json_data: JsonFixture = serde_json::from_str(&contents).unwrap();
     Ok(json_data)
 }
 
-fn test_spec(path: &Path, json_data: JsonFixture) -> anyhow::Result<()> {
+fn test_spec(path: &Path, json_data: JsonFixture) -> miette::Result<()> {
     let JsonFixture { request, response, is_mutation, field_name } = json_data;
 
     let req_body = request.body.unwrap_or_default();
@@ -90,7 +91,7 @@ fn test_spec(path: &Path, json_data: JsonFixture) -> anyhow::Result<()> {
     let snapshot_name = path
         .file_name()
         .and_then(|s| s.to_str())
-        .ok_or_else(|| anyhow::anyhow!("Invalid snapshot name"))?;
+        .ok_or_else(|| miette::diagnostic!("Invalid snapshot name"))?;
 
     insta::assert_snapshot!(snapshot_name, cfg.to_sdl());
     Ok(())

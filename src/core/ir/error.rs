@@ -3,12 +3,13 @@ use std::sync::Arc;
 
 use async_graphql::Value as ConstValue;
 use derive_more::From;
+use miette::{Diagnostic, MietteDiagnostic};
 use thiserror::Error;
 
 use crate::core::jit::graphql_error::{Error as ExtensionError, ErrorExtensions};
 use crate::core::{auth, cache, worker, Errata};
 
-#[derive(From, Debug, Error, Clone)]
+#[derive(From, Debug, Error, Clone, Diagnostic)]
 pub enum Error {
     IO(String),
 
@@ -91,20 +92,14 @@ impl ErrorExtensions for Error {
     }
 }
 
-impl<'a> From<crate::core::valid::ValidationError<&'a str>> for Error {
-    fn from(value: crate::core::valid::ValidationError<&'a str>) -> Self {
-        Error::APIValidation(
-            value
-                .as_vec()
-                .iter()
-                .map(|e| e.message.to_owned())
-                .collect(),
-        )
+impl From<crate::core::valid::ValidationError<miette::MietteDiagnostic>> for Error {
+    fn from(value: crate::core::valid::ValidationError<miette::MietteDiagnostic>) -> Self {
+        Error::APIValidation(value.as_vec().iter().map(|e| e.to_string()).collect())
     }
 }
 
-impl From<Arc<anyhow::Error>> for Error {
-    fn from(error: Arc<anyhow::Error>) -> Self {
+impl From<Arc<miette::Report>> for Error {
+    fn from(error: Arc<miette::Report>) -> Self {
         match error.downcast_ref::<Error>() {
             Some(err) => err.clone(),
             None => Error::IO(error.to_string()),
@@ -112,14 +107,23 @@ impl From<Arc<anyhow::Error>> for Error {
     }
 }
 
+impl From<Error> for MietteDiagnostic {
+    fn from(e: Error) -> Self {
+        miette::diagnostic!("{}", e)
+    }
+}
+
+impl From<miette::Report> for Error {
+    fn from(error: miette::Report) -> Self {
+        Error::IO(error.to_string())
+    }
+}
+
 // TODO: remove conversion from anyhow and don't use anyhow to pass errors
 // since it loses potentially valuable information that could be later provided
 // in the error extensions
-impl From<anyhow::Error> for Error {
-    fn from(value: anyhow::Error) -> Self {
-        match value.downcast::<Error>() {
-            Ok(err) => err,
-            Err(err) => Error::IO(err.to_string()),
-        }
+impl From<miette::MietteDiagnostic> for Error {
+    fn from(value: miette::MietteDiagnostic) -> Self {
+        Self::IO(value.to_string())
     }
 }

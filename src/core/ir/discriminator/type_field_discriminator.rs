@@ -1,6 +1,5 @@
 use std::collections::BTreeSet;
 
-use anyhow::{bail, Result};
 use async_graphql::Value;
 
 use super::TypedValue;
@@ -35,41 +34,41 @@ impl TypeFieldDiscriminator {
         type_name: String,
         types: BTreeSet<String>,
         typename_field: String,
-    ) -> Valid<Self, String> {
+    ) -> Valid<Self, miette::MietteDiagnostic> {
         let discriminator = Self { type_name, types, typename_field };
 
         Valid::succeed(discriminator)
     }
 
     /// Resolves the `__typename` for an object.
-    pub fn resolve_type(&self, value: &Value) -> Result<String> {
+    pub fn resolve_type(&self, value: &Value) -> miette::Result<String> {
         if value.is_null() {
             return Ok("NULL".to_string());
         }
 
         let Some(index_map) = value.as_object() else {
-            bail!("The TypeFieldDiscriminator(type=\"{}\") can only use object values to discriminate, but received a different type.", self.type_name)
+            miette::bail!("The TypeFieldDiscriminator(type=\"{}\") can only use object values to discriminate, but received a different type.", self.type_name)
         };
 
         let Some(value) = index_map.get(self.typename_field.as_str()) else {
-            bail!("The TypeFieldDiscriminator(type=\"{}\") cannot discriminate the Value because it does not contain the type name field `{}`", self.type_name, self.typename_field)
+            miette::bail!("The TypeFieldDiscriminator(type=\"{}\") cannot discriminate the Value because it does not contain the type name field `{}`", self.type_name, self.typename_field)
         };
 
         let Value::String(type_name) = value else {
-            bail!("The TypeFieldDiscriminator(type=\"{}\") requires `{}` of type string, but received a different type.", self.type_name, self.typename_field)
+            miette::bail!("The TypeFieldDiscriminator(type=\"{}\") requires `{}` of type string, but received a different type.", self.type_name, self.typename_field)
         };
 
         if self.types.contains(type_name) {
             Ok(type_name.to_string())
         } else {
             let types: Vec<_> = self.types.clone().into_iter().collect();
-            bail!("The type `{}` is not in the list of acceptable types {:?} of TypeFieldDiscriminator(type=\"{}\")", type_name, types, self.type_name)
+            miette::bail!("The type `{}` is not in the list of acceptable types {:?} of TypeFieldDiscriminator(type=\"{}\")", type_name, types, self.type_name)
         }
     }
 
     /// Resolves the `__typename` for an object and inserts the value into the
     /// object.
-    pub fn resolve_and_set_type(&self, mut value: Value) -> Result<Value> {
+    pub fn resolve_and_set_type(&self, mut value: Value) -> miette::Result<Value> {
         let type_name = self.resolve_type(&value)?;
         value.set_type_name(type_name)?;
         Ok(value)

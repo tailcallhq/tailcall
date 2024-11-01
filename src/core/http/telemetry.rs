@@ -1,6 +1,6 @@
-use anyhow::Result;
 use http::{Request, Response};
 use hyper::Body;
+use miette::Result;
 use once_cell::sync::Lazy;
 use opentelemetry::metrics::Counter;
 use opentelemetry::KeyValue;

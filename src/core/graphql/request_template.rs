@@ -5,6 +5,7 @@ use std::hash::{Hash, Hasher};
 
 use derive_setters::Setters;
 use http::header::{HeaderMap, HeaderValue};
+use miette::IntoDiagnostic;
 use tailcall_hasher::TailcallHasher;
 
 use crate::core::config::{GraphQLOperationType, KeyValue};
@@ -63,8 +64,11 @@ impl RequestTemplate {
     pub fn to_request<C: PathGraphql + HasHeaders + GraphQLOperationContext>(
         &self,
         ctx: &C,
-    ) -> anyhow::Result<reqwest::Request> {
-        let mut req = reqwest::Request::new(POST.to_hyper(), url::Url::parse(self.url.as_str())?);
+    ) -> miette::Result<reqwest::Request> {
+        let mut req = reqwest::Request::new(
+            POST.to_hyper(),
+            url::Url::parse(self.url.as_str()).into_diagnostic()?,
+        );
         req = self.set_headers(req, ctx);
         req = self.set_body(req, ctx);
         Ok(req)
@@ -131,14 +135,14 @@ impl RequestTemplate {
         args: Option<&Vec<KeyValue>>,
         headers: MustacheHeaders,
         related_fields: RelatedFields,
-    ) -> anyhow::Result<Self> {
+    ) -> miette::Result<Self> {
         let mut operation_arguments = None;
 
         if let Some(args) = args.as_ref() {
             operation_arguments = Some(
                 args.iter()
                     .map(|kv| Ok((kv.key.to_owned(), Mustache::parse(&kv.value))))
-                    .collect::<anyhow::Result<Vec<_>>>()?,
+                    .collect::<miette::Result<Vec<_>>>()?,
             );
         }
 

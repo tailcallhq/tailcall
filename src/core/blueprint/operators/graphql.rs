@@ -9,7 +9,7 @@ use crate::core::helpers;
 use crate::core::ir::model::{IO, IR};
 use crate::core::ir::RelatedFields;
 use crate::core::try_fold::TryFold;
-use crate::core::valid::{Valid, ValidationError, Validator};
+use crate::core::valid::{Valid, Validator};
 
 fn create_related_fields(
     config: &Config,
@@ -60,7 +60,7 @@ pub fn compile_graphql(
     operation_type: &GraphQLOperationType,
     type_name: &str,
     graphql: &GraphQL,
-) -> Valid<IR, String> {
+) -> Valid<IR, miette::MietteDiagnostic> {
     let args = graphql.args.as_ref();
     Valid::succeed(graphql.url.as_str())
         .zip(helpers::headers::to_mustache_headers(&graphql.headers))
@@ -74,7 +74,7 @@ pub fn compile_graphql(
                     headers,
                     create_related_fields(config, type_name, &mut HashSet::new()),
                 )
-                .map_err(|e| ValidationError::new(e.to_string())),
+                .map_err(|e| miette::diagnostic!("{}", e)),
             )
         })
         .map(|req_template| {
@@ -87,8 +87,13 @@ pub fn compile_graphql(
 
 pub fn update_graphql<'a>(
     operation_type: &'a GraphQLOperationType,
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a Type, &'a str), FieldDefinition, String> {
-    TryFold::<(&ConfigModule, &Field, &Type, &'a str), FieldDefinition, String>::new(
+) -> TryFold<
+    'a,
+    (&'a ConfigModule, &'a Field, &'a Type, &'a str),
+    FieldDefinition,
+    miette::MietteDiagnostic,
+> {
+    TryFold::<(&ConfigModule, &Field, &Type, &'a str), FieldDefinition, miette::MietteDiagnostic>::new(
         |(config, field, type_of, _), b_field| {
             let Some(Resolver::Graphql(graphql)) = &field.resolver else {
                 return Valid::succeed(b_field);

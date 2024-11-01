@@ -5,10 +5,10 @@ pub mod test {
     use std::sync::Arc;
     use std::time::Duration;
 
-    use anyhow::{anyhow, Result};
     use async_graphql::Value;
     use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
     use hyper::body::Bytes;
+    use miette::IntoDiagnostic;
     use reqwest::Client;
     use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
     use tailcall::cli::javascript::init_worker_io;
@@ -74,12 +74,14 @@ pub mod test {
 
     #[async_trait::async_trait]
     impl HttpIO for TestHttp {
-        async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
+        async fn execute(&self, request: reqwest::Request) -> miette::Result<Response<Bytes>> {
             let response = self.client.execute(request).await;
             Response::from_reqwest(
-                response?
+                response
+                    .into_diagnostic()?
                     .error_for_status()
-                    .map_err(|err| err.without_url())?,
+                    .map_err(|err| err.without_url())
+                    .into_diagnostic()?,
             )
             .await
         }
@@ -96,21 +98,21 @@ pub mod test {
 
     #[async_trait::async_trait]
     impl FileIO for TestFileIO {
-        async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
-            let mut file = tokio::fs::File::create(path).await?;
+        async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> miette::Result<()> {
+            let mut file = tokio::fs::File::create(path).await.into_diagnostic()?;
             file.write_all(content)
                 .await
-                .map_err(|e| anyhow!("{}", e))?;
+                .map_err(|e| miette::miette!("{}", e))?;
             Ok(())
         }
 
-        async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String> {
-            let mut file = tokio::fs::File::open(path).await?;
+        async fn read<'a>(&'a self, path: &'a str) -> miette::Result<String> {
+            let mut file = tokio::fs::File::open(path).await.into_diagnostic()?;
             let mut buffer = Vec::new();
             file.read_to_end(&mut buffer)
                 .await
-                .map_err(|e| anyhow!("{}", e))?;
-            Ok(String::from_utf8(buffer)?)
+                .map_err(|e| miette::miette!("{}", e))?;
+            Ok(String::from_utf8(buffer).into_diagnostic()?)
         }
     }
 
@@ -159,6 +161,7 @@ pub mod test {
 
 #[cfg(test)]
 mod server_spec {
+    use miette::IntoDiagnostic;
     use reqwest::Client;
     use serde_json::json;
     use tailcall::cli::server::Server;
@@ -195,10 +198,16 @@ mod server_spec {
             let url = url.to_owned();
             let query = query.clone();
 
-            let task: tokio::task::JoinHandle<Result<serde_json::Value, anyhow::Error>> =
+            let task: tokio::task::JoinHandle<Result<serde_json::Value, miette::Report>> =
                 tokio::spawn(async move {
-                    let response = client.post(url).json(&query).send().await?;
-                    let response_body: serde_json::Value = response.json().await?;
+                    let response = client
+                        .post(url)
+                        .json(&query)
+                        .send()
+                        .await
+                        .into_diagnostic()?;
+                    let response_body: serde_json::Value =
+                        response.json().await.into_diagnostic()?;
                     Ok(response_body)
                 });
             tasks.push(task);

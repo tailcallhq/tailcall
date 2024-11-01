@@ -1,7 +1,8 @@
 use derive_more::From;
+use miette::Diagnostic;
 use strum_macros::Display;
 
-#[derive(Debug, From, Display, thiserror::Error)]
+#[derive(Debug, From, Display, thiserror::Error, Diagnostic)]
 pub enum Error {
     GenAI(genai::Error),
     EmptyResponse,

@@ -8,7 +8,7 @@ pub struct Required;
 
 impl Transform for Required {
     type Value = Config;
-    type Error = String;
+    type Error = miette::MietteDiagnostic;
 
     fn transform(
         &self,

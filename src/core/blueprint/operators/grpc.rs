@@ -16,7 +16,7 @@ use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
 use crate::core::{config, helpers};
 
-fn to_url(grpc: &Grpc, method: &GrpcMethod) -> Valid<Mustache, String> {
+fn to_url(grpc: &Grpc, method: &GrpcMethod) -> Valid<Mustache, miette::MietteDiagnostic> {
     Valid::succeed(grpc.url.as_str()).and_then(|base_url| {
         let mut base_url = base_url.trim_end_matches('/').to_owned();
         base_url.push('/');
@@ -31,22 +31,22 @@ fn to_url(grpc: &Grpc, method: &GrpcMethod) -> Valid<Mustache, String> {
 fn to_operation(
     method: &GrpcMethod,
     file_descriptor_set: FileDescriptorSet,
-) -> Valid<ProtobufOperation, String> {
+) -> Valid<ProtobufOperation, miette::MietteDiagnostic> {
     Valid::from(
         ProtobufSet::from_proto_file(file_descriptor_set)
-            .map_err(|e| ValidationError::new(e.to_string())),
+            .map_err(|e| ValidationError::new(miette::diagnostic!("{}", e))),
     )
     .and_then(|set| {
         Valid::from(
             set.find_service(method)
-                .map_err(|e| ValidationError::new(e.to_string())),
+                .map_err(|e| ValidationError::new(miette::diagnostic!("{}", e))),
         )
     })
     .and_then(|service| {
         Valid::from(
             service
                 .find_operation(method)
-                .map_err(|e| ValidationError::new(e.to_string())),
+                .map_err(|e| ValidationError::new(miette::diagnostic!("{}", e))),
         )
     })
 }
@@ -64,7 +64,7 @@ fn validate_schema(
     field_schema: FieldSchema,
     operation: &ProtobufOperation,
     name: &str,
-) -> Valid<(), String> {
+) -> Valid<(), miette::MietteDiagnostic> {
     let input_type = &operation.input_type;
     let output_type = &operation.output_type;
 
@@ -85,16 +85,22 @@ fn validate_group_by(
     field_schema: &FieldSchema,
     operation: &ProtobufOperation,
     group_by: Vec<String>,
-) -> Valid<(), String> {
+) -> Valid<(), miette::MietteDiagnostic> {
     let input_type = &operation.input_type;
     let output_type = &operation.output_type;
-    let mut field_descriptor: Result<FieldDescriptor, ValidationError<String>> = None.ok_or(
-        ValidationError::new(format!("field {} not found", group_by[0])),
-    );
+    let mut field_descriptor: Result<FieldDescriptor, ValidationError<miette::MietteDiagnostic>> =
+        None.ok_or(ValidationError::new(miette::diagnostic!(
+            "field {} not found",
+            group_by[0]
+        )));
     for item in group_by.iter().take(&group_by.len() - 1) {
-        field_descriptor = output_type
-            .get_field_by_json_name(item.as_str())
-            .ok_or(ValidationError::new(format!("field {} not found", item)));
+        field_descriptor =
+            output_type
+                .get_field_by_json_name(item.as_str())
+                .ok_or(ValidationError::new(miette::diagnostic!(
+                    "field {} not found",
+                    item
+                )));
     }
     let output_type = field_descriptor.and_then(|f| JsonSchema::try_from(&f));
 
@@ -130,7 +136,7 @@ impl Display for GrpcMethod {
 }
 
 impl TryFrom<&str> for GrpcMethod {
-    type Error = ValidationError<String>;
+    type Error = ValidationError<miette::MietteDiagnostic>;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let parts: Vec<&str> = value.rsplitn(3, '.').collect();
@@ -143,7 +149,7 @@ impl TryFrom<&str> for GrpcMethod {
                 };
                 Ok(method)
             }
-            _ => Err(ValidationError::new(format!(
+            _ => Err(ValidationError::new(miette::diagnostic!(
                 "Invalid method format: {}. Expected format is <package>.<service>.<method>",
                 value
             ))),
@@ -151,7 +157,7 @@ impl TryFrom<&str> for GrpcMethod {
     }
 }
 
-pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
+pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, miette::MietteDiagnostic> {
     let config_module = inputs.config_module;
     let operation_type = inputs.operation_type;
     let field = inputs.field;
@@ -164,7 +170,9 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
             let file_descriptor_set = config_module.extensions().get_file_descriptor_set();
 
             if file_descriptor_set.file.is_empty() {
-                return Valid::fail("Protobuf files were not specified in the config".to_string());
+                return Valid::fail(miette::diagnostic!(
+                    "Protobuf files were not specified in the config"
+                ));
             }
 
             to_operation(&method, file_descriptor_set)
@@ -212,29 +220,35 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
 
 pub fn update_grpc<'a>(
     operation_type: &'a GraphQLOperationType,
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
-        |(config_module, field, type_of, _name), b_field| {
-            let Some(Resolver::Grpc(grpc)) = &field.resolver else {
-                return Valid::succeed(b_field);
-            };
+) -> TryFold<
+    'a,
+    (&'a ConfigModule, &'a Field, &'a config::Type, &'a str),
+    FieldDefinition,
+    miette::MietteDiagnostic,
+> {
+    TryFold::<
+        (&ConfigModule, &Field, &config::Type, &'a str),
+        FieldDefinition,
+        miette::MietteDiagnostic,
+    >::new(|(config_module, field, type_of, _name), b_field| {
+        let Some(Resolver::Grpc(grpc)) = &field.resolver else {
+            return Valid::succeed(b_field);
+        };
 
-            compile_grpc(CompileGrpc {
-                config_module,
-                operation_type,
-                field,
-                grpc,
-                validate_with_schema: true,
-            })
-            .map(|resolver| b_field.resolver(Some(resolver)))
-            .and_then(|b_field| {
-                b_field
-                    .validate_field(type_of, config_module)
-                    .map_to(b_field)
-            })
-        },
-    )
+        compile_grpc(CompileGrpc {
+            config_module,
+            operation_type,
+            field,
+            grpc,
+            validate_with_schema: true,
+        })
+        .map(|resolver| b_field.resolver(Some(resolver)))
+        .and_then(|b_field| {
+            b_field
+                .validate_field(type_of, config_module)
+                .map_to(b_field)
+        })
+    })
 }
 
 #[cfg(test)]
@@ -265,7 +279,7 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(
             result.err().unwrap(),
-            ValidationError::new("Invalid method format: package_name.ServiceName. Expected format is <package>.<service>.<method>".to_string())
+            ValidationError::new(miette::diagnostic!("Invalid method format: package_name.ServiceName. Expected format is <package>.<service>.<method>"))
         );
     }
 }

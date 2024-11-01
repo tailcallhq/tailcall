@@ -24,7 +24,7 @@ pub struct Generator {
     mutation: Option<String>,
     inputs: Vec<Input>,
     type_name_prefix: String,
-    transformers: Vec<Box<dyn Transform<Value = Config, Error = String>>>,
+    transformers: Vec<Box<dyn Transform<Value = Config, Error = miette::MietteDiagnostic>>>,
 }
 
 #[derive(Clone)]
@@ -70,7 +70,7 @@ impl Generator {
         &self,
         type_name_generator: &NameGenerator,
         json_samples: &[RequestSample],
-    ) -> anyhow::Result<Config> {
+    ) -> miette::Result<Config> {
         Ok(FromJsonGenerator::new(
             json_samples,
             type_name_generator,
@@ -87,7 +87,7 @@ impl Generator {
         metadata: &ProtoMetadata,
         operation_name: &str,
         url: &str,
-    ) -> anyhow::Result<Config> {
+    ) -> miette::Result<Config> {
         let descriptor_set = resolve_file_descriptor_set(metadata.descriptor_set.clone())?;
         let mut config = from_proto(&[descriptor_set], operation_name, url)?;
         config.links.push(Link {
@@ -101,7 +101,7 @@ impl Generator {
     }
 
     /// Generated the actual configuratio from provided samples.
-    pub fn generate(&self, use_transformers: bool) -> anyhow::Result<ConfigModule> {
+    pub fn generate(&self, use_transformers: bool) -> miette::Result<ConfigModule> {
         let mut config: Config = Config::default();
         let type_name_generator = NameGenerator::new(&self.type_name_prefix);
 
@@ -155,7 +155,7 @@ impl Generator {
 // protox::compile instead of more low-level protox_parse::parse
 fn resolve_file_descriptor_set(
     descriptor_set: FileDescriptorSet,
-) -> anyhow::Result<FileDescriptorSet> {
+) -> miette::Result<FileDescriptorSet> {
     let descriptor_set = DescriptorPool::from_file_descriptor_set(descriptor_set)?;
     let descriptor_set = FileDescriptorSet {
         file: descriptor_set
@@ -182,7 +182,7 @@ pub mod test {
     use crate::core::http::Method;
     use crate::core::proto_reader::ProtoMetadata;
 
-    fn compile_protobuf(files: &[&str]) -> anyhow::Result<FileDescriptorSet> {
+    fn compile_protobuf(files: &[&str]) -> miette::Result<FileDescriptorSet> {
         Ok(protox::compile(files, [tailcall_fixtures::protobuf::SELF])?)
     }
 
@@ -204,9 +204,12 @@ pub mod test {
     }
 
     impl JsonFixture {
-        pub async fn read(path: &str) -> anyhow::Result<JsonFixture> {
-            let content = tokio::fs::read_to_string(path).await?;
-            let result: JsonFixture = serde_json::from_str(&content)?;
+        pub async fn read(path: &str) -> miette::Result<JsonFixture> {
+            let content = tokio::fs::read_to_string(path)
+                .await
+                .map_err(|e| miette::diagnostic!("{}", e))?;
+            let result: JsonFixture =
+                serde_json::from_str(&content).map_err(|e| miette::diagnostic!("{}", e))?;
             Ok(result)
         }
     }
@@ -252,7 +255,7 @@ pub mod test {
     }
 
     #[test]
-    fn should_generate_config_from_proto() -> anyhow::Result<()> {
+    fn should_generate_config_from_proto() -> miette::Result<()> {
         let news_proto = tailcall_fixtures::protobuf::NEWS;
         let set = compile_protobuf(&[news_proto])?;
 
@@ -271,10 +274,13 @@ pub mod test {
     }
 
     #[test]
-    fn should_generate_config_from_configs() -> anyhow::Result<()> {
+    fn should_generate_config_from_configs() -> miette::Result<()> {
+        use miette::IntoDiagnostic;
+
         let cfg_module = Generator::default()
             .inputs(vec![Input::Config {
-                schema: std::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER)?,
+                schema: std::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER)
+                    .into_diagnostic()?,
                 source: crate::core::config::Source::GraphQL,
             }])
             .generate(true)?;
@@ -284,7 +290,7 @@ pub mod test {
     }
 
     #[tokio::test]
-    async fn should_generate_config_from_json() -> anyhow::Result<()> {
+    async fn should_generate_config_from_json() -> miette::Result<()> {
         let JsonFixture { request, response, field_name, is_mutation } = JsonFixture::read(
             "src/core/generator/tests/fixtures/json/incompatible_properties.json",
         )
@@ -306,7 +312,7 @@ pub mod test {
     }
 
     #[tokio::test]
-    async fn should_generate_combined_config() -> anyhow::Result<()> {
+    async fn should_generate_combined_config() -> miette::Result<()> {
         // Proto input
         let news_proto = tailcall_fixtures::protobuf::NEWS;
         let proto_set = compile_protobuf(&[news_proto])?;
@@ -320,7 +326,8 @@ pub mod test {
 
         // Config input
         let config_input = Input::Config {
-            schema: std::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER)?,
+            schema: std::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER)
+                .map_err(|err| miette::diagnostic!("{}", err))?,
             source: crate::core::config::Source::GraphQL,
         };
 
@@ -351,7 +358,7 @@ pub mod test {
     }
 
     #[tokio::test]
-    async fn generate_from_config_from_multiple_jsons() -> anyhow::Result<()> {
+    async fn generate_from_config_from_multiple_jsons() -> miette::Result<()> {
         let mut inputs = vec![];
         let json_fixtures = [
             "src/core/generator/tests/fixtures/json/incompatible_properties.json",

@@ -74,13 +74,13 @@ pub trait HttpIO: Sync + Send + 'static {
     async fn execute(
         &self,
         request: reqwest::Request,
-    ) -> anyhow::Result<Response<hyper::body::Bytes>>;
+    ) -> miette::Result<Response<hyper::body::Bytes>>;
 }
 
 #[async_trait::async_trait]
 pub trait FileIO: Send + Sync {
-    async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()>;
-    async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String>;
+    async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> miette::Result<()>;
+    async fn read<'a>(&'a self, path: &'a str) -> miette::Result<String>;
 }
 
 #[async_trait::async_trait]

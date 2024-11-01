@@ -210,6 +210,24 @@ impl<A, E> From<Fusion<A, E>> for Valid<A, E> {
     }
 }
 
+impl<A> From<Result<A, miette::MietteDiagnostic>> for Valid<A, miette::MietteDiagnostic> {
+    fn from(value: Result<A, miette::MietteDiagnostic>) -> Self {
+        match value {
+            Ok(a) => Self::succeed(a),
+            Err(e) => Self::fail(e),
+        }
+    }
+}
+
+impl<A> From<Result<A, miette::Report>> for Valid<A, miette::Report> {
+    fn from(value: Result<A, miette::Report>) -> Self {
+        match value {
+            Ok(a) => Self::succeed(a),
+            Err(e) => Self::fail(e),
+        }
+    }
+}
+
 impl<A, E> Clone for Valid<A, E>
 where
     A: Clone,

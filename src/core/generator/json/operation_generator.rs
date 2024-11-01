@@ -17,7 +17,7 @@ impl OperationTypeGenerator {
         root_type: &str,
         name_generator: &NameGenerator,
         mut config: Config,
-    ) -> Valid<Config, String> {
+    ) -> Valid<Config, miette::MietteDiagnostic> {
         let type_of = Type::from(root_type.to_owned());
         let mut field = Field {
             type_of: if request_sample.res_body.is_array() {

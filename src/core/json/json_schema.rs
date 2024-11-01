@@ -93,24 +93,24 @@ impl JsonSchema {
     }
 
     // TODO: validate `JsonLike` instead of fixing on `async_graphql::Value`
-    pub fn validate(&self, value: &async_graphql::Value) -> Valid<(), &'static str> {
+    pub fn validate(&self, value: &async_graphql::Value) -> Valid<(), miette::MietteDiagnostic> {
         match self {
             JsonSchema::Str => match value {
                 async_graphql::Value::String(_) => Valid::succeed(()),
-                _ => Valid::fail("expected string"),
+                _ => Valid::fail(miette::diagnostic!("expected string")),
             },
             JsonSchema::Num => match value {
                 async_graphql::Value::Number(_) => Valid::succeed(()),
-                _ => Valid::fail("expected number"),
+                _ => Valid::fail(miette::diagnostic!("expected number")),
             },
             JsonSchema::Bool => match value {
                 async_graphql::Value::Boolean(_) => Valid::succeed(()),
-                _ => Valid::fail("expected boolean"),
+                _ => Valid::fail(miette::diagnostic!("expected boolean")),
             },
             JsonSchema::Empty => match value {
                 async_graphql::Value::Null => Valid::succeed(()),
                 async_graphql::Value::Object(obj) if obj.is_empty() => Valid::succeed(()),
-                _ => Valid::fail("expected empty"),
+                _ => Valid::fail(miette::diagnostic!("expected empty")),
             },
             JsonSchema::Any => Valid::succeed(()),
             JsonSchema::Arr(schema) => match value {
@@ -121,7 +121,7 @@ impl JsonSchema {
                     })
                     .unit()
                 }
-                _ => Valid::fail("expected array"),
+                _ => Valid::fail(miette::diagnostic!("expected array")),
             },
             JsonSchema::Obj(fields) => {
                 let field_schema_list: Vec<(&String, &JsonSchema)> = fields.iter().collect();
@@ -132,7 +132,10 @@ impl JsonSchema {
                                 if let Some(field_value) = map.get::<str>(name.as_ref()) {
                                     schema.validate(field_value).trace(name)
                                 } else {
-                                    Valid::fail("expected field to be non-nullable").trace(name)
+                                    Valid::fail(miette::diagnostic!(
+                                        "expected field to be non-nullable"
+                                    ))
+                                    .trace(name)
                                 }
                             } else if let Some(field_value) = map.get::<str>(name.as_ref()) {
                                 schema.validate(field_value).trace(name)
@@ -142,7 +145,7 @@ impl JsonSchema {
                         })
                         .unit()
                     }
-                    _ => Valid::fail("expected object"),
+                    _ => Valid::fail(miette::diagnostic!("expected object")),
                 }
             }
             JsonSchema::Opt(schema) => match value {
@@ -154,15 +157,16 @@ impl JsonSchema {
     }
 
     /// Check if `self` is a subtype of `other`
-    pub fn is_a(&self, super_type: &JsonSchema, name: &str) -> Valid<(), String> {
+    pub fn is_a(&self, super_type: &JsonSchema, name: &str) -> Valid<(), miette::MietteDiagnostic> {
         let sub_type = self;
         if let JsonSchema::Any = super_type {
             return Valid::succeed(());
         }
 
-        let fail = Valid::fail(format!(
+        let fail = Valid::fail(miette::diagnostic!(
             "Type '{}' is not assignable to type '{}'",
-            sub_type, super_type
+            sub_type,
+            super_type
         ))
         .trace(name);
 
@@ -191,8 +195,11 @@ impl JsonSchema {
             JsonSchema::Obj(expected) => {
                 if let JsonSchema::Obj(actual) = sub_type {
                     return Valid::from_iter(expected.iter(), |(key, expected)| {
-                        Valid::from_option(actual.get(key), format!("missing key: {}", key))
-                            .and_then(|actual| actual.is_a(expected, key))
+                        Valid::from_option(
+                            actual.get(key),
+                            miette::diagnostic!("missing key: {}", key),
+                        )
+                        .and_then(|actual| actual.is_a(expected, key))
                     })
                     .trace(name)
                     .unit();
@@ -241,7 +248,7 @@ impl JsonSchema {
 }
 
 impl TryFrom<&MessageDescriptor> for JsonSchema {
-    type Error = crate::core::valid::ValidationError<String>;
+    type Error = crate::core::valid::ValidationError<miette::MietteDiagnostic>;
 
     fn try_from(value: &MessageDescriptor) -> Result<Self, Self::Error> {
         if value.is_map_entry() {
@@ -270,7 +277,7 @@ impl TryFrom<&MessageDescriptor> for JsonSchema {
 }
 
 impl TryFrom<&EnumDescriptor> for JsonSchema {
-    type Error = crate::core::valid::ValidationError<String>;
+    type Error = crate::core::valid::ValidationError<miette::MietteDiagnostic>;
 
     fn try_from(value: &EnumDescriptor) -> Result<Self, Self::Error> {
         let mut set = BTreeSet::new();
@@ -282,7 +289,7 @@ impl TryFrom<&EnumDescriptor> for JsonSchema {
 }
 
 impl TryFrom<&FieldDescriptor> for JsonSchema {
-    type Error = crate::core::valid::ValidationError<String>;
+    type Error = crate::core::valid::ValidationError<miette::MietteDiagnostic>;
 
     fn try_from(value: &FieldDescriptor) -> Result<Self, Self::Error> {
         let field_schema = match value.kind() {
@@ -378,7 +385,10 @@ mod tests {
             map
         });
         let result = schema.validate(&value);
-        assert_eq!(result, Valid::fail("expected number").trace("age"));
+        assert_eq!(
+            result,
+            Valid::fail(miette::diagnostic!("expected number")).trace("age")
+        );
     }
 
     #[test]
@@ -423,7 +433,7 @@ mod tests {
         let value = async_graphql::Value::String("test".to_owned());
 
         let result = schema.validate(&value);
-        assert_eq!(result, Valid::fail("expected empty"));
+        assert_eq!(result, Valid::fail(miette::diagnostic!("expected empty")));
     }
 
     #[test]
@@ -450,7 +460,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_from_protobuf_conversion() -> anyhow::Result<()> {
+    async fn test_from_protobuf_conversion() -> miette::Result<()> {
         let grpc_method = GrpcMethod::try_from("news.NewsService.GetNews").unwrap();
 
         let file = ProtobufSet::from_proto_file(get_proto_file(protobuf::NEWS).await?)?;
@@ -496,8 +506,10 @@ mod tests {
         let result = schema.is_a(&value, name);
         assert_eq!(
             result,
-            Valid::fail("Type 'enum {A, B}' is not assignable to type '[enum {A, B}]'".to_string())
-                .trace(name)
+            Valid::fail(miette::diagnostic!(
+                "Type 'enum {{A, B}}' is not assignable to type '[enum {{A, B}}]'"
+            ))
+            .trace(name)
         );
     }
 
@@ -518,9 +530,9 @@ mod tests {
         let result = schema.is_a(&value, name);
         assert_eq!(
             result,
-            Valid::fail(
-                "Type 'enum {A, B}' is not assignable to type 'enum {A, B, C}'".to_string()
-            )
+            Valid::fail(miette::diagnostic!(
+                "Type 'enum {{A, B}}' is not assignable to type 'enum {{A, B, C}}'"
+            ))
             .trace(name)
         );
     }

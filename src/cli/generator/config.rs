@@ -116,16 +116,18 @@ pub struct Schema {
     pub mutation: Option<String>,
 }
 
-fn between(threshold: f32, min: f32, max: f32) -> Valid<(), String> {
-    Valid::<(), String>::fail(format!(
+fn between(threshold: f32, min: f32, max: f32) -> Valid<(), miette::MietteDiagnostic> {
+    Valid::<(), miette::MietteDiagnostic>::fail(miette::diagnostic!(
         "Invalid threshold value ({:.2}). Allowed range is [{:.2} - {:.2}] inclusive.",
-        threshold, min, max
+        threshold,
+        min,
+        max
     ))
     .when(|| !(min..=max).contains(&threshold))
 }
 
 impl ValidateFrom<PresetConfig> for Preset {
-    type Error = String;
+    type Error = miette::MietteDiagnostic;
     fn validate_from(config: PresetConfig) -> Valid<Self, Self::Error> {
         let mut preset = Preset::new();
 
@@ -195,7 +197,7 @@ impl Headers {
 }
 
 impl Output<UnResolved> {
-    pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<Output<Resolved>> {
+    pub fn resolve(self, parent_dir: Option<&Path>) -> miette::Result<Output<Resolved>> {
         Ok(Output {
             format: self.format,
             path: self.path.into_resolved(parent_dir),
@@ -204,7 +206,7 @@ impl Output<UnResolved> {
 }
 
 impl Source<UnResolved> {
-    pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<Source<Resolved>> {
+    pub fn resolve(self, parent_dir: Option<&Path>) -> miette::Result<Source<Resolved>> {
         match self {
             Source::Curl { src, field_name, headers, body, method, is_mutation } => {
                 let resolved_path = src.into_resolved(parent_dir);
@@ -230,7 +232,7 @@ impl Source<UnResolved> {
 }
 
 impl Input<UnResolved> {
-    pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<Input<Resolved>> {
+    pub fn resolve(self, parent_dir: Option<&Path>) -> miette::Result<Input<Resolved>> {
         let resolved_source = self.source.resolve(parent_dir)?;
         Ok(Input { source: resolved_source })
     }
@@ -238,14 +240,14 @@ impl Input<UnResolved> {
 
 impl Config {
     /// Resolves all the relative paths present inside the GeneratorConfig.
-    pub fn into_resolved(self, config_path: &str) -> anyhow::Result<Config<Resolved>> {
+    pub fn into_resolved(self, config_path: &str) -> miette::Result<Config<Resolved>> {
         let parent_dir = Some(Path::new(config_path).parent().unwrap_or(Path::new("")));
 
         let inputs = self
             .inputs
             .into_iter()
             .map(|input| input.resolve(parent_dir))
-            .collect::<anyhow::Result<Vec<Input<Resolved>>>>()?;
+            .collect::<miette::Result<Vec<Input<Resolved>>>>()?;
 
         let output = self.output.resolve(parent_dir)?;
         let llm = self.llm.map(|llm| {
@@ -333,7 +335,7 @@ mod tests {
             unwrap_single_field_types: None,
         };
 
-        let transform_preset: Result<Preset, ValidationError<String>> =
+        let transform_preset: Result<Preset, ValidationError<miette::MietteDiagnostic>> =
             config_preset.validate_into().to_result();
         assert!(transform_preset.is_err());
     }
@@ -434,7 +436,7 @@ mod tests {
         let json = r#"
           {"output": {
               "paths": "./output.graphql",
-          }} 
+          }}
         "#;
         let expected_error =
             "unknown field `paths`, expected `path` or `format` at line 3 column 21";
@@ -446,7 +448,7 @@ mod tests {
         let json = r#"
           {"schema": {
               "querys": "Query",
-          }} 
+          }}
         "#;
         let expected_error =
             "unknown field `querys`, expected `query` or `mutation` at line 3 column 22";

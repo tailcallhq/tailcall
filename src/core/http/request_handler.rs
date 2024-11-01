@@ -2,12 +2,12 @@ use std::collections::BTreeSet;
 use std::ops::Deref;
 use std::sync::Arc;
 
-use anyhow::Result;
 use async_graphql::ServerError;
 use hyper::header::{self, HeaderValue, CONTENT_TYPE};
 use hyper::http::request::Parts;
 use hyper::http::Method;
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
+use miette::{IntoDiagnostic, Result};
 use opentelemetry::trace::SpanKind;
 use opentelemetry_semantic_conventions::trace::{HTTP_REQUEST_METHOD, HTTP_ROUTE};
 use prometheus::{Encoder, ProtobufEncoder, TextEncoder, TEXT_FORMAT};
@@ -31,10 +31,12 @@ fn prometheus_metrics(prometheus_exporter: &PrometheusExporter) -> Result<Respon
     let mut buffer = vec![];
 
     match prometheus_exporter.format {
-        PrometheusFormat::Text => TextEncoder::new().encode(&metric_families, &mut buffer)?,
-        PrometheusFormat::Protobuf => {
-            ProtobufEncoder::new().encode(&metric_families, &mut buffer)?
-        }
+        PrometheusFormat::Text => TextEncoder::new()
+            .encode(&metric_families, &mut buffer)
+            .into_diagnostic()?,
+        PrometheusFormat::Protobuf => ProtobufEncoder::new()
+            .encode(&metric_families, &mut buffer)
+            .into_diagnostic()?,
     };
 
     let content_type = match prometheus_exporter.format {
@@ -42,16 +44,18 @@ fn prometheus_metrics(prometheus_exporter: &PrometheusExporter) -> Result<Respon
         PrometheusFormat::Protobuf => prometheus::PROTOBUF_FORMAT,
     };
 
-    Ok(Response::builder()
+    Response::builder()
         .status(200)
         .header(CONTENT_TYPE, content_type)
-        .body(Body::from(buffer))?)
+        .body(Body::from(buffer))
+        .into_diagnostic()
 }
 
 fn not_found() -> Result<Response<Body>> {
-    Ok(Response::builder()
+    Response::builder()
         .status(StatusCode::NOT_FOUND)
-        .body(Body::empty())?)
+        .body(Body::empty())
+        .into_diagnostic()
 }
 
 fn create_request_context(req: &Request<Body>, app_ctx: &AppContext) -> RequestContext {
@@ -90,7 +94,7 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     req_counter.set_http_route("/graphql");
     let req_ctx = Arc::new(create_request_context(&req, app_ctx));
     let (req, body) = req.into_parts();
-    let bytes = hyper::body::to_bytes(body).await?;
+    let bytes = hyper::body::to_bytes(body).await.into_diagnostic()?;
     let graphql_request = serde_json::from_slice::<T>(&bytes);
     match graphql_request {
         Ok(request) => {
@@ -118,7 +122,7 @@ async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
     req_ctx: &Arc<RequestContext>,
     request: T,
     req: Parts,
-) -> anyhow::Result<Response<Body>> {
+) -> miette::Result<Response<Body>> {
     let mut response = if app_ctx.blueprint.server.enable_jit {
         let operation_id = request.operation_id(&req.headers);
         let exec = JITExecutor::new(app_ctx.clone(), req_ctx.clone(), operation_id);
@@ -251,7 +255,12 @@ async fn handle_rest_apis(
     app_ctx: Arc<AppContext>,
     req_counter: &mut RequestCounter,
 ) -> Result<Response<Body>> {
-    *request.uri_mut() = request.uri().path().replace(API_URL_PREFIX, "").parse()?;
+    *request.uri_mut() = request
+        .uri()
+        .path()
+        .replace(API_URL_PREFIX, "")
+        .parse()
+        .into_diagnostic()?;
     let req_ctx = Arc::new(create_request_context(&request, app_ctx.as_ref()));
     if let Some(p_request) = app_ctx.endpoints.matches(&request) {
         let http_route = format!("{API_URL_PREFIX}{}", p_request.path.as_str());
@@ -264,7 +273,7 @@ async fn handle_rest_apis(
             { HTTP_ROUTE } = http_route
         );
         return async {
-            let graphql_request = p_request.into_request(request).await?;
+            let graphql_request = p_request.into_request(request).await.into_diagnostic()?;
             let mut response = graphql_request
                 .data(req_ctx.clone())
                 .execute(&app_ctx.schema)
@@ -320,7 +329,8 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
             let status_response = Response::builder()
                 .status(StatusCode::OK)
                 .header(CONTENT_TYPE, "application/json")
-                .body(Body::from(r#"{"message": "ready"}"#))?;
+                .body(Body::from(r#"{"message": "ready"}"#))
+                .into_diagnostic()?;
             Ok(status_response)
         }
         Method::GET => {
@@ -386,10 +396,12 @@ mod test {
     use crate::core::valid::Validator;
 
     #[tokio::test]
-    async fn test_health_endpoint() -> anyhow::Result<()> {
-        let sdl = tokio::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER).await?;
-        let config = Config::from_sdl(&sdl).to_result()?;
-        let mut blueprint = Blueprint::try_from(&ConfigModule::from(config))?;
+    async fn test_health_endpoint() -> miette::Result<()> {
+        let sdl = tokio::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER)
+            .await
+            .into_diagnostic()?;
+        let config = Config::from_sdl(&sdl).to_result().into_diagnostic()?;
+        let mut blueprint = Blueprint::try_from(&ConfigModule::from(config)).into_diagnostic()?;
         blueprint.server.routes = Routes::default().with_status("/health");
         let app_ctx = Arc::new(AppContext::new(
             blueprint,
@@ -400,22 +412,27 @@ mod test {
         let req = Request::builder()
             .method(Method::GET)
             .uri("http://localhost:8000/health".to_string())
-            .body(Body::empty())?;
+            .body(Body::empty())
+            .into_diagnostic()?;
 
         let resp = handle_request::<GraphQLRequest>(req, app_ctx).await?;
 
         assert_eq!(resp.status(), StatusCode::OK);
-        let body = hyper::body::to_bytes(resp.into_body()).await?;
+        let body = hyper::body::to_bytes(resp.into_body())
+            .await
+            .into_diagnostic()?;
         assert_eq!(body, r#"{"message": "ready"}"#);
 
         Ok(())
     }
 
     #[tokio::test]
-    async fn test_graphql_endpoint() -> anyhow::Result<()> {
-        let sdl = tokio::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER).await?;
-        let config = Config::from_sdl(&sdl).to_result()?;
-        let mut blueprint = Blueprint::try_from(&ConfigModule::from(config))?;
+    async fn test_graphql_endpoint() -> miette::Result<()> {
+        let sdl = tokio::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER)
+            .await
+            .into_diagnostic()?;
+        let config = Config::from_sdl(&sdl).to_result().into_diagnostic()?;
+        let mut blueprint = Blueprint::try_from(&ConfigModule::from(config)).into_diagnostic()?;
         blueprint.server.routes = Routes::default().with_graphql("/gql");
         let app_ctx = Arc::new(AppContext::new(
             blueprint,
@@ -428,13 +445,16 @@ mod test {
             .method(Method::POST)
             .uri("http://localhost:8000/gql".to_string())
             .header("Content-Type", "application/json")
-            .body(Body::from(query))?;
+            .body(Body::from(query))
+            .into_diagnostic()?;
 
         let resp = handle_request::<GraphQLRequest>(req, app_ctx).await?;
 
         assert_eq!(resp.status(), StatusCode::OK);
-        let body = hyper::body::to_bytes(resp.into_body()).await?;
-        let body_str = String::from_utf8(body.to_vec())?;
+        let body = hyper::body::to_bytes(resp.into_body())
+            .await
+            .into_diagnostic()?;
+        let body_str = String::from_utf8(body.to_vec()).into_diagnostic()?;
         assert!(body_str.contains("queryType"));
         assert!(body_str.contains("name"));
 

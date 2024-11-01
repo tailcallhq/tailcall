@@ -3,6 +3,7 @@ use std::path::Path;
 
 use http::header::{HeaderMap, HeaderName, HeaderValue};
 use inquire::Confirm;
+use miette::IntoDiagnostic;
 use pathdiff::diff_paths;
 
 use super::config::{Config, LLMConfig, Resolved, Source};
@@ -31,7 +32,7 @@ impl Generator {
     }
 
     /// Writes the configuration to the output file if allowed.
-    async fn write(self, graphql_config: &ConfigModule, output_path: &str) -> anyhow::Result<()> {
+    async fn write(self, graphql_config: &ConfigModule, output_path: &str) -> miette::Result<()> {
         let output_source = config::Source::detect(output_path)?;
         let config = match output_source {
             config::Source::Json => graphql_config.to_json(true)?,
@@ -53,7 +54,7 @@ impl Generator {
 
     /// Checks if the output file already exists and prompts for overwrite
     /// confirmation.
-    fn should_overwrite(&self, output_path: &str) -> anyhow::Result<bool> {
+    fn should_overwrite(&self, output_path: &str) -> miette::Result<bool> {
         if is_exists(output_path) {
             let should_overwrite = Confirm::new(
                 format!(
@@ -63,7 +64,8 @@ impl Generator {
                 .as_str(),
             )
             .with_default(false)
-            .prompt()?;
+            .prompt()
+            .into_diagnostic()?;
             if !should_overwrite {
                 return Ok(false);
             }
@@ -71,7 +73,7 @@ impl Generator {
         Ok(true)
     }
 
-    pub async fn read(&self) -> anyhow::Result<Config<Resolved>> {
+    pub async fn read(&self) -> miette::Result<Config<Resolved>> {
         let config_path = &self.config_path;
         let source = ConfigSource::detect(config_path)?;
         let mut config_content = self.runtime.file.read(config_path).await?;
@@ -86,8 +88,8 @@ impl Generator {
         config_content = Mustache::parse(&config_content).render(&reader_context);
 
         let config: Config = match source {
-            ConfigSource::Json => serde_json::from_str(&config_content)?,
-            ConfigSource::Yml => serde_yaml::from_str(&config_content)?,
+            ConfigSource::Json => serde_json::from_str(&config_content).into_diagnostic()?,
+            ConfigSource::Yml => serde_yaml::from_str(&config_content).into_diagnostic()?,
         };
 
         config.into_resolved(config_path)
@@ -95,7 +97,7 @@ impl Generator {
 
     /// performs all the i/o's required in the config file and generates
     /// concrete vec containing data for generator.
-    pub async fn resolve_io(&self, config: Config<Resolved>) -> anyhow::Result<Vec<Input>> {
+    pub async fn resolve_io(&self, config: Config<Resolved>) -> miette::Result<Vec<Input>> {
         let mut input_samples = vec![];
 
         let reader = ResourceReader::cached(self.runtime.clone());
@@ -113,15 +115,17 @@ impl Generator {
                     let is_mutation = is_mutation.unwrap_or_default();
 
                     let request_method = method.clone().to_hyper();
-                    let mut request = reqwest::Request::new(request_method, url.parse()?);
+                    let mut request =
+                        reqwest::Request::new(request_method, url.parse().into_diagnostic()?);
                     if !req_body.is_null() {
                         request.body_mut().replace(req_body.to_string().into());
                     }
                     if let Some(headers_inner) = headers.as_btree_map() {
                         let mut header_map = HeaderMap::new();
                         for (key, value) in headers_inner {
-                            let header_name = HeaderName::try_from(key)?;
-                            let header_value = HeaderValue::try_from(value.to_string())?;
+                            let header_name = HeaderName::try_from(key).into_diagnostic()?;
+                            let header_value =
+                                HeaderValue::try_from(value.to_string()).into_diagnostic()?;
                             header_map.insert(header_name, header_value);
                         }
                         *request.headers_mut() = header_map;
@@ -130,10 +134,10 @@ impl Generator {
                     let resource: Resource = request.into();
                     let response = reader.read_file(resource).await?;
                     input_samples.push(Input::Json {
-                        url: url.parse()?,
+                        url: url.parse().into_diagnostic()?,
                         method,
                         req_body,
-                        res_body: serde_json::from_str(&response.content)?,
+                        res_body: serde_json::from_str(&response.content).into_diagnostic()?,
                         field_name,
                         is_mutation,
                         headers: headers.into_btree_map(),
@@ -160,7 +164,7 @@ impl Generator {
     }
 
     /// generates the final configuration.
-    pub async fn generate(self) -> anyhow::Result<ConfigModule> {
+    pub async fn generate(self) -> miette::Result<ConfigModule> {
         let config = self.read().await?;
         let path = config.output.path.0.to_owned();
         let query_type = config.schema.query.clone();

@@ -3,6 +3,7 @@ use std::hash::{Hash, Hasher};
 
 use derive_setters::Setters;
 use http::header::{HeaderMap, HeaderValue};
+use miette::IntoDiagnostic;
 use tailcall_hasher::TailcallHasher;
 use url::Url;
 
@@ -41,8 +42,8 @@ pub struct Query {
 impl RequestTemplate {
     /// Creates a URL for the context
     /// Fills in all the mustache templates with required values.
-    fn create_url<C: PathString + PathValue>(&self, ctx: &C) -> anyhow::Result<Url> {
-        let mut url = url::Url::parse(self.root_url.render(ctx).as_str())?;
+    fn create_url<C: PathString + PathValue>(&self, ctx: &C) -> miette::Result<Url> {
+        let mut url = url::Url::parse(self.root_url.render(ctx).as_str()).into_diagnostic()?;
         if self.query.is_empty() && self.root_url.is_const() {
             return Ok(url);
         }
@@ -113,7 +114,7 @@ impl RequestTemplate {
     pub fn to_request<C: PathString + HasHeaders + PathValue>(
         &self,
         ctx: &C,
-    ) -> anyhow::Result<reqwest::Request> {
+    ) -> miette::Result<reqwest::Request> {
         // Create url
         let url = self.create_url(ctx)?;
         let method = self.method.clone();
@@ -129,7 +130,7 @@ impl RequestTemplate {
         &self,
         mut req: reqwest::Request,
         ctx: &C,
-    ) -> anyhow::Result<reqwest::Request> {
+    ) -> miette::Result<reqwest::Request> {
         if let Some(body_path) = &self.body_path {
             match &self.encoding {
                 Encoding::ApplicationJson => {
@@ -140,7 +141,9 @@ impl RequestTemplate {
                     // We first encode everything to string and then back to form-urlencoded
                     let body: String = body_path.render(ctx);
                     let form_data = match serde_json::from_str::<serde_json::Value>(&body) {
-                        Ok(deserialized_data) => serde_urlencoded::to_string(deserialized_data)?,
+                        Ok(deserialized_data) => {
+                            serde_urlencoded::to_string(deserialized_data).into_diagnostic()?
+                        }
                         Err(_) => body,
                     };
 
@@ -182,7 +185,7 @@ impl RequestTemplate {
         req
     }
 
-    pub fn new(root_url: &str) -> anyhow::Result<Self> {
+    pub fn new(root_url: &str) -> miette::Result<Self> {
         Ok(Self {
             root_url: Mustache::parse(root_url),
             query: Default::default(),
@@ -196,7 +199,7 @@ impl RequestTemplate {
     }
 
     /// Creates a new RequestTemplate with the given form encoded URL
-    pub fn form_encoded_url(url: &str) -> anyhow::Result<Self> {
+    pub fn form_encoded_url(url: &str) -> miette::Result<Self> {
         Ok(Self::new(url)?.encoding(Encoding::ApplicationXWwwFormUrlencoded))
     }
 
@@ -207,8 +210,8 @@ impl RequestTemplate {
 }
 
 impl TryFrom<Endpoint> for RequestTemplate {
-    type Error = anyhow::Error;
-    fn try_from(endpoint: Endpoint) -> anyhow::Result<Self> {
+    type Error = miette::Report;
+    fn try_from(endpoint: Endpoint) -> miette::Result<Self> {
         let path = Mustache::parse(endpoint.path.as_str());
         let query = endpoint
             .query
@@ -220,13 +223,13 @@ impl TryFrom<Endpoint> for RequestTemplate {
                     skip_empty: *skip,
                 })
             })
-            .collect::<anyhow::Result<Vec<_>>>()?;
+            .collect::<miette::Result<Vec<_>>>()?;
         let method = endpoint.method.clone().to_hyper();
         let headers = endpoint
             .headers
             .iter()
-            .map(|(k, v)| Ok((k.clone(), Mustache::parse(v.to_str()?))))
-            .collect::<anyhow::Result<Vec<_>>>()?;
+            .map(|(k, v)| Ok((k.clone(), Mustache::parse(v.to_str().into_diagnostic()?))))
+            .collect::<miette::Result<Vec<_>>>()?;
 
         let body = endpoint
             .body
@@ -309,6 +312,7 @@ mod tests {
 
     use derive_setters::Setters;
     use http::header::{HeaderMap, HeaderName};
+    use miette::IntoDiagnostic;
     use pretty_assertions::assert_eq;
     use serde_json::json;
 
@@ -359,7 +363,7 @@ mod tests {
         fn to_body<C: PathString + HasHeaders + PathValue>(
             &self,
             ctx: &C,
-        ) -> anyhow::Result<String> {
+        ) -> miette::Result<String> {
             let body = self
                 .to_request(ctx)?
                 .body()
@@ -367,7 +371,7 @@ mod tests {
                 .map(|a| a.to_vec())
                 .unwrap_or_default();
 
-            Ok(std::str::from_utf8(&body)?.to_string())
+            Ok(std::str::from_utf8(&body).into_diagnostic()?.to_string())
         }
     }
 

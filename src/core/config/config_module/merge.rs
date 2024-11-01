@@ -10,7 +10,11 @@ use crate::core::valid::{Valid, Validator};
 use crate::core::variance::{Contravariant, Covariant, Invariant};
 
 impl core::Type {
-    fn merge(self, other: Self, non_null_merge: fn(bool, bool) -> bool) -> Valid<Self, String> {
+    fn merge(
+        self,
+        other: Self,
+        non_null_merge: fn(bool, bool) -> bool,
+    ) -> Valid<Self, miette::MietteDiagnostic> {
         use core::Type;
 
         match (self, other) {
@@ -19,9 +23,10 @@ impl core::Type {
                 Type::Named { name: other_name, non_null: other_non_null },
             ) => {
                 if name != other_name {
-                    return Valid::fail(format!(
+                    return Valid::fail(miette::diagnostic!(
                         "Type mismatch: expected `{}`, got `{}`",
-                        &name, other_name
+                        &name,
+                        other_name
                     ));
                 }
 
@@ -40,7 +45,9 @@ impl core::Type {
                     of_type: Box::new(of_type),
                     non_null: non_null_merge(non_null, other_non_null),
                 }),
-            _ => Valid::fail("Type mismatch: expected list, got singular value".to_string()),
+            _ => Valid::fail(miette::diagnostic!(
+                "Type mismatch: expected list, got singular value"
+            )),
         }
     }
 }
@@ -50,7 +57,7 @@ impl Contravariant for core::Type {
     /// if it is specified as non_null in at least one of the definitions.
     /// That's a narrows merge i.e. the result narrows the input definitions
     /// the way it could be handled by both self and other sources
-    fn shrink(self, other: Self) -> Valid<Self, String> {
+    fn shrink(self, other: Self) -> Valid<Self, miette::MietteDiagnostic> {
         #[inline]
         fn non_null_merge(non_null: bool, other_non_null: bool) -> bool {
             non_null || other_non_null
@@ -65,7 +72,7 @@ impl Covariant for core::Type {
     /// if it is specified as non_null in both sources.
     /// That's a wide merge i.e. the result wides the input definitions
     /// the way it could be handled by both self and other sources
-    fn expand(self, other: Self) -> Valid<Self, String> {
+    fn expand(self, other: Self) -> Valid<Self, miette::MietteDiagnostic> {
         #[inline]
         fn non_null_merge(non_null: bool, other_non_null: bool) -> bool {
             non_null && other_non_null
@@ -76,7 +83,7 @@ impl Covariant for core::Type {
 }
 
 impl Contravariant for Arg {
-    fn shrink(self, other: Self) -> Valid<Self, String> {
+    fn shrink(self, other: Self) -> Valid<Self, miette::MietteDiagnostic> {
         self.type_of.shrink(other.type_of).map(|type_of| Self {
             type_of,
             doc: self.doc.merge_right(other.doc),
@@ -87,7 +94,7 @@ impl Contravariant for Arg {
 }
 
 impl Contravariant for Field {
-    fn shrink(self, other: Self) -> Valid<Self, String> {
+    fn shrink(self, other: Self) -> Valid<Self, miette::MietteDiagnostic> {
         self.type_of
             .shrink(other.type_of)
             .fuse(self.args.shrink(other.args))
@@ -108,7 +115,7 @@ impl Contravariant for Field {
 }
 
 impl Covariant for Field {
-    fn expand(self, other: Self) -> Valid<Self, String> {
+    fn expand(self, other: Self) -> Valid<Self, miette::MietteDiagnostic> {
         self.type_of
             .expand(other.type_of)
             // args are always merged with narrow
@@ -130,7 +137,7 @@ impl Covariant for Field {
 }
 
 impl Contravariant for Type {
-    fn shrink(self, other: Self) -> Valid<Self, String> {
+    fn shrink(self, other: Self) -> Valid<Self, miette::MietteDiagnostic> {
         self.fields.shrink(other.fields).map(|fields| Self {
             fields,
             // TODO: is not very clear how to merge added_fields here
@@ -146,7 +153,7 @@ impl Contravariant for Type {
 }
 
 impl Covariant for Type {
-    fn expand(self, other: Self) -> Valid<Self, String> {
+    fn expand(self, other: Self) -> Valid<Self, miette::MietteDiagnostic> {
         self.fields.expand(other.fields).map(|fields| Self {
             fields,
             // TODO: is not very clear how to merge added_fields here
@@ -162,7 +169,7 @@ impl Covariant for Type {
 }
 
 impl Contravariant for Enum {
-    fn shrink(mut self, other: Self) -> Valid<Self, String> {
+    fn shrink(mut self, other: Self) -> Valid<Self, miette::MietteDiagnostic> {
         self.variants.retain(|key| other.variants.contains(key));
 
         Valid::succeed(Self {
@@ -173,7 +180,7 @@ impl Contravariant for Enum {
 }
 
 impl Covariant for Enum {
-    fn expand(mut self, other: Self) -> Valid<Self, String> {
+    fn expand(mut self, other: Self) -> Valid<Self, miette::MietteDiagnostic> {
         self.variants.extend(other.variants);
 
         Valid::succeed(Self {
@@ -184,7 +191,7 @@ impl Covariant for Enum {
 }
 
 impl Invariant for Cache {
-    fn unify(self, other: Self) -> Valid<Self, String> {
+    fn unify(self, other: Self) -> Valid<Self, miette::MietteDiagnostic> {
         let mut types = self.config.types;
         let mut enums = self.config.enums;
 
@@ -218,10 +225,10 @@ impl Invariant for Cache {
                         }
                         // if type is used as both input and output on either side
                         // generated validation error because we need to merge it differently
-                        (true, true, _, _) | (_, _, true, true) => Valid::fail("Type is used both as input and output type that couldn't be merged for federation".to_string()),
+                        (true, true, _, _) | (_, _, true, true) => Valid::fail(miette::diagnostic!("Type is used both as input and output type that couldn't be merged for federation")),
                         // type is used differently on both sides
-                        (true, false, false, true) | (false, true, true, false) => Valid::fail("Type is used as input type in one subgraph and output type in another".to_string()),
-                        (false, false, false, false) => Valid::fail("Cannot infer the usage of type and therefore merge it from the subgraph".to_string()),
+                        (true, false, false, true) | (false, true, true, false) => Valid::fail(miette::diagnostic!("Type is used as input type in one subgraph and output type in another")),
+                        (false, false, false, false) => Valid::fail(miette::diagnostic!("Cannot infer the usage of type and therefore merge it from the subgraph")),
                     }
                 }
                 None => Valid::succeed(other_type),
@@ -257,12 +264,12 @@ impl Invariant for Cache {
                             if en == other_enum {
                                 Valid::succeed(en)
                             } else {
-                                Valid::fail("Enum is used both as input and output types and in that case the enum content should be equal for every subgraph".to_string())
+                                Valid::fail(miette::diagnostic!("Enum is used both as input and output types and in that case the enum content should be equal for every subgraph"))
                             }
                         },
                         // type is used differently on both sides
-                        (true, false, false, true) | (false, true, true, false) => Valid::fail("Enum is used as input type in one subgraph and output type in another".to_string()),
-                        (false, false, false, false) => Valid::fail("Cannot infer the usage of enum and therefore merge it from the subgraph".to_string()),
+                        (true, false, false, true) | (false, true, true, false) => Valid::fail(miette::diagnostic!("Enum is used as input type in one subgraph and output type in another")),
+                        (false, false, false, false) => Valid::fail(miette::diagnostic!("Cannot infer the usage of enum and therefore merge it from the subgraph")),
                     }
                 },
                 None => Valid::succeed(other_enum),
@@ -288,7 +295,7 @@ impl Invariant for Cache {
 }
 
 impl Invariant for ConfigModule {
-    fn unify(self, other: Self) -> Valid<Self, String> {
+    fn unify(self, other: Self) -> Valid<Self, miette::MietteDiagnostic> {
         self.cache.unify(other.cache).map(|cache| Self {
             cache,
             extensions: self.extensions.merge_right(other.extensions),
@@ -343,7 +350,7 @@ where
     C: FederatedMergeCollection,
     C::Entry: Contravariant,
 {
-    fn shrink(mut self, other: Self) -> Valid<Self, String> {
+    fn shrink(mut self, other: Self) -> Valid<Self, miette::MietteDiagnostic> {
         Valid::from_iter(other, |(name, other_field)| {
         match self.remove(&name) {
             Some(field) => Contravariant::shrink(field, other_field).map(|merged| Some((name.clone(), merged))),
@@ -351,7 +358,7 @@ where
                 if other_field.type_of().is_nullable() {
                     Valid::succeed(None)
                 } else {
-                    Valid::fail("Input arg is marked as non_null on the right side, but is not present on the left side".to_string())
+                    Valid::fail(miette::diagnostic!("Input arg is marked as non_null on the right side, but is not present on the left side"))
                 }
             },
         }
@@ -361,7 +368,7 @@ where
             if field.type_of().is_nullable() {
                 Valid::succeed(())
             } else {
-                Valid::fail("Input arg is marked as non_null on the left side, but is not present on the right side".to_string()).trace(&name)
+                Valid::fail(miette::diagnostic!("Input arg is marked as non_null on the left side, but is not present on the right side")).trace(&name)
             }
         }))
         .map(|(merged_fields, _)| {
@@ -375,7 +382,7 @@ where
     C: FederatedMergeCollection,
     C::Entry: Covariant,
 {
-    fn expand(mut self, other: Self) -> Valid<Self, String> {
+    fn expand(mut self, other: Self) -> Valid<Self, miette::MietteDiagnostic> {
         Valid::from_iter(other, |(name, other_field)| match self.remove(&name) {
             Some(field) => field
                 .expand(other_field)
@@ -394,8 +401,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    use anyhow::Result;
     use insta::assert_snapshot;
+    use miette::{IntoDiagnostic, Result};
 
     use super::*;
     use crate::core::config::ConfigModule;
@@ -407,7 +414,7 @@ mod tests {
         let types1 = ConfigModule::from(include_config!("./fixtures/types-1.graphql")?);
         let types2 = ConfigModule::from(include_config!("./fixtures/types-2.graphql")?);
 
-        let merged = types1.unify(types2).to_result()?;
+        let merged = types1.unify(types2).to_result().into_diagnostic()?;
 
         assert_snapshot!(merged.to_sdl());
 
@@ -431,7 +438,7 @@ mod tests {
         let unions1 = ConfigModule::from(include_config!("./fixtures/unions-1.graphql")?);
         let unions2 = ConfigModule::from(include_config!("./fixtures/unions-2.graphql")?);
 
-        let merged = unions1.unify(unions2).to_result()?;
+        let merged = unions1.unify(unions2).to_result().into_diagnostic()?;
 
         assert_snapshot!(merged.to_sdl());
 
@@ -443,7 +450,7 @@ mod tests {
         let enums1 = ConfigModule::from(include_config!("./fixtures/enums-1.graphql")?);
         let enums2 = ConfigModule::from(include_config!("./fixtures/enums-2.graphql")?);
 
-        let merged = enums1.unify(enums2).to_result()?;
+        let merged = enums1.unify(enums2).to_result().into_diagnostic()?;
 
         assert_snapshot!(merged.to_sdl());
 
@@ -473,8 +480,8 @@ mod tests {
             ConfigModule::from(include_config!("./fixtures/subgraph-posts.graphql")?);
 
         let merged = router;
-        let merged = merged.unify(subgraph_users).to_result()?;
-        let merged = merged.unify(subgraph_posts).to_result()?;
+        let merged = merged.unify(subgraph_users).to_result().into_diagnostic()?;
+        let merged = merged.unify(subgraph_posts).to_result().into_diagnostic()?;
 
         assert_snapshot!(merged.to_sdl());
 
@@ -551,7 +558,9 @@ mod tests {
 
                 assert_eq!(
                     a.expand(b),
-                    Valid::fail("Type mismatch: expected `String`, got `Int`".to_owned())
+                    Valid::fail(miette::diagnostic!(
+                        "Type mismatch: expected `String`, got `Int`"
+                    ))
                 );
 
                 let a = Type::List {
@@ -562,7 +571,9 @@ mod tests {
 
                 assert_eq!(
                     a.expand(b),
-                    Valid::fail("Type mismatch: expected list, got singular value".to_owned())
+                    Valid::fail(miette::diagnostic!(
+                        "Type mismatch: expected list, got singular value"
+                    ))
                 );
             }
         }
@@ -633,7 +644,9 @@ mod tests {
 
                 assert_eq!(
                     a.shrink(b),
-                    Valid::fail("Type mismatch: expected `String`, got `Int`".to_owned())
+                    Valid::fail(miette::diagnostic!(
+                        "Type mismatch: expected `String`, got `Int`"
+                    ))
                 );
 
                 let a = Type::List {
@@ -644,7 +657,9 @@ mod tests {
 
                 assert_eq!(
                     a.shrink(b),
-                    Valid::fail("Type mismatch: expected list, got singular value".to_owned())
+                    Valid::fail(miette::diagnostic!(
+                        "Type mismatch: expected list, got singular value"
+                    ))
                 );
             }
         }

@@ -1,4 +1,4 @@
-use anyhow::Result;
+use miette::Result;
 use opentelemetry_sdk::export::trace::SpanData;
 use opentelemetry_sdk::metrics::data::{Metric, ResourceMetrics, ScopeMetrics};
 use opentelemetry_sdk::metrics::reader::MetricReader;

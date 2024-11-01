@@ -5,11 +5,11 @@ use std::path::Path;
 use std::sync::Arc;
 use std::{fs, panic};
 
-use anyhow::Context;
 use colored::Colorize;
 use futures_util::future::join_all;
 use http::Request;
 use hyper::Body;
+use miette::{Context, IntoDiagnostic, MietteDiagnostic};
 use serde::{Deserialize, Serialize};
 use tailcall::core::app_context::AppContext;
 use tailcall::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
@@ -36,8 +36,8 @@ struct SDLError {
     description: Option<String>,
 }
 
-impl<'a> From<Cause<&'a str>> for SDLError {
-    fn from(value: Cause<&'a str>) -> Self {
+impl<'a> From<Cause<MietteDiagnostic>> for SDLError {
+    fn from(value: Cause<MietteDiagnostic>) -> Self {
         SDLError {
             message: value.message.to_string(),
             trace: value.trace.iter().map(|e| e.to_string()).collect(),
@@ -56,7 +56,10 @@ impl From<Cause<String>> for SDLError {
     }
 }
 
-async fn is_sdl_error(spec: &ExecutionSpec, config_module: Valid<ConfigModule, String>) -> bool {
+async fn is_sdl_error(
+    spec: &ExecutionSpec,
+    config_module: Valid<ConfigModule, miette::MietteDiagnostic>,
+) -> bool {
     if spec.sdl_error {
         // errors: errors are expected, make sure they match
         let blueprint = config_module.and_then(|cfg| Valid::from(Blueprint::try_from(&cfg)));
@@ -199,9 +202,9 @@ async fn test_spec(spec: ExecutionSpec) {
 
     let config_module = Valid::from_iter(config_modules.iter(), |config_module| {
         Valid::from(config_module.as_ref().map_err(|e| {
-            match e.downcast_ref::<ValidationError<String>>() {
+            match e.downcast_ref::<ValidationError<MietteDiagnostic>>() {
                 Some(err) => err.clone(),
-                None => ValidationError::new(e.to_string()),
+                None => ValidationError::new(miette::diagnostic!("{}", e)),
             }
         }))
     })
@@ -259,11 +262,11 @@ async fn test_spec(spec: ExecutionSpec) {
     run_query_tests_on_spec(spec, config_modules, mock_http_client).await;
 }
 
-pub async fn load_and_test_execution_spec(path: &Path) -> anyhow::Result<()> {
-    let contents = fs::read_to_string(path)?;
+pub async fn load_and_test_execution_spec(path: &Path) -> miette::Result<()> {
+    let contents = fs::read_to_string(path).into_diagnostic()?;
     let spec: ExecutionSpec = ExecutionSpec::from_source(path, contents)
         .await
-        .with_context(|| path.display().to_string())?;
+        .context(path.display().to_string())?;
 
     match spec.runner {
         Some(Annotation::Skip) => {
@@ -278,7 +281,7 @@ pub async fn load_and_test_execution_spec(path: &Path) -> anyhow::Result<()> {
 async fn run_test(
     app_ctx: Arc<AppContext>,
     request: &APIRequest,
-) -> anyhow::Result<http::Response<Body>> {
+) -> miette::Result<http::Response<Body>> {
     let body = request
         .body
         .as_ref()
@@ -296,7 +299,8 @@ async fn run_test(
                 .uri(url.as_str()),
             |acc, (key, value)| acc.header(key, value),
         )
-        .body(body)?;
+        .body(body)
+        .into_diagnostic()?;
 
     // TODO: reuse logic from server.rs to select the correct handler
     if app_ctx.blueprint.server.enable_batch_requests {

@@ -3,7 +3,6 @@ mod type_field_discriminator;
 
 use std::collections::BTreeSet;
 
-use anyhow::{bail, Result};
 use async_graphql::Value;
 use keyed_discriminator::KeyedDiscriminator;
 use type_field_discriminator::TypeFieldDiscriminator;
@@ -47,10 +46,10 @@ impl Discriminator {
         type_name: String,
         types: BTreeSet<String>,
         typename_field: Option<String>,
-    ) -> Valid<Self, String> {
+    ) -> Valid<Self, miette::MietteDiagnostic> {
         if let Some(typename_field) = &typename_field {
             if typename_field.is_empty() {
-                return Valid::fail(format!(
+                return Valid::fail(miette::diagnostic!(
                     "The `field` cannot be an empty string for the `@discriminate` of type {}",
                     type_name
                 ));
@@ -66,7 +65,7 @@ impl Discriminator {
 
     /// Resolves the `__typename` for an object and inserts the value into the
     /// object.
-    pub fn resolve_type(&self, value: Value) -> Result<Value> {
+    pub fn resolve_type(&self, value: Value) -> miette::Result<Value> {
         // if typename is already present we return it
         if value.get_type_name().is_some() {
             return Ok(value);
@@ -75,7 +74,7 @@ impl Discriminator {
         match value {
             Value::Null => Ok(value),
             Value::List(arr) => {
-                let arr = arr.into_iter().map(|i| self.resolve_type(i)).collect::<Result<Vec<_>>>()?;
+                let arr = arr.into_iter().map(|i| self.resolve_type(i)).collect::<miette::Result<Vec<_>>>()?;
                 Ok(Value::array(arr))
             },
             Value::Object(_) => {
@@ -88,7 +87,7 @@ impl Discriminator {
                     }
                 }
             },
-            _ => bail!("Discriminator can only determine the types of arrays or objects but a different type.")
+            _ => miette::bail!("Discriminator can only determine the types of arrays or objects but a different type.")
         }
     }
 }
@@ -106,7 +105,7 @@ impl<'json, T> TypedValue<'json> for T
 where
     T: JsonLike<'json>,
 {
-    type Error = anyhow::Error;
+    type Error = miette::MietteDiagnostic;
 
     fn get_type_name(&'json self) -> Option<&'json str> {
         self.as_object()
@@ -121,7 +120,9 @@ where
             obj.insert_key(TYPENAME_FIELD, T::string(type_name.into()));
             Ok(())
         } else {
-            bail!("Cannot discriminate the type of a non object type.")
+            Err(miette::diagnostic!(
+                "Cannot discriminate the type of a non object type."
+            ))
         }
     }
 }

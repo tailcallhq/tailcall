@@ -1,6 +1,7 @@
+use miette::IntoDiagnostic;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-use crate::core::{Errata, FileIO};
+use crate::core::FileIO;
 
 #[derive(Clone)]
 pub struct NativeFileIO {}
@@ -11,35 +12,29 @@ impl NativeFileIO {
     }
 }
 
-async fn read(path: &str) -> anyhow::Result<String> {
-    let mut file = tokio::fs::File::open(path).await?;
+async fn read(path: &str) -> miette::Result<String> {
+    let mut file = tokio::fs::File::open(path).await.into_diagnostic()?;
     let mut buffer = Vec::new();
-    file.read_to_end(&mut buffer).await?;
-    Ok(String::from_utf8(buffer)?)
+    file.read_to_end(&mut buffer).await.into_diagnostic()?;
+    String::from_utf8(buffer).into_diagnostic()
 }
 
-async fn write<'a>(path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
-    let mut file = tokio::fs::File::create(path).await?;
-    file.write_all(content).await?;
+async fn write<'a>(path: &'a str, content: &'a [u8]) -> miette::Result<()> {
+    let mut file = tokio::fs::File::create(path).await.into_diagnostic()?;
+    file.write_all(content).await.into_diagnostic()?;
     Ok(())
 }
 
 #[async_trait::async_trait]
 impl FileIO for NativeFileIO {
-    async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
-        write(path, content).await.map_err(|err| {
-            Errata::new(format!("Failed to write file: {}", path).as_str())
-                .description(err.to_string())
-        })?;
+    async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> miette::Result<()> {
+        write(path, content).await?;
         tracing::info!("File write: {} ... ok", path);
         Ok(())
     }
 
-    async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String> {
-        let content = read(path).await.map_err(|err| {
-            Errata::new(format!("Failed to read file: {}", path).as_str())
-                .description(err.to_string())
-        })?;
+    async fn read<'a>(&'a self, path: &'a str) -> miette::Result<String> {
+        let content = read(path).await?;
         tracing::info!("File read: {} ... ok", path);
         Ok(content)
     }

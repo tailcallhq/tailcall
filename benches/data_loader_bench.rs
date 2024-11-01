@@ -23,7 +23,7 @@ struct MockHttpClient {
 
 #[async_trait::async_trait]
 impl HttpIO for MockHttpClient {
-    async fn execute(&self, _req: Request) -> anyhow::Result<Response<Bytes>> {
+    async fn execute(&self, _req: Request) -> miette::Result<Response<Bytes>> {
         Ok(Response::empty())
     }
 }
@@ -39,11 +39,11 @@ struct File;
 
 #[async_trait::async_trait]
 impl FileIO for File {
-    async fn write<'a>(&'a self, _: &'a str, _: &'a [u8]) -> anyhow::Result<()> {
+    async fn write<'a>(&'a self, _: &'a str, _: &'a [u8]) -> miette::Result<()> {
         unimplemented!("Not needed for this bench")
     }
 
-    async fn read<'a>(&'a self, _: &'a str) -> anyhow::Result<String> {
+    async fn read<'a>(&'a self, _: &'a str) -> miette::Result<String> {
         unimplemented!("Not needed for this bench")
     }
 }

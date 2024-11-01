@@ -87,7 +87,7 @@ impl<'a> FromJsonGenerator<'a> {
 
 impl Transform for FromJsonGenerator<'_> {
     type Value = Config;
-    type Error = String;
+    type Error = miette::MietteDiagnostic;
     fn transform(&self, config: Self::Value) -> Valid<Self::Value, Self::Error> {
         let config_gen_req = self.request_samples;
         let type_name_gen = self.type_name_generator;
@@ -145,7 +145,7 @@ mod tests {
     use crate::core::valid::Validator;
 
     #[tokio::test]
-    async fn generate_config_from_json() -> anyhow::Result<()> {
+    async fn generate_config_from_json() -> miette::Result<()> {
         let mut request_samples = vec![];
         let fixtures = [
             "src/core/generator/tests/fixtures/json/incompatible_properties.json",

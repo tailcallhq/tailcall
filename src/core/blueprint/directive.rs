@@ -13,7 +13,7 @@ pub struct Directive {
     pub arguments: HashMap<String, Value>,
 }
 
-pub fn to_directive(const_directive: ConstDirective) -> Valid<Directive, String> {
+pub fn to_directive(const_directive: ConstDirective) -> Valid<Directive, miette::MietteDiagnostic> {
     const_directive
         .arguments
         .into_iter()
@@ -23,16 +23,19 @@ pub fn to_directive(const_directive: ConstDirective) -> Valid<Directive, String>
             value.map(|value| (k.node.to_string(), value))
         })
         .collect::<Result<_, _>>()
-        .map_err(|e| ValidationError::new(e.to_string()))
+        .map_err(|e| ValidationError::new(miette::diagnostic!("{}", e)))
         .map(|arguments| Directive { name: const_directive.name.node.to_string(), arguments })
         .into()
 }
 
-pub fn to_const_directive(directive: &Directive) -> Valid<ConstDirective, String> {
+pub fn to_const_directive(
+    directive: &Directive,
+) -> Valid<ConstDirective, miette::MietteDiagnostic> {
     Valid::from_iter(directive.arguments.iter(), |(k, v)| {
         let name = pos(Name::new(k));
         Valid::from(serde_json::from_value(v.clone()).map(pos).map_err(|e| {
-            ValidationError::new(e.to_string()).trace(format!("@{}", directive.name).as_str())
+            ValidationError::new(miette::diagnostic!("{}", e))
+                .trace(format!("@{}", directive.name).as_str())
         }))
         .map(|value| (name, value))
     })

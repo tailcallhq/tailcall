@@ -1,6 +1,5 @@
 use std::collections::BTreeSet;
 
-use anyhow::{bail, Result};
 use async_graphql::Value;
 
 use super::TypedValue;
@@ -27,7 +26,10 @@ impl KeyedDiscriminator {
     ///
     /// `type_name`: The name of the type that this discriminator is applied at.
     /// `types`: The possible types that this discriminator can resolve.
-    pub fn new(type_name: String, types: BTreeSet<String>) -> Valid<Self, String> {
+    pub fn new(
+        type_name: String,
+        types: BTreeSet<String>,
+    ) -> Valid<Self, miette::MietteDiagnostic> {
         let discriminator = Self { type_name, types };
 
         Valid::succeed(discriminator)
@@ -36,7 +38,7 @@ impl KeyedDiscriminator {
     /// Resolves the `__typename` for an object.
     /// If the object has more than one key, or if the key is not in the list of
     /// possible types, an error will be returned.
-    pub fn resolve_type(&self, value: &Value) -> Result<String> {
+    pub fn resolve_type(&self, value: &Value) -> miette::Result<String> {
         match value {
             // INFO: when a value is null you cannot use __typename so we are safe returning whatever
             Value::Null => Ok("NULL".to_string()),
@@ -49,21 +51,21 @@ impl KeyedDiscriminator {
                         Ok(type_name)
                     } else {
                         let types: Vec<_> = self.types.clone().into_iter().collect();
-                        bail!("The type `{}` is not in the list of acceptable types {:?} of KeyedDiscriminator(type=\"{}\")", type_name, types, self.type_name)
+                        miette::bail!("The type `{}` is not in the list of acceptable types {:?} of KeyedDiscriminator(type=\"{}\")", type_name, types, self.type_name)
                     }
                 } else if index_map_len == 0 {
-                    bail!("The KeyedDiscriminator(type=\"{}\") cannot discriminate the Value because it contains no keys.", self.type_name)
+                    miette::bail!("The KeyedDiscriminator(type=\"{}\") cannot discriminate the Value because it contains no keys.", self.type_name)
                 } else {
-                    bail!("The KeyedDiscriminator(type=\"{}\") cannot discriminate the Value because it contains more than one keys.", self.type_name)
+                    miette::bail!("The KeyedDiscriminator(type=\"{}\") cannot discriminate the Value because it contains more than one keys.", self.type_name)
                 }
             },
-            _ => bail!("The KeyedDiscriminator(type=\"{}\") can only use object values to discriminate, but received a different type.", self.type_name)
+            _ => miette::bail!("The KeyedDiscriminator(type=\"{}\") can only use object values to discriminate, but received a different type.", self.type_name)
         }
     }
 
     /// Resolves the `__typename` for an object and inserts the value into the
     /// object.
-    pub fn resolve_and_set_type(&self, value: Value) -> Result<Value> {
+    pub fn resolve_and_set_type(&self, value: Value) -> miette::Result<Value> {
         let type_name = self.resolve_type(&value)?;
         let mut value = match value {
             Value::Object(index_map) => {
@@ -71,7 +73,7 @@ impl KeyedDiscriminator {
                 let (_, value) = index_map.into_iter().next().unwrap();
                 value
             },
-            _ => bail!("The KeyedDiscriminator(type=\"{}\") can only use object values to discriminate, but received a different type.", self.type_name)
+            _ => miette::bail!("The KeyedDiscriminator(type=\"{}\") can only use object values to discriminate, but received a different type.", self.type_name)
         };
         value.set_type_name(type_name)?;
         Ok(value)

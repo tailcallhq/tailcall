@@ -1,4 +1,4 @@
-use anyhow::Result;
+use miette::Result;
 
 use super::helpers::log_endpoint_set;
 use crate::cli::fmt::Fmt;

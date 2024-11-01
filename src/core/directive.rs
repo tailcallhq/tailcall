@@ -5,18 +5,18 @@ use serde_json::{Map, Value};
 use serde_path_to_error::deserialize;
 
 use super::pos;
-use crate::core::valid::{Valid, ValidationError, Validator};
+use crate::core::valid::{Valid, Validator};
 
 pub trait DirectiveCodec: Sized {
     fn directive_name() -> String;
-    fn from_directive(directive: &ConstDirective) -> Valid<Self, String>;
+    fn from_directive(directive: &ConstDirective) -> Valid<Self, miette::MietteDiagnostic>;
     fn to_directive(&self) -> ConstDirective;
     fn trace_name() -> String {
         format!("@{}", Self::directive_name())
     }
     fn from_directives<'a>(
         directives: impl Iterator<Item = &'a Positioned<ConstDirective>>,
-    ) -> Valid<Option<Self>, String> {
+    ) -> Valid<Option<Self>, miette::MietteDiagnostic> {
         for directive in directives {
             if directive.node.name.node == Self::directive_name() {
                 return Self::from_directive(&directive.node).map(Some);
@@ -45,11 +45,15 @@ impl<'a, A: Deserialize<'a> + Serialize + 'a> DirectiveCodec for A {
         )
     }
 
-    fn from_directive(directive: &ConstDirective) -> Valid<A, String> {
+    fn from_directive(directive: &ConstDirective) -> Valid<A, miette::MietteDiagnostic> {
         Valid::from_iter(directive.arguments.iter(), |(k, v)| {
             Valid::from(serde_json::to_value(&v.node).map_err(|e| {
-                ValidationError::new(e.to_string())
-                    .trace(format!("@{}", directive.name.node).as_str())
+                miette::diagnostic!(
+                    code = "core::directive::from_directive",
+                    help = "Check the json values provided to the directive",
+                    "{}",
+                    e
+                )
             }))
             .map(|v| (k.node.as_str().to_string(), v))
         })
@@ -61,9 +65,12 @@ impl<'a, A: Deserialize<'a> + Serialize + 'a> DirectiveCodec for A {
         })
         .and_then(|map| match deserialize(Value::Object(map)) {
             Ok(a) => Valid::succeed(a),
-            Err(e) => Valid::from_validation_err(
-                ValidationError::from(e).trace(format!("@{}", directive.name.node).as_str()),
-            ),
+            Err(e) => Valid::fail(miette::diagnostic!(
+                code = "core::directive::from_directive",
+                help = "Check the json values provided to the directive",
+                "{}",
+                e
+            )),
         })
     }
 

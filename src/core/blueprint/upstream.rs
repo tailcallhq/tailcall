@@ -50,7 +50,7 @@ impl Default for Upstream {
 }
 
 impl TryFrom<&ConfigModule> for Upstream {
-    type Error = ValidationError<String>;
+    type Error = ValidationError<miette::MietteDiagnostic>;
 
     fn try_from(config_module: &ConfigModule) -> Result<Self, Self::Error> {
         let config_upstream = config_module.upstream.clone();
@@ -86,7 +86,7 @@ impl TryFrom<&ConfigModule> for Upstream {
     }
 }
 
-fn get_batch(upstream: &config::Upstream) -> Valid<Option<Batch>, String> {
+fn get_batch(upstream: &config::Upstream) -> Valid<Option<Batch>, miette::MietteDiagnostic> {
     upstream.batch.as_ref().map_or_else(
         || Valid::succeed(None),
         |batch| {
@@ -99,7 +99,7 @@ fn get_batch(upstream: &config::Upstream) -> Valid<Option<Batch>, String> {
     )
 }
 
-fn get_proxy(upstream: &config::Upstream) -> Valid<Option<Proxy>, String> {
+fn get_proxy(upstream: &config::Upstream) -> Valid<Option<Proxy>, miette::MietteDiagnostic> {
     if let Some(ref proxy) = upstream.proxy {
         Valid::succeed(Some(Proxy { url: proxy.url.clone() }))
     } else {

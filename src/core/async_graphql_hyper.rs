@@ -1,12 +1,12 @@
 use std::any::Any;
 use std::hash::{Hash, Hasher};
 
-use anyhow::Result;
 use async_graphql::parser::types::{ExecutableDocument, OperationType};
 use async_graphql::{BatchResponse, Executor, Value};
 use http::header::{HeaderMap, HeaderValue, CACHE_CONTROL, CONTENT_TYPE};
 use http::{Response, StatusCode};
 use hyper::Body;
+use miette::{IntoDiagnostic, Result};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use tailcall_hasher::TailcallHasher;
@@ -191,13 +191,14 @@ impl GraphQLResponse {
         let mut response = Response::builder()
             .status(status)
             .header(CONTENT_TYPE, APPLICATION_JSON.as_ref())
-            .body(body)?;
+            .body(body)
+            .into_diagnostic()?;
 
         if self.0.is_ok() {
             if let Some(cache_control) = self.0.cache_control().value() {
                 response.headers_mut().insert(
                     CACHE_CONTROL,
-                    HeaderValue::from_str(cache_control.as_str())?,
+                    HeaderValue::from_str(cache_control.as_str()).into_diagnostic()?,
                 );
             }
         }
@@ -206,7 +207,9 @@ impl GraphQLResponse {
     }
 
     fn default_body(&self) -> Result<Body> {
-        Ok(Body::from(serde_json::to_string(&self.0)?))
+        Ok(Body::from(
+            serde_json::to_string(&self.0).into_diagnostic()?,
+        ))
     }
 
     pub fn into_response(self) -> Result<Response<hyper::Body>> {
@@ -231,7 +234,7 @@ impl GraphQLResponse {
         match self.0 {
             BatchResponse::Single(ref res) => {
                 let item = Self::flatten_response(&res.data);
-                let data = serde_json::to_string(item)?;
+                let data = serde_json::to_string(item).into_diagnostic()?;
 
                 self.build_response(StatusCode::OK, Body::from(data))
             }
@@ -240,7 +243,7 @@ impl GraphQLResponse {
                     .iter()
                     .map(|res| Self::flatten_response(&res.data))
                     .collect::<Vec<&Value>>();
-                let data = serde_json::to_string(&item)?;
+                let data = serde_json::to_string(&item).into_diagnostic()?;
 
                 self.build_response(StatusCode::OK, Body::from(data))
             }
@@ -361,7 +364,8 @@ impl GraphQLArcResponse {
         let mut response = Response::builder()
             .status(status)
             .header(CONTENT_TYPE, APPLICATION_JSON.as_ref())
-            .body(body)?;
+            .body(body)
+            .into_diagnostic()?;
         if self.response.is_ok() {
             if let Some(cache_control) = self
                 .response
@@ -370,7 +374,7 @@ impl GraphQLArcResponse {
             {
                 response.headers_mut().insert(
                     CACHE_CONTROL,
-                    HeaderValue::from_str(cache_control.as_str())?,
+                    HeaderValue::from_str(cache_control.as_str()).into_diagnostic()?,
                 );
             }
         }

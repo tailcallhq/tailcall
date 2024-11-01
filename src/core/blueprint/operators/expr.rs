@@ -6,20 +6,14 @@ use crate::core::config::{Expr, Field, Resolver};
 use crate::core::ir::model::IR;
 use crate::core::ir::model::IR::Dynamic;
 use crate::core::try_fold::TryFold;
-use crate::core::valid::{Valid, ValidationError, Validator};
+use crate::core::valid::{Valid, Validator};
 
 fn validate_data_with_schema(
     config: &config::Config,
     field: &config::Field,
     gql_value: ConstValue,
-) -> Valid<(), String> {
-    match to_json_schema(&field.type_of, config)
-        .validate(&gql_value)
-        .to_result()
-    {
-        Ok(_) => Valid::succeed(()),
-        Err(err) => Valid::from_validation_err(err.transform(&(|a| a.to_owned()))),
-    }
+) -> Valid<(), miette::MietteDiagnostic> {
+    to_json_schema(&field.type_of, config).validate(&gql_value)
 }
 
 pub struct CompileExpr<'a> {
@@ -29,40 +23,41 @@ pub struct CompileExpr<'a> {
     pub validate: bool,
 }
 
-pub fn compile_expr(inputs: CompileExpr) -> Valid<IR, String> {
+pub fn compile_expr(inputs: CompileExpr) -> Valid<IR, miette::MietteDiagnostic> {
     let config_module = inputs.config_module;
     let field = inputs.field;
     let value = &inputs.expr.body;
     let validate = inputs.validate;
 
-    Valid::from(
-        DynamicValue::try_from(&value.clone()).map_err(|e| ValidationError::new(e.to_string())),
-    )
-    .and_then(|value| {
-        if !value.is_const() {
-            // TODO: Add validation for const with Mustache here
-            Valid::succeed(Dynamic(value.to_owned()))
-        } else {
-            let data = &value;
-            match data.try_into() {
-                Ok(gql) => {
-                    let validation = if validate {
-                        validate_data_with_schema(config_module, field, gql)
-                    } else {
-                        Valid::succeed(())
-                    };
-                    validation.map(|_| Dynamic(value.to_owned()))
+    Valid::from(DynamicValue::try_from(&value.clone()).map_err(|e| miette::diagnostic!("{}", e)))
+        .and_then(|value| {
+            if !value.is_const() {
+                // TODO: Add validation for const with Mustache here
+                Valid::succeed(Dynamic(value.to_owned()))
+            } else {
+                let data = &value;
+                match data.try_into() {
+                    Ok(gql) => {
+                        let validation = if validate {
+                            validate_data_with_schema(config_module, field, gql)
+                        } else {
+                            Valid::succeed(())
+                        };
+                        validation.map(|_| Dynamic(value.to_owned()))
+                    }
+                    Err(e) => Valid::fail(miette::diagnostic!("invalid JSON: {}", e)),
                 }
-                Err(e) => Valid::fail(format!("invalid JSON: {}", e)),
             }
-        }
-    })
+        })
 }
 
-pub fn update_const_field<'a>(
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
+pub fn update_const_field<'a>() -> TryFold<
+    'a,
+    (&'a ConfigModule, &'a Field, &'a config::Type, &'a str),
+    FieldDefinition,
+    miette::MietteDiagnostic,
+> {
+    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, miette::MietteDiagnostic>::new(
         |(config_module, field, _, _), b_field| {
             let Some(Resolver::Expr(expr)) = &field.resolver else {
                 return Valid::succeed(b_field);

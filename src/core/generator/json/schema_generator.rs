@@ -22,7 +22,7 @@ impl<'a> SchemaGenerator<'a> {
 
 impl Transform for SchemaGenerator<'_> {
     type Value = Config;
-    type Error = String;
+    type Error = miette::MietteDiagnostic;
     fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
         match self.operation_type {
             GraphQLOperationType::Query => {

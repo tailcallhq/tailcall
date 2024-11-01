@@ -4,7 +4,7 @@ use crate::core::grpc::request_template::RequestBody;
 use crate::core::mustache::Mustache;
 use crate::core::valid::Valid;
 
-pub fn to_body(body: Option<&Value>) -> Valid<Option<RequestBody>, String> {
+pub fn to_body(body: Option<&Value>) -> Valid<Option<RequestBody>, miette::MietteDiagnostic> {
     let Some(body) = body else {
         return Valid::succeed(None);
     };

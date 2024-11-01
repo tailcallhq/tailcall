@@ -30,7 +30,7 @@ impl<'a> Similarity<'a> {
         (type_1_name, type_1): (&str, &Type),
         (type_2_name, type_2): (&str, &Type),
         threshold: f32,
-    ) -> Valid<bool, String> {
+    ) -> Valid<bool, miette::MietteDiagnostic> {
         let type_info = SimilarityTypeInfo { type_1_name, type_1, type_2, type_2_name };
 
         self.similarity_inner(type_info, &mut PairSet::default(), threshold)
@@ -41,7 +41,7 @@ impl<'a> Similarity<'a> {
         type_info: SimilarityTypeInfo,
         visited_type: &mut PairSet<String>,
         threshold: f32,
-    ) -> Valid<bool, String> {
+    ) -> Valid<bool, miette::MietteDiagnostic> {
         let type_1_name = type_info.type_1_name;
         let type_2_name = type_info.type_2_name;
         let type_1 = type_info.type_1;
@@ -72,13 +72,12 @@ impl<'a> Similarity<'a> {
                             if field_1.type_of.is_list() == field_2.type_of.is_list() {
                                 same_field_count += 1;
                             } else {
-                                return Valid::fail("Type merge failed: The fields have different list types and cannot be merged.".to_string());
+                                return Valid::fail(miette::diagnostic!("Type merge failed: The fields have different list types and cannot be merged."));
                             }
                         } else {
-                            return Valid::fail(
+                            return Valid::fail(miette::diagnostic!(
                                 "Type merge failed: same field names but different scalar types."
-                                    .to_string(),
-                            );
+                            ));
                         }
                     } else if field_1_type_of == field_2_type_of {
                         // in order to consider the fields to be exactly same.
@@ -88,7 +87,7 @@ impl<'a> Similarity<'a> {
                             same_field_count += 1;
                         } else {
                             // If the list properties don't match, we cannot merge these types.
-                            return Valid::fail("Type merge failed: The fields have different list types and cannot be merged.".to_string());
+                            return Valid::fail(miette::diagnostic!("Type merge failed: The fields have different list types and cannot be merged."));
                         }
                     } else if let Some(type_1) = config.types.get(field_1_type_of) {
                         if let Some(type_2) = config.types.get(field_2_type_of) {

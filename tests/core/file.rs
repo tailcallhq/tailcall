@@ -2,7 +2,7 @@ extern crate core;
 
 use std::path::PathBuf;
 
-use anyhow::{anyhow, Context};
+use miette::IntoDiagnostic;
 use tailcall::core::FileIO;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
@@ -19,20 +19,22 @@ impl File {
 
 #[async_trait::async_trait]
 impl FileIO for File {
-    async fn write<'a>(&'a self, _path: &'a str, _content: &'a [u8]) -> anyhow::Result<()> {
-        Err(anyhow!("Cannot write to a file in an execution spec"))
+    async fn write<'a>(&'a self, _path: &'a str, _content: &'a [u8]) -> miette::Result<()> {
+        Err(miette::miette!(
+            "Cannot write to a file in an execution spec"
+        ))
     }
 
-    async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String> {
+    async fn read<'a>(&'a self, path: &'a str) -> miette::Result<String> {
         let base = PathBuf::from(path);
         let path = base
             .file_name()
-            .context("Invalid file path")?
+            .ok_or(miette::diagnostic!("Invalid file path"))?
             .to_str()
-            .context("Invalid OsString")?;
+            .ok_or(miette::diagnostic!("Invalid OsString"))?;
         match self.spec.files.get(path) {
             Some(x) => Ok(x.to_owned()),
-            None => Err(anyhow!("No such file or directory (os error 2)")),
+            None => Err(miette::miette!("No such file or directory (os error 2)")),
         }
     }
 }
@@ -48,20 +50,20 @@ impl TestFileIO {
 
 #[async_trait::async_trait]
 impl FileIO for TestFileIO {
-    async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
-        let mut file = tokio::fs::File::create(path).await?;
+    async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> miette::Result<()> {
+        let mut file = tokio::fs::File::create(path).await.into_diagnostic()?;
         file.write_all(content)
             .await
-            .map_err(|e| anyhow!("{}", e))?;
+            .map_err(|e| miette::miette!("{}", e))?;
         Ok(())
     }
 
-    async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String> {
-        let mut file = tokio::fs::File::open(path).await?;
+    async fn read<'a>(&'a self, path: &'a str) -> miette::Result<String> {
+        let mut file = tokio::fs::File::open(path).await.into_diagnostic()?;
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer)
             .await
-            .map_err(|e| anyhow!("{}", e))?;
-        Ok(String::from_utf8(buffer)?)
+            .map_err(|e| miette::miette!("{}", e))?;
+        Ok(String::from_utf8(buffer).into_diagnostic()?)
     }
 }

@@ -1,5 +1,6 @@
 use headers::authorization::Bearer;
 use headers::{Authorization, HeaderMapExt};
+use miette::IntoDiagnostic;
 use serde::Deserialize;
 
 use super::jwks::Jwks;
@@ -38,10 +39,11 @@ impl JwtVerifier {
         }
     }
 
-    fn resolve_token(&self, request: &RequestContext) -> anyhow::Result<Option<String>> {
+    fn resolve_token(&self, request: &RequestContext) -> miette::Result<Option<String>> {
         let value = request
             .allowed_headers
-            .typed_try_get::<Authorization<Bearer>>()?;
+            .typed_try_get::<Authorization<Bearer>>()
+            .into_diagnostic()?;
 
         Ok(value.map(|token| token.token().to_owned()))
     }

@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
-use anyhow::{anyhow, bail, Context, Result};
 use async_graphql::Value;
+use miette::{Context, IntoDiagnostic};
 use prost::bytes::BufMut;
 use prost::Message;
 use prost_reflect::prost_types::FileDescriptorSet;
@@ -13,28 +13,29 @@ use serde_json::Deserializer;
 
 use crate::core::blueprint::GrpcMethod;
 
-fn to_message(descriptor: &MessageDescriptor, input: &str) -> Result<DynamicMessage> {
+fn to_message(descriptor: &MessageDescriptor, input: &str) -> miette::Result<DynamicMessage> {
     let mut deserializer = Deserializer::from_str(input);
-    let message =
-        DynamicMessage::deserialize(descriptor.clone(), &mut deserializer).with_context(|| {
+    let message = DynamicMessage::deserialize(descriptor.clone(), &mut deserializer)
+        .into_diagnostic()
+        .wrap_err_with(|| {
             format!(
                 "Failed to parse input according to type {}",
                 descriptor.full_name()
             )
         })?;
-    deserializer.end()?;
+    deserializer.end().into_diagnostic()?;
 
     Ok(message)
 }
 
-fn message_to_bytes(message: DynamicMessage) -> Result<Vec<u8>> {
+fn message_to_bytes(message: DynamicMessage) -> miette::Result<Vec<u8>> {
     let mut buf: Vec<u8> = Vec::with_capacity(message.encoded_len() + 5);
     // set compression flag
     buf.put_u8(0);
     // next 4 bytes should encode message length
     buf.put_u32(message.encoded_len() as u32);
     // encode the message itself
-    message.encode(&mut buf)?;
+    message.encode(&mut buf).into_diagnostic()?;
 
     Ok(buf)
 }
@@ -55,10 +56,13 @@ pub fn protobuf_value_as_str(value: &prost_reflect::Value) -> String {
     }
 }
 
-pub fn get_field_value_as_str(message: &DynamicMessage, field_name: &str) -> Result<String> {
+pub fn get_field_value_as_str(
+    message: &DynamicMessage,
+    field_name: &str,
+) -> miette::Result<String> {
     let field = message
         .get_field_by_name(field_name)
-        .ok_or(anyhow!("Unable to find key"))?;
+        .ok_or(miette::diagnostic!("Unable to find key"))?;
 
     Ok(protobuf_value_as_str(&field))
 }
@@ -73,18 +77,20 @@ impl ProtobufSet {
     // TODO: load definitions from proto file for now, but in future
     // it could be more convenient to load FileDescriptorSet instead
     // either from file or server reflection
-    pub fn from_proto_file(file_descriptor_set: FileDescriptorSet) -> Result<Self> {
+    pub fn from_proto_file(file_descriptor_set: FileDescriptorSet) -> miette::Result<Self> {
         let descriptor_pool = DescriptorPool::from_file_descriptor_set(file_descriptor_set)?;
         Ok(Self { descriptor_pool })
     }
 
-    pub fn find_service(&self, grpc_method: &GrpcMethod) -> Result<ProtobufService> {
+    pub fn find_service(&self, grpc_method: &GrpcMethod) -> miette::Result<ProtobufService> {
         let service_name = format!("{}.{}", grpc_method.package, grpc_method.service);
 
         let service_descriptor = self
             .descriptor_pool
             .get_service_by_name(&service_name)
-            .with_context(|| format!("Couldn't find definitions for service {service_name}"))?;
+            .ok_or(miette::diagnostic!(
+                "Couldn't find definitions for service {service_name}"
+            ))?;
 
         Ok(ProtobufService { service_descriptor })
     }
@@ -96,12 +102,13 @@ pub struct ProtobufMessage {
 }
 
 impl ProtobufMessage {
-    pub fn decode(&self, bytes: &[u8]) -> Result<Value> {
-        let message = DynamicMessage::decode(self.message_descriptor.clone(), bytes)?;
+    pub fn decode(&self, bytes: &[u8]) -> miette::Result<Value> {
+        let message =
+            DynamicMessage::decode(self.message_descriptor.clone(), bytes).into_diagnostic()?;
 
-        let json = serde_json::to_value(message)?;
+        let json = serde_json::to_value(message).into_diagnostic()?;
 
-        Ok(async_graphql::Value::from_json(json)?)
+        async_graphql::Value::from_json(json).into_diagnostic()
     }
 }
 
@@ -111,12 +118,12 @@ pub struct ProtobufService {
 }
 
 impl ProtobufService {
-    pub fn find_operation(&self, grpc_method: &GrpcMethod) -> Result<ProtobufOperation> {
+    pub fn find_operation(&self, grpc_method: &GrpcMethod) -> miette::Result<ProtobufOperation> {
         let method = self
             .service_descriptor
             .methods()
             .find(|method| method.name() == grpc_method.name)
-            .with_context(|| format!("Couldn't find method {}", grpc_method.name))?;
+            .ok_or_else(|| miette::diagnostic!("Couldn't find method {}", grpc_method.name))?;
 
         let input_type = method.input();
         let output_type = method.output();
@@ -165,7 +172,7 @@ impl ProtobufOperation {
         self.method.parent_service().name()
     }
 
-    pub fn convert_input(&self, input: &str) -> Result<Vec<u8>> {
+    pub fn convert_input(&self, input: &str) -> miette::Result<Vec<u8>> {
         let message = to_message(&self.input_type, input)?;
 
         message_to_bytes(message)
@@ -175,27 +182,27 @@ impl ProtobufOperation {
         &self,
         child_inputs: impl Iterator<Item = &'a str>,
         id: &str,
-    ) -> Result<(Vec<u8>, Vec<String>)> {
+    ) -> miette::Result<(Vec<u8>, Vec<String>)> {
         // Find the field of list type that should hold child messages
         let field_descriptor = self
             .input_type
             .fields()
             .find(|field| field.is_list())
-            .ok_or(anyhow!("Unable to find list field on type"))?;
+            .ok_or(miette::diagnostic!("Unable to find list field on type"))?;
         let field_kind = field_descriptor.kind();
         let child_message_descriptor = field_kind
             .as_message()
-            .ok_or(anyhow!("Couldn't resolve message"))?;
+            .ok_or(miette::diagnostic!("Couldn't resolve message"))?;
         let mut message = DynamicMessage::new(self.input_type.clone());
 
         let child_messages = child_inputs
             .map(|input| to_message(child_message_descriptor, input))
-            .collect::<Result<Vec<DynamicMessage>>>()?;
+            .collect::<miette::Result<Vec<DynamicMessage>>>()?;
 
         let ids = child_messages
             .iter()
             .map(|message| get_field_value_as_str(message, id))
-            .collect::<Result<Vec<String>>>()?;
+            .collect::<miette::Result<Vec<String>>>()?;
 
         message.set_field(
             &field_descriptor,
@@ -210,25 +217,31 @@ impl ProtobufOperation {
         message_to_bytes(message).map(|result| (result, ids))
     }
 
-    pub fn convert_output<T: serde::de::DeserializeOwned>(&self, bytes: &[u8]) -> Result<T> {
+    pub fn convert_output<T: serde::de::DeserializeOwned>(
+        &self,
+        bytes: &[u8],
+    ) -> miette::Result<T> {
         if bytes.len() < 5 {
-            bail!("Empty response");
+            miette::diagnostic!("Empty response");
         }
         // ignore 5 first bytes as they are part of Length-Prefixed Message Framing
         // see https://www.oreilly.com/library/view/grpc-up-and/9781492058328/ch04.html#:~:text=Length%2DPrefixed%20Message%20Framing
         // 1st byte - compression flag
         // 2-4th bytes - length of the message
         let message =
-            DynamicMessage::decode(self.output_type.clone(), &bytes[5..]).with_context(|| {
-                format!(
+            DynamicMessage::decode(self.output_type.clone(), &bytes[5..]).map_err(|_| {
+                miette::diagnostic!(
                     "Failed to parse response for type {}",
                     self.output_type.full_name()
                 )
             })?;
 
         let mut serializer = serde_json::Serializer::new(vec![]);
-        message.serialize_with_options(&mut serializer, &self.serialize_options)?;
-        let json = serde_json::from_slice::<T>(serializer.into_inner().as_ref())?;
+        message
+            .serialize_with_options(&mut serializer, &self.serialize_options)
+            .into_diagnostic()?;
+        let json =
+            serde_json::from_slice::<T>(serializer.into_inner().as_ref()).into_diagnostic()?;
         Ok(json)
     }
 
@@ -243,7 +256,6 @@ impl ProtobufOperation {
 pub mod tests {
     use std::path::Path;
 
-    use anyhow::Result;
     use prost_reflect::Value;
     use serde_json::json;
     use tailcall_fixtures::protobuf;
@@ -253,7 +265,7 @@ pub mod tests {
     use crate::core::config::reader::ConfigReader;
     use crate::core::config::{Config, Field, Grpc, Link, LinkType, Resolver, Type};
 
-    pub async fn get_proto_file(path: &str) -> Result<FileDescriptorSet> {
+    pub async fn get_proto_file(path: &str) -> miette::Result<FileDescriptorSet> {
         let runtime = crate::core::runtime::test::init(None);
         let reader = ConfigReader::init(runtime);
 
@@ -316,14 +328,14 @@ pub mod tests {
     }
 
     #[tokio::test]
-    async fn unknown_file() -> Result<()> {
+    async fn unknown_file() -> miette::Result<()> {
         let error = get_proto_file("_unknown.proto").await;
         assert!(error.is_err());
         Ok(())
     }
 
     #[tokio::test]
-    async fn service_not_found() -> Result<()> {
+    async fn service_not_found() -> miette::Result<()> {
         let grpc_method = GrpcMethod::try_from("greetings._unknown.foo").unwrap();
         let file = ProtobufSet::from_proto_file(get_proto_file(protobuf::GREETINGS).await?)?;
         let error = file.find_service(&grpc_method).unwrap_err();
@@ -337,7 +349,7 @@ pub mod tests {
     }
 
     #[tokio::test]
-    async fn method_not_found() -> Result<()> {
+    async fn method_not_found() -> miette::Result<()> {
         let grpc_method = GrpcMethod::try_from("greetings.Greeter._unknown").unwrap();
         let file = ProtobufSet::from_proto_file(get_proto_file(protobuf::GREETINGS).await?)?;
         let service = file.find_service(&grpc_method)?;
@@ -349,7 +361,7 @@ pub mod tests {
     }
 
     #[tokio::test]
-    async fn greetings_proto_file() -> Result<()> {
+    async fn greetings_proto_file() -> miette::Result<()> {
         let grpc_method = GrpcMethod::try_from("greetings.Greeter.SayHello").unwrap();
         let file = ProtobufSet::from_proto_file(get_proto_file(protobuf::GREETINGS).await?)?;
         let service = file.find_service(&grpc_method)?;
@@ -360,7 +372,7 @@ pub mod tests {
         let parsed = operation.convert_output::<serde_json::Value>(output)?;
 
         assert_eq!(
-            serde_json::to_value(parsed)?,
+            serde_json::to_value(parsed).into_diagnostic()?,
             json!({
               "message": "test message"
             })
@@ -370,7 +382,7 @@ pub mod tests {
     }
 
     #[tokio::test]
-    async fn news_proto_file() -> Result<()> {
+    async fn news_proto_file() -> miette::Result<()> {
         let grpc_method = GrpcMethod::try_from("news.NewsService.GetNews").unwrap();
 
         let file = ProtobufSet::from_proto_file(get_proto_file(protobuf::NEWS).await?)?;
@@ -386,7 +398,7 @@ pub mod tests {
         let parsed = operation.convert_output::<serde_json::Value>(output)?;
 
         assert_eq!(
-            serde_json::to_value(parsed)?,
+            serde_json::to_value(parsed).into_diagnostic()?,
             json!({
               "id": 1, "title": "Note 1", "body": "Content 1", "postImage": "Post image 1", "status": "PUBLISHED"
             })
@@ -396,7 +408,7 @@ pub mod tests {
     }
 
     #[tokio::test]
-    async fn oneof_proto_file() -> Result<()> {
+    async fn oneof_proto_file() -> miette::Result<()> {
         let grpc_method = GrpcMethod::try_from("oneof.OneOfService.GetOneOf").unwrap();
 
         let file = ProtobufSet::from_proto_file(get_proto_file(protobuf::ONEOF).await?)?;
@@ -417,7 +429,7 @@ pub mod tests {
         let parsed = operation.convert_output::<serde_json::Value>(output)?;
 
         assert_eq!(
-            serde_json::to_value(parsed)?,
+            serde_json::to_value(parsed).into_diagnostic()?,
             json!({
                 "usual": 0,
                 "payload": { "payload": "body" }
@@ -429,7 +441,7 @@ pub mod tests {
         let parsed = operation.convert_output::<serde_json::Value>(output)?;
 
         assert_eq!(
-            serde_json::to_value(parsed)?,
+            serde_json::to_value(parsed).into_diagnostic()?,
             json!({
                 "usual": 5,
                 "command": { "command": "end" }
@@ -440,7 +452,7 @@ pub mod tests {
         let parsed = operation.convert_output::<serde_json::Value>(output)?;
 
         assert_eq!(
-            serde_json::to_value(parsed)?,
+            serde_json::to_value(parsed).into_diagnostic()?,
             json!({
                 "usual": 0,
                 "response": "content"
@@ -451,7 +463,7 @@ pub mod tests {
     }
 
     #[tokio::test]
-    async fn news_proto_file_multiple_messages() -> Result<()> {
+    async fn news_proto_file_multiple_messages() -> miette::Result<()> {
         let grpc_method = GrpcMethod::try_from("news.NewsService.GetMultipleNews").unwrap();
         let file = ProtobufSet::from_proto_file(get_proto_file(protobuf::NEWS).await?)?;
         let service = file.find_service(&grpc_method)?;
@@ -476,7 +488,7 @@ pub mod tests {
         let parsed = multiple_operation.convert_output::<serde_json::Value>(output)?;
 
         assert_eq!(
-            serde_json::to_value(parsed)?,
+            serde_json::to_value(parsed).into_diagnostic()?,
             json!({
                 "news": [
                     { "id": 1, "title": "Note 1", "body": "Content 1", "postImage": "Post image 1", "status": "PUBLISHED" },
@@ -490,7 +502,7 @@ pub mod tests {
     }
 
     #[tokio::test]
-    async fn map_proto_file() -> Result<()> {
+    async fn map_proto_file() -> miette::Result<()> {
         let grpc_method = GrpcMethod::try_from("map.MapService.GetMap").unwrap();
 
         let file = ProtobufSet::from_proto_file(get_proto_file(protobuf::MAP).await?)?;
@@ -508,7 +520,7 @@ pub mod tests {
         let parsed = operation.convert_output::<serde_json::Value>(output)?;
 
         assert_eq!(
-            serde_json::to_value(parsed)?,
+            serde_json::to_value(parsed).into_diagnostic()?,
             json!({
               "map": { "1": "value", "2": "v" }
             })
@@ -518,7 +530,7 @@ pub mod tests {
     }
 
     #[tokio::test]
-    async fn optional_proto_file() -> Result<()> {
+    async fn optional_proto_file() -> miette::Result<()> {
         let grpc_method = GrpcMethod::try_from("type.TypeService.Get").unwrap();
 
         let file = ProtobufSet::from_proto_file(get_proto_file(protobuf::OPTIONAL).await?)?;
@@ -534,7 +546,7 @@ pub mod tests {
         let parsed = operation.convert_output::<serde_json::Value>(output)?;
 
         assert_eq!(
-            serde_json::to_value(parsed)?,
+            serde_json::to_value(parsed).into_diagnostic()?,
             json!({"id": 0, "str": "", "num": [], "nestedRep": []})
         );
 
@@ -543,7 +555,7 @@ pub mod tests {
         let parsed = operation.convert_output::<serde_json::Value>(output)?;
 
         assert_eq!(
-            serde_json::to_value(parsed)?,
+            serde_json::to_value(parsed).into_diagnostic()?,
             json!({"id": 0, "str": "", "num": [], "nestedRep": [], "nested": {"id": 0, "str": "", "num": []}})
         );
 
@@ -551,7 +563,7 @@ pub mod tests {
     }
 
     #[tokio::test]
-    async fn scalars_proto_file() -> Result<()> {
+    async fn scalars_proto_file() -> miette::Result<()> {
         let grpc_method = GrpcMethod::try_from("scalars.Example.Get").unwrap();
 
         let file = ProtobufSet::from_proto_file(get_proto_file(protobuf::SCALARS).await?)?;
@@ -573,7 +585,7 @@ pub mod tests {
         let parsed = operation.convert_output::<serde_json::Value>(output)?;
 
         assert_eq!(
-            serde_json::to_value(parsed)?,
+            serde_json::to_value(parsed).into_diagnostic()?,
             json!({
               "result": [{
                 "boolean": true,
@@ -612,7 +624,7 @@ pub mod tests {
         let parsed = operation.convert_output::<serde_json::Value>(output)?;
 
         assert_eq!(
-            serde_json::to_value(parsed)?,
+            serde_json::to_value(parsed).into_diagnostic()?,
             json!({
               "result": [{
                 "boolean": false,
@@ -635,7 +647,7 @@ pub mod tests {
         );
 
         // numbers out of range
-        let input: anyhow::Error = operation
+        let input: miette::Report = operation
             .convert_input(
                 r#"{
                 "floatNum": 1e154561.14848449464654948484542189,

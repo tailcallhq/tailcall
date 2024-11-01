@@ -17,7 +17,9 @@ pub struct CompileEntityResolver<'a> {
     entity_resolver: &'a EntityResolver,
 }
 
-pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, String> {
+pub fn compile_entity_resolver(
+    inputs: CompileEntityResolver<'_>,
+) -> Valid<IR, miette::MietteDiagnostic> {
     let CompileEntityResolver { config_module, entity_resolver } = inputs;
     let mut resolver_by_type = HashMap::new();
 
@@ -65,10 +67,9 @@ pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, S
                     ApolloFederation::EntityResolver(entity_resolver) => {
                         compile_entity_resolver(CompileEntityResolver { entity_resolver, ..inputs })
                     }
-                    ApolloFederation::Service => Valid::fail(
+                    ApolloFederation::Service => Valid::fail(miette::diagnostic!(
                         "Apollo federation resolvers can't be a part of entity resolver"
-                            .to_string(),
-                    ),
+                    )),
                 },
             };
 
@@ -80,7 +81,7 @@ pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, S
     .map_to(IR::Entity(resolver_by_type))
 }
 
-pub fn compile_service(mut sdl: String) -> Valid<IR, String> {
+pub fn compile_service(mut sdl: String) -> Valid<IR, miette::MietteDiagnostic> {
     writeln!(sdl).ok();
 
     // Mark subgraph as Apollo federation v2 compatible according to [docs](https://www.apollographql.com/docs/apollo-server/using-federation/apollo-subgraph-setup/#2-opt-in-to-federation-2)
@@ -111,11 +112,15 @@ pub fn update_federation<'a>() -> TryFoldConfig<'a, Blueprint> {
             }
 
             let Definition::Object(mut obj) = def else {
-                return Valid::fail("Query type is not an object inside the blueprint".to_string());
+                return Valid::fail(miette::diagnostic!(
+                    "Query type is not an object inside the blueprint"
+                ));
             };
 
             let Some(config_type) = config_module.types.get(&query_name) else {
-                return Valid::fail(format!("Cannot find type {query_name} in the config"));
+                return Valid::fail(miette::diagnostic!(
+                    "Cannot find type {query_name} in the config"
+                ));
             };
 
             Valid::from_iter(obj.fields.iter_mut(), |b_field| {
@@ -123,7 +128,7 @@ pub fn update_federation<'a>() -> TryFoldConfig<'a, Blueprint> {
                 let name = &b_field.name;
                 Valid::from_option(
                     config_type.fields.get(name),
-                    format!("Cannot find field {name} in the type"),
+                    miette::diagnostic!("Cannot find field {name} in the type"),
                 )
                 .and_then(|field| {
                     let Some(Resolver::ApolloFederation(federation)) = &field.resolver else {

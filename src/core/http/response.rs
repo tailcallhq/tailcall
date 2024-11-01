@@ -1,9 +1,9 @@
-use anyhow::Result;
 use async_graphql_value::{ConstValue, Name};
 use derive_setters::Setters;
 use hyper::body::Bytes;
 use hyper::Body;
 use indexmap::IndexMap;
+use miette::IntoDiagnostic;
 use prost::Message;
 use tonic::Status;
 use tonic_types::Status as GrpcStatus;
@@ -49,17 +49,19 @@ impl FromValue for ConstValue {
 }
 
 impl Response<Bytes> {
-    pub async fn from_reqwest(resp: reqwest::Response) -> Result<Self> {
+    pub async fn from_reqwest(resp: reqwest::Response) -> miette::Result<Self> {
         let status = resp.status();
         let headers = resp.headers().to_owned();
-        let body = resp.bytes().await?;
+        let body = resp.bytes().await.into_diagnostic()?;
         Ok(Response { status, headers, body })
     }
 
-    pub async fn from_hyper(resp: http::Response<hyper::Body>) -> Result<Self> {
+    pub async fn from_hyper(resp: http::Response<hyper::Body>) -> miette::Result<Self> {
         let status = resp.status();
         let headers = resp.headers().to_owned();
-        let body = hyper::body::to_bytes(resp.into_body()).await?;
+        let body = hyper::body::to_bytes(resp.into_body())
+            .await
+            .into_diagnostic()?;
         Ok(Response { status, headers, body })
     }
 
@@ -71,7 +73,7 @@ impl Response<Bytes> {
         }
     }
 
-    pub fn to_json<T: Default + FromValue>(self) -> Result<Response<T>> {
+    pub fn to_json<T: Default + FromValue>(self) -> miette::Result<Response<T>> {
         if self.body.is_empty() {
             return Ok(Response {
                 status: self.status,
@@ -82,7 +84,8 @@ impl Response<Bytes> {
         // Note: We convert the body to a serde_json_borrow::Value for better
         // performance. Warning: Do not change this to direct conversion to `T`
         // without benchmarking the performance impact.
-        let body: serde_json_borrow::Value = serde_json::from_slice(&self.body)?;
+        let body: serde_json_borrow::Value =
+            serde_json::from_slice(&self.body).into_diagnostic()?;
         let body = T::from_value(body);
         Ok(Response { status: self.status, headers: self.headers, body })
     }
@@ -90,7 +93,7 @@ impl Response<Bytes> {
     pub fn to_grpc_value(
         self,
         operation: &ProtobufOperation,
-    ) -> Result<Response<async_graphql::Value>> {
+    ) -> miette::Result<Response<async_graphql::Value>> {
         let mut resp = Response::default();
         let body = operation.convert_output::<async_graphql::Value>(&self.body)?;
         resp.body = body;
@@ -99,7 +102,7 @@ impl Response<Bytes> {
         Ok(resp)
     }
 
-    pub fn to_grpc_error(&self, operation: &ProtobufOperation) -> anyhow::Error {
+    pub fn to_grpc_error(&self, operation: &ProtobufOperation) -> miette::MietteDiagnostic {
         let grpc_status = match Status::from_header_map(&self.headers) {
             Some(status) => status,
             None => return Error::IO("Error while parsing upstream headers".to_owned()).into(),
@@ -141,15 +144,15 @@ impl Response<Bytes> {
             grpc_status_details: ConstValue::Object(obj),
         };
 
-        // TODO: because of this conversion to anyhow::Error
+        // TODO: because of this conversion to miette::MietteDiagnostic
         // we lose additional details that could be added
         // through async_graphql::ErrorExtensions
-        anyhow::Error::new(error)
+        miette::MietteDiagnostic::new(error.to_string())
     }
 
-    pub fn to_resp_string(self) -> Result<Response<String>> {
+    pub fn to_resp_string(self) -> miette::Result<Response<String>> {
         Ok(Response::<String> {
-            body: String::from_utf8(self.body.to_vec())?,
+            body: String::from_utf8(self.body.to_vec()).into_diagnostic()?,
             status: self.status,
             headers: self.headers,
         })

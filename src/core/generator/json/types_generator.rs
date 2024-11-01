@@ -166,7 +166,7 @@ impl<'a> GraphQLTypesGenerator<'a> {
 
 impl Transform for GraphQLTypesGenerator<'_> {
     type Value = Config;
-    type Error = String;
+    type Error = miette::MietteDiagnostic;
 
     fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
         // generate the required types.

@@ -111,6 +111,7 @@ impl<'a> ResolverContextLike for Context<'a, ConstValue, ConstValue> {
 #[cfg(test)]
 mod test {
     use async_graphql_value::ConstValue;
+    use miette::IntoDiagnostic;
 
     use super::{Context, RequestContext};
     use crate::core::blueprint::Blueprint;
@@ -120,12 +121,13 @@ mod test {
     use crate::core::jit::{OperationPlan, Request};
     use crate::core::valid::Validator;
 
-    fn setup(query: &str) -> anyhow::Result<OperationPlan<ConstValue>> {
-        let sdl = std::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER)?;
+    fn setup(query: &str) -> miette::Result<OperationPlan<ConstValue>> {
+        let sdl = std::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER)
+            .map_err(|e| miette::diagnostic!("{}", e))?;
         let config = Config::from_sdl(&sdl).to_result()?;
         let blueprint = Blueprint::try_from(&ConfigModule::from(config))?;
         let request = Request::new(query);
-        let plan = request.clone().create_plan(&blueprint)?;
+        let plan = request.clone().create_plan(&blueprint).into_diagnostic()?;
         let input_resolver = InputResolver::new(plan);
         let plan = input_resolver.resolve_input(&Default::default()).unwrap();
 

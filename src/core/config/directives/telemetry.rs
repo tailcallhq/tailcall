@@ -1,4 +1,4 @@
-use anyhow::Result;
+use miette::Result;
 use serde::{Deserialize, Serialize};
 use tailcall_macros::{DirectiveDefinition, InputDefinition};
 

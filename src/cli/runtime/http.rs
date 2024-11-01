@@ -1,8 +1,8 @@
 use std::time::Duration;
 
-use anyhow::Result;
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
 use hyper::body::Bytes;
+use miette::IntoDiagnostic;
 use once_cell::sync::Lazy;
 use opentelemetry::metrics::Counter;
 use opentelemetry::trace::SpanKind;
@@ -143,7 +143,7 @@ impl HttpIO for NativeHttp {
             network.protocol.version = ?request.version()
         )
     )]
-    async fn execute(&self, mut request: reqwest::Request) -> Result<Response<Bytes>> {
+    async fn execute(&self, mut request: reqwest::Request) -> miette::Result<Response<Bytes>> {
         if self.http2_only {
             *request.version_mut() = reqwest::Version::HTTP_2;
         }
@@ -177,9 +177,11 @@ impl HttpIO for NativeHttp {
         }
 
         Ok(Response::from_reqwest(
-            response?
+            response
+                .into_diagnostic()?
                 .error_for_status()
-                .map_err(|err| err.without_url())?,
+                .map_err(|err| err.without_url())
+                .into_diagnostic()?,
         )
         .await?)
     }

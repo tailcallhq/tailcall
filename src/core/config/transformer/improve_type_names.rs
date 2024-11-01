@@ -119,7 +119,7 @@ pub struct ImproveTypeNames;
 
 impl Transform for ImproveTypeNames {
     type Value = Config;
-    type Error = String;
+    type Error = miette::MietteDiagnostic;
     fn transform(&self, config: Config) -> Valid<Self::Value, Self::Error> {
         let finalized_candidates = CandidateGeneration::new(&config).generate().converge();
         RenameTypes::new(finalized_candidates.iter()).transform(config)
@@ -130,7 +130,6 @@ impl Transform for ImproveTypeNames {
 mod test {
     use std::fs;
 
-    use anyhow::Ok;
     use tailcall_fixtures::configs;
 
     use super::ImproveTypeNames;
@@ -153,26 +152,22 @@ mod test {
     }
 
     #[test]
-    fn test_type_name_generator_with_cyclic_types() -> anyhow::Result<()> {
+    fn test_type_name_generator_with_cyclic_types() {
         let config = Config::from_sdl(read_fixture(configs::CYCLIC_CONFIG).as_str())
             .to_result()
             .unwrap();
 
         let transformed_config = ImproveTypeNames.transform(config).to_result().unwrap();
         insta::assert_snapshot!(transformed_config.to_sdl());
-
-        Ok(())
     }
 
     #[test]
-    fn test_type_name_generator() -> anyhow::Result<()> {
+    fn test_type_name_generator() {
         let config = Config::from_sdl(read_fixture(configs::NAME_GENERATION).as_str())
             .to_result()
             .unwrap();
 
         let transformed_config = ImproveTypeNames.transform(config).to_result().unwrap();
         insta::assert_snapshot!(transformed_config.to_sdl());
-
-        Ok(())
     }
 }

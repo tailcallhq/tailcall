@@ -1,5 +1,6 @@
 use std::fmt::{Debug, Display};
 
+use miette::Diagnostic;
 use regex::Regex;
 
 use super::Cause;
@@ -30,6 +31,40 @@ impl<E: Display> Display for ValidationError<E> {
         }
 
         Ok(())
+    }
+}
+
+impl<E: std::error::Error> Diagnostic for ValidationError<E> {
+    fn code<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
+        None
+    }
+
+    fn severity(&self) -> Option<miette::Severity> {
+        None
+    }
+
+    fn help<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
+        None
+    }
+
+    fn url<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
+        None
+    }
+
+    fn source_code(&self) -> Option<&dyn miette::SourceCode> {
+        None
+    }
+
+    fn labels(&self) -> Option<Box<dyn Iterator<Item = miette::LabeledSpan> + '_>> {
+        None
+    }
+
+    fn related<'a>(&'a self) -> Option<Box<dyn Iterator<Item = &'a dyn Diagnostic> + 'a>> {
+        None
+    }
+
+    fn diagnostic_source(&self) -> Option<&dyn Diagnostic> {
+        None
     }
 }
 
@@ -88,7 +123,9 @@ impl<E> From<Vec<Cause<E>>> for ValidationError<E> {
     }
 }
 
-impl From<serde_path_to_error::Error<serde_json::Error>> for ValidationError<String> {
+impl From<serde_path_to_error::Error<serde_json::Error>>
+    for ValidationError<miette::MietteDiagnostic>
+{
     fn from(error: serde_path_to_error::Error<serde_json::Error>) -> Self {
         let mut trace = Vec::new();
         let segments = error.path().iter();
@@ -121,18 +158,21 @@ impl From<serde_path_to_error::Error<serde_json::Error>> for ValidationError<Str
             )
             .into_owned();
 
-        ValidationError(vec![Cause::new(message).trace(trace)])
+        ValidationError(vec![
+            Cause::new(miette::diagnostic!("{}", message)).trace(trace)
+        ])
     }
 }
 
-impl From<http::header::InvalidHeaderValue> for ValidationError<String> {
+impl From<http::header::InvalidHeaderValue> for ValidationError<miette::MietteDiagnostic> {
     fn from(error: http::header::InvalidHeaderValue) -> Self {
-        ValidationError::new(error.to_string())
+        ValidationError::new(miette::diagnostic!("{}", error))
     }
 }
 
 #[cfg(test)]
 mod tests {
+
     use pretty_assertions::assert_eq;
     use stripmargin::StripMargin;
 
@@ -165,9 +205,9 @@ mod tests {
         let foo = &mut serde_json::Deserializer::from_str("{ \"a\": true }");
         let actual =
             ValidationError::from(serde_path_to_error::deserialize::<_, Foo>(foo).unwrap_err());
-        let expected = ValidationError::new(
-            "Parsing failed because of invalid type: boolean `true`, expected i32".to_string(),
-        )
+        let expected = ValidationError::new(miette::diagnostic!(
+            "Parsing failed because of invalid type: boolean `true`, expected i32"
+        ))
         .trace("a");
         assert_eq!(actual, expected);
     }

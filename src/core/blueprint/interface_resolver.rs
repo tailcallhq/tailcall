@@ -11,7 +11,7 @@ fn compile_interface_resolver(
     interface_name: &str,
     interface_types: &BTreeSet<String>,
     discriminate: &Option<Discriminate>,
-) -> Valid<Discriminator, String> {
+) -> Valid<Discriminator, miette::MietteDiagnostic> {
     let typename_field = discriminate.as_ref().map(|d| d.get_field());
 
     Discriminator::new(
@@ -21,9 +21,13 @@ fn compile_interface_resolver(
     )
 }
 
-pub fn update_interface_resolver<'a>(
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a Type, &'a str), FieldDefinition, String> {
-    TryFold::<(&ConfigModule, &Field, &Type, &str), FieldDefinition, String>::new(
+pub fn update_interface_resolver<'a>() -> TryFold<
+    'a,
+    (&'a ConfigModule, &'a Field, &'a Type, &'a str),
+    FieldDefinition,
+    miette::MietteDiagnostic,
+> {
+    TryFold::<(&ConfigModule, &Field, &Type, &str), FieldDefinition, miette::MietteDiagnostic>::new(
         |(config, field, _, _), mut b_field| {
             let Some(interface_types) = config.interfaces_types_map().get(field.type_of.name())
             else {

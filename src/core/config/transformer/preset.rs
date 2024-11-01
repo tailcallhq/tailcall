@@ -26,7 +26,7 @@ impl Preset {
 
 impl Transform for Preset {
     type Value = Config;
-    type Error = String;
+    type Error = miette::MietteDiagnostic;
 
     fn transform(
         &self,
