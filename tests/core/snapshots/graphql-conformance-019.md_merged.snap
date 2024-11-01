@@ -1,6 +1,7 @@
 ---
 source: tests/core/spec.rs
 expression: formatter
+snapshot_kind: text
 ---
 schema @server(hostname: "0.0.0.0", port: 8000) @upstream {
   query: Query
@@ -8,6 +9,7 @@ schema @server(hostname: "0.0.0.0", port: 8000) @upstream {
 
 type NodeA {
   name: String
+  nodeA: NodeA @modify(name: "child")
   nodeB: NodeB
   nodeC: NodeC
 }

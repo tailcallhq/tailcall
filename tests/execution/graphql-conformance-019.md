@@ -13,6 +13,7 @@ type NodeA {
   name: String
   nodeB: NodeB
   nodeC: NodeC
+  nodeA: NodeA @modify(name: "child")
 }
 
 type NodeB {
@@ -32,7 +33,7 @@ type NodeC {
 - request:
     method: POST
     url: http://upstream/graphql
-    textBody: '{ "query": "query { nodeA { name nodeB { name } nodeC { name } } }" }'
+    textBody: '{ "query": "query { nodeA { name nodeB { name } nodeC { name } nodeA { name } } }" }'
   expectedHits: 1
   response:
     status: 200
@@ -44,6 +45,8 @@ type NodeC {
             name: nodeB
           nodeC:
             name: nodeC
+          nodeA:
+            name: nodeA
 ```
 
 ```yml @test
@@ -58,6 +61,9 @@ type NodeC {
             name
           }
           nodeC {
+           name
+         }
+         child {
            name
          }
         }

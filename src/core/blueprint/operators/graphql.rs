@@ -26,24 +26,28 @@ fn create_related_fields(
         for (name, field) in &type_.fields {
             let mut new_type_names = type_names.clone();
             new_type_names.pop_front();
+            let bool_self = field.type_of.name() == new_type_names.back()?;
             new_type_names.push_back(field.type_of.name().to_string());
             if !field.has_resolver() {
-                if let Some(modify) = &field.modify {
-                    if let Some(modified_name) = &modify.name {
-                        map.insert(
-                            modified_name.clone(),
-                            (
-                                name.clone(),
-                                create_related_fields(config, new_type_names, visited)?,
-                            ),
-                        );
-                    }
+                let used_name = match &field.modify {
+                    Some(modify) => match &modify.name {
+                        Some(modified_name) => Some(modified_name),
+                        _ => None,
+                    },
+                    _ => Some(name),
+                };
+                if bool_self {
+                    map.insert(
+                        used_name?.to_string(),
+                        (name.clone(), RelatedFields(HashMap::new()), true),
+                    );
                 } else {
                     map.insert(
-                        name.clone(),
+                        used_name?.to_string(),
                         (
                             name.clone(),
                             create_related_fields(config, new_type_names, visited)?,
+                            false,
                         ),
                     );
                 }
