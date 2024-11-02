@@ -13,25 +13,20 @@ use crate::core::valid::{Valid, ValidationError, Validator};
 use crate::core::{config, helpers, Mustache};
 
 // Recursively check if the leaf type is a scalar
-fn check_ty(mut iter: Iter<String>, module: &ConfigModule, cur_ty: &str) -> bool {
+fn check_ty(mut iter: Iter<String>, module: &ConfigModule, cur_ty: &str) -> Option<bool> {
     let type_ = module.types.get(cur_ty);
     if type_.is_none() {
-        return Scalar::is_predefined(cur_ty) || module.find_enum(cur_ty).is_some();
+        return Some(Scalar::is_predefined(cur_ty) || module.find_enum(cur_ty).is_some());
     }
-    let type_ = type_.unwrap();
+    let type_ = type_?;
 
     let cur = iter.next();
     if cur.is_none() {
-        return Scalar::is_predefined(cur_ty) || module.find_enum(cur_ty).is_some();
+        return Some(Scalar::is_predefined(cur_ty) || module.find_enum(cur_ty).is_some());
     }
 
-    let cur = cur.unwrap();
-    if let Some(next_field) = type_.fields.get(cur) {
-        let next = next_field.type_of.name();
-        check_ty(iter, module, next)
-    } else {
-        false
-    }
+    let next = type_.fields.get(cur?)?.type_of.name();
+    check_ty(iter, module, next)
 }
 
 // Check if args are scalar
@@ -42,12 +37,13 @@ fn check_args(mut iter: Iter<String>, module: &ConfigModule, field: &Field) -> b
             || module.find_enum(field.type_of.name()).is_some();
     }
     let cur = cur.unwrap();
-
-    if let Some(next) = field.args.get(cur).as_ref() {
-        check_ty(iter, module, next.type_of.name())
-    } else {
-        false
-    }
+    field.args.contains_key(cur)
+        && check_ty(
+            iter,
+            module,
+            field.args.get(cur).as_ref().unwrap().type_of.name(),
+        )
+        .unwrap_or_default()
 }
 
 // Pattern matching on the Mustache segments and iterate over nested types
