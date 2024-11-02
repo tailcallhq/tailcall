@@ -108,7 +108,7 @@ impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
     }
 }
 
-impl<'a, Ctx: ResolverContextLike> GraphQLOperationContext for EvalContext<'a, Ctx> {
+impl<Ctx: ResolverContextLike> GraphQLOperationContext for EvalContext<'_, Ctx> {
     fn directives(&self) -> Option<String> {
         let selection_field = self.graphql_ctx.field()?;
         selection_field

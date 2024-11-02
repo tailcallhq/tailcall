@@ -115,7 +115,7 @@ impl<'a, Value: Deserialize<'a> + Clone + 'a + JsonLike<'a> + std::fmt::Debug> J
         JP { test_data, plan, vars }
     }
 
-    pub fn synth(&'a self) -> Synth<Value> {
+    pub fn synth(&'a self) -> Synth<'a, Value> {
         let ProcessedTestData { posts, users } = self.test_data.to_processed();
         let vars = self.vars.clone();
 
