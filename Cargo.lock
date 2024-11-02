@@ -4972,7 +4972,7 @@ dependencies = [
 [[package]]
 name = "serde_json_borrow"
 version = "0.7.0"
-source = "git+https://github.com/meskill/serde_json_borrow?branch=perf/object-vec-initializer#d7f0d39da5e457d57612f4d32501053710c56adc"
+source = "git+https://github.com/PSeitz/serde_json_borrow?rev=6ad7127e0fb9c31f6fd927e934a21112e9ac0fdb#6ad7127e0fb9c31f6fd927e934a21112e9ac0fdb"
 dependencies = [
  "serde",
  "serde_json",
