@@ -22,7 +22,7 @@ struct SimilarityTypeInfo<'a> {
 }
 
 impl<'a> Similarity<'a> {
-    pub fn new(config: &'a Config) -> Similarity {
+    pub fn new(config: &'a Config) -> Similarity<'a> {
         Similarity { config, type_similarity_cache: PairMap::default() }
     }
 

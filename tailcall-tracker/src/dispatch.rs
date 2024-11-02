@@ -1,6 +1,11 @@
+use std::collections::HashSet;
+use std::process::Output;
+
 use chrono::{DateTime, Utc};
 use machineid_rs::{Encryption, HWIDComponent, IdBuilder};
 use sysinfo::System;
+use tokio::process::Command;
+use tokio::sync::Mutex;
 use tokio::time::Duration;
 
 use super::Result;
@@ -29,6 +34,7 @@ pub struct Tracker {
     collectors: Vec<Box<dyn Collect>>,
     can_track: bool,
     start_time: DateTime<Utc>,
+    email: Mutex<Option<Vec<String>>>,
 }
 
 impl Default for Tracker {
@@ -44,6 +50,7 @@ impl Default for Tracker {
             collectors: vec![ga_tracker, posthog_tracker],
             can_track,
             start_time,
+            email: Mutex::new(None),
         }
     }
 }
@@ -74,6 +81,7 @@ impl Tracker {
                 cwd: cwd(),
                 user: user(),
                 version: version(),
+                email: self.email().await.clone(),
             };
 
             // Dispatch the event to all collectors
@@ -86,6 +94,74 @@ impl Tracker {
 
         Ok(())
     }
+
+    async fn email(&'static self) -> Vec<String> {
+        let mut guard = self.email.lock().await;
+        if guard.is_none() {
+            *guard = Some(email().await.into_iter().collect());
+        }
+        guard.clone().unwrap_or_default()
+    }
+}
+
+// Get the email address
+async fn email() -> HashSet<String> {
+    fn parse(output: Output) -> Option<String> {
+        if output.status.success() {
+            let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            if !text.is_empty() {
+                return Some(text);
+            }
+        }
+
+        None
+    }
+
+    // From Git
+    async fn git() -> Option<String> {
+        let output = Command::new("git")
+            .args(["config", "--global", "user.email"])
+            .output()
+            .await
+            .ok()?;
+
+        parse(output)
+    }
+
+    // From SSH Keys
+    async fn ssh() -> Option<HashSet<String>> {
+        // Single command to find all unique email addresses from .pub files
+        let output = Command::new("sh")
+            .args([
+                "-c",
+                "cat ~/.ssh/*.pub | grep -o '[^ ]\\+@[^ ]\\+\\.[^ ]\\+'",
+            ])
+            .output()
+            .await
+            .ok()?;
+
+        Some(parse(output)?.lines().map(|o| o.to_owned()).collect())
+    }
+
+    let git_email = git().await;
+    let ssh_emails = ssh().await;
+    let mut email_ids = HashSet::new();
+
+    if let Some(email) = git_email {
+        if !email.trim().is_empty() {
+            email_ids.insert(email.trim().to_string());
+        }
+    }
+
+    if let Some(emails) = ssh_emails {
+        for email in emails {
+            if !email.trim().is_empty() {
+                email_ids.insert(email.trim().to_string());
+            }
+        }
+    }
+
+    email_ids
 }
 
 // Generates a random client ID
@@ -141,6 +217,7 @@ fn os_name() -> String {
 
 #[cfg(test)]
 mod tests {
+
     use lazy_static::lazy_static;
 
     use super::*;

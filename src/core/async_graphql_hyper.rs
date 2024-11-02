@@ -397,7 +397,7 @@ impl GraphQLArcResponse {
                     .collect::<Vec<u8>>();
 
                 // Wrap the result in square brackets
-                [&[b'['], &combined[..], &[b']']].concat()
+                [b"[", &combined[..], b"]"].concat()
             }
             JITBatchResponse::Single(resp) => resp.body.as_ref().to_owned(),
         };
