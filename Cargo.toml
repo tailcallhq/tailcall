@@ -162,7 +162,7 @@ tonic-types = "0.12.1"
 base64 = "0.22.1"
 tailcall-hasher = { path = "tailcall-hasher" }
 # TODO: drop git ref when new version is released
-serde_json_borrow = { version = "0.7.0", default-features = false, git = "https://github.com/meskill/serde_json_borrow", branch = "perf/object-vec-initializer" }
+serde_json_borrow = { version = "0.7.0", default-features = false, git = "https://github.com/PSeitz/serde_json_borrow", rev = "6ad7127e0fb9c31f6fd927e934a21112e9ac0fdb" }
 pluralizer = "0.4.0"
 path-clean = "=1.0.1"
 pathdiff = "0.2.1"
