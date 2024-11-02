@@ -496,7 +496,7 @@ pub fn to_field_definition(
     object_name: &str,
     config_module: &ConfigModule,
     type_of: &config::Type,
-    name: &String,
+    name: &str,
 ) -> Valid<FieldDefinition, String> {
     update_args()
         .and(update_http().trace(config::Http::trace_name().as_str()))

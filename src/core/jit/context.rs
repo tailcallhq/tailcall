@@ -85,7 +85,7 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
     }
 }
 
-impl<'a> ResolverContextLike for Context<'a, ConstValue, ConstValue> {
+impl ResolverContextLike for Context<'_, ConstValue, ConstValue> {
     fn value(&self) -> Option<&ConstValue> {
         self.value
     }

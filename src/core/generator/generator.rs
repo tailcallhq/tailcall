@@ -27,6 +27,7 @@ pub struct Generator {
     transformers: Vec<Box<dyn Transform<Value = Config, Error = String>>>,
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone)]
 pub enum Input {
     Json {
