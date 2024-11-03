@@ -2,9 +2,9 @@ use std::collections::HashSet;
 use std::fmt::Debug;
 
 use jsonwebtoken::jwk::JwkSet;
+use tailcall_valid::Valid;
 
 use crate::core::config::ConfigModule;
-use crate::core::valid::Valid;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Basic {

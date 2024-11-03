@@ -2,9 +2,9 @@ use std::fmt::{Debug, Display};
 
 use colored::Colorize;
 use derive_setters::Setters;
+use tailcall_valid::ValidationError;
 
 use crate::core::error::Error as CoreError;
-use crate::core::valid::ValidationError;
 
 /// The moral equivalent of a serde_json::Value but for errors.
 /// It's a data structure like Value that can hold any error in an untyped
@@ -235,9 +235,9 @@ impl From<Box<dyn std::error::Error>> for Errata {
 mod tests {
     use pretty_assertions::assert_eq;
     use stripmargin::StripMargin;
+    use tailcall_valid::Cause;
 
     use super::*;
-    use crate::core::valid::Cause;
 
     #[test]
     fn test_no_newline() {
