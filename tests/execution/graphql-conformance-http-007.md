@@ -40,14 +40,16 @@ type Counter {
   response:
     status: 200
     body:
-      - id: 1
-        handle: user-1
-        friends:
-          count: 2
-      - id: 2
-        handle: page-1
-        likers:
-          count: 4
+      - User:
+          id: 1
+          handle: user-1
+          friends:
+            count: 2
+      - Page:
+          id: 2
+          handle: page-1
+          likers:
+            count: 4
 ```
 
 ```yml @test

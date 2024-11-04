@@ -11,12 +11,13 @@ use strum::IntoEnumIterator;
 use tailcall_typedefs_common::directive_definition::DirectiveDefinition;
 use tailcall_typedefs_common::input_definition::InputDefinition;
 use tailcall_typedefs_common::ServiceDocumentBuilder;
+use tailcall_valid::{Valid, Validator};
 
 use super::directive::Directive;
 use super::from_document::from_document;
 use super::{
-    AddField, Alias, Cache, Call, Expr, GraphQL, Grpc, Http, Link, Modify, Omit, Protected,
-    Resolver, Server, Telemetry, Upstream, JS,
+    AddField, Alias, Cache, Call, Discriminate, Expr, GraphQL, Grpc, Http, Link, Modify, Omit,
+    Protected, Resolver, Server, Telemetry, Upstream, JS,
 };
 use crate::core::config::npo::QueryPath;
 use crate::core::config::source::Source;
@@ -24,7 +25,6 @@ use crate::core::is_default;
 use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
 use crate::core::scalar::Scalar;
-use crate::core::valid::{Valid, Validator};
 
 #[derive(
     Serialize,
@@ -114,12 +114,10 @@ pub struct Type {
     /// Marks field as protected by auth providers
     #[serde(default)]
     pub protected: Option<Protected>,
-
     ///
     /// Apollo federation entity resolver.
     #[serde(flatten, default, skip_serializing_if = "is_default")]
     pub resolver: Option<Resolver>,
-
     ///
     /// Any additional directives
     #[serde(default, skip_serializing_if = "is_default")]
@@ -220,6 +218,10 @@ pub struct Field {
     /// Marks field as protected by auth provider
     #[serde(default)]
     pub protected: Option<Protected>,
+
+    ///
+    /// Used to overwrite the default discrimination strategy
+    pub discriminate: Option<Discriminate>,
 
     ///
     /// Resolver for the field
@@ -659,6 +661,7 @@ impl Config {
             .add_directive(Server::directive_definition(generated_types))
             .add_directive(Telemetry::directive_definition(generated_types))
             .add_directive(Upstream::directive_definition(generated_types))
+            .add_directive(Discriminate::directive_definition(generated_types))
             .add_input(GraphQL::input_definition())
             .add_input(Grpc::input_definition())
             .add_input(Http::input_definition())

@@ -286,6 +286,7 @@ type GEN__4 {
   title_short: String
   title_version: String
   track_position: Int
+  track_token: String
   type: String
 }
 

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use serde::Deserialize;
+use tailcall_valid::Validator;
 
 use crate::core::blueprint::Blueprint;
 use crate::core::config::{Config, ConfigModule};
@@ -8,9 +9,8 @@ use crate::core::jit::builder::Builder;
 use crate::core::jit::store::Store;
 use crate::core::jit::synth::Synth;
 use crate::core::jit::transform::InputResolver;
-use crate::core::jit::{transform, OperationPlan, Variables};
+use crate::core::jit::{transform, Field, OperationPlan, Variables};
 use crate::core::json::{JsonLike, JsonObjectLike};
-use crate::core::valid::Validator;
 use crate::core::Transform;
 
 /// NOTE: This is a bit of a boilerplate reducing module that is used in tests
@@ -115,14 +115,15 @@ impl<'a, Value: Deserialize<'a> + Clone + 'a + JsonLike<'a> + std::fmt::Debug> J
         JP { test_data, plan, vars }
     }
 
-    pub fn synth(&'a self) -> Synth<Value> {
+    pub fn synth(&'a self) -> Synth<'a, Value> {
         let ProcessedTestData { posts, users } = self.test_data.to_processed();
         let vars = self.vars.clone();
 
-        let posts_id = self.plan.find_field_path(&["posts"]).unwrap().id.to_owned();
-        let users_id = self
-            .plan
-            .find_field_path(&["posts", "user"])
+        let posts_id = find_field_path(&self.plan, &["posts"])
+            .unwrap()
+            .id
+            .to_owned();
+        let users_id = find_field_path(&self.plan, &["posts", "user"])
             .unwrap()
             .id
             .to_owned();
@@ -135,5 +136,23 @@ impl<'a, Value: Deserialize<'a> + Clone + 'a + JsonLike<'a> + std::fmt::Debug> J
             });
 
         Synth::new(&self.plan, store, vars)
+    }
+}
+
+/// Search for a field by specified path of nested fields
+pub fn find_field_path<'a, S: AsRef<str>, T>(
+    plan: &'a OperationPlan<T>,
+    path: &[S],
+) -> Option<&'a Field<T>> {
+    match path.split_first() {
+        None => None,
+        Some((name, path)) => {
+            let field = plan.iter_dfs().find(|field| field.name == name.as_ref())?;
+            if path.is_empty() {
+                Some(field)
+            } else {
+                find_field_path(plan, path)
+            }
+        }
     }
 }

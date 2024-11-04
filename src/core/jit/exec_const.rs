@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use async_graphql_value::{ConstValue, Value};
 use futures_util::future::join_all;
+use tailcall_valid::Validator;
 
 use super::context::Context;
 use super::exec::{Executor, IRExecutor};
@@ -15,7 +16,6 @@ use crate::core::ir::{self, EvalContext};
 use crate::core::jit::synth::Synth;
 use crate::core::jit::transform::InputResolver;
 use crate::core::json::{JsonLike, JsonLikeList};
-use crate::core::valid::Validator;
 use crate::core::Transform;
 
 /// A specialized executor that executes with async_graphql::Value
@@ -91,13 +91,18 @@ impl<'a> ConstValueExec<'a> {
 
     async fn call(
         &self,
-        ctx: &'a Context<
-            'a,
-            <ConstValueExec<'a> as IRExecutor>::Input,
-            <ConstValueExec<'a> as IRExecutor>::Output,
-        >,
+        ctx: &'a Context<'a, <Self as IRExecutor>::Input, <Self as IRExecutor>::Output>,
         ir: &'a IR,
-    ) -> Result<<ConstValueExec<'a> as IRExecutor>::Output> {
+    ) -> Result<<Self as IRExecutor>::Output>
+    where
+        <Self as IRExecutor>::Input: JsonLike<'a>,
+        <Self as IRExecutor>::Output: JsonLike<'a>,
+    {
+        // if parent value is null do not try to resolve child fields
+        if matches!(ctx.value(), Some(v) if v.is_null()) {
+            return Ok(Default::default());
+        }
+
         let req_context = &self.req_context;
         let mut eval_ctx = EvalContext::new(req_context, ctx);
 
@@ -128,11 +133,7 @@ impl<'ctx> IRExecutor for ConstValueExec<'ctx> {
                     // for fragments on union/interface
                     if self.plan.field_is_part_of_value(field, value) {
                         let ctx = ctx.with_value(value);
-                        tasks.push(async move {
-                            let req_context = &self.req_context;
-                            let mut eval_ctx = EvalContext::new(req_context, &ctx);
-                            ir.eval(&mut eval_ctx).await
-                        })
+                        tasks.push(async move { self.call(&ctx, ir).await })
                     }
                 });
 
@@ -149,7 +150,8 @@ impl<'ctx> IRExecutor for ConstValueExec<'ctx> {
                     if self.plan.field_is_part_of_value(field, value) {
                         iter.next().unwrap_or(Err(ir::Error::IO(
                             "Expected value to be present".to_string(),
-                        )))
+                        )
+                        .into()))
                     } else {
                         Ok(Self::Output::default())
                     }

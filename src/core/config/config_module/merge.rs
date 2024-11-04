@@ -1,12 +1,12 @@
 use std::collections::BTreeMap;
 
 use indexmap::IndexMap;
+use tailcall_valid::{Valid, Validator};
 
 use super::{Cache, ConfigModule};
 use crate::core;
 use crate::core::config::{Arg, Config, Enum, Field, Type};
 use crate::core::merge_right::MergeRight;
-use crate::core::valid::{Valid, Validator};
 use crate::core::variance::{Contravariant, Covariant, Invariant};
 
 impl core::Type {
@@ -100,6 +100,7 @@ impl Contravariant for Field {
                 cache: self.cache.merge_right(other.cache),
                 default_value: self.default_value.or(other.default_value),
                 protected: self.protected.merge_right(other.protected),
+                discriminate: self.discriminate.merge_right(other.discriminate),
                 resolver: self.resolver.merge_right(other.resolver),
                 directives: self.directives.merge_right(other.directives),
             })
@@ -121,6 +122,7 @@ impl Covariant for Field {
                 cache: self.cache.merge_right(other.cache),
                 default_value: self.default_value.or(other.default_value),
                 protected: self.protected.merge_right(other.protected),
+                discriminate: self.discriminate.merge_right(other.discriminate),
                 resolver: self.resolver.merge_right(other.resolver),
                 directives: self.directives.merge_right(other.directives),
             })
@@ -394,10 +396,10 @@ where
 mod tests {
     use anyhow::Result;
     use insta::assert_snapshot;
+    use tailcall_valid::Validator;
 
     use super::*;
     use crate::core::config::ConfigModule;
-    use crate::core::valid::Validator;
     use crate::include_config;
 
     #[test]

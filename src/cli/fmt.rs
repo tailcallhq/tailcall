@@ -9,7 +9,7 @@ impl Fmt {
         format!("{}", heading.bold())
     }
 
-    pub fn meta(meta: &String) -> String {
+    pub fn meta(meta: &str) -> String {
         format!("{}", meta.yellow())
     }
 
