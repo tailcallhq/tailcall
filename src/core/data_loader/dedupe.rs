@@ -1,6 +1,7 @@
 use std::hash::Hash;
 use std::sync::{Arc, Weak};
 
+use ahash::RandomState;
 use dashmap::{DashMap, Entry};
 use futures_util::Future;
 use tokio::sync::broadcast;
@@ -15,7 +16,7 @@ impl<A: Send + Sync + Clone> Value for A {}
 /// Allows deduplication of async operations based on a key.
 pub struct Dedupe<Key, Value> {
     /// Cache storage for the operations.
-    cache: Arc<DashMap<Key, State<Value>>>,
+    cache: Arc<DashMap<Key, State<Value>, RandomState>>,
     /// Initial size of the multi-producer, multi-consumer channel.
     size: usize,
     /// When enabled allows the operations to be cached forever.
@@ -48,7 +49,7 @@ enum Step<Value> {
 
 impl<K: Key, V: Value> Dedupe<K, V> {
     pub fn new(size: usize, persist: bool) -> Self {
-        Self { cache: Arc::new(DashMap::new()), size, persist }
+        Self { cache: Arc::new(DashMap::default()), size, persist }
     }
 
     pub async fn dedupe<'a, Fn, Fut>(&'a self, key: &'a K, or_else: Fn) -> V
