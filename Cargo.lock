@@ -5483,6 +5483,7 @@ dependencies = [
  "tempfile",
  "test-log",
  "thiserror",
+ "thread-id",
  "tokio",
  "tokio-test",
  "tonic 0.11.0",
@@ -5781,6 +5782,16 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.85",
+]
+
+[[package]]
+name = "thread-id"
+version = "5.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "99043e46c5a15af379c06add30d9c93a6c0e8849de00d244c4a2c417da128d80"
+dependencies = [
+ "libc",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]

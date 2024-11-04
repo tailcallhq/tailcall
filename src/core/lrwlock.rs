@@ -1,4 +1,5 @@
 use std::sync::{LockResult, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use thread_id;
 
 /// A RwLock that leverages thread locals to avoid contention.
 pub struct LrwLock<A: Send> {
@@ -20,21 +21,15 @@ impl<A: Clone + Send> LrwLock<A> {
 
     /// Lock the LrwLock for reading.
     pub fn read(&self) -> LockResult<RwLockReadGuard<'_, A>> {
-        let id = thread_id();
+        let id = thread_id::get();
 
         self.inner[id % SIZE].read()
     }
 
     /// Lock the LrwLock for writing.
     pub fn write(&self) -> LockResult<RwLockWriteGuard<'_, A>> {
-        let id = thread_id();
+        let id = thread_id::get();
 
         self.inner[id % SIZE].write()
     }
-}
-
-fn thread_id() -> usize {
-    format!("{:?}", std::thread::current().id())
-        .parse::<usize>()
-        .unwrap()
 }
