@@ -15,36 +15,30 @@ impl<A> CheckCacheable<A> {
 }
 
 #[inline]
-fn check_cacheble(ir: &IR) -> Option<NonZeroU64> {
+fn check_cacheable(ir: &IR) -> Option<NonZeroU64> {
     match ir {
         IR::IO(_) => None,
         IR::Cache(cache) => Some(cache.max_age),
-        IR::Path(ir, _) => check_cacheble(ir),
-        IR::Protect(ir) => check_cacheble(ir),
-        IR::Pipe(ir, ir1) => {
-            let result1 = check_cacheble(ir);
-            let result2 = check_cacheble(ir1);
-
-            if result1.is_some() && result2.is_some() {
-                Some(std::cmp::min(result1.unwrap(), result2.unwrap()))
-            } else {
-                None
-            }
-        }
-        IR::Discriminate(_, ir) => check_cacheble(ir),
+        IR::Path(ir, _) => check_cacheable(ir),
+        IR::Protect(ir) => check_cacheable(ir),
+        IR::Pipe(ir, ir1) => match (check_cacheable(ir), check_cacheable(ir1)) {
+            (Some(age1), Some(age2)) => Some(age1.min(age2)),
+            _ => None,
+        },
+        IR::Discriminate(_, ir) => check_cacheable(ir),
         IR::Entity(hash_map) => {
-            let mut final_result = None;
+            let mut cache_ttl = None;
             for ir in hash_map.values() {
-                let result = check_cacheble(ir);
+                let result = check_cacheable(ir);
                 if result.is_none() {
                     return None;
                 }
-                final_result = match final_result {
-                    Some(min_age) => Some(std::cmp::min(min_age, result.unwrap())),
+                cache_ttl = match cache_ttl {
+                    Some(max_age) => Some(std::cmp::min(max_age, result.unwrap())),
                     None => result,
-                };
+                }
             }
-            final_result
+            cache_ttl
         }
         IR::Dynamic(_) | IR::ContextPath(_) | IR::Map(_) | IR::Service(_) => None,
     }
@@ -59,14 +53,16 @@ impl<A> Transform for CheckCacheable<A> {
 
         for field in plan.selection.iter() {
             if let Some(ir) = field.ir.as_ref() {
-                let result = check_cacheble(ir);
+                let result = check_cacheable(ir);
                 if result.is_none() {
                     // not cacheable, break out of loop.
                     cache_ttl = None;
                     break;
                 }
-                // fix None case for final_result.
-                cache_ttl = Some(std::cmp::min(cache_ttl.unwrap(), result.unwrap()));
+                cache_ttl = match cache_ttl {
+                    Some(max_age) => Some(std::cmp::min(max_age, result.unwrap())),
+                    None => result,
+                };
             }
         }
 
