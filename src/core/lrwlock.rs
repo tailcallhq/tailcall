@@ -1,10 +1,15 @@
-use std::sync::{LockResult, RwLock, RwLockReadGuard, RwLockWriteGuard};
+#[deny(clippy::mut_from_ref)]
+
+use std::cell::UnsafeCell;
+
 use thread_id;
 
 /// A RwLock that leverages thread locals to avoid contention.
 pub struct LrwLock<A: Send> {
-    inner: Vec<RwLock<A>>,
+    inner: Vec<UnsafeCell<A>>,
 }
+
+unsafe impl<A: Send> Sync for LrwLock<A> {}
 
 // TODO: Should be configured based on the worker count
 const SIZE: usize = 16;
@@ -14,23 +19,29 @@ impl<A: Clone + Send> LrwLock<A> {
     pub fn new(value: A) -> Self {
         let mut inner = Vec::with_capacity(SIZE);
         for _ in 0..SIZE {
-            inner.push(RwLock::new(value.clone()));
+            inner.push(UnsafeCell::new(value.clone()));
         }
 
         Self { inner }
     }
 
     /// Lock the LrwLock for reading.
-    pub fn read(&self) -> LockResult<RwLockReadGuard<'_, A>> {
+    pub fn get(&self) -> &A {
         let id = thread_id::get();
 
-        self.inner[id % SIZE].read()
+        unsafe { get_mut(&self.inner[id % SIZE]) }
     }
 
-    /// Lock the LrwLock for writing.
-    pub fn write(&self) -> LockResult<RwLockWriteGuard<'_, A>> {
+    pub fn modify(&self, f: impl FnOnce(&mut A)) {
         let id = thread_id::get();
 
-        self.inner[id % SIZE].write()
+        unsafe {
+            f(get_mut(&self.inner[id % SIZE]));
+        }
     }
+}
+
+
+unsafe fn get_mut<T>(ptr: &UnsafeCell<T>) -> &mut T {
+    unsafe { &mut *ptr.get() }
 }

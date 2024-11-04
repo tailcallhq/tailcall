@@ -79,11 +79,14 @@ impl<K: Key, V: Value> Dedupe<K, V> {
                 },
                 Step::Init(tx) => {
                     let value = or_else().await;
-                    let mut guard = self.cache.write().unwrap();
                     if self.persist {
-                        guard.insert(key.to_owned(), State::Ready(value.clone()));
+                        self.cache.modify(|cache| {
+                            cache.insert(key.to_owned(), State::Ready(value.clone()));
+                        });
                     } else {
-                        guard.remove(key);
+                        self.cache.modify(|cache| {
+                            cache.remove(key);
+                        });
                     }
                     let _ = tx.send(value.clone());
                     value
@@ -100,7 +103,7 @@ impl<K: Key, V: Value> Dedupe<K, V> {
 
     fn step(&self, key: &K, read: bool) -> Step<V> {
         if read {
-            let this = self.cache.read().unwrap();
+            let this = self.cache.get();
             if let Some(state) = this.get(key) {
                 match state {
                     State::Ready(value) => return Step::Return(value.clone()),
@@ -118,9 +121,7 @@ impl<K: Key, V: Value> Dedupe<K, V> {
             }
         }
 
-        let mut this = self.cache.write().unwrap();
-
-        if let Some(state) = this.get(key) {
+        if let Some(state) = self.cache.get().get(key) {
             match state {
                 State::Ready(value) => return Step::Return(value.clone()),
                 State::Pending(tx) => {
@@ -140,7 +141,10 @@ impl<K: Key, V: Value> Dedupe<K, V> {
         // to control if tx is still alive and will be able to handle the request.
         // Only single `strong` reference to tx should exist so we can
         // understand when the execution is still alive and we'll get the response
-        this.insert(key.to_owned(), State::Pending(Arc::downgrade(&tx)));
+        self.cache.modify(|cache| {
+            cache.insert(key.to_owned(), State::Pending(Arc::downgrade(&tx)));
+        });
+
         Step::Init(tx)
     }
 }

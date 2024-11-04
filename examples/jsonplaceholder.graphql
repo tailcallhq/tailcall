@@ -1,9 +1,9 @@
-schema @server(port: 8000) @upstream(httpCache: 42, batch: {delay: 100}) {
+schema @server(port: 8000) {
   query: Query
 }
 
-type Query {
-  posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts")
+type Query @cache(maxAge: 60000) {
+  posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts", dedupe: true)
   users: [User] @http(url: "http://jsonplaceholder.typicode.com/users")
   user(id: Int!): User @http(url: "http://jsonplaceholder.typicode.com/users/{{.args.id}}")
   greet: String @expr(body: "Hello World!")
