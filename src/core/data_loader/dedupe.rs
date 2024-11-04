@@ -11,6 +11,8 @@ impl<A: Send + Sync + Eq + Hash + Clone> Key for A {}
 pub trait Value: Send + Sync + Clone {}
 impl<A: Send + Sync + Clone> Value for A {}
 
+// Testing dedupe perf with Mutex + HashMap.
+
 ///
 /// Allows deduplication of async operations based on a key.
 pub struct Dedupe<Key, Value> {
