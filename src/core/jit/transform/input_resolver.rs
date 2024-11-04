@@ -76,6 +76,7 @@ where
             is_dedupe: self.plan.is_dedupe,
             is_const: self.plan.is_const,
             is_protected: self.plan.is_protected,
+            cache_ttl: self.plan.cache_ttl,
             selection,
         })
     }
