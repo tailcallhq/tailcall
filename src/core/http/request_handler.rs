@@ -395,13 +395,14 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
 
 #[cfg(test)]
 mod test {
+    use tailcall_valid::Validator;
+
     use super::*;
     use crate::core::async_graphql_hyper::GraphQLRequest;
     use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule, Routes};
     use crate::core::rest::EndpointSet;
     use crate::core::runtime::test::init;
-    use crate::core::valid::Validator;
 
     #[tokio::test]
     async fn test_health_endpoint() -> anyhow::Result<()> {

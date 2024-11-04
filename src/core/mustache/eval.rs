@@ -16,7 +16,7 @@ impl<A> PathStringEval<A> {
     }
 }
 
-impl<'a, A: PathString> Eval<'a> for PathStringEval<A> {
+impl<A: PathString> Eval<'_> for PathStringEval<A> {
     type In = A;
     type Out = String;
 
@@ -78,7 +78,7 @@ impl<A> PathGraphqlEval<A> {
     }
 }
 
-impl<'a, A: PathGraphql> Eval<'a> for PathGraphqlEval<A> {
+impl<A: PathGraphql> Eval<'_> for PathGraphqlEval<A> {
     type In = A;
     type Out = String;
 
