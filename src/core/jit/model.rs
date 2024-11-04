@@ -288,7 +288,7 @@ pub struct OperationPlan<Input> {
     pub is_dedupe: bool,
     pub is_const: bool,
     pub is_protected: bool,
-    pub cache_ttl: Option<NonZeroU64>,
+    pub min_cache_ttl: Option<NonZeroU64>,
     pub selection: Vec<Field<Input>>,
 }
 
@@ -319,7 +319,7 @@ impl<Input> OperationPlan<Input> {
             is_introspection_query: self.is_introspection_query,
             is_dedupe: self.is_dedupe,
             is_const: self.is_const,
-            cache_ttl: self.cache_ttl,
+            min_cache_ttl: self.min_cache_ttl,
             is_protected: self.is_protected,
         })
     }
@@ -345,7 +345,7 @@ impl<Input> OperationPlan<Input> {
             is_introspection_query,
             is_dedupe: false,
             is_const: false,
-            cache_ttl: None,
+            min_cache_ttl: None,
             is_protected: false,
         }
     }
@@ -415,7 +415,7 @@ impl<Input> OperationPlan<Input> {
     }
     /// retunrs true if plan is dedupable
     pub fn is_dedupable(&self) -> bool {
-        self.is_query() && (self.is_dedupe || self.is_const || self.cache_ttl.is_some())
+        self.is_query() && (self.is_dedupe || self.is_const || self.min_cache_ttl.is_some())
     }
 }
 
