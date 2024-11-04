@@ -1,9 +1,11 @@
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::sync::{Arc, RwLock, Weak};
+use std::sync::{Arc, Weak};
 
 use futures_util::Future;
 use tokio::sync::broadcast;
+
+use crate::core::lrwlock::LrwLock;
 
 pub trait Key: Send + Sync + Eq + Hash + Clone {}
 impl<A: Send + Sync + Eq + Hash + Clone> Key for A {}
@@ -11,13 +13,11 @@ impl<A: Send + Sync + Eq + Hash + Clone> Key for A {}
 pub trait Value: Send + Sync + Clone {}
 impl<A: Send + Sync + Clone> Value for A {}
 
-// Testing dedupe perf with Mutex + HashMap.
-
 ///
 /// Allows deduplication of async operations based on a key.
-pub struct Dedupe<Key, Value> {
+pub struct Dedupe<Key: Send, Value: Send> {
     /// Cache storage for the operations.
-    cache: Arc<RwLock<HashMap<Key, State<Value>>>>,
+    cache: Arc<LrwLock<HashMap<Key, State<Value>>>>,
     /// Initial size of the multi-producer, multi-consumer channel.
     size: usize,
     /// When enabled allows the operations to be cached forever.
@@ -25,6 +25,7 @@ pub struct Dedupe<Key, Value> {
 }
 
 /// Represents the current state of the operation.
+#[derive(Clone)]
 enum State<Value> {
     /// Means that the operation has been executed and the result is stored.
     Ready(Value),
@@ -46,11 +47,13 @@ enum Step<Value> {
     /// The operation needs to be executed and the result needs to be sent to
     /// the provided sender.
     Init(Arc<broadcast::Sender<Value>>),
+
+    Retry,
 }
 
 impl<K: Key, V: Value> Dedupe<K, V> {
     pub fn new(size: usize, persist: bool) -> Self {
-        Self { cache: Arc::new(RwLock::new(HashMap::new())), size, persist }
+        Self { cache: Arc::new(LrwLock::new(HashMap::new())), size, persist }
     }
 
     pub async fn dedupe<'a, Fn, Fut>(&'a self, key: &'a K, or_else: Fn) -> V
@@ -58,8 +61,11 @@ impl<K: Key, V: Value> Dedupe<K, V> {
         Fn: FnOnce() -> Fut,
         Fut: Future<Output = V>,
     {
+        let mut read = true;
         loop {
-            let value = match self.step(key) {
+            let step = self.step(key, read);
+            read = true;
+            let value = match step {
                 Step::Return(value) => value,
                 Step::Await(mut rx) => match rx.recv().await {
                     Ok(value) => value,
@@ -82,14 +88,18 @@ impl<K: Key, V: Value> Dedupe<K, V> {
                     let _ = tx.send(value.clone());
                     value
                 }
+                Step::Retry => {
+                    read = false;
+                    continue;
+                }
             };
 
             return value;
         }
     }
 
-    fn step(&self, key: &K) -> Step<V> {
-        {
+    fn step(&self, key: &K, read: bool) -> Step<V> {
+        if read {
             let this = self.cache.read().unwrap();
             if let Some(state) = this.get(key) {
                 match state {
@@ -103,10 +113,26 @@ impl<K: Key, V: Value> Dedupe<K, V> {
                         }
                     }
                 }
+            } else {
+                return Step::Retry;
             }
         }
 
         let mut this = self.cache.write().unwrap();
+
+        if let Some(state) = this.get(key) {
+            match state {
+                State::Ready(value) => return Step::Return(value.clone()),
+                State::Pending(tx) => {
+                    // We can upgrade from Weak to Arc only in case when
+                    // original tx is still alive
+                    // otherwise we will create in the code below
+                    if let Some(tx) = tx.upgrade() {
+                        return Step::Await(tx.subscribe());
+                    }
+                }
+            }
+        }
 
         let (tx, _) = broadcast::channel(self.size);
         let tx = Arc::new(tx);
@@ -119,7 +145,7 @@ impl<K: Key, V: Value> Dedupe<K, V> {
     }
 }
 
-pub struct DedupeResult<K, V, E>(Dedupe<K, Result<V, E>>);
+pub struct DedupeResult<K: Send, V: Send, E: Send>(Dedupe<K, Result<V, E>>);
 
 impl<K: Key, V: Value, E: Value> DedupeResult<K, V, E> {
     pub fn new(persist: bool) -> Self {
