@@ -1,11 +1,9 @@
-use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::{Arc, Weak};
 
+use dashmap::{DashMap, Entry};
 use futures_util::Future;
 use tokio::sync::broadcast;
-
-use crate::core::lrwlock::LrwLock;
 
 pub trait Key: Send + Sync + Eq + Hash + Clone {}
 impl<A: Send + Sync + Eq + Hash + Clone> Key for A {}
@@ -15,9 +13,9 @@ impl<A: Send + Sync + Clone> Value for A {}
 
 ///
 /// Allows deduplication of async operations based on a key.
-pub struct Dedupe<Key: Send, Value: Send> {
+pub struct Dedupe<Key, Value> {
     /// Cache storage for the operations.
-    cache: Arc<LrwLock<HashMap<Key, State<Value>>>>,
+    cache: Arc<DashMap<Key, State<Value>>>,
     /// Initial size of the multi-producer, multi-consumer channel.
     size: usize,
     /// When enabled allows the operations to be cached forever.
@@ -25,7 +23,6 @@ pub struct Dedupe<Key: Send, Value: Send> {
 }
 
 /// Represents the current state of the operation.
-#[derive(Clone)]
 enum State<Value> {
     /// Means that the operation has been executed and the result is stored.
     Ready(Value),
@@ -47,13 +44,11 @@ enum Step<Value> {
     /// The operation needs to be executed and the result needs to be sent to
     /// the provided sender.
     Init(Arc<broadcast::Sender<Value>>),
-
-    Retry,
 }
 
 impl<K: Key, V: Value> Dedupe<K, V> {
     pub fn new(size: usize, persist: bool) -> Self {
-        Self { cache: Arc::new(LrwLock::new(HashMap::new())), size, persist }
+        Self { cache: Arc::new(DashMap::new()), size, persist }
     }
 
     pub async fn dedupe<'a, Fn, Fut>(&'a self, key: &'a K, or_else: Fn) -> V
@@ -61,11 +56,8 @@ impl<K: Key, V: Value> Dedupe<K, V> {
         Fn: FnOnce() -> Fut,
         Fut: Future<Output = V>,
     {
-        let mut read = true;
         loop {
-            let step = self.step(key, read);
-            read = true;
-            let value = match step {
+            let value = match self.step(key) {
                 Step::Return(value) => value,
                 Step::Await(mut rx) => match rx.recv().await {
                     Ok(value) => value,
@@ -79,18 +71,14 @@ impl<K: Key, V: Value> Dedupe<K, V> {
                 },
                 Step::Init(tx) => {
                     let value = or_else().await;
-                    let mut guard = self.cache.write().unwrap();
                     if self.persist {
-                        guard.insert(key.to_owned(), State::Ready(value.clone()));
+                        self.cache
+                            .insert(key.to_owned(), State::Ready(value.clone()));
                     } else {
-                        guard.remove(key);
+                        self.cache.remove(key);
                     }
                     let _ = tx.send(value.clone());
                     value
-                }
-                Step::Retry => {
-                    read = false;
-                    continue;
                 }
             };
 
@@ -98,54 +86,45 @@ impl<K: Key, V: Value> Dedupe<K, V> {
         }
     }
 
-    fn step(&self, key: &K, read: bool) -> Step<V> {
-        if read {
-            let this = self.cache.read().unwrap();
-            if let Some(state) = this.get(key) {
-                match state {
+    fn step(&self, key: &K) -> Step<V> {
+        match self.cache.entry(key.clone()) {
+            Entry::Occupied(mut entry) => {
+                match entry.get() {
                     State::Ready(value) => return Step::Return(value.clone()),
                     State::Pending(tx) => {
                         // We can upgrade from Weak to Arc only in case when
                         // original tx is still alive
                         // otherwise we will create in the code below
                         if let Some(tx) = tx.upgrade() {
-                            return Step::Await(tx.subscribe());
+                            Step::Await(tx.subscribe())
+                        } else {
+                            let (tx, _) = broadcast::channel(self.size);
+                            let tx = Arc::new(tx);
+                            // Store a Weak version of tx and pass actual tx to further handling
+                            // to control if tx is still alive and will be able to handle the request.
+                            // Only single `strong` reference to tx should exist so we can
+                            // understand when the execution is still alive and we'll get the response
+                            entry.insert(State::Pending(Arc::downgrade(&tx)));
+                            Step::Init(tx)
                         }
                     }
                 }
-            } else {
-                return Step::Retry;
+            }
+            Entry::Vacant(entry) => {
+                let (tx, _) = broadcast::channel(self.size);
+                let tx = Arc::new(tx);
+                // Store a Weak version of tx and pass actual tx to further handling
+                // to control if tx is still alive and will be able to handle the request.
+                // Only single `strong` reference to tx should exist so we can
+                // understand when the execution is still alive and we'll get the response
+                entry.insert(State::Pending(Arc::downgrade(&tx)));
+                Step::Init(tx)
             }
         }
-
-        let mut this = self.cache.write().unwrap();
-
-        if let Some(state) = this.get(key) {
-            match state {
-                State::Ready(value) => return Step::Return(value.clone()),
-                State::Pending(tx) => {
-                    // We can upgrade from Weak to Arc only in case when
-                    // original tx is still alive
-                    // otherwise we will create in the code below
-                    if let Some(tx) = tx.upgrade() {
-                        return Step::Await(tx.subscribe());
-                    }
-                }
-            }
-        }
-
-        let (tx, _) = broadcast::channel(self.size);
-        let tx = Arc::new(tx);
-        // Store a Weak version of tx and pass actual tx to further handling
-        // to control if tx is still alive and will be able to handle the request.
-        // Only single `strong` reference to tx should exist so we can
-        // understand when the execution is still alive and we'll get the response
-        this.insert(key.to_owned(), State::Pending(Arc::downgrade(&tx)));
-        Step::Init(tx)
     }
 }
 
-pub struct DedupeResult<K: Send, V: Send, E: Send>(Dedupe<K, Result<V, E>>);
+pub struct DedupeResult<K, V, E>(Dedupe<K, Result<V, E>>);
 
 impl<K: Key, V: Value, E: Value> DedupeResult<K, V, E> {
     pub fn new(persist: bool) -> Self {
