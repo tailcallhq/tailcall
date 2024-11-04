@@ -75,6 +75,11 @@ jobs:
         with:
           target: wasm32-unknown-unknown
 
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.11.0"
+
       - name: Install Wasm Pack
         run: cargo install wasm-bindgen-cli --vers "0.2.92"
 

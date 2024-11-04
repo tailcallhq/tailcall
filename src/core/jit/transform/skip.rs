@@ -1,8 +1,9 @@
 use std::marker::PhantomData;
 
+use tailcall_valid::Valid;
+
 use crate::core::jit::{Error, Field, OperationPlan, Variables};
 use crate::core::json::JsonLike;
-use crate::core::valid::Valid;
 use crate::core::Transform;
 
 pub struct Skip<'a, Var, Value> {
@@ -16,7 +17,7 @@ impl<'a, Var, Value> Skip<'a, Var, Value> {
     }
 }
 
-impl<'a, Var, Value: Clone> Transform for Skip<'a, Var, Value>
+impl<Var, Value: Clone> Transform for Skip<'_, Var, Value>
 where
     Var: for<'b> JsonLike<'b> + Clone,
 {

@@ -4,8 +4,7 @@ use std::fmt::Display;
 use convert_case::{Case, Casing};
 use prost_reflect::{EnumDescriptor, FieldDescriptor, Kind, MessageDescriptor};
 use serde::{Deserialize, Serialize};
-
-use crate::core::valid::{Valid, Validator};
+use tailcall_valid::{Valid, Validator};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename = "schema")]
@@ -241,7 +240,7 @@ impl JsonSchema {
 }
 
 impl TryFrom<&MessageDescriptor> for JsonSchema {
-    type Error = crate::core::valid::ValidationError<String>;
+    type Error = tailcall_valid::ValidationError<String>;
 
     fn try_from(value: &MessageDescriptor) -> Result<Self, Self::Error> {
         if value.is_map_entry() {
@@ -270,7 +269,7 @@ impl TryFrom<&MessageDescriptor> for JsonSchema {
 }
 
 impl TryFrom<&EnumDescriptor> for JsonSchema {
-    type Error = crate::core::valid::ValidationError<String>;
+    type Error = tailcall_valid::ValidationError<String>;
 
     fn try_from(value: &EnumDescriptor) -> Result<Self, Self::Error> {
         let mut set = BTreeSet::new();
@@ -282,7 +281,7 @@ impl TryFrom<&EnumDescriptor> for JsonSchema {
 }
 
 impl TryFrom<&FieldDescriptor> for JsonSchema {
-    type Error = crate::core::valid::ValidationError<String>;
+    type Error = tailcall_valid::ValidationError<String>;
 
     fn try_from(value: &FieldDescriptor) -> Result<Self, Self::Error> {
         let field_schema = match value.kind() {
@@ -331,12 +330,12 @@ mod tests {
     use indexmap::IndexMap;
     use pretty_assertions::assert_eq;
     use tailcall_fixtures::protobuf;
+    use tailcall_valid::{Valid, Validator};
 
     use crate::core::blueprint::GrpcMethod;
     use crate::core::grpc::protobuf::tests::get_proto_file;
     use crate::core::grpc::protobuf::ProtobufSet;
     use crate::core::json::JsonSchema;
-    use crate::core::valid::{Valid, Validator};
 
     #[test]
     fn test_validate_string() {

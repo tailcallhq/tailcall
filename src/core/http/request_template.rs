@@ -277,7 +277,6 @@ impl<Ctx: PathString + HasHeaders + PathValue> CacheKey<Ctx> for RequestTemplate
 
 /// ValueStringEval parses the mustache template and uses ctx to retrieve the
 /// values for templates.
-
 struct ValueStringEval<A>(std::marker::PhantomData<A>);
 impl<A> Default for ValueStringEval<A> {
     fn default() -> Self {
@@ -344,7 +343,7 @@ mod tests {
     }
 
     impl crate::core::path::PathString for Context {
-        fn path_string<'a, T: AsRef<str>>(&'a self, parts: &'a [T]) -> Option<Cow<'_, str>> {
+        fn path_string<'a, T: AsRef<str>>(&'a self, parts: &'a [T]) -> Option<Cow<'a, str>> {
             self.value.path_string(parts)
         }
     }
