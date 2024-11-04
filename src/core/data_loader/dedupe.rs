@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::sync::{Arc, Mutex, Weak};
+use std::sync::{Arc, RwLock, Weak};
 
 use futures_util::Future;
 use tokio::sync::broadcast;
@@ -17,7 +17,7 @@ impl<A: Send + Sync + Clone> Value for A {}
 /// Allows deduplication of async operations based on a key.
 pub struct Dedupe<Key, Value> {
     /// Cache storage for the operations.
-    cache: Arc<Mutex<HashMap<Key, State<Value>>>>,
+    cache: Arc<RwLock<HashMap<Key, State<Value>>>>,
     /// Initial size of the multi-producer, multi-consumer channel.
     size: usize,
     /// When enabled allows the operations to be cached forever.
@@ -50,7 +50,7 @@ enum Step<Value> {
 
 impl<K: Key, V: Value> Dedupe<K, V> {
     pub fn new(size: usize, persist: bool) -> Self {
-        Self { cache: Arc::new(Mutex::new(HashMap::new())), size, persist }
+        Self { cache: Arc::new(RwLock::new(HashMap::new())), size, persist }
     }
 
     pub async fn dedupe<'a, Fn, Fut>(&'a self, key: &'a K, or_else: Fn) -> V
@@ -73,7 +73,7 @@ impl<K: Key, V: Value> Dedupe<K, V> {
                 },
                 Step::Init(tx) => {
                     let value = or_else().await;
-                    let mut guard = self.cache.lock().unwrap();
+                    let mut guard = self.cache.write().unwrap();
                     if self.persist {
                         guard.insert(key.to_owned(), State::Ready(value.clone()));
                     } else {
@@ -89,21 +89,24 @@ impl<K: Key, V: Value> Dedupe<K, V> {
     }
 
     fn step(&self, key: &K) -> Step<V> {
-        let mut this = self.cache.lock().unwrap();
-
-        if let Some(state) = this.get(key) {
-            match state {
-                State::Ready(value) => return Step::Return(value.clone()),
-                State::Pending(tx) => {
-                    // We can upgrade from Weak to Arc only in case when
-                    // original tx is still alive
-                    // otherwise we will create in the code below
-                    if let Some(tx) = tx.upgrade() {
-                        return Step::Await(tx.subscribe());
+        {
+            let this = self.cache.read().unwrap();
+            if let Some(state) = this.get(key) {
+                match state {
+                    State::Ready(value) => return Step::Return(value.clone()),
+                    State::Pending(tx) => {
+                        // We can upgrade from Weak to Arc only in case when
+                        // original tx is still alive
+                        // otherwise we will create in the code below
+                        if let Some(tx) = tx.upgrade() {
+                            return Step::Await(tx.subscribe());
+                        }
                     }
                 }
             }
         }
+
+        let mut this = self.cache.write().unwrap();
 
         let (tx, _) = broadcast::channel(self.size);
         let tx = Arc::new(tx);
@@ -138,6 +141,7 @@ impl<K: Key, V: Value, E: Value> DedupeResult<K, V, E> {
 mod tests {
     use std::ops::Deref;
     use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Mutex;
     use std::time::Duration;
 
     use assert_eq;
