@@ -1,27 +1,40 @@
 use std::sync::{LockResult, RwLock, RwLockReadGuard, RwLockWriteGuard};
-use thread_local::ThreadLocal;
 
 /// A RwLock that leverages thread locals to avoid contention.
 pub struct LrwLock<A: Send> {
-    inner: ThreadLocal<RwLock<A>>,
-    value: A,
+    inner: Vec<RwLock<A>>,
 }
+
+const SIZE: usize = 16;
 
 impl<A: Clone + Send> LrwLock<A> {
     /// Create a new LrwLock.
     pub fn new(value: A) -> Self {
-        Self { inner: ThreadLocal::new(), value }
+        let mut inner = Vec::with_capacity(SIZE);
+        for _ in 1..SIZE {
+            inner.push(RwLock::new(value.clone()));
+        }
+
+        Self { inner }
     }
 
     /// Lock the LrwLock for reading.
     pub fn read(&self) -> LockResult<RwLockReadGuard<'_, A>> {
-        self.inner.get_or(|| RwLock::new(self.value.clone())).read()
+        let id = thread_id();
+
+        self.inner[id % SIZE].read()
     }
 
     /// Lock the LrwLock for writing.
     pub fn write(&self) -> LockResult<RwLockWriteGuard<'_, A>> {
-        self.inner
-            .get_or(|| RwLock::new(self.value.clone()))
-            .write()
+        let id = thread_id();
+
+        self.inner[id % SIZE].write()
     }
+}
+
+fn thread_id() -> usize {
+    format!("{:?}", std::thread::current().id())
+        .parse::<usize>()
+        .unwrap()
 }

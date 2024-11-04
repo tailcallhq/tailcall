@@ -5483,7 +5483,6 @@ dependencies = [
  "tempfile",
  "test-log",
  "thiserror",
- "thread_local",
  "tokio",
  "tokio-test",
  "tonic 0.11.0",
