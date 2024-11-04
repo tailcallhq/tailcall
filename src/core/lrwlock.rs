@@ -6,13 +6,14 @@ pub struct LrwLock<A: Send> {
     inner: Vec<RwLock<A>>,
 }
 
+// TODO: Should be configured based on the worker count
 const SIZE: usize = 16;
 
 impl<A: Clone + Send> LrwLock<A> {
     /// Create a new LrwLock.
     pub fn new(value: A) -> Self {
         let mut inner = Vec::with_capacity(SIZE);
-        for _ in 1..SIZE {
+        for _ in 0..SIZE {
             inner.push(RwLock::new(value.clone()));
         }
 
