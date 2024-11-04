@@ -413,8 +413,8 @@ impl<Input> OperationPlan<Input> {
             None => true,
         }
     }
-    /// retunrs true if plan is dedupable
-    pub fn is_dedupable(&self) -> bool {
+    /// returns true if plan is dedupable
+    pub fn can_dedupe(&self) -> bool {
         self.is_query() && (self.is_dedupe || self.is_const || self.min_cache_ttl.is_some())
     }
 }
