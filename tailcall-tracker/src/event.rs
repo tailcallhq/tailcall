@@ -17,6 +17,7 @@ pub struct Event {
     pub user: String,
     pub args: Vec<String>,
     pub version: String,
+    pub email: Vec<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

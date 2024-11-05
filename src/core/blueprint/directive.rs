@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use async_graphql::parser::types::ConstDirective;
 use async_graphql::Name;
 use serde_json::Value;
+use tailcall_valid::{Valid, ValidationError, Validator};
 
-use crate::core::valid::{Valid, ValidationError, Validator};
 use crate::core::{config, pos};
 
 #[derive(Clone, Debug)]

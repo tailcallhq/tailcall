@@ -4,6 +4,7 @@ use derive_setters::Setters;
 use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::DescriptorPool;
 use serde_json::Value;
+use tailcall_valid::Validator;
 use url::Url;
 
 use super::from_proto::from_proto;
@@ -13,7 +14,6 @@ use crate::core::http::Method;
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoMetadata;
 use crate::core::transform::{Transform, TransformerOps};
-use crate::core::valid::Validator;
 
 /// Generator offers an abstraction over the actual config generators and allows
 /// to generate the single config from multiple sources. i.e (Protobuf and Json)
@@ -27,6 +27,7 @@ pub struct Generator {
     transformers: Vec<Box<dyn Transform<Value = Config, Error = String>>>,
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone)]
 pub enum Input {
     Json {

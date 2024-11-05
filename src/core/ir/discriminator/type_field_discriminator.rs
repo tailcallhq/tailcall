@@ -2,10 +2,10 @@ use std::collections::BTreeSet;
 
 use anyhow::{bail, Result};
 use async_graphql::Value;
+use tailcall_valid::Valid;
 
 use super::TypedValue;
 use crate::core::json::JsonLike;
-use crate::core::valid::Valid;
 
 /// Resolver for `__typename` of Union and Interface types.
 ///
@@ -80,10 +80,10 @@ impl TypeFieldDiscriminator {
 mod tests {
     use async_graphql::Value;
     use serde_json::json;
+    use tailcall_valid::Validator;
     use test_log::test;
 
     use super::TypeFieldDiscriminator;
-    use crate::core::valid::Validator;
 
     #[test]
     fn test_type_field_positive() {

@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 
 use indexmap::{IndexMap, IndexSet};
+use tailcall_valid::{Valid, Validator};
 
 use super::mergeable_types::MergeableTypes;
 use super::similarity::Similarity;
@@ -9,7 +10,6 @@ use crate::core::generator::PREFIX;
 use crate::core::merge_right::MergeRight;
 use crate::core::scalar::Scalar;
 use crate::core::transform::Transform;
-use crate::core::valid::{Valid, Validator};
 
 pub struct TypeMerger {
     /// threshold required for the merging process.
@@ -245,11 +245,11 @@ impl Transform for TypeMerger {
 #[cfg(test)]
 mod test {
     use tailcall_fixtures;
+    use tailcall_valid::Validator;
 
     use super::TypeMerger;
     use crate::core::config::{Config, Field, Type};
     use crate::core::transform::Transform;
-    use crate::core::valid::Validator;
 
     #[test]
     fn test_cyclic_merge_case() -> anyhow::Result<()> {

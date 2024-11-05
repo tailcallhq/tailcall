@@ -6,10 +6,10 @@ use std::collections::BTreeSet;
 use anyhow::{bail, Result};
 use async_graphql::Value;
 use keyed_discriminator::KeyedDiscriminator;
+use tailcall_valid::{Valid, Validator};
 use type_field_discriminator::TypeFieldDiscriminator;
 
 use crate::core::json::{JsonLike, JsonObjectLike};
-use crate::core::valid::{Valid, Validator};
 
 /// Resolver for `__typename` of Union and Interface types.
 ///

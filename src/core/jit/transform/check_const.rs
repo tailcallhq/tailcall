@@ -1,9 +1,10 @@
 use std::convert::Infallible;
 use std::marker::PhantomData;
 
+use tailcall_valid::Valid;
+
 use crate::core::ir::model::IR;
 use crate::core::jit::OperationPlan;
-use crate::core::valid::Valid;
 use crate::core::Transform;
 
 pub struct CheckConst<A>(PhantomData<A>);
