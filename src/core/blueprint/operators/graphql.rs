@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, HashSet};
 
 use crate::core::blueprint::FieldDefinition;
 use crate::core::config::{
@@ -13,21 +13,19 @@ use crate::core::valid::{Valid, ValidationError, Validator};
 
 fn create_related_fields(
     config: &Config,
-    type_names: VecDeque<String>,
-    visited: &mut HashSet<VecDeque<String>>,
+    type_name: &str,
+    visited: &mut HashSet<String>,
+    paths: &mut HashMap<String, Vec<String>>,
+    path: Vec<String>,
+    root: bool,
 ) -> Option<RelatedFields> {
     let mut map = HashMap::new();
-    if visited.contains(&type_names) {
+    if visited.contains(type_name) {
         return Some(RelatedFields(map));
     }
-    visited.insert(type_names.clone());
-    let type_name = type_names.back()?;
+    visited.insert(type_name.to_string());
     if let Some(type_) = config.find_type(type_name) {
         for (name, field) in &type_.fields {
-            let mut new_type_names = type_names.clone();
-            new_type_names.pop_front();
-            let bool_self = field.type_of.name() == new_type_names.back()?;
-            new_type_names.push_back(field.type_of.name().to_string());
             if !field.has_resolver() {
                 let used_name = match &field.modify {
                     Some(modify) => match &modify.name {
@@ -36,29 +34,39 @@ fn create_related_fields(
                     },
                     _ => Some(name),
                 };
-                if bool_self {
-                    map.insert(
-                        used_name?.to_string(),
-                        (name.clone(), RelatedFields(HashMap::new()), true),
-                    );
-                } else {
-                    map.insert(
-                        used_name?.to_string(),
-                        (
-                            name.clone(),
-                            create_related_fields(config, new_type_names, visited)?,
+                let mut next_path = path.clone();
+                next_path.push(used_name?.to_string());
+                if !(paths.contains_key(field.type_of.name())) {
+                    paths.insert(field.type_of.name().to_string(), next_path.clone());
+                };
+                map.insert(
+                    used_name?.to_string(),
+                    (
+                        name.clone(),
+                        create_related_fields(
+                            config,
+                            field.type_of.name(),
+                            visited,
+                            paths,
+                            next_path.clone(),
                             false,
-                        ),
-                    );
-                }
+                        )?,
+                        paths.get(field.type_of.name())?.to_vec(),
+                        root && (type_name == field.type_of.name()),
+                    ),
+                );
             }
         }
-    } else if let Some(union_) = config.find_union(type_names.back()?) {
+    } else if let Some(union_) = config.find_union(type_name) {
         for type_name in &union_.types {
-            let mut new_type_names = type_names.clone();
-            new_type_names.pop_front();
-            new_type_names.push_back(type_name.to_string());
-            map.extend(create_related_fields(config, new_type_names, visited)?.0);
+            let mut next_path = path.clone();
+            next_path.push(type_name.to_string());
+            if !(paths.contains_key(type_name)) {
+                paths.insert(type_name.to_string(), next_path.clone());
+            };
+            map.extend(
+                create_related_fields(config, type_name, visited, paths, next_path, root)?.0,
+            );
         }
     };
 
@@ -78,8 +86,11 @@ pub fn compile_graphql(
             Valid::from_option(
                 create_related_fields(
                     config,
-                    VecDeque::from(vec![type_name.to_string(); graphql.depth.unwrap_or(5)]),
+                    type_name,
                     &mut HashSet::new(),
+                    &mut HashMap::new(),
+                    vec![],
+                    true,
                 ),
                 "Logical error occurred while creating Related Fields".to_string(),
             )

@@ -595,15 +595,6 @@
             "null"
           ]
         },
-        "depth": {
-          "description": "Specifies the maximum depth for nested queries. When set, this value determines the depth of nested queries beyond which no further subfields will be returned. This helps to limit the complexity and size of the query results. If this value is not set, the default depth is 5, ensuring that queries are manageable and preventing excessively deep nesting.",
-          "type": [
-            "integer",
-            "null"
-          ],
-          "format": "uint",
-          "minimum": 0.0
-        },
         "headers": {
           "description": "The headers parameter allows you to customize the headers of the GraphQL request made by the `@graphQL` operator. It is used by specifying a key-value map of header names and their values.",
           "type": "array",

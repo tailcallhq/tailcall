@@ -27,5 +27,5 @@ type NodeC {
 }
 
 type Query {
-  queryNodeA: NodeA @graphQL(url: "http://upstream/graphql", name: "nodeA", depth: 3)
+  queryNodeA: NodeA @graphQL(url: "http://upstream/graphql", name: "nodeA")
 }

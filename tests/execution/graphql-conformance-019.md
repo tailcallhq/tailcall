@@ -6,7 +6,7 @@ schema @server(port: 8000, hostname: "0.0.0.0") {
 }
 
 type Query {
-  queryNodeA: NodeA @graphQL(url: "http://upstream/graphql", name: "nodeA", depth: 3)
+  queryNodeA: NodeA @graphQL(url: "http://upstream/graphql", name: "nodeA")
 }
 
 type NodeA {

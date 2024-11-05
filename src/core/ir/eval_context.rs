@@ -119,23 +119,37 @@ impl<'a, Ctx: ResolverContextLike> GraphQLOperationContext for EvalContext<'a, C
 
     fn selection_set(&self, related_fields: &RelatedFields) -> Option<String> {
         let selection_field = self.graphql_ctx.field()?;
-        format_selection_set(selection_field.selection_set(), related_fields)
+        format_selection_set(
+            selection_field.selection_set(),
+            Some(related_fields),
+            related_fields,
+        )
     }
 }
 
 fn format_selection_set<'a>(
     selection_set: impl Iterator<Item = &'a SelectionField>,
-    related_fields: &RelatedFields,
+    related_fields: Option<&RelatedFields>,
+    global_related_fields: &RelatedFields,
 ) -> Option<String> {
     let set = selection_set
         .filter_map(|field| {
             // add to set only related fields that should be resolved with current resolver
-            related_fields.get(field.name()).map(|new_related_fields| {
-                if new_related_fields.2 {
-                    format_selection_field(field, &new_related_fields.0, related_fields)
+            related_fields?.get(field.name()).map(|new_related_fields| {
+                let next_related_fields = if new_related_fields.3 {
+                    Some(global_related_fields)
                 } else {
-                    format_selection_field(field, &new_related_fields.0, &new_related_fields.1)
-                }
+                    new_related_fields.2.iter().fold(
+                        Some(global_related_fields),
+                        |parent_related_fields, node| Some(&parent_related_fields?.get(node)?.1),
+                    )
+                };
+                format_selection_field(
+                    field,
+                    &new_related_fields.0,
+                    next_related_fields,
+                    global_related_fields,
+                )
             })
         })
         .collect::<Vec<_>>();
@@ -150,10 +164,12 @@ fn format_selection_set<'a>(
 fn format_selection_field(
     field: &SelectionField,
     name: &str,
-    related_fields: &RelatedFields,
+    related_fields: Option<&RelatedFields>,
+    global_related_fields: &RelatedFields,
 ) -> String {
     let arguments = format_selection_field_arguments(field);
-    let selection_set = format_selection_set(field.selection_set(), related_fields);
+    let selection_set =
+        format_selection_set(field.selection_set(), related_fields, global_related_fields);
 
     let mut output = format!("{}{}", name, arguments);
 
