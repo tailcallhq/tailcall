@@ -1,4 +1,6 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, hash::RandomState};
+
+use ahash::RandomState;
 
 use crate::core::jit::model::FieldId;
 
@@ -36,7 +38,7 @@ impl DataPath {
 
 #[derive(Debug)]
 pub struct Store<Data> {
-    data: HashMap<usize, Data>,
+    data: HashMap<usize, Data, RandomState>,
 }
 
 impl<Data> Default for Store<Data> {
