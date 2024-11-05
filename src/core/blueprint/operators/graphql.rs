@@ -11,6 +11,7 @@ use crate::core::ir::RelatedFields;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
 
+#[allow(clippy::too_many_arguments)]
 fn create_related_fields(
     config: &Config,
     type_name: &str,

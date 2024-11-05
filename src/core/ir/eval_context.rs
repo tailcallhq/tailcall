@@ -139,9 +139,15 @@ fn format_selection_set<'a>(
                 let next_related_fields = if new_related_fields.3 {
                     Some(global_related_fields)
                 } else {
-                    new_related_fields.2.iter().fold(
-                        Some(global_related_fields),
-                        |parent_related_fields, node| Some(&parent_related_fields?.get(node)?.1),
+                    new_related_fields.2.iter().try_fold(
+                        global_related_fields,
+                        |parent_related_fields, node| {
+                            parent_related_fields.get(node).map(
+                                |(_nickname, next_related_fields, _path, _root)| {
+                                    next_related_fields
+                                },
+                            )
+                        },
                     )
                 };
                 format_selection_field(
