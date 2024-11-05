@@ -49,7 +49,7 @@ impl<Data> Default for Store<Data> {
 
 impl<Data> Store<Data> {
     pub fn new() -> Self {
-        Store { data: HashMap::new() }
+        Store { data: HashMap::default() }
     }
 
     pub fn set_data(&mut self, field_id: FieldId, data: Data) {
