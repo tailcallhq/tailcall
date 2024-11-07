@@ -1,4 +1,5 @@
 use std::slice::Iter;
+use tailcall_valid::{Valid, ValidationError, Validator};
 
 use crate::core::blueprint::*;
 use crate::core::config::group_by::GroupBy;
@@ -9,7 +10,6 @@ use crate::core::ir::model::{IO, IR};
 use crate::core::mustache::Segment;
 use crate::core::scalar::Scalar;
 use crate::core::try_fold::TryFold;
-use crate::core::valid::{Valid, ValidationError, Validator};
 use crate::core::{config, helpers, Mustache};
 
 // Recursively check if the leaf type is a scalar

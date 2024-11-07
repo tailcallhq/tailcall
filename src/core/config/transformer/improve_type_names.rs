@@ -1,12 +1,12 @@
 use std::collections::{BTreeMap, HashSet};
 
 use convert_case::{Case, Casing};
+use tailcall_valid::Valid;
 
 use super::RenameTypes;
 use crate::core::config::Config;
 use crate::core::generator::PREFIX;
 use crate::core::transform::Transform;
-use crate::core::valid::Valid;
 
 #[derive(Debug, Default)]
 struct CandidateStats {
@@ -132,11 +132,11 @@ mod test {
 
     use anyhow::Ok;
     use tailcall_fixtures::configs;
+    use tailcall_valid::Validator;
 
     use super::ImproveTypeNames;
     use crate::core::config::Config;
     use crate::core::transform::Transform;
-    use crate::core::valid::Validator;
 
     fn read_fixture(path: &str) -> String {
         fs::read_to_string(path).unwrap()

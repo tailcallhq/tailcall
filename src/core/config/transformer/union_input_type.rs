@@ -1,9 +1,10 @@
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
+use tailcall_valid::Valid;
+
 use crate::core::config::{Arg, Config, Field, Type};
 use crate::core::transform::Transform;
-use crate::core::valid::Valid;
 
 /// Transforms unions inside the input types by replacing actual unions
 /// with multiple variants of the parent type, with each field resolved
@@ -281,11 +282,11 @@ impl<'cfg> Visitor<'cfg> {
 #[cfg(test)]
 mod tests {
     use insta::assert_snapshot;
+    use tailcall_valid::Validator;
 
     use super::UnionInputType;
     use crate::core::config::Config;
     use crate::core::transform::Transform;
-    use crate::core::valid::Validator;
 
     #[test]
     fn test_union() {
