@@ -14,7 +14,7 @@ mod tests {
     };
     use tailcall::core::json::{JsonLike, JsonObjectLike};
     use tailcall::core::rest::EndpointSet;
-    use tailcall::core::valid::Validator;
+    use tailcall_valid::Validator;
 
     struct TestExecutor {
         app_ctx: Arc<AppContext>,

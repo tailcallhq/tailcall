@@ -27,9 +27,9 @@ pub trait JsonLike<'json>: Sized {
     fn as_f64(&self) -> Option<f64>;
     fn as_bool(&self) -> Option<bool>;
     fn is_null(&self) -> bool;
-    fn get_path<T: AsRef<str>>(&'json self, path: &[T]) -> Option<&Self>;
-    fn get_key(&'json self, path: &str) -> Option<&Self>;
-    fn group_by(&'json self, path: &[String]) -> HashMap<String, Vec<&Self>>;
+    fn get_path<T: AsRef<str>>(&'json self, path: &[T]) -> Option<&'json Self>;
+    fn get_key(&'json self, path: &str) -> Option<&'json Self>;
+    fn group_by(&'json self, path: &[String]) -> HashMap<String, Vec<&'json Self>>;
 }
 
 /// A trait for objects that can be used as JSON objects

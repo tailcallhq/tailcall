@@ -127,7 +127,7 @@ pub struct PathTracker<'a> {
 }
 
 impl<'a> PathTracker<'a> {
-    pub fn new(config: &'a Config) -> PathTracker {
+    pub fn new(config: &'a Config) -> PathTracker<'a> {
         PathTracker { config, cache: Default::default() }
     }
 

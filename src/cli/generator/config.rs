@@ -7,12 +7,12 @@ use derive_setters::Setters;
 use path_clean::PathClean;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use tailcall_valid::{Valid, ValidateFrom, Validator};
 use url::Url;
 
 use crate::core::config::transformer::Preset;
 use crate::core::config::{self};
 use crate::core::http::Method;
-use crate::core::valid::{Valid, ValidateFrom, Validator};
 
 #[derive(Deserialize, Serialize, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]
@@ -268,9 +268,9 @@ mod tests {
     use std::collections::HashMap;
 
     use pretty_assertions::assert_eq;
+    use tailcall_valid::{ValidateInto, ValidationError, Validator};
 
     use super::*;
-    use crate::core::valid::{ValidateInto, ValidationError, Validator};
 
     fn location<S: AsRef<str>>(s: S) -> Location<UnResolved> {
         Location(s.as_ref().to_string(), PhantomData)
