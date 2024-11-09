@@ -53,8 +53,12 @@ fn check_scalar(value: &Mustache, module: &ConfigModule, field: &Field) -> Optio
         match segment {
             Segment::Literal(_) => {}
             Segment::Expression(value) => {
-                if !value.is_empty() && value[0].as_str() == "args" {
-                    ans = check_args(value[1..].iter().clone(), module, field)?;
+                if value.get(0)?.as_str() == "args" {
+                    if value.len() > 1 {
+                        ans = check_args(value[1..].iter().clone(), module, field)?;
+                    }else { 
+                        return None;
+                    }
                 }
             }
         }
