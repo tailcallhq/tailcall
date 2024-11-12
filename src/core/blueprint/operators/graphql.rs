@@ -19,7 +19,7 @@ fn create_related_fields(
     visited: &mut HashSet<String>,
     paths: &mut HashMap<String, Vec<String>>,
     path: Vec<String>,
-    root: bool,
+    root: &str,
 ) -> Option<RelatedFields> {
     let mut map = HashMap::new();
     if visited.contains(type_name) {
@@ -51,10 +51,10 @@ fn create_related_fields(
                             visited,
                             paths,
                             next_path.clone(),
-                            false,
+                            root,
                         )?,
                         paths.get(field.type_of.name())?.to_vec(),
-                        root && (type_name == field.type_of.name()),
+                        root == field.type_of.name(),
                     ),
                 );
             }
@@ -92,7 +92,7 @@ pub fn compile_graphql(
                     &mut HashSet::new(),
                     &mut HashMap::new(),
                     vec![],
-                    true,
+                    type_name,
                 ),
                 "Logical error occurred while creating Related Fields".to_string(),
             )
