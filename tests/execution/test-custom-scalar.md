@@ -5,7 +5,7 @@ identity: true
 # test-custom-scalar
 
 ```graphql @config
-schema @server @upstream {
+schema {
   query: Query
 }
 

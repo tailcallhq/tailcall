@@ -1,0 +1,8 @@
+{
+  "$schema": "../generated/.tailcallrc.schema.json",
+  "server": {
+    "port": 8000,
+    "hostname": "0.0.0.0"
+  },
+  "schema": {}
+}

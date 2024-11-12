@@ -5,7 +5,7 @@ identity: true
 # test-nested-input
 
 ```graphql @config
-schema @server @upstream {
+schema {
   query: Query
 }
 

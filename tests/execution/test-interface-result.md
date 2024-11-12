@@ -5,7 +5,7 @@ identity: true
 # test-interface-result
 
 ```graphql @config
-schema @server @upstream {
+schema {
   query: Query
 }
 

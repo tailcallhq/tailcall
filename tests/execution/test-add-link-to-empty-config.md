@@ -5,7 +5,7 @@ identity: true
 # test-add-link-to-empty-config
 
 ```graphql @file:link-expr.graphql
-schema @server @upstream {
+schema {
   query: Query
 }
 
@@ -15,7 +15,7 @@ type Query {
 ```
 
 ```graphql @file:link-enum.graphql
-schema @server {
+schema {
   query: Query
 }
 
@@ -30,7 +30,7 @@ type Query {
 ```
 
 ```graphql @config
-schema @server @upstream @link(src: "link-expr.graphql", type: Config) @link(src: "link-enum.graphql", type: Config) {
+schema @upstream @link(src: "link-expr.graphql", type: Config) @link(src: "link-enum.graphql", type: Config) {
   query: Query
 }
 ```

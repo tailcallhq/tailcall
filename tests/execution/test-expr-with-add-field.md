@@ -5,7 +5,7 @@ error: true
 # test-expr-with-add-field
 
 ```graphql @config
-schema @server {
+schema {
   query: Query
 }
 

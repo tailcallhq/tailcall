@@ -38,7 +38,7 @@ message NewsList {
 
 ```graphql @config
 schema
-  @server(port: 8000, hostname: "0.0.0.0")
+
   @upstream(httpCache: 42)
   @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query

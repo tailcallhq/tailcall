@@ -1,7 +1,7 @@
 # Ref other
 
 ```graphql @config
-schema @server {
+schema {
   query: Query
 }
 

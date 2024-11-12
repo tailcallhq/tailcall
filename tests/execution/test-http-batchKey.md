@@ -1,7 +1,7 @@
 # Http with args as body
 
 ```graphql @config
-schema @server(port: 8000) @upstream(batch: {maxSize: 1000, delay: 10}) {
+schema  @upstream(batch: {maxSize: 1000, delay: 10}) {
   query: Query
 }
 

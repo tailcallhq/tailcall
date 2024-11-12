@@ -5,7 +5,7 @@ error: true
 # Test invalid add fields
 
 ```graphql @config
-schema @server(port: 8000) {
+schema {
   query: Query
 }
 

@@ -1,6 +1,5 @@
 schema
-  @server(hostname: "0.0.0.0", port: 8000)
-  @upstream(poolMaxIdlePerHost: 200, tcpKeepAlive: 60, proxy: {url: "http://127.0.0.1:3000"}) {
+  @link(src: "./nginx-benchmark.json", type: Config) {
   query: Query
 }
 

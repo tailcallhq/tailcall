@@ -5,7 +5,7 @@ error: true
 # test-lack-resolver
 
 ```graphql @config
-schema @server(port: 8000) {
+schema {
   query: Query
 }
 

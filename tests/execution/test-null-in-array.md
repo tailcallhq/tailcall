@@ -1,7 +1,7 @@
 # Empty Array Response
 
 ```graphql @config
-schema @server {
+schema {
   query: Query
 }
 

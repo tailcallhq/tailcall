@@ -28,7 +28,7 @@ scalar UInt64
 scalar UInt128
 scalar Bytes
 
-schema @server(port: 8000) {
+schema {
   query: Query
 }
 

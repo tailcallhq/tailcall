@@ -1,7 +1,7 @@
 # test-merge-query
 
 ```graphql @config
-schema @server(port: 3000) {
+schema {
   query: Query
 }
 
@@ -11,7 +11,7 @@ type Query {
 ```
 
 ```graphql @config
-schema @server(port: 8000) @upstream(proxy: {url: "http://localhost:3000"}) {
+schema @upstream(proxy: {url: "http://localhost:8000"}) {
   query: Query
 }
 

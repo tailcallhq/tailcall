@@ -1,6 +1,4 @@
-schema
-  @server(port: 8000, headers: {cors: {allowOrigins: ["*"], allowHeaders: ["*"], allowMethods: [POST, GET, OPTIONS]}})
-  @upstream(httpCache: 42, batch: {delay: 100}) {
+schema {
   query: Query
   mutation: Mutation
 }

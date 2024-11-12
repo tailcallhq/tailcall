@@ -12,7 +12,7 @@ function name(val) {
 ```
 
 ```graphql @config
-schema @server @link(type: Script, src: "test.js") {
+schema @link(type: Script, src: "test.js") {
   query: Query
 }
 

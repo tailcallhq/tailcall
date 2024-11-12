@@ -2,8 +2,7 @@
 
 ```graphql @config
 schema
-  @server(port: 8000, enableFederation: true)
-  @upstream(httpCache: 42, batch: {delay: 100})
+  @link(src: "config.yml", type: Config)
   @link(src: "./posts.graphql") {
   query: Query
 }
@@ -23,6 +22,16 @@ type Post @expr(body: {id: "{{.value.id}}", title: "post-title-{{.value.id}}"}) 
   id: Int!
   title: String!
 }
+```
+
+```yml @file:config.yml
+server:
+  port: 8000
+  enableFederation: true
+upstream:
+  httpCache: 42
+  batch:
+    delay: 100
 ```
 
 ```yml @mock

@@ -1,7 +1,7 @@
 # Test builtin GraphQL scalars
 
 ```graphql @config
-schema @server(port: 8000, hostname: "localhost") {
+schema {
   query: Query
 }
 

@@ -5,7 +5,7 @@ error: true
 # test-http-with-inline
 
 ```graphql @config
-schema @server {
+schema {
   query: Query
 }
 

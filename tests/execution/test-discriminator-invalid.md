@@ -5,7 +5,7 @@ error: true
 # Test union type resolve
 
 ```graphql @config
-schema @server @upstream {
+schema {
   query: Query
 }
 

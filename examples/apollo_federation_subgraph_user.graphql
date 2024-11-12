@@ -1,4 +1,4 @@
-schema @server(port: 8002, enableFederation: true) @upstream(httpCache: 42, batch: {delay: 100}) {
+schema @link(src: "./apollo_federation_subgraph_user.json", type: Config) {
   query: Query
 }
 

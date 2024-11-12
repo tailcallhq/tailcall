@@ -42,7 +42,7 @@ message NewsList {
 
 ```graphql @config
 schema
-  @server(port: 8000)
+
   @upstream(batch: {delay: 10, headers: [], maxSize: 1000})
   @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query

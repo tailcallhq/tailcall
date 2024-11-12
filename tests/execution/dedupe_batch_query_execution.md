@@ -1,7 +1,7 @@
 # Async Cache Inflight Enabled
 
 ```graphql @config
-schema @server(port: 8000, queryValidation: false) {
+schema {
   query: Query
 }
 

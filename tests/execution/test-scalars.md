@@ -4,7 +4,7 @@
 # this is custom scalars in config
 scalar AnyScalar
 
-schema @server(port: 8000, hostname: "localhost") {
+schema {
   query: Query
 }
 

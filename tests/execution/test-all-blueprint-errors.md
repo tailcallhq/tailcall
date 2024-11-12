@@ -5,7 +5,7 @@ error: true
 # test-all-blueprint-errors
 
 ```graphql @config
-schema @server {
+schema {
   query: Query
   mutation: Mutation
 }

@@ -2,7 +2,7 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema @server(port: 8000) @upstream @link(id: "news", src: "news.proto", type: Protobuf) {
+schema @server @upstream @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
 }
 

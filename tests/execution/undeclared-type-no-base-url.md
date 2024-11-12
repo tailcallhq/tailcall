@@ -5,7 +5,7 @@ error: true
 # undeclared-type-no-base-url
 
 ```graphql @config
-schema @server {
+schema {
   query: Query
 }
 

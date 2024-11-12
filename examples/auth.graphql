@@ -1,6 +1,5 @@
 schema
-  @server(port: 8000)
-  @upstream(httpCache: 42)
+  @link(src: "./auth.json", type: Config)
   @link(id: "auth-basic", type: Htpasswd, src: ".htpasswd")
   @link(id: "auth-jwt", type: Jwks, src: ".jwks") {
   query: Query

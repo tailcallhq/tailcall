@@ -1,7 +1,7 @@
 # With nesting
 
 ```graphql @config
-schema @server {
+schema {
   query: Query
 }
 

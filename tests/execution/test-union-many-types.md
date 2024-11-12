@@ -7,7 +7,7 @@ skip: true
 TODO: snapshot mismatch when running the test on 32bit architecture
 
 ```graphql @config
-schema @server {
+schema {
   query: Query
 }
 

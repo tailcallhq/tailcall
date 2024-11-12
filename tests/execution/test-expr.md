@@ -5,7 +5,7 @@ identity: true
 # test-expr
 
 ```graphql @config
-schema @server @upstream {
+schema {
   query: Query
 }
 

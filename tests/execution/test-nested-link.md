@@ -5,7 +5,7 @@ identity: true
 # test-nested-link
 
 ```graphql @file:link-enum.graphql
-schema @server @upstream {
+schema {
   query: Query
 }
 
@@ -20,7 +20,7 @@ type Query {
 ```
 
 ```graphql @file:graphql-with-link.graphql
-schema @server @link(src: "link-enum.graphql", type: Config) {
+schema @link(src: "link-enum.graphql", type: Config) {
   query: Query
 }
 
@@ -42,7 +42,7 @@ type User {
 ```
 
 ```graphql @config
-schema @server @upstream @link(src: "graphql-with-link.graphql", type: Config) {
+schema @upstream @link(src: "graphql-with-link.graphql", type: Config) {
   query: Query
 }
 ```

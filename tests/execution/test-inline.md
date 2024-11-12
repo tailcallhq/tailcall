@@ -5,7 +5,7 @@ identity: true
 # test-inline
 
 ```graphql @config
-schema @server @upstream {
+schema {
   query: Query
 }
 

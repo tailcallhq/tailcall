@@ -5,7 +5,7 @@ identity: true
 # test-cache
 
 ```graphql @config
-schema @server @upstream {
+schema {
   query: Query
 }
 

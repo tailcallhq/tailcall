@@ -1,7 +1,7 @@
 # Http with args as body
 
 ```graphql @config
-schema @server(port: 8000) {
+schema {
   query: Query
 }
 

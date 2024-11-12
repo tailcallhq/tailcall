@@ -1,0 +1,15 @@
+{
+  "$schema": "../generated/.tailcallrc.schema.json",
+  "server": {
+    "port": 8000,
+    "hostname": "0.0.0.0",
+    "headers": {
+      "cors": {
+        "allowOrigins": ["*"],
+        "allowHeaders": ["*"],
+        "allowMethods": ["POST", "PATCH", "PUT"]
+      }
+    }
+  },
+  "schema": {}
+}

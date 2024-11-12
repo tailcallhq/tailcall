@@ -2,7 +2,7 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema @server(port: 8000) @upstream @link(id: "jwks", src: "jwks.json", type: Jwks) {
+schema @server @upstream @link(id: "jwks", src: "jwks.json", type: Jwks) {
   query: Query
   mutation: Mutation
 }

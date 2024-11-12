@@ -6,8 +6,6 @@ identity: true
 
 ```graphql @config
 schema
-  @server
-  @upstream
   @link(id: "htpasswd", src: ".htpasswd", type: Htpasswd)
   @link(id: "jwks", src: "jwks.json", type: Jwks) {
   query: Query

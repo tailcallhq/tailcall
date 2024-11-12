@@ -1,7 +1,7 @@
 # test enum as argument
 
 ```graphql @config
-schema @server {
+schema {
   query: Query
 }
 

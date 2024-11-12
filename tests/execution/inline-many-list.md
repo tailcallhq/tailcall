@@ -5,7 +5,7 @@ identity: true
 # inline-many-list
 
 ```graphql @config
-schema @server @upstream {
+schema {
   query: Query
 }
 

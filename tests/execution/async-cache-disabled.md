@@ -1,7 +1,7 @@
 # Async Cache Disabled
 
 ```graphql @config
-schema @server(port: 8000, queryValidation: false) {
+schema @link(src: "config.yml", type: Config) {
   query: Query
 }
 
@@ -21,6 +21,12 @@ type User {
   id: Int
   name: String
 }
+```
+
+```yml @file:config.yml
+server:
+  port: 8000
+  queryValidation: false
 ```
 
 ```yml @mock

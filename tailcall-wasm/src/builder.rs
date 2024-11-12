@@ -87,7 +87,7 @@ mod tests {
     struct MockHttp {}
 
     const CONFIG: &str = r#"
-        schema @server(port: 8000) {
+        schema {
           query: Query
         }
 

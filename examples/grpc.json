@@ -1,0 +1,13 @@
+{
+  "$schema": "../generated/.tailcallrc.schema.json",
+  "server": {
+    "port": 8000
+  },
+  "upstream": {
+    "httpCache": 42,
+    "batch": {
+      "delay": 10
+    }
+  },
+  "schema": {}
+}
