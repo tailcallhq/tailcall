@@ -1,7 +1,7 @@
 # test-alias-on-enum
 
 ```graphql @config
-schema @link(src: "config.yml", type: Config) {
+schema {
   query: Query
 }
 

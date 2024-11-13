@@ -1,7 +1,7 @@
 # Http with args as body
 
 ```graphql @config
-schema @link(src: "config.yml", type: Config) {
+schema {
   query: Query
 }
 

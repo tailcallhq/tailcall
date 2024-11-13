@@ -33,8 +33,17 @@ service BarService {
 }
 ```
 
+```yml @file:config.yml
+schema: {}
+links:
+  - src: "foo.proto"
+    type: Protobuf
+  - src: "bar.proto"
+    type: Protobuf
+```
+
 ```graphql @config
-schema @link(src: "foo.proto", type: Protobuf) @link(src: "bar.proto", type: Protobuf) {
+schema {
   query: Query
 }
 

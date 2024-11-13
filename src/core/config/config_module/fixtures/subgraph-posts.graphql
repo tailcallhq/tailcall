@@ -1,4 +1,4 @@
-schema @link(src: "./config.json", type: Config) {
+schema {
   query: Query
 }
 

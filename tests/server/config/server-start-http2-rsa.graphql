@@ -1,7 +1,4 @@
-schema
-  @link(src: "server-start-http2-rsa.yml", type: Config)
-  @link(type: Cert, src: "./example.crt")
-  @link(type: Key, src: "./example-rsa.key") {
+schema {
   query: Query
 }
 

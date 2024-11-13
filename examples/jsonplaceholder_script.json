@@ -7,17 +7,14 @@
     "version": "HTTP2"
   },
   "upstream": {
-    "httpCache": 42
+    "httpCache": 42,
+    "onRequest": "onRequest"
   },
   "schema": {},
   "links": [
     {
-      "type": "Cert",
-      "src": "./example.crt"
-    },
-    {
-      "type": "Key",
-      "src": "./example.key"
+      "type": "Script",
+      "src": "scripts/echo.js"
     }
   ]
 }

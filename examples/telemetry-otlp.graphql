@@ -1,7 +1,4 @@
-schema
-  @link(src: "./telemetry-otlp.yml", type: Config)
-  @link(type: Operation, src: "operations/routes.graphql")
-  @link(id: "news", src: "../tailcall-fixtures/fixtures/protobuf/news.proto", type: Protobuf) {
+schema {
   query: Query
 }
 

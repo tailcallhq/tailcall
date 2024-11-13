@@ -5,7 +5,7 @@ error: true
 # test-duplicated-link
 
 ```graphql @file:jsonplaceholder.graphql
-schema @link(src: "config.yml", type: Config) {
+schema {
   query: Query
 }
 
@@ -37,15 +37,26 @@ type Post {
 schema: {}
 upstream:
   batch: {httpCache: 42, delay: 100}
+links:
+  - type: Config
+    src: "jsonplaceholder.graphql"
+    id: "placeholder"
+  - type: Config
+    src: "jsonplaceholder.graphql"
+    id: "placeholder1"
+  - type: Config
+    src: "jsonplaceholder.graphql"
+    id: "placeholder1"
+  - type: Config
+    src: "jsonplaceholder.graphql"
+    id: "placeholder2"
+  - type: Config
+    src: "jsonplaceholder.graphql"
+    id: "placeholder2"
 ```
 
 ```graphql @config
-schema
-  @link(type: Config, src: "jsonplaceholder.graphql", id: "placeholder")
-  @link(type: Config, src: "jsonplaceholder.graphql", id: "placeholder1")
-  @link(type: Config, src: "jsonplaceholder.graphql", id: "placeholder1")
-  @link(type: Config, src: "jsonplaceholder.graphql", id: "placeholder2")
-  @link(type: Config, src: "jsonplaceholder.graphql", id: "placeholder2") {
+schema {
   query: Query
 }
 

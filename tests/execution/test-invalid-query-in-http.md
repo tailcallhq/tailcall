@@ -5,7 +5,7 @@ error: true
 # test-invalid-query-in-http
 
 ```graphql @config
-schema @link(src: "config.yml", type: Config) {
+schema {
   query: Query
 }
 

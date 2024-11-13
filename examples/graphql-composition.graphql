@@ -2,7 +2,7 @@
 # i.e. `tc start examples/jsonplaceholder.graphql`
 # and then you can run this example and test it on 8001 port
 
-schema @link(src: "./graphql-composition.json", type: Config) {
+schema {
   query: Query
 }
 

@@ -1,0 +1,10 @@
+{
+  "$schema": "../generated/.tailcallrc.schema.json",
+  "schema": {},
+  "links": [
+    {
+      "type": "Config",
+      "src": "jsonplaceholder.graphql"
+    }
+  ]
+}

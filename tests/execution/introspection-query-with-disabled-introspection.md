@@ -1,7 +1,7 @@
 # Test schema inspection with false flag
 
 ```graphql @config
-schema @link(src: "config.yml", type: Config) {
+schema {
   query: Query
 }
 

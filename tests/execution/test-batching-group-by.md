@@ -5,7 +5,7 @@ identity: true
 # test-batching-group-by
 
 ```graphql @config
-schema @link(src: "config.yml", type: Config) {
+schema {
   query: Query
 }
 

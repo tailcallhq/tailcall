@@ -1,7 +1,7 @@
 # Cors allow cred true
 
 ```graphql @config
-schema @link(src: "config.yml", type: Config) {
+schema {
   query: Query
 }
 

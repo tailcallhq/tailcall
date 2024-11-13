@@ -1,7 +1,7 @@
 # test-conflict-vars
 
 ```graphql @config
-schema @link(src: "config-a.yml", type: Config) {
+schema {
   query: Query
 }
 
@@ -10,23 +10,23 @@ type Query {
 }
 ```
 
-```graphql @config
-schema @link(src: "config-b.yml", type: Config) {
-  query: Query
-}
-
-type Query {
-  hello: String @expr(body: "world")
-}
-```
-
-```yml @file:config-a.yml
+```yml @file:config.yml
 schema: {}
 server:
   vars: [{key: "a", value: "b"}, {key: "c", value: "d"}]
 ```
 
-```yml @file:config-b.yml
+```graphql @config
+schema {
+  query: Query
+}
+
+type Query {
+  hello: String @expr(body: "world")
+}
+```
+
+```yml @file:config.yml
 schema: {}
 server:
   vars: [{key: "a", value: "b"}, {key: "p", value: "q"}]

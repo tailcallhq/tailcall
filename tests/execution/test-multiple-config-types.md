@@ -1,13 +1,20 @@
 # Multiple Configs
 
 ```graphql @config
-schema @link(id: "types", type: Config, src: "types.graphql") {
+schema {
   query: Query
 }
 
 type Query {
   bar(input: Input): Output @expr(body: {id: "{{.args.input.id}}", name: "{{.args.input.name}}"})
 }
+```
+
+```yml @file:config.yml
+schema: {}
+links:
+  - src: "types.graphql"
+    type: Config
 ```
 
 ```graphql @file:types.graphql

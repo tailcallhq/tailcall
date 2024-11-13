@@ -1,7 +1,7 @@
 # Sending field index list
 
 ```graphql @config
-schema @link(src: "config.yml", type: Config) {
+schema {
   query: Query
 }
 

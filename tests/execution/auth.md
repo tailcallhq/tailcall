@@ -4,8 +4,19 @@ identity: true
 
 # auth
 
+```yml @file:config.yml
+schema: {}
+links:
+  - id: "jwks"
+    type: "Jwks"
+    src: "jwks.json"
+  - id: "htpasswd"
+    type: "Htpasswd"
+    src: ".htpasswd"
+```
+
 ```graphql @config
-schema @link(id: "htpasswd", src: ".htpasswd", type: Htpasswd) @link(id: "jwks", src: "jwks.json", type: Jwks) {
+schema {
   query: Query
 }
 

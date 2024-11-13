@@ -1,7 +1,7 @@
 # n + 1 Request List
 
 ```graphql @config
-schema @link(src: "config.yml", type: Config) {
+schema {
   query: Query
 }
 

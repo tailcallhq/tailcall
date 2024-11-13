@@ -1,4 +1,4 @@
-schema @link(src: "./all-constructs.json", type: Config) {
+schema {
   query: Query
   mutation: Mutation
 }

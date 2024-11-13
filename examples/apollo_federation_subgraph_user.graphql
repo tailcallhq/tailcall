@@ -1,4 +1,4 @@
-schema @link(src: "./apollo_federation_subgraph_user.json", type: Config) {
+schema {
   query: Query
 }
 

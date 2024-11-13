@@ -29,8 +29,17 @@ type Query {
 }
 ```
 
+```yml @file:config.yml
+schema: {}
+links:
+  - src: "link-expr.graphql"
+    type: Config
+  - src: "link-enum.graphql"
+    type: Config
+```
+
 ```graphql @config
-schema @link(src: "link-expr.graphql", type: Config) @link(src: "link-enum.graphql", type: Config) {
+schema {
   query: Query
 }
 ```

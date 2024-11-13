@@ -4,8 +4,16 @@ error: true
 
 # test-grpc-proto-path
 
+```yml @file:config.yml
+schema: {}
+links:
+  - id: "news"
+    src: "news.proto"
+    type: Protobuf
+```
+
 ```graphql @config
-schema @link(id: "news", src: "tailcall/src/grpcnews.proto", type: Protobuf) {
+schema {
   query: Query
 }
 

@@ -49,10 +49,13 @@ schema: {}
 upstream:
   httpCache: 42
   batch: {delay: 10}
+links:
+  - src: "oneof.proto"
+    type: Protobuf
 ```
 
 ```graphql @config
-schema @link(src: "config.yml", type: Config) @link(src: "oneof.proto", type: Protobuf) {
+schema {
   query: Query
 }
 

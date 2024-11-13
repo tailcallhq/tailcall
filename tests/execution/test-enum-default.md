@@ -30,7 +30,7 @@ message NewsList {
 
 ```graphql @config
 # for test upstream server see [repo](https://github.com/tailcallhq/rust-grpc)
-schema @link(src: "config.yml", type: Config) @link(id: "news", src: "./service.proto", type: Protobuf) {
+schema {
   query: Query
 }
 
@@ -63,6 +63,10 @@ schema: {}
 upstream:
   httpCache: 42
   batch: {delay: 10}
+links:
+  - id: "news"
+    src: "news.proto"
+    type: Protobuf
 ```
 
 ```yml @mock

@@ -1,4 +1,4 @@
-schema @link(src: "server-start.yml", type: Config) {
+schema {
   query: Query
 }
 

@@ -5,7 +5,7 @@ error: true
 # Cors invalid allowMethods
 
 ```graphql @config
-schema @link(src: "config.yml", type: Config) {
+schema {
   query: Query
 }
 

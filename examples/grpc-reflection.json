@@ -12,9 +12,14 @@
   "schema": {},
   "links": [
     {
-      "id": "news",
-      "src": "../tailcall-fixtures/fixtures/protobuf/news.proto",
-      "type": "Protobuf"
+      "src": "http://localhost:50051",
+      "type": "Grpc",
+      "headers": [
+        {
+          "key": "authorization",
+          "value": "Bearer 123"
+        }
+      ]
     }
   ]
 }

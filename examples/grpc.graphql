@@ -1,7 +1,5 @@
 # for test upstream server see [repo](https://github.com/tailcallhq/rust-grpc)
-schema
-  @link(src: "./grpc.json", type: Config)
-  @link(id: "news", src: "../tailcall-fixtures/fixtures/protobuf/news.proto", type: Protobuf) {
+schema {
   query: Query
 }
 

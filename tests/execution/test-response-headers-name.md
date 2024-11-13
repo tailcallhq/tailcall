@@ -5,7 +5,7 @@ error: true
 # test-response-headers-name
 
 ```graphql @config
-schema @link(src: "config.yml", type: Config) {
+schema {
   query: Query
 }
 

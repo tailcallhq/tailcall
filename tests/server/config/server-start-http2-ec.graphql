@@ -1,7 +1,4 @@
-schema
-  @link(src: "server-start-http2-ec.yml", type: Config)
-  @link(type: Cert, src: "./example.crt")
-  @link(type: Key, src: "./example-ec.key") {
+schema {
   query: Query
 }
 

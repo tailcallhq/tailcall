@@ -37,7 +37,7 @@ message NewsList {
 ```
 
 ```graphql @config
-schema @link(src: "config.yml", type: Config) @link(id: "news", src: "news.proto", type: Protobuf) {
+schema {
   query: Query
 }
 
@@ -110,6 +110,10 @@ type Post {
 schema: {}
 upstream:
   httpCache: 42
+links:
+  - id: "news"
+    src: "news.proto"
+    type: Protobuf
 ```
 
 ```yml @mock

@@ -1,7 +1,4 @@
-schema
-  @link(src: "server-start-http2-pkcs8.yml", type: Config)
-  @link(type: Cert, src: "./example.crt")
-  @link(type: Key, src: "./example-pkcs8.key") {
+schema {
   query: Query
 }
 

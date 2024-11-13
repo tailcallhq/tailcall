@@ -1,4 +1,4 @@
-schema @link(id: "news", src: "proto/news_no_pkg.proto", type: Protobuf) {
+schema {
   query: Query
 }
 

@@ -1,7 +1,7 @@
 # test-response-header-value
 
 ```graphql @config
-schema @link(src: "config-a.yml", type: Config) {
+schema {
   query: Query
 }
 
@@ -15,14 +15,14 @@ type Query {
 }
 ```
 
-```yml @file:config-a.yml
+```yml @file:config.yml
 schema: {}
 server:
   headers: {custom: [{key: "a", value: "a"}]}
 ```
 
 ```graphql @config
-schema @link(src: "config-b.yml", type: Config) {
+schema {
   query: Query
 }
 
@@ -36,7 +36,7 @@ type Query {
 }
 ```
 
-```yml @file:config-b.yml
+```yml @file:config.yml
 schema: {}
 server:
   headers: {custom: [{key: "a", value: "b"}]}

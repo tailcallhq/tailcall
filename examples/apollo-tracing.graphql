@@ -1,4 +1,4 @@
-schema @link(src: "./apollo-tracing.json", type: Config) {
+schema {
   query: Query
 }
 

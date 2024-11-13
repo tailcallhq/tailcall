@@ -7,7 +7,7 @@ type Foo {
 ```
 
 ```graphql @
-schema @link(src: "config.yml", type: Config) @link(src: "stripe-types.graphql", type: Config) {
+schema {
   query: Query
 }
 
@@ -20,4 +20,7 @@ type Query {
 schema: {}
 upstream:
   allowedHeaders: ["Authorization"]
+links:
+  - src: "stripe-types.graphql"
+    type: Config
 ```

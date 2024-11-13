@@ -1,4 +1,4 @@
-schema @link(src: "./nginx-benchmark.json", type: Config) {
+schema {
   query: Query
 }
 

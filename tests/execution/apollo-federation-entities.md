@@ -1,7 +1,7 @@
 # Apollo federation query
 
 ```graphql @config
-schema @link(src: "config.yml", type: Config) @link(src: "./posts.graphql") {
+schema {
   query: Query
 }
 
@@ -31,6 +31,8 @@ upstream:
   httpCache: 42
   batch:
     delay: 100
+links:
+  - src: "./posts.graphql"
 ```
 
 ```yml @mock

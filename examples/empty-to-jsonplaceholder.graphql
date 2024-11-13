@@ -1,3 +1,3 @@
-schema @link(type: Config, src: "jsonplaceholder.graphql") {
+schema {
   query: Query
 }

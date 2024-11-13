@@ -17,3 +17,7 @@ telemetry:
         }}
   requestHeaders: ["user-id"]
 schema: {}
+types: {}
+links:
+  - {type: Operation, src: "operations/routes.graphql"}
+  - {id: "news", src: "../tailcall-fixtures/fixtures/protobuf/news.proto", type: Protobuf}

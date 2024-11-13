@@ -10,5 +10,10 @@
       "delay": 100
     }
   },
-  "schema": {}
+  "schema": {},
+  "links": [
+    {
+      "src": "./posts.graphql"
+    }
+  ]
 }

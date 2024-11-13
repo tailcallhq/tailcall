@@ -1,7 +1,15 @@
 # Auth with JWT loaded from expr
 
+```yml @file:config.yml
+schema: {}
+links:
+  - id: "jwks"
+    type: "Jwks"
+    src: "jwks.json"
+```
+
 ```graphql @config
-schema @link(id: "jwks", type: Jwks, src: "jwks.json") {
+schema {
   query: Query
   mutation: Mutation
 }

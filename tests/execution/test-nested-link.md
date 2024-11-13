@@ -20,7 +20,7 @@ type Query {
 ```
 
 ```graphql @file:graphql-with-link.graphql
-schema @link(src: "link-enum.graphql", type: Config) {
+schema {
   query: Query
 }
 
@@ -42,7 +42,16 @@ type User {
 ```
 
 ```graphql @config
-schema @link(src: "graphql-with-link.graphql", type: Config) {
+schema {
   query: Query
 }
+```
+
+```yml @file:config.yml
+schema: {}
+links:
+  - src: "graphql-with-link.graphql"
+    type: Config
+  - src: "link-enum.graphql"
+    type: Config
 ```

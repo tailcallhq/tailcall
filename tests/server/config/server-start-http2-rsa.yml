@@ -3,3 +3,8 @@ server:
   version: HTTP2
   hostname: localhost
   batchRequests: true
+links:
+  - type: Cert
+    src: "./example.crt"
+  - type: Key
+    src: "./example-rsa.key"

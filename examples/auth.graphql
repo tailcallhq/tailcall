@@ -1,7 +1,4 @@
-schema
-  @link(src: "./auth.json", type: Config)
-  @link(id: "auth-basic", type: Htpasswd, src: ".htpasswd")
-  @link(id: "auth-jwt", type: Jwks, src: ".jwks") {
+schema {
   query: Query
   mutation: Mutation
 }

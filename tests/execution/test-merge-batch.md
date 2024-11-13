@@ -1,7 +1,7 @@
 # test-merge-batch
 
 ```graphql @config
-schema @link(src: "config-a.yml", type: Config) {
+schema {
   query: Query
 }
 
@@ -10,14 +10,14 @@ type Query {
 }
 ```
 
-```yml @file:config-a.yml
+```yml @file:config.yml
 schema: {}
 upstream:
   batch: {delay: 0, maxSize: 1000, headers: ["a", "b"]}
 ```
 
 ```graphql @config
-schema @link(src: "config-b.yml", type: Config) {
+schema {
   query: Query
 }
 
@@ -36,7 +36,7 @@ type Query {
 }
 ```
 
-```yml @file:config-b.yml
+```yml @file:config.yml
 schema: {}
 upstream:
   batch: {delay: 5, maxSize: 100, headers: ["b", "c"]}

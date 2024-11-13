@@ -1,7 +1,7 @@
 # Call operator with graphQL datasource
 
 ```graphql @config
-schema @link(src: "config.yml", type: Config) {
+schema {
   query: Query
 }
 

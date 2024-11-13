@@ -44,10 +44,14 @@ message NewsList {
 schema: {}
 upstream:
   batch: {delay: 10, headers: [], maxSize: 1000}
+links:
+  - id: "news"
+    src: "news.proto"
+    type: Protobuf
 ```
 
 ```graphql @config
-schema @link(src: "config.yml", type: Config) @link(id: "news", src: "news.proto", type: Protobuf) {
+schema {
   query: Query
 }
 

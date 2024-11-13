@@ -1,4 +1,4 @@
-schema @link(src: "./cors.json", type: Config) {
+schema {
   query: Query
 }
 

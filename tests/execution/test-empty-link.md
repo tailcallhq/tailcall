@@ -4,8 +4,18 @@ error: true
 
 # test-empty-link
 
+```yml @file:config.yml
+schema: {}
+upstream:
+  batch: {httpCache: 42, delay: 100}
+links:
+  - type: Config
+    src: ""
+  - type: Config
+```
+
 ```graphql @config
-schema @link(type: Config, src: "") @link(type: Config) {
+schema {
   query: Query
 }
 
