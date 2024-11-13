@@ -5,7 +5,7 @@ error: true
 # test-groupby-without-batching
 
 ```graphql @config
-schema @upstream(httpCache: 42) {
+schema @link(src: "config.yml", type: Config) {
   query: Query
 }
 
@@ -22,4 +22,9 @@ type Query {
       batchKey: ["id"]
     )
 }
+```
+
+```yml @file:config.yml
+upstream:
+  httpCache: 42
 ```

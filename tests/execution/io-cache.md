@@ -1,7 +1,7 @@
 # Call operator with GraphQL data source
 
 ```graphql @config
-schema  @upstream(httpCache: 42) {
+schema @link(src: "config.yml", type: Config) {
   query: Query
 }
 
@@ -21,6 +21,11 @@ type Post {
   body: String!
   user: User @http(url: "http://jsonplaceholder.typicode.com/users/{{.value.userId}}")
 }
+```
+
+```yml @file:config.yml
+upstream:
+  httpCache: 42
 ```
 
 ```yml @mock

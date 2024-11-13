@@ -1,7 +1,7 @@
 # test-upstream-headers
 
 ```graphql @config
-schema @upstream(allowedHeaders: ["x-foo", "X-bar"]) {
+schema @link(src: "config.yml", type: Config) {
   query: Query
 }
 type Query {
@@ -30,6 +30,11 @@ type Post {
         id: 3
         title: foo
         userId: 2
+```
+
+```yml @file:config.yml
+upstream:
+  allowedHeaders: ["x-foo", "X-bar"]
 ```
 
 ```yml @test

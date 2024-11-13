@@ -5,8 +5,7 @@ error: true
 # test-invalid-server
 
 ```graphql @config
-schema
- {
+schema {
   query: Query
 }
 ```

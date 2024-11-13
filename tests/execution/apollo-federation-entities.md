@@ -1,9 +1,7 @@
 # Apollo federation query
 
 ```graphql @config
-schema
-  @link(src: "config.yml", type: Config)
-  @link(src: "./posts.graphql") {
+schema @link(src: "config.yml", type: Config) @link(src: "./posts.graphql") {
   query: Query
 }
 

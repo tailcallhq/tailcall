@@ -5,7 +5,7 @@ error: true
 # test-duplicated-link
 
 ```graphql @file:jsonplaceholder.graphql
-schema  @upstream(httpCache: 42, batch: {delay: 100}) {
+schema @link(src: "config.yml", type: Config) {
   query: Query
 }
 
@@ -31,6 +31,11 @@ type Post {
   body: String!
   user: User @http(url: "http://jsonplaceholder.typicode.com/users/{{.value.userId}}")
 }
+```
+
+```yml @file:config.yml
+upstream:
+  batch: {httpCache: 42, delay: 100}
 ```
 
 ```graphql @config

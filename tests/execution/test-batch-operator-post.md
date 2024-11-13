@@ -5,7 +5,7 @@ error: true
 # test-batch-operator-post
 
 ```graphql @config
-schema @upstream(batch: {delay: 1}) {
+schema @link(src: "config.yml", type: Config) {
   query: Query
 }
 
@@ -17,4 +17,9 @@ type User {
 type Query {
   user: User @http(url: "http://localhost:3000/posts/1", method: "POST", batchKey: ["id"])
 }
+```
+
+```yml @file:config.yml
+upstream:
+  batch: {delay: 1}
 ```

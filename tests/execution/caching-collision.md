@@ -1,7 +1,7 @@
 # Caching Collision
 
 ```graphql @config
-schema @upstream(batch: {delay: 1, maxSize: 1000}) {
+schema @link(src: "config.yml", type: Config) {
   query: Query
 }
 
@@ -17,6 +17,11 @@ type Bar {
   id: String!
   foo: Foo @http(url: "http://example.com/foo?id={{.value.id}}") @cache(maxAge: 300)
 }
+```
+
+```yml @file:config.yml
+upstream:
+  batch: {delay: 1, maxSize: 1000}
 ```
 
 ```yml @mock

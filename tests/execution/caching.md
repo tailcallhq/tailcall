@@ -1,7 +1,7 @@
 # Caching
 
 ```graphql @config
-schema @upstream(batch: {delay: 1, maxSize: 1000}) {
+schema @link(src: "config.yml", type: Config) {
   query: Query
 }
 
@@ -20,6 +20,11 @@ type TypeCache @cache(maxAge: 1000) {
   b: Type @http(url: "http://example.com/type-cache-b")
   list: [Type] @http(url: "http://example.com/type-cache-list")
 }
+```
+
+```yml @file:config.yml
+upstream:
+  batch: {delay: 1, maxSize: 1000}
 ```
 
 ```yml @mock

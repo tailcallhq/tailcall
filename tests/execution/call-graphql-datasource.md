@@ -1,7 +1,7 @@
 # Call operator with graphQL datasource
 
 ```graphql @config
-schema  @upstream(httpCache: 42) {
+schema @link(src: "config.yml", type: Config) {
   query: Query
 }
 
@@ -27,6 +27,11 @@ type Post {
   body: String!
   user: User @call(steps: [{query: "user", args: {id: "{{.value.userId}}"}}])
 }
+```
+
+```yml @file:config.yml
+upstream:
+  httpCache: 42
 ```
 
 ```yml @mock

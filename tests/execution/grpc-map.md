@@ -19,8 +19,14 @@ service MapService {
 
 ```
 
+```yml @file:config.yml
+upstream:
+  httpCache: 42
+  batch: {delay: 10}
+```
+
 ```graphql @config
-schema  @upstream(httpCache: 42, batch: {delay: 10}) @link(src: "map.proto", type: Protobuf) {
+schema @link(src: "config.yml", type: Config) @link(src: "map.proto", type: Protobuf) {
   query: Query
 }
 

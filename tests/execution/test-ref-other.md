@@ -5,7 +5,7 @@ identity: true
 # test-ref-other
 
 ```graphql @config
-schema  @upstream {
+schema {
   query: Query
 }
 

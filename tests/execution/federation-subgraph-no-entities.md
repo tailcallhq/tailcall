@@ -1,7 +1,7 @@
 # Federation subgraph with no entities in the config
 
 ```graphql @config
-schema  @upstream(httpCache: 42, batch: {delay: 100}) {
+schema @link(src: "config.yml", type: Config) {
   query: Query
 }
 
@@ -18,6 +18,12 @@ type Post {
   id: Int!
   title: String!
 }
+```
+
+```yml @file:config.yml
+upstream:
+  httpCache: 42
+  batch: {delay: 100}
 ```
 
 ```yml @test

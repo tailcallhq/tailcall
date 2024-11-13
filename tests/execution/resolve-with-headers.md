@@ -1,7 +1,7 @@
 # Resolve with headers
 
 ```graphql @config
-schema @upstream(allowedHeaders: ["authorization"]) {
+schema @link(src: "config.yml", type: Config) {
   query: Query
 }
 
@@ -15,6 +15,11 @@ type Post {
 type Query {
   post1: Post @http(url: "http://jsonplaceholder.typicode.com/posts/{{.headers.authorization}}")
 }
+```
+
+```yml @file:config.yml
+upstream:
+  allowedHeaders: ["authorization"]
 ```
 
 ```yml @mock

@@ -1,7 +1,7 @@
 # n + 1 Request
 
 ```graphql @config
-schema @upstream(batch: {delay: 1, maxSize: 1000}) {
+schema @link(src: "config.yml", type: Config) {
   query: Query
 }
 
@@ -21,6 +21,12 @@ type Bar {
   fooId: Int!
   foo: [Foo] @http(url: "http://example.com/foos", query: [{key: "id", value: "{{.value.fooId}}"}], batchKey: ["id"])
 }
+```
+
+```yml @file:config.yml
+upstream:
+  httpCache: 42
+  batch: {delay: 1, maxSize: 1000}
 ```
 
 ```yml @mock

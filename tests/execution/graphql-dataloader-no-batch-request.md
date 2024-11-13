@@ -1,7 +1,7 @@
 # Graphql datasource
 
 ```graphql @config
-schema @upstream(batch: {delay: 1}) {
+schema @link(src: "config.yml", type: Config) {
   query: Query
 }
 
@@ -20,6 +20,11 @@ type User {
 type Query {
   posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts")
 }
+```
+
+```yml @file:config.yml
+upstream:
+  batch: {delay: 1}
 ```
 
 ```yml @mock

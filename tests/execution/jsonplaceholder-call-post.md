@@ -1,7 +1,7 @@
 # jsonplaceholder-call-post
 
 ```graphql @config
-schema  @upstream(httpCache: 42, batch: {delay: 100}) {
+schema @link(src: "config.yml", type: Config) {
   query: Query
 }
 
@@ -22,6 +22,12 @@ type Post {
   title: String!
   user: User @call(steps: [{query: "user", args: {id: "{{.value.userId}}"}}])
 }
+```
+
+```yml @file:config.yml
+upstream:
+  httpCache: 42
+  batch: {delay: 100}
 ```
 
 ```yml @mock

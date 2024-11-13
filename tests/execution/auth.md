@@ -5,9 +5,7 @@ identity: true
 # auth
 
 ```graphql @config
-schema
-  @link(id: "htpasswd", src: ".htpasswd", type: Htpasswd)
-  @link(id: "jwks", src: "jwks.json", type: Jwks) {
+schema @link(id: "htpasswd", src: ".htpasswd", type: Htpasswd) @link(id: "jwks", src: "jwks.json", type: Jwks) {
   query: Query
 }
 

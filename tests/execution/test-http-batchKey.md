@@ -1,7 +1,7 @@
 # Http with args as body
 
 ```graphql @config
-schema  @upstream(batch: {maxSize: 1000, delay: 10}) {
+schema @link(src: "config.yml", type: Config) {
   query: Query
 }
 
@@ -33,6 +33,11 @@ type Bar {
   id: ID!
   barName: String!
 }
+```
+
+```yml @file:config.yml
+upstream:
+  batch: {delay: 10, headers: [], maxSize: 1000}
 ```
 
 ```yml @mock

@@ -29,7 +29,7 @@ function bar({request}) {
 ```
 
 ```graphql @config
-schema @upstream(onRequest: "foo") @link(type: Script, src: "test1.js") {
+schema @link(src: "config.yml", type: Config) @link(type: Script, src: "test1.js") {
   query: Query
 }
 
@@ -37,6 +37,11 @@ type Query {
   foo: String @http(url: "http://localhost:3000/foo")
   bar: String @http(url: "http://localhost:3000/bar", onRequest: "bar")
 }
+```
+
+```yml @file:config.yml
+upstream:
+  onRequest: "foo"
 ```
 
 ```yml @test

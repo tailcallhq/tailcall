@@ -1,7 +1,7 @@
 # Batching group by default
 
 ```graphql @config
-schema @upstream(httpCache: 42, batch: {delay: 1, maxSize: 1000}) {
+schema @link(src: "config.yml", type: Config) {
   query: Query
 }
 
@@ -53,6 +53,12 @@ type User {
         name: foo
       - id: 2
         name: bar
+```
+
+```yml @file:config.yml
+upstream:
+  httpCache: 42
+  batch: {delay: 1, maxSize: 1000}
 ```
 
 ```yml @test

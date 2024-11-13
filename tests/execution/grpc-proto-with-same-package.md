@@ -34,7 +34,7 @@ service BarService {
 ```
 
 ```graphql @config
-schema  @link(src: "foo.proto", type: Protobuf) @link(src: "bar.proto", type: Protobuf) {
+schema @link(src: "foo.proto", type: Protobuf) @link(src: "bar.proto", type: Protobuf) {
   query: Query
 }
 

@@ -23,7 +23,7 @@ function onRequest({request}) {
 ```
 
 ```graphql @config
-schema @upstream(onRequest: "onRequest") @link(type: Script, src: "test.js") {
+schema @link(src: "config.yml", type: Config) @link(type: Script, src: "test.js") {
   query: Query
 }
 
@@ -31,6 +31,11 @@ type Query {
   hello: String @http(url: "http://localhost:3000/hello")
   hi: String @http(url: "http://localhost:3000/hi")
 }
+```
+
+```yml @file:config.yml
+upstream:
+  onRequest: "onRequest"
 ```
 
 ```yml @mock

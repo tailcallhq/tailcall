@@ -1,8 +1,7 @@
 # Apollo Tracing
 
 ```graphql @config
-schema
-  @telemetry(export: {apollo: {apiKey: "<api_key>", graphRef: "tailcall-demo-3@current"}}) {
+schema @telemetry(export: {apollo: {apiKey: "<api_key>", graphRef: "tailcall-demo-3@current"}}) {
   query: Query
 }
 

@@ -37,10 +37,7 @@ message NewsList {
 ```
 
 ```graphql @config
-schema
-
-  @upstream(httpCache: 42)
-  @link(id: "news", src: "news.proto", type: Protobuf) {
+schema @link(src: "config.yml", type: Config) @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
 }
 
@@ -107,6 +104,11 @@ type Post {
   news: NewsData! @call(steps: [{query: "news"}])
   newsWithPortArg: NewsData! @call(steps: [{query: "news", args: {port: 50051}}])
 }
+```
+
+```yml @file:config.yml
+upstream:
+  httpCache: 42
 ```
 
 ```yml @mock

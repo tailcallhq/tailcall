@@ -41,10 +41,7 @@ message NewsList {
 ```
 
 ```graphql @config
-schema
-
-  @upstream(httpCache: 42, batch: {delay: 10})
-  @link(id: "news", src: "news.proto", type: Protobuf) {
+schema @link(src: "config.yml", type: Config) @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
 }
 
@@ -73,4 +70,10 @@ type News {
   body: String
   postImage: String
 }
+```
+
+```yml @file:config.yml
+upstream:
+  httpCache: 42
+  batch: {delay: 10}
 ```

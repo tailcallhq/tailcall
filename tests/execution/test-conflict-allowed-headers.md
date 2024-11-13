@@ -1,7 +1,7 @@
 # test-conflict-allowed-headers
 
 ```graphql @config
-schema @upstream(allowedHeaders: ["a", "b", "c"]) {
+schema @link(src: "config-a.yml", type: Config) {
   query: Query
 }
 
@@ -10,12 +10,22 @@ type Query {
 }
 ```
 
+```yml @file:config-a.yml
+upstream:
+  allowedHeaders: ["a", "b", "c"]
+```
+
 ```graphql @config
-schema @upstream(allowedHeaders: ["b", "c", "d"]) {
+schema @link(src: "config-b.yml", type: Config) {
   query: Query
 }
 
 type Query {
   hello: String @expr(body: "world")
 }
+```
+
+```yml @file:config-b.yml
+upstream:
+  allowedHeaders: ["b", "c", "d"]
 ```

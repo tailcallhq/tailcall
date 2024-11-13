@@ -24,10 +24,14 @@ message NewsId {
 }
 ```
 
+```yml @file:config.yml
+upstream:
+  batch: {delay: 10, headers: [], maxSize: 1000}
+```
+
 ```graphql @config
 schema
-
-  @upstream(batch: {delay: 10, headers: [], maxSize: 1000})
+  @link(src: "config.yml", type: Config)
   @link(id: "news", src: "news.proto", meta: {description: "Test"}, type: Protobuf) {
   query: Query
 }

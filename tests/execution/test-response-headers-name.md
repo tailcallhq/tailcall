@@ -23,4 +23,3 @@ type Query {
 server:
   headers: {custom: [{key: "🤣", value: "a"}]}
 ```
-

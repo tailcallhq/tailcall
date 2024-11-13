@@ -1,7 +1,7 @@
 # Grpc datasource
 
 ```graphql @config
-schema  @upstream(httpCache: 42) @link(src: "http://localhost:50051", type: Grpc) {
+schema @link(src: "config.yml", type: Config) @link(src: "http://localhost:50051", type: Grpc) {
   query: Query
 }
 
@@ -26,6 +26,11 @@ enum Status {
   DRAFT
   DELETED
 }
+```
+
+```yml @file:config.yml
+upstream:
+  httpCache: 42
 ```
 
 ```yml @mock

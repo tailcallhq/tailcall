@@ -23,4 +23,3 @@ type Query {
 server:
   hostname: "abc"
 ```
-
