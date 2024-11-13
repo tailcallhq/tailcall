@@ -41,6 +41,7 @@ message NewsList {
 ```
 
 ```yml @file:config.yml
+schema: {}
 upstream:
   batch: {delay: 10, headers: [], maxSize: 1000}
 ```

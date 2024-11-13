@@ -15,6 +15,7 @@ type Query {
 ```
 
 ```yml @file:config.yml
+schema: {}
 server:
   headers: {experimental: ["non-experimental", "foo", "bar", "tailcall"]}
 ```

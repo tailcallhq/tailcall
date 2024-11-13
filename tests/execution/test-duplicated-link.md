@@ -34,6 +34,7 @@ type Post {
 ```
 
 ```yml @file:config.yml
+schema: {}
 upstream:
   batch: {httpCache: 42, delay: 100}
 ```

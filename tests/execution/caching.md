@@ -23,6 +23,7 @@ type TypeCache @cache(maxAge: 1000) {
 ```
 
 ```yml @file:config.yml
+schema: {}
 upstream:
   batch: {delay: 1, maxSize: 1000}
 ```

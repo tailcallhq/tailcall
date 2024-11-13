@@ -11,6 +11,7 @@ type Query {
 ```
 
 ```yml @file:config.yml
+schema: {}
 telemetry:
   export: {apollo: {apiKey: "<api_key>", graphRef: "tailcall-demo-3@current"}}
 ```

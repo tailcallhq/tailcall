@@ -16,6 +16,7 @@ type User {
 ```
 
 ```yml @file:config.yml
+schema: {}
 server:
   headers: {experimental: ["x-tailcall", "X-experimental"]}
 ```

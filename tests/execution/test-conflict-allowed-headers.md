@@ -11,6 +11,7 @@ type Query {
 ```
 
 ```yml @file:config-a.yml
+schema: {}
 upstream:
   allowedHeaders: ["a", "b", "c"]
 ```
@@ -26,6 +27,7 @@ type Query {
 ```
 
 ```yml @file:config-b.yml
+schema: {}
 upstream:
   allowedHeaders: ["b", "c", "d"]
 ```

@@ -25,6 +25,7 @@ type Post @http(url: "http://jsonplaceholder.typicode.com/posts", query: [{key: 
 ```
 
 ```yml @file:config.yml
+schema: {}
 server:
   port: 8000
   enableFederation: true

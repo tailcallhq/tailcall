@@ -15,6 +15,7 @@ type Query {
 ```
 
 ```yml @file:config.yml
+schema: {}
 server:
   vars: [{key: "foo", value: "bar"}]
 ```

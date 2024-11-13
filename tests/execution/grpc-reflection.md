@@ -29,6 +29,7 @@ enum Status {
 ```
 
 ```yml @file:config.yml
+schema: {}
 upstream:
   httpCache: 42
 ```

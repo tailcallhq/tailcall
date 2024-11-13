@@ -20,6 +20,7 @@ type Query {
 ```
 
 ```yml @file:config.yml
+schema: {}
 server:
   headers: {custom: [{key: "a b", value: "a \n b"}, {key: "a c", value: "a \n b"}]}
 ```

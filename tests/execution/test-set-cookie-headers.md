@@ -19,6 +19,7 @@ type User {
 ```
 
 ```yml @file:config.yml
+schema: {}
 server:
   headers: {setCookies: true}
 ```

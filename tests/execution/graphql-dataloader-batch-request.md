@@ -24,6 +24,7 @@ type Query {
 ```
 
 ```yml @file:config.yml
+schema: {}
 upstream:
   batch: {delay: 1}
 ```

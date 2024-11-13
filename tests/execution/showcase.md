@@ -16,6 +16,7 @@ type Query {
 ```
 
 ```yml @file:config.yml
+schema: {}
 server:
   showcase: true
 ```

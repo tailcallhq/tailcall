@@ -11,6 +11,7 @@ type Query {
 ```
 
 ```yml @file:config-a.yml
+schema: {}
 upstream:
   batch: {delay: 0, maxSize: 1000, headers: ["a", "b"]}
 ```
@@ -36,6 +37,7 @@ type Query {
 ```
 
 ```yml @file:config-b.yml
+schema: {}
 upstream:
   batch: {delay: 5, maxSize: 100, headers: ["b", "c"]}
 ```

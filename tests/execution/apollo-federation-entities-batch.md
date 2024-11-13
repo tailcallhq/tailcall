@@ -27,6 +27,7 @@ type Post
 ```
 
 ```yml @file:config.yml
+schema: {}
 server:
   port: 8000
   enableFederation: true

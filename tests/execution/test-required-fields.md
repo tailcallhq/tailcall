@@ -37,6 +37,7 @@ type Foo {
 ```
 
 ```yml @file:config.yml
+schema: {}
 server:
   enableJIT: true
 ```

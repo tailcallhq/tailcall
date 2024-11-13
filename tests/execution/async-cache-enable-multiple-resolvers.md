@@ -25,6 +25,7 @@ type User {
 ```
 
 ```yml @file:config.yml
+schema: {}
 server:
   port: 8000
   queryValidation: false

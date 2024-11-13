@@ -53,6 +53,7 @@ type Post {
 ```
 
 ```yml @file:config.yml
+schema: {}
 server:
   vars: [{key: "a", value: "1"}, {key: "c", value: "d"}]
 ```

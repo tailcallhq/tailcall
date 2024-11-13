@@ -16,6 +16,7 @@ type Query {
 ```
 
 ```yml @file:config-a.yml
+schema: {}
 server:
   headers: {custom: [{key: "a", value: "a"}]}
 ```
@@ -35,7 +36,8 @@ type Query {
 }
 ```
 
-```yml @file:config.yml
+```yml @file:config-b.yml
+schema: {}
 server:
   headers: {custom: [{key: "a", value: "b"}]}
 ```

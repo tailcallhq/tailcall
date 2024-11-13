@@ -33,6 +33,7 @@ type Post {
 ```
 
 ```yml @file:config.yml
+schema: {}
 upstream:
   allowedHeaders: ["x-foo", "X-bar"]
 ```

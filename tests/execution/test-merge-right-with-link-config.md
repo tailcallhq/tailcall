@@ -17,6 +17,7 @@ type Query {
 ```
 
 ```yml @file:config.yml
+schema: {}
 upstream:
   allowedHeaders: ["Authorization"]
 ```

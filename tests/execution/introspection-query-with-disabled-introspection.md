@@ -17,6 +17,7 @@ type User {
 ```
 
 ```yml @file:config.yml
+schema: {}
 server:
   introspection: false
 upstream:

@@ -15,6 +15,7 @@ type T1 {
 ```
 
 ```yml @file:config.yml
+schema: {}
 server:
   queryValidation: true
 ```

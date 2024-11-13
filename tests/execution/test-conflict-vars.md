@@ -21,11 +21,13 @@ type Query {
 ```
 
 ```yml @file:config-a.yml
+schema: {}
 server:
   vars: [{key: "a", value: "b"}, {key: "c", value: "d"}]
 ```
 
 ```yml @file:config-b.yml
+schema: {}
 server:
   vars: [{key: "a", value: "b"}, {key: "p", value: "q"}]
 ```

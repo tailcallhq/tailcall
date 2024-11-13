@@ -24,6 +24,7 @@ type Post {
 ```
 
 ```yml @file:config.yml
+schema: {}
 server:
   enableJIT: true
 ```

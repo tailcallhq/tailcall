@@ -28,6 +28,7 @@ type DTA {
 ```
 
 ```yml @file:config.yml
+schema: {}
 server:
   batchRequests: true
   enableJIT: false

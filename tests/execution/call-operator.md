@@ -107,6 +107,7 @@ type Post {
 ```
 
 ```yml @file:config.yml
+schema: {}
 upstream:
   httpCache: 42
 ```

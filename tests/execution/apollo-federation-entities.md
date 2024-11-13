@@ -23,6 +23,7 @@ type Post @expr(body: {id: "{{.value.id}}", title: "post-title-{{.value.id}}"}) 
 ```
 
 ```yml @file:config.yml
+schema: {}
 server:
   port: 8000
   enableFederation: true

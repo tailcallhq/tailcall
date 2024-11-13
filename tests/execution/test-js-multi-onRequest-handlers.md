@@ -40,6 +40,7 @@ type Query {
 ```
 
 ```yml @file:config.yml
+schema: {}
 upstream:
   onRequest: "foo"
 ```

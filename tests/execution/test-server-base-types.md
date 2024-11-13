@@ -21,6 +21,7 @@ type Query {
 ```
 
 ```yml @file:config.yml
+schema: {}
 upstream:
   proxy: {url: "http://localhost:8000"}
 ```

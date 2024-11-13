@@ -20,6 +20,7 @@ type Query {
 ```
 
 ```yml @file:config.yml
+schema: {}
 server:
   hostname: "abc"
 ```

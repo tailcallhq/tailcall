@@ -25,6 +25,7 @@ type Query {
 ```
 
 ```yml @file:config.yml
+schema: {}
 upstream:
   httpCache: 42
 ```
