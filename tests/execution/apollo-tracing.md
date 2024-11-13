@@ -1,6 +1,6 @@
 # Apollo Tracing
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }
@@ -10,7 +10,7 @@ type Query {
 }
 ```
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 telemetry:
   export: {apollo: {apiKey: "<api_key>", graphRef: "tailcall-demo-3@current"}}

@@ -4,7 +4,7 @@ identity: true
 
 # test-description-many
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

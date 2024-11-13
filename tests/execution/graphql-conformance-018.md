@@ -1,6 +1,6 @@
 # Basic queries with field modify check
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

@@ -1,6 +1,6 @@
 # With nesting
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

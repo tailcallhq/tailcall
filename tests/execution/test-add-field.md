@@ -4,7 +4,7 @@ identity: true
 
 # test-add-field
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

@@ -1,0 +1,29 @@
+schema {
+  # Specify server configuration: Start GraphQL server at 0.0.0.0:8000
+  query: Query
+}
+
+type Query {
+  # Specify the http path for the users query
+  users: [User] @http(url: "http://jsonplaceholder.typicode.com/users")
+}
+
+# Create a user type with the fields returned by the users api
+
+type User {
+  id: Int!
+  name: String!
+  username: String!
+  email: String!
+
+  # Extend the user type with the posts field
+  # Use the current user's id to construct the path
+  posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/users/{{.value.id}}/posts")
+}
+
+# Create a post type with the fields returned by the posts api
+type Post {
+  id: Int!
+  title: String!
+  body: String!
+}

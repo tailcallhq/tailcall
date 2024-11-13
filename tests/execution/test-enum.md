@@ -4,7 +4,7 @@ identity: true
 
 # test-enum
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

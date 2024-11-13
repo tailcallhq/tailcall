@@ -1,6 +1,6 @@
 # Test builtin GraphQL scalars
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

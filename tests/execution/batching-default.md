@@ -1,6 +1,6 @@
 # Batching default
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }
@@ -49,7 +49,7 @@ type User {
       - id: 2
 ```
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 upstream:
   httpCache: 42

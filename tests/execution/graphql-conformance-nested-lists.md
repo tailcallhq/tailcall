@@ -1,6 +1,6 @@
 # List of lists.
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

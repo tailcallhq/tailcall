@@ -1,6 +1,6 @@
 # Sending field index list
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }
@@ -14,7 +14,7 @@ type Query {
 }
 ```
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 server:
   routes: {graphQL: "/tailcall-gql", status: "/health"}

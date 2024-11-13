@@ -41,13 +41,13 @@ type User {
 }
 ```
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }
 ```
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 links:
   - src: "graphql-with-link.graphql"

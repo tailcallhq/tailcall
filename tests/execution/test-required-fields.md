@@ -1,6 +1,6 @@
 # Test API
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }
@@ -36,7 +36,7 @@ type Foo {
 }
 ```
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 server:
   enableJIT: true

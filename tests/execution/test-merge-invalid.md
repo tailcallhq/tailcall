@@ -4,7 +4,7 @@ error: true
 
 # Test merge error
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }
@@ -18,7 +18,7 @@ type Foo {
 }
 ```
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

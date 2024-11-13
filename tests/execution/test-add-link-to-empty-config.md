@@ -29,7 +29,7 @@ type Query {
 }
 ```
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 links:
   - src: "link-expr.graphql"
@@ -38,7 +38,7 @@ links:
     type: Config
 ```
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

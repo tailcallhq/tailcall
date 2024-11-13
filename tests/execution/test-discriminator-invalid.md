@@ -4,7 +4,7 @@ error: true
 
 # Test union type resolve
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

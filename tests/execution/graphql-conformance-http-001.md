@@ -1,6 +1,6 @@
 # Basic queries with field ordering check
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

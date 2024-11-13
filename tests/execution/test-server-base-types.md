@@ -1,6 +1,6 @@
 # test-server-base-types
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }
@@ -10,7 +10,7 @@ type Query {
 }
 ```
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }
@@ -20,7 +20,7 @@ type Query {
 }
 ```
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 upstream:
   proxy: {url: "http://localhost:8000"}

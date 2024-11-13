@@ -4,7 +4,7 @@ identity: true
 
 # auth
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 links:
   - id: "jwks"
@@ -15,7 +15,7 @@ links:
     src: ".htpasswd"
 ```
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

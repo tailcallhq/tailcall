@@ -1,6 +1,6 @@
 # GraphQL datasource inside another graphQL datasource
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

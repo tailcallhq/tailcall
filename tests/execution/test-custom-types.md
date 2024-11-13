@@ -4,7 +4,7 @@ identity: true
 
 # test-custom-types
 
-```graphql @config
+```graphql @schema
 schema {
   query: Que
   mutation: Mut

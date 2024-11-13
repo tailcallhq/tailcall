@@ -4,7 +4,7 @@ identity: true
 
 # test-nested-value
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

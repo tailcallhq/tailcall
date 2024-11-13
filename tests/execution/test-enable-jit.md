@@ -1,6 +1,6 @@
 # test-enable-jit
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }
@@ -23,7 +23,7 @@ type Post {
 }
 ```
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 server:
   enableJIT: true

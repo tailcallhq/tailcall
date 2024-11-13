@@ -1,6 +1,6 @@
 # Test field aliasing
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

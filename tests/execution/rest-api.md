@@ -9,14 +9,14 @@ query ($id: Int!) @rest(method: GET, path: "/user/$id") {
 }
 ```
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 links:
   - type: Operation
     src: "operation-user.graphql"
 ```
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

@@ -1,6 +1,6 @@
 # Http with args as body
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

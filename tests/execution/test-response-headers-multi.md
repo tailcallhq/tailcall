@@ -4,7 +4,7 @@ error: true
 
 # test-response-headers-multi
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }
@@ -19,7 +19,7 @@ type Query {
 }
 ```
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 server:
   headers: {custom: [{key: "a b", value: "a \n b"}, {key: "a c", value: "a \n b"}]}

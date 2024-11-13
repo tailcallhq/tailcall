@@ -4,7 +4,7 @@ error: true
 
 # Apollo federation query validation
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }
@@ -24,7 +24,7 @@ type Post @http(url: "http://jsonplaceholder.typicode.com/posts", query: [{key: 
 }
 ```
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 server:
   port: 8000

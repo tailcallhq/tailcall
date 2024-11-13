@@ -4,7 +4,7 @@ error: true
 
 # test-multiple-resolvable-directives-on-field
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

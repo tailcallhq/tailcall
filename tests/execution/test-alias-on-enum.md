@@ -1,6 +1,6 @@
 # test-alias-on-enum
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }
@@ -27,7 +27,7 @@ type DTA {
     query: "query { color { departments } }"
 ```
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 server:
   batchRequests: true

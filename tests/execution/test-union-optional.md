@@ -1,6 +1,6 @@
 # Test union optional
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

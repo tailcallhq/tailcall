@@ -4,7 +4,7 @@ identity: true
 
 # test-http-url
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

@@ -2,7 +2,7 @@
 
 Directives in query should be passed as is
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

@@ -1,6 +1,6 @@
 # Federation subgraph with no entities in the config and enableFederation=true
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }
@@ -20,7 +20,7 @@ type Post {
 }
 ```
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 server:
   port: 8000

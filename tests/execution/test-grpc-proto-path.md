@@ -4,7 +4,7 @@ error: true
 
 # test-grpc-proto-path
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 links:
   - id: "news"
@@ -12,7 +12,7 @@ links:
     type: Protobuf
 ```
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

@@ -4,7 +4,7 @@ identity: true
 
 # test-expr
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

@@ -4,7 +4,7 @@ error: true
 
 # test-undefined-query
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

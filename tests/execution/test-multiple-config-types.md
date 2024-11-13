@@ -1,6 +1,6 @@
 # Multiple Configs
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }
@@ -10,7 +10,7 @@ type Query {
 }
 ```
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 links:
   - src: "types.graphql"

@@ -4,7 +4,7 @@ error: true
 
 # test-groupby-without-batching
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }
@@ -24,7 +24,7 @@ type Query {
 }
 ```
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 upstream:
   httpCache: 42

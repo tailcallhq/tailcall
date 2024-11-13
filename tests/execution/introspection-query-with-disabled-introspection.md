@@ -1,6 +1,6 @@
 # Test schema inspection with false flag
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }
@@ -16,7 +16,7 @@ type User {
 }
 ```
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 server:
   introspection: false

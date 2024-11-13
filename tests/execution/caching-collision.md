@@ -1,6 +1,6 @@
 # Caching Collision
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }
@@ -19,7 +19,7 @@ type Bar {
 }
 ```
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 upstream:
   batch: {delay: 1, maxSize: 1000}

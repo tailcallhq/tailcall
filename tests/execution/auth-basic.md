@@ -1,6 +1,6 @@
 # Auth with BasicAuth
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 links:
   - id: "htpasswd"
@@ -8,7 +8,7 @@ links:
     src: ".htpasswd"
 ```
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
   mutation: Mutation

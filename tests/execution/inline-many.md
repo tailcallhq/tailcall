@@ -4,7 +4,7 @@ identity: true
 
 # inline-many
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

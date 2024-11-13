@@ -36,7 +36,7 @@ message NewsList {
 }
 ```
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 upstream:
   httpCache: 42
@@ -47,7 +47,7 @@ links:
     type: Protobuf
 ```
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

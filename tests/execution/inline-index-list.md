@@ -1,6 +1,6 @@
 # Test inline index list
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

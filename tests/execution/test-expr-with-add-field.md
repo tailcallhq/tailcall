@@ -4,7 +4,7 @@ error: true
 
 # test-expr-with-add-field
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

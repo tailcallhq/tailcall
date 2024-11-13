@@ -1,6 +1,6 @@
 # Mutation put
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
   mutation: Mutation

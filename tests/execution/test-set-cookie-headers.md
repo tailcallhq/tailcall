@@ -1,6 +1,6 @@
 # Set Cookie Header
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }
@@ -18,7 +18,7 @@ type User {
 }
 ```
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 server:
   headers: {setCookies: true}

@@ -4,7 +4,7 @@ error: true
 
 # Cors invalid allowHeaders
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }
@@ -14,7 +14,7 @@ type Query {
 }
 ```
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 server:
   headers:

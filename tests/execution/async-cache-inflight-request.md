@@ -1,6 +1,6 @@
 # Async Cache Inflight and InRequest
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }
@@ -23,7 +23,7 @@ type User {
 }
 ```
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 server:
   port: 8000

@@ -1,6 +1,6 @@
 # Test scalars related to integer representation
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

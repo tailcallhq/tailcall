@@ -24,7 +24,7 @@ message NewsId {
 }
 ```
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 upstream:
   batch: {delay: 10, headers: [], maxSize: 1000}
@@ -34,7 +34,7 @@ links:
     type: Protobuf
 ```
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

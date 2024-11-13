@@ -4,7 +4,7 @@ error: true
 
 # test-missing-mutation-resolver
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
   mutation: Mutation

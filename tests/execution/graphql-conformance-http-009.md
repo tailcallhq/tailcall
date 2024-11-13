@@ -6,7 +6,7 @@ skip: true
 
 TODO: Skipped because we do not check that variables are defined
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

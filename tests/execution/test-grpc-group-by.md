@@ -40,7 +40,7 @@ message NewsList {
 }
 ```
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }
@@ -72,7 +72,7 @@ type News {
 }
 ```
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 upstream:
   httpCache: 42

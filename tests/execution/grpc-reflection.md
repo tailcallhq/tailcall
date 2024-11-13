@@ -1,6 +1,6 @@
 # Grpc datasource
 
-```graphql @config
+```graphql @schema
 schema{
   query: Query
 }
@@ -28,7 +28,7 @@ enum Status {
 }
 ```
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 upstream:
   httpCache: 42

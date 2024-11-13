@@ -1,6 +1,6 @@
 # Test expr for data that contains scalar type in string
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

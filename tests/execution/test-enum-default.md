@@ -28,7 +28,7 @@ message NewsList {
 }
 ```
 
-```graphql @config
+```graphql @schema
 # for test upstream server see [repo](https://github.com/tailcallhq/rust-grpc)
 schema {
   query: Query
@@ -58,7 +58,7 @@ type NewsData {
 }
 ```
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 upstream:
   httpCache: 42

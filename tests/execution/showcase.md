@@ -1,6 +1,6 @@
 # Showcase GraphQL Request
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }
@@ -15,7 +15,7 @@ type Query {
 }
 ```
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 server:
   showcase: true

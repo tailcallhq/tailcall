@@ -4,7 +4,7 @@ error: true
 
 # test-expr-error
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

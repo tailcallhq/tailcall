@@ -6,7 +6,7 @@ skip: true
 
 TODO: Skipped because Tailcall does not send the whole query with the **fragments** to the remote server.
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

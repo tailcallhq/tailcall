@@ -4,7 +4,7 @@ identity: true
 
 # test-enum-aliases
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

@@ -4,7 +4,7 @@ identity: true
 
 # test-add-field-list
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

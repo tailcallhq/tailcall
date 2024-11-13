@@ -1,6 +1,6 @@
 # Http with args as body
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }
@@ -35,7 +35,7 @@ type Bar {
 }
 ```
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 upstream:
   batch: {delay: 10, headers: [], maxSize: 1000}

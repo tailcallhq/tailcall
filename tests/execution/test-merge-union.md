@@ -1,6 +1,6 @@
 # test-merge-union
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }
@@ -20,7 +20,7 @@ type Query {
 }
 ```
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

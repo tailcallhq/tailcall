@@ -4,7 +4,7 @@ identity: true
 
 # test-omit-list
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

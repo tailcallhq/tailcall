@@ -1,6 +1,6 @@
 # Test complex nested query
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

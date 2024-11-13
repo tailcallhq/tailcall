@@ -1,6 +1,6 @@
 # Apollo federation query for batching resolvers
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }
@@ -26,7 +26,7 @@ type Post
 }
 ```
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 server:
   port: 8000

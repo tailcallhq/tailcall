@@ -11,14 +11,14 @@ function name(val) {
 }
 ```
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 links:
   - type: Script
     src: "test.js"
 ```
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

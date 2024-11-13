@@ -4,7 +4,7 @@ identity: true
 
 # test-upstream
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }
@@ -14,7 +14,7 @@ type Query {
 }
 ```
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 upstream:
   proxy: {url: "http://localhost:8085"}

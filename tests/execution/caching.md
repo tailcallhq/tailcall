@@ -1,6 +1,6 @@
 # Caching
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }
@@ -22,7 +22,7 @@ type TypeCache @cache(maxAge: 1000) {
 }
 ```
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 upstream:
   batch: {delay: 1, maxSize: 1000}

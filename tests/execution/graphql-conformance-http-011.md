@@ -6,7 +6,7 @@ skip: true
 
 TODO: Skipped because Tailcall does not parse the scalar type correctly into a string.
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

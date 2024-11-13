@@ -1,6 +1,6 @@
 # Apollo federation query
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }
@@ -22,7 +22,7 @@ type Post @expr(body: {id: "{{.value.id}}", title: "post-title-{{.value.id}}"}) 
 }
 ```
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 server:
   port: 8000

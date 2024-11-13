@@ -1,6 +1,6 @@
 # Call operator with graphQL datasource
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }
@@ -29,7 +29,7 @@ type Post {
 }
 ```
 
-```yml @file:config.yml
+```yml @config
 schema: {}
 upstream:
   httpCache: 42

@@ -4,7 +4,7 @@ error: true
 
 # test-lack-resolver
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }
