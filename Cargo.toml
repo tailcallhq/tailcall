@@ -272,6 +272,7 @@ lto = 'fat'
 debug = false
 incremental = false
 overflow-checks = false
+rustflags = ["-C", "target-cpu=native"]
 
 [profile.benchmark]
 inherits = "release"
