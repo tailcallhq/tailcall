@@ -117,22 +117,20 @@ impl<Ctx: ResolverContextLike> GraphQLOperationContext for EvalContext<'_, Ctx> 
             .map(|directives| print_directives(directives.iter()))
     }
 
-    fn selection_set(&self, related_fields: &RelatedFields) -> Option<String> {
+    fn selection_set(&self, _related_fields: &RelatedFields) -> Option<String> {
+        // ignore selection set and directly use selection set.
         let selection_field = self.graphql_ctx.field()?;
-        format_selection_set(selection_field.selection_set(), related_fields)
+        format_selection_set(selection_field.selection_set())
     }
 }
 
 fn format_selection_set<'a>(
     selection_set: impl Iterator<Item = &'a SelectionField>,
-    related_fields: &RelatedFields,
 ) -> Option<String> {
     let set = selection_set
-        .filter_map(|field| {
+        .map(|field| {
             // add to set only related fields that should be resolved with current resolver
-            related_fields.get(field.name()).map(|related_fields| {
-                format_selection_field(field, &related_fields.0, &related_fields.1)
-            })
+            format_selection_field(field, field.name())
         })
         .collect::<Vec<_>>();
 
@@ -143,13 +141,9 @@ fn format_selection_set<'a>(
     Some(format!("{{ {} }}", set.join(" ")))
 }
 
-fn format_selection_field(
-    field: &SelectionField,
-    name: &str,
-    related_fields: &RelatedFields,
-) -> String {
+fn format_selection_field(field: &SelectionField, name: &str) -> String {
     let arguments = format_selection_field_arguments(field);
-    let selection_set = format_selection_set(field.selection_set(), related_fields);
+    let selection_set = format_selection_set(field.selection_set());
 
     let mut output = format!("{}{}", name, arguments);
 
