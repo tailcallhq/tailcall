@@ -1,20 +1,7 @@
 schema
-  @link(src: "./config.json", type: Config)
+  @link(src: "./telemetry-otlp.yml", type: Config)
   @link(type: Operation, src: "operations/routes.graphql")
-  @link(id: "news", src: "../tailcall-fixtures/fixtures/protobuf/news.proto", type: Protobuf)
-  @telemetry(
-    export: {
-      otlp: {
-        url: "https://api.honeycomb.io:443"
-        # gather api key from https://ui.honeycomb.io and set it as env when running tailcall
-        headers: [
-          {key: "x-honeycomb-team", value: "{{.env.HONEYCOMB_API_KEY}}"}
-          {key: "x-honeycomb-dataset", value: "tailcall"}
-        ]
-      }
-    }
-    requestHeaders: ["user-id"]
-  ) {
+  @link(id: "news", src: "../tailcall-fixtures/fixtures/protobuf/news.proto", type: Protobuf) {
   query: Query
 }
 

@@ -1,13 +1,18 @@
 # Apollo Tracing
 
 ```graphql @config
-schema @telemetry(export: {apollo: {apiKey: "<api_key>", graphRef: "tailcall-demo-3@current"}}) {
+schema @link(src: "config.yml", type: Config) {
   query: Query
 }
 
 type Query {
   hello: String! @http(url: "http://api.com/")
 }
+```
+
+```yml @file:config.yml
+telemetry:
+  export: {apollo: {apiKey: "<api_key>", graphRef: "tailcall-demo-3@current"}}
 ```
 
 ```yml @mock
