@@ -1,7 +1,7 @@
 # Async Cache Inflight Enabled
 
 ```graphql @config
-schema {
+schema @link(src: "config.yml", type: Config) {
   query: Query
 }
 
@@ -20,6 +20,13 @@ type User {
   id: Int
   name: String
 }
+```
+
+```yml @file:config.yml
+schema: {}
+server:
+  port: 8000
+  queryValidation: false
 ```
 
 ```yml @mock

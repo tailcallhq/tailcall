@@ -2,7 +2,7 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema @server @upstream(allowedHeaders: ["X-bar", "x-foo"]) {
+schema @server @upstream(allowedHeaders: ["X-bar", "x-foo"]) @link(src: "config.yml", type: Config) {
   query: Query
 }
 

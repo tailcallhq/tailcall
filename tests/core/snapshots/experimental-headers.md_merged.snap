@@ -2,7 +2,10 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema @server(headers: {experimental: ["X-experimental", "x-tailcall"]}) @upstream {
+schema
+  @server(headers: {experimental: ["X-experimental", "x-tailcall"]})
+  @upstream
+  @link(src: "config.yml", type: Config) {
   query: Query
 }
 

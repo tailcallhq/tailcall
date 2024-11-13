@@ -19,9 +19,9 @@ schema: {}
 server:
   headers:
     cors:
-      allowCredentials: true,
-      allowHeaders: ["*"],
-      allowMethods: [POST, OPTIONS],
+      allowCredentials: true
+      allowHeaders: ["*"]
+      allowMethods: [POST, OPTIONS]
 upstream:
   batch: {delay: 1, maxSize: 1000}
 ```

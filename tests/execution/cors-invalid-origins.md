@@ -20,7 +20,7 @@ server:
   headers:
     cors:
       allowCredentials: true
-      exposeHeaders: ["*"]
+      allowOrigin: ["*"]
       allowMethods: [POST, OPTIONS]
 upstream:
   batch: {delay: 1, maxSize: 1000}

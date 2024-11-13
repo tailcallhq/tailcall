@@ -3,8 +3,9 @@ source: tests/core/spec.rs
 expression: formatter
 ---
 schema
-  @server(port: 8080)
+  @server
   @upstream(batch: {delay: 10, headers: []}, httpCache: 42)
+  @link(src: "config.yml", type: Config)
   @link(id: "news", src: "./service.proto", type: Protobuf) {
   query: Query
 }

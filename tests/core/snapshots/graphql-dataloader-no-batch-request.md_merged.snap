@@ -2,7 +2,7 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema @server @upstream(batch: {delay: 1, headers: []}) {
+schema @server @upstream(batch: {delay: 1, headers: []}) @link(src: "config.yml", type: Config) {
   query: Query
 }
 

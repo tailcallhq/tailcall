@@ -48,8 +48,7 @@ upstream:
 ```
 
 ```graphql @config
-schema @link(src: "config.yml", type: Config) {
-  @link(id: "news", src: "news.proto", type: Protobuf) {
+schema @link(src: "config.yml", type: Config) @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
 }
 

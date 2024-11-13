@@ -5,6 +5,7 @@ expression: formatter
 schema
   @server
   @upstream(batch: {delay: 10, headers: []}, httpCache: 42)
+  @link(src: "config.yml", type: Config)
   @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
 }

@@ -5,6 +5,7 @@ expression: formatter
 schema
   @server(enableFederation: true, port: 8000)
   @upstream(batch: {delay: 100, headers: []}, httpCache: 42)
+  @link(src: "config.yml", type: Config)
   @link(src: "./posts.graphql", type: Config) {
   query: Query
 }

@@ -2,7 +2,7 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema @server @upstream(onRequest: "foo") @link(src: "test1.js", type: Script) {
+schema @server @upstream(onRequest: "foo") @link(src: "config.yml", type: Config) @link(src: "test1.js", type: Script) {
   query: Query
 }
 

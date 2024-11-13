@@ -1,7 +1,7 @@
 schema
   @link(src: "./jsonplaceholder_http_2.json", type: Config)
   @link(type: Cert, src: "./example.crt")
-  @link(type: Key, src: "./example.key")
+  @link(type: Key, src: "./example.key") {
   query: Query
 }
 

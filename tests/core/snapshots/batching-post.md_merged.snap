@@ -4,7 +4,8 @@ expression: formatter
 ---
 schema
   @server(port: 8000, queryValidation: false)
-  @upstream(batch: {delay: 1, headers: [], maxSize: 1000}, httpCache: 42) {
+  @upstream(batch: {delay: 1, headers: [], maxSize: 1000}, httpCache: 42)
+  @link(src: "config.yml", type: Config) {
   query: Query
 }
 

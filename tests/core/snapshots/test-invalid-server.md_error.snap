@@ -4,10 +4,9 @@ expression: errors
 ---
 [
   {
-    "message": "Parsing failed because of invalid type: string \"8000\", expected u16",
+    "message": "Query type is not defined",
     "trace": [
-      "@server",
-      "port"
+      "Query"
     ],
     "description": null
   }

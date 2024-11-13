@@ -31,7 +31,6 @@ type DTA {
 schema: {}
 server:
   batchRequests: true
-  enableJIT: false
 upstream:
   batch: {delay: 1, headers: [], maxSize: 100}
 ```

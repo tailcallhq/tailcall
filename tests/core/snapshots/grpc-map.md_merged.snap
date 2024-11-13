@@ -2,7 +2,11 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema @server @upstream(batch: {delay: 10, headers: []}, httpCache: 42) @link(src: "map.proto", type: Protobuf) {
+schema
+  @server
+  @upstream(batch: {delay: 10, headers: []}, httpCache: 42)
+  @link(src: "config.yml", type: Config)
+  @link(src: "map.proto", type: Protobuf) {
   query: Query
 }
 
