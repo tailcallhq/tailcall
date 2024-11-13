@@ -1,7 +1,7 @@
 # Test API
 
 ```graphql @config
-schema @server(enableJIT: true) {
+schema @link(src: "config.yml", type: Config) {
   query: Query
 }
 
@@ -34,6 +34,11 @@ type Foo {
   id: Int!
   bar: String!
 }
+```
+
+```yml @file:config.yml
+server:
+  enableJIT: true
 ```
 
 ```yml @mock

@@ -1,7 +1,7 @@
 # Federation subgraph with no entities in the config and enableFederation=true
 
 ```graphql @config
-schema @server(port: 8000, enableFederation: true) @upstream(httpCache: 42, batch: {delay: 100}) {
+schema @link(src: "config.yml", type: Config)  {
   query: Query
 }
 
@@ -18,6 +18,15 @@ type Post {
   id: Int!
   title: String! @external
 }
+```
+
+```yml @file:config.yml
+server:
+  port: 8000
+  enableFederation: true
+upstream:
+  httpCache: 42
+  batch: {delay: 100}
 ```
 
 ```yml @test

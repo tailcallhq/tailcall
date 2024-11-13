@@ -1,7 +1,7 @@
 # test-conflict-vars
 
 ```graphql @config
-schema @server(vars: [{key: "a", value: "b"}, {key: "c", value: "d"}]) @upstream {
+schema @link(src: "config-a.yml", type: Config) {
   query: Query
 }
 
@@ -11,11 +11,21 @@ type Query {
 ```
 
 ```graphql @config
-schema @server(vars: [{key: "a", value: "b"}, {key: "p", value: "q"}]) @upstream {
+schema @link(src: "config-b.yml", type: Config) {
   query: Query
 }
 
 type Query {
   hello: String @expr(body: "world")
 }
+```
+
+```yml @file:config-a.yml
+server:
+  vars: [{key: "a", value: "b"}, {key: "c", value: "d"}]
+```
+
+```yml @file:config-b.yml
+server:
+  vars: [{key: "a", value: "b"}, {key: "p", value: "q"}]
 ```

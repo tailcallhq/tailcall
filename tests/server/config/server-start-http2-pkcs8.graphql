@@ -1,5 +1,5 @@
 schema
-  @server(port: 8801, version: HTTP2, hostname: "localhost")
+  @link(src: "server-start-http2-pkcs8.yml", type: Config)
   @link(type: Cert, src: "./example.crt")
   @link(type: Key, src: "./example-pkcs8.key") {
   query: Query

@@ -1,7 +1,7 @@
 # test-enable-jit
 
 ```graphql @config
-schema @server(port: 8000, hostname: "0.0.0.0", enableJIT: true) {
+schema @link(src: "config.yml", type: Config) {
   query: Query
 }
 
@@ -21,6 +21,11 @@ type Post {
   title: String!
   user: User @http(url: "http://jsonplaceholder.typicode.com/users/{{.value.userId}}")
 }
+```
+
+```yml @file:config.yml
+server:
+  enableJIT: true
 ```
 
 ```yml @mock

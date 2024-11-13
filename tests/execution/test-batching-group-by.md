@@ -5,7 +5,7 @@ identity: true
 # test-batching-group-by
 
 ```graphql @config
-schema @server(port: 4000) @upstream(batch: {delay: 1, headers: [], maxSize: 1000}) {
+schema @link(src: "config.yml", type: Config) {
   query: Query
 }
 
@@ -25,4 +25,9 @@ type User {
   id: Int
   name: String
 }
+```
+
+```yml @file:config.yml
+upstream:
+  batch: {delay: 1, headers: [], maxSize: 1000}
 ```

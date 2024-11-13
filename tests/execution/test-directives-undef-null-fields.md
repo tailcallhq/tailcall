@@ -5,7 +5,7 @@ error: true
 # test-directives-undef-null-fields
 
 ```graphql @config
-schema @server(vars: [{key: "a", value: "1"}, {key: "c", value: "d"}]) {
+schema @link(src: "config.yml", type: Config) {
   query: Query
 }
 
@@ -50,4 +50,9 @@ type Post {
     @http(url: "http://localhost:8080/users", query: [{key: "id", value: "{{.value.userid}}"}])
   userVars: User @http(url: "http://localhost:8080/users/{{.vars.a}}")
 }
+```
+
+```yml @file:config.yml
+server:
+  vars: [{key: "a", value: "1"}, {key: "c", value: "d"}]
 ```

@@ -1,7 +1,7 @@
 # Resolve with vars
 
 ```graphql @config
-schema @server(vars: [{key: "id", value: "1"}]) {
+schema @link(src: "config.yml", type: Config) {
   query: Query
 }
 
@@ -13,6 +13,11 @@ type User {
 type Query {
   user: [User] @http(url: "http://jsonplaceholder.typicode.com/users", query: [{key: "id", value: "{{.vars.id}}"}])
 }
+```
+
+```yml @file:config.yml
+server:
+  vars: [{key: "id", value: "1"}]
 ```
 
 ```yml @mock

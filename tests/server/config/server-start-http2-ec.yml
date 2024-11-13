@@ -1,0 +1,4 @@
+server:
+  port: 8804
+  version: HTTP2
+  hostname: localhost

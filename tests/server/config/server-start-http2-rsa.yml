@@ -1,0 +1,5 @@
+server:
+  port: 8802
+  version: HTTP2
+  hostname: localhost
+  batchRequests: true

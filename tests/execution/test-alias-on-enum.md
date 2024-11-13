@@ -1,11 +1,7 @@
 # test-alias-on-enum
 
 ```graphql @config
-schema @server(batchRequests: true) @upstream(batch: {delay: 1, headers: [], maxSize: 100}) {
-  query: Query
-}
-
-schema @server(enableJIT: false) {
+schema @link(src: "config.yml", type: Config) {
   query: Query
 }
 
@@ -29,4 +25,12 @@ type DTA {
   url: http://localhost:8080/graphql
   body:
     query: "query { color { departments } }"
+```
+
+```yml @file:config.yml
+server:
+  batchRequests: true
+  enableJIT: false
+upstream:
+  batch: {delay: 1, headers: [], maxSize: 100}
 ```

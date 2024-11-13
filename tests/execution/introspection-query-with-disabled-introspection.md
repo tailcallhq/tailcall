@@ -1,7 +1,7 @@
 # Test schema inspection with false flag
 
 ```graphql @config
-schema @server(port: 8001, queryValidation: false, hostname: "0.0.0.0", introspection: false) @upstream(httpCache: 42) {
+schema @link(src: "config.yml", type: Config) {
   query: Query
 }
 
@@ -14,6 +14,13 @@ type User {
   name: String
   birthday: Date
 }
+```
+
+```yml @file:config.yml
+server:
+  introspection: false
+upstream:
+  httpCache: 42
 ```
 
 ```yml @mock

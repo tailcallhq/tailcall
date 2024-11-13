@@ -1,7 +1,7 @@
 # Showcase GraphQL Request
 
 ```graphql @config
-schema @server(showcase: true) {
+schema @link(src: "config.yml", type: Config) {
   query: Query
 }
 
@@ -13,6 +13,11 @@ type User {
 type Query {
   not_user: User @http(url: "http://jsonplaceholder.typicode.com/users/1")
 }
+```
+
+```yml @file:config.yml
+server:
+  showcase: true
 ```
 
 ```yml @mock

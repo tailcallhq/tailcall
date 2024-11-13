@@ -5,7 +5,7 @@ error: true
 # test-response-headers-name
 
 ```graphql @config
-schema @server(headers: {custom: [{key: "🤣", value: "a"}]}) {
+schema @link(src: "config.yml", type: Config) {
   query: Query
 }
 
@@ -18,3 +18,9 @@ type Query {
   user: User @expr(body: {name: "John"})
 }
 ```
+
+```yml @file:config.yml
+server:
+  headers: {custom: [{key: "🤣", value: "a"}]}
+```
+

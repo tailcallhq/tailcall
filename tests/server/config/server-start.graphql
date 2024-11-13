@@ -1,4 +1,4 @@
-schema @server(port: 8800) {
+schema @link(src: "server-start.yml", type: Config) {
   query: Query
 }
 

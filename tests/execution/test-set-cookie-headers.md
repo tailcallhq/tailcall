@@ -1,7 +1,7 @@
 # Set Cookie Header
 
 ```graphql @config
-schema @server(port: 8080, hostname: "0.0.0.0", headers: {setCookies: true}) {
+schema @link(src: "config.yml", type: Config) {
   query: Query
 }
 
@@ -16,6 +16,11 @@ type User {
   phone: String
   website: String
 }
+```
+
+```yml @file:config.yml
+server:
+  headers: {setCookies: true}
 ```
 
 ```yaml @mock

@@ -1,7 +1,7 @@
 # Sending field index list
 
 ```graphql @config
-schema @server(port: 8000, routes: {graphQL: "/tailcall-gql", status: "/health"}) {
+schema @link(src: "config.yml", type: Config) {
   query: Query
 }
 
@@ -12,6 +12,11 @@ type User {
 type Query {
   users: [User] @http(url: "http://jsonplaceholder.typicode.com/users")
 }
+```
+
+```yml @file:config.yml
+server:
+  routes: {graphQL: "/tailcall-gql", status: "/health"}
 ```
 
 ```yml @mock

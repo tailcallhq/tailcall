@@ -5,11 +5,16 @@ identity: true
 # test-server-vars
 
 ```graphql @config
-schema @server(vars: [{key: "foo", value: "bar"}]) @upstream {
+schema @link(src: "config.yml", type: Config) {
   query: Query
 }
 
 type Query {
   foo: String @http(url: "http://jsonplaceholder.typicode.com/foo")
 }
+```
+
+```yml @file:config.yml
+server:
+  vars: [{key: "foo", value: "bar"}]
 ```

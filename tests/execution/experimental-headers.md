@@ -1,7 +1,7 @@
 # Experimental headers
 
 ```graphql @config
-schema @server(headers: {experimental: ["x-tailcall", "X-experimental"]}) {
+schema @link(src: "config.yml", type: Config) {
   query: Query
 }
 
@@ -13,6 +13,11 @@ type User {
   id: Int
   name: String
 }
+```
+
+```yml @file:config.yml
+server:
+  headers: {experimental: ["x-tailcall", "X-experimental"]}
 ```
 
 ```yml @mock

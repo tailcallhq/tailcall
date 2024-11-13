@@ -1,7 +1,7 @@
 # With List args
 
 ```graphql @config
-schema @server(queryValidation: true) {
+schema @link(src: "config.yml", type: Config) {
   query: Query
 }
 
@@ -12,6 +12,11 @@ type Query {
 type T1 {
   numbers: [Int]
 }
+```
+
+```yml @file:config.yml
+server:
+  queryValidation: true
 ```
 
 ```yml @mock
