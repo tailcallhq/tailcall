@@ -4,7 +4,7 @@ use super::super::{Arg, Field, OperationPlan, ResolveInputError, Variables};
 use crate::core::blueprint::Index;
 use crate::core::ir::model::{IO, IR};
 use crate::core::json::{JsonLikeOwned, JsonObjectLike};
-use crate::core::{Mustache, Type};
+use crate::core::Type;
 
 /// Trait to represent conversion from some dynamic type (with variables)
 /// to the resolved variant based on the additional provided info.
@@ -73,8 +73,8 @@ where
         // @graphql directive.
         for field in selection.iter_mut() {
             if let Some(IR::IO(IO::GraphQL { req_template, .. })) = field.ir.as_mut() {
-                if let Some(sel) = req_template.selection.as_mut() {
-                    *sel = Mustache::parse(sel).render(variables);
+                if let Some(selection) = req_template.selection.take() {
+                    req_template.selection = Some(selection.resolve(variables));
                 }
             }
         }

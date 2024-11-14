@@ -11,7 +11,7 @@ use crate::core::document::print_directive;
 use crate::core::ir::model::{IO, IR};
 use crate::core::jit::{Directive, Field, OperationPlan};
 use crate::core::json::{JsonLike, JsonLikeOwned};
-use crate::core::Transform;
+use crate::core::{Mustache, Transform};
 
 #[derive(Default)]
 pub struct GraphQL<A>(PhantomData<A>);
@@ -29,7 +29,9 @@ impl<A: Display + Debug + JsonLikeOwned> Transform for GraphQL<A> {
     fn transform(&self, mut plan: Self::Value) -> Valid<Self::Value, Self::Error> {
         for field in plan.selection.iter_mut() {
             if let Some(IR::IO(IO::GraphQL { req_template, .. })) = field.ir.as_mut() {
-                req_template.selection = format_selection_set(field.selection.iter());
+                if let Some(v) = format_selection_set(field.selection.iter()) {
+                    req_template.selection = Some(Mustache::parse(&v).into());
+                }
             }
         }
 

@@ -15,7 +15,35 @@ use crate::core::http::Method::POST;
 use crate::core::ir::model::{CacheKey, IoId};
 use crate::core::ir::{GraphQLOperationContext, RelatedFields};
 use crate::core::mustache::Mustache;
-use crate::core::path::PathGraphql;
+use crate::core::path::{PathGraphql, PathString};
+
+/// Represents a GraphQL selection that can either be resolved or unresolved.
+#[derive(Debug, Clone)]
+pub enum Selection {
+    /// A selection with a resolved string value.
+    Resolved(String),
+    /// A selection that contains a Mustache template to be resolved later.
+    UnResolved(Mustache),
+}
+
+impl Selection {
+    /// Resolves the `Unresolved` variant using the provided `PathString`.
+    pub fn resolve(self, p: &impl PathString) -> Selection {
+        match self {
+            Selection::UnResolved(template) => Selection::Resolved(template.render(p)),
+            resolved @ _ => resolved,
+        }
+    }
+}
+
+impl From<Mustache> for Selection {
+    fn from(value: Mustache) -> Self {
+        match value.is_const() {
+            true => Selection::Resolved(value.to_string()),
+            false => Selection::UnResolved(value),
+        }
+    }
+}
 
 /// RequestTemplate for GraphQL requests (See RequestTemplate documentation)
 #[derive(Setters, Debug, Clone)]
@@ -27,7 +55,7 @@ pub struct RequestTemplate {
     pub operation_arguments: Option<Vec<(String, Mustache)>>,
     pub headers: MustacheHeaders,
     pub related_fields: RelatedFields,
-    pub selection: Option<String>,
+    pub selection: Option<Selection>,
 }
 
 impl RequestTemplate {
@@ -87,13 +115,12 @@ impl RequestTemplate {
         ctx: &C,
     ) -> String {
         let operation_type = &self.operation_type;
-        let selection_set = self
-            .selection
-            .as_ref()
-            .map(Cow::Borrowed)
-            .unwrap_or_else(|| {
-                Cow::Owned(ctx.selection_set(&self.related_fields).unwrap_or_default())
-            });
+
+        let selection_set = match &self.selection {
+            Some(Selection::Resolved(s)) => Cow::Borrowed(s),
+            Some(Selection::UnResolved(u)) => Cow::Owned(u.to_string()),
+            None => Cow::Owned(ctx.selection_set(&self.related_fields).unwrap_or_default()),
+        };
 
         let mut operation = Cow::Borrowed(&self.operation_name);
 
