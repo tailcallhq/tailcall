@@ -7,7 +7,7 @@ use rustls_pki_types::{
 use tailcall_valid::{Valid, Validator};
 use url::Url;
 
-use super::{ConfigModule, Content, Link, LinkType, PrivateKey};
+use super::{ConfigModule, Content, LinkConfig, LinkType, PrivateKey};
 use crate::core::config::{Config, ConfigReaderContext, Source};
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::{Cached, Resource, ResourceReader};
@@ -40,7 +40,7 @@ impl ConfigReader {
         config_module: ConfigModule,
         parent_dir: Option<&'async_recursion Path>,
     ) -> anyhow::Result<ConfigModule> {
-        let links: Vec<Link> = config_module
+        let links: Vec<LinkConfig> = config_module
             .config()
             .links
             .clone()
