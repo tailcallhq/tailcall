@@ -51,7 +51,6 @@ pub enum IO {
     },
     GraphQL {
         req_template: graphql::RequestTemplate,
-        selection: Option<String>,
         field_name: String,
         batch: bool,
         dl_id: Option<DataLoaderId>,

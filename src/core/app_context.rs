@@ -94,7 +94,6 @@ impl AppContext {
                                         req_template: req_template.clone(),
                                         field_name: field_name.clone(),
                                         batch: *batch,
-                                        selection: None,
                                         dl_id: Some(DataLoaderId::new(gql_data_loaders.len())),
                                         dedupe,
                                     }));
