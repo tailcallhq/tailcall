@@ -13,11 +13,19 @@ use super::Error;
 use crate::core::blueprint::Index;
 use crate::core::ir::model::IR;
 use crate::core::ir::TypedValue;
-use crate::core::json::JsonLike;
+use crate::core::json::{JsonLike, JsonLikeOwned};
+use crate::core::path::PathString;
 use crate::core::scalar::Scalar;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Variables<Value>(HashMap<String, Value>);
+
+impl<V: JsonLikeOwned> PathString for Variables<V> {
+    fn path_string<'a, T: AsRef<str>>(&'a self, path: &'a [T]) -> Option<Cow<'a, str>> {
+        self.get(path[0].as_ref())
+            .map(|v| Cow::Owned(v.to_string_value()))
+    }
+}
 
 impl<Value> Default for Variables<Value> {
     fn default() -> Self {
