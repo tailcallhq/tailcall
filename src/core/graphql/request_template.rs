@@ -6,6 +6,7 @@ use std::hash::{Hash, Hasher};
 use derive_setters::Setters;
 use http::header::{HeaderMap, HeaderValue};
 use tailcall_hasher::TailcallHasher;
+use tracing::info;
 
 use crate::core::config::{GraphQLOperationType, KeyValue};
 use crate::core::has_headers::HasHeaders;
@@ -128,7 +129,9 @@ impl RequestTemplate {
             }
         }
 
-        format!(r#"{{ "query": "{operation_type} {{ {operation} {selection_set} }}" }}"#)
+        let query = format!(r#"{{ "query": "{operation_type} {{ {operation} {selection_set} }}" }}"#);
+        info!("Query {} ", query);
+        query
     }
 
     pub fn new(
