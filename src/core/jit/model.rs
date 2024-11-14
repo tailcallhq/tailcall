@@ -109,11 +109,11 @@ impl<Input: Display> Display for Arg<Input> {
         let v = self
             .value
             .as_ref()
-            .map(|v| format!("{}", v))
+            .map(|v| v.to_string())
             .unwrap_or_else(|| {
                 self.default_value
                     .as_ref()
-                    .map(|v| format!("{}", v))
+                    .map(|v| v.to_string())
                     .unwrap_or_default()
             });
         write!(f, "{}: {}", self.name, v)
