@@ -106,7 +106,7 @@ pub fn print_directives<'a, A: 'a + JsonLikeOwned>(
     directives: impl Iterator<Item = &'a Directive<A>>,
 ) -> String {
     directives
-        .map(|d| print_directive(&const_directive_to_sdl(d)))
+        .map(|d| print_directive(&directive_to_sdl(d)))
         .collect::<Vec<String>>()
         .join(" ")
 }
@@ -116,7 +116,7 @@ fn pos<A>(a: A) -> Positioned<A> {
     Positioned::new(a, Pos::default())
 }
 
-fn const_directive_to_sdl<Input: JsonLikeOwned>(
+fn directive_to_sdl<Input: JsonLikeOwned>(
     directive: &Directive<Input>,
 ) -> DirectiveDefinition {
     let to_mustache = |s: &str| -> String {
