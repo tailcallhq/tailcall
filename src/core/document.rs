@@ -310,7 +310,7 @@ fn print_input_value(field: &async_graphql::parser::types::InputValueDefinition)
         print_default_value(field.default_value.as_ref())
     )
 }
-fn print_directive(directive: &DirectiveDefinition) -> String {
+pub fn print_directive(directive: &DirectiveDefinition) -> String {
     let args = directive
         .arguments
         .iter()

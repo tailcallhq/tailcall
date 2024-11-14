@@ -7,6 +7,7 @@ use async_graphql::parser::types::{DirectiveDefinition, InputValueDefinition, Ty
 use async_graphql::{Name, Pos, Positioned};
 use tailcall_valid::Valid;
 
+use crate::core::document::print_directive;
 use crate::core::ir::model::{IO, IR};
 use crate::core::jit::{Directive, Field, OperationPlan};
 use crate::core::json::{JsonLike, JsonLikeOwned};
@@ -87,19 +88,15 @@ fn format_selection_field_arguments<A: Display>(field: &Field<A>) -> Cow<'static
         .args
         .iter()
         .filter(|a| a.value.is_some())
-        .collect::<Vec<_>>();
-
-    if arguments.is_empty() {
-        return Cow::Borrowed("");
-    }
-
-    let args = arguments
-        .iter()
         .map(|arg| arg.to_string())
         .collect::<Vec<_>>()
         .join(",");
 
-    Cow::Owned(format!("({})", args.escape_default()))
+    if arguments.is_empty() {
+        Cow::Borrowed("")
+    } else {
+        Cow::Owned(format!("({})", arguments.escape_default()))
+    }
 }
 
 // TODO: refactor this.
@@ -110,21 +107,6 @@ pub fn print_directives<'a, A: 'a + JsonLikeOwned>(
         .map(|d| print_directive(&const_directive_to_sdl(d)))
         .collect::<Vec<String>>()
         .join(" ")
-}
-
-fn print_directive(directive: &DirectiveDefinition) -> String {
-    let args = directive
-        .arguments
-        .iter()
-        .map(|arg| format!("{}: {}", arg.node.name.node, arg.node.ty.node))
-        .collect::<Vec<String>>()
-        .join(", ");
-
-    if args.is_empty() {
-        format!("@{}", directive.name.node)
-    } else {
-        format!("@{}({})", directive.name.node, args)
-    }
 }
 
 fn pos<A>(a: A) -> Positioned<A> {
