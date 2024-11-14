@@ -28,6 +28,7 @@ impl<A: ToString + Debug + JsonLikeOwned> Transform for GraphQL<A> {
 
     fn transform(&self, mut plan: Self::Value) -> Valid<Self::Value, Self::Error> {
         for field in plan.selection.iter_mut() {
+            // TODO: fix this.
             let rendered = field.render_graphql();
             if let Some(IR::IO(IO::GraphQL { req_template, .. })) = field.ir.as_mut() {
                 req_template.selection = rendered;
@@ -47,10 +48,20 @@ impl<A: ToString + JsonLikeOwned> Field<A> {
 fn format_selection_set<'a, A: 'a + ToString + JsonLikeOwned>(
     selection_set: impl Iterator<Item = &'a Field<A>>,
 ) -> Option<String> {
-    // TODO: skip fields that has resolver.
     let set = selection_set
-        .filter(|field| field.ir.is_none())
-        .map(|field| format_selection_field(field, &field.name))
+        .filter(|field| match &field.ir {
+            Some(IR::IO(_)) | Some(IR::Dynamic(_)) => false,
+            _ => true,
+        })
+        .map(|field| {
+            // handle @modify directive scenario.
+            let field_name = if let Some(IR::ContextPath(data)) = &field.ir {
+                data.get(0).cloned().unwrap_or(field.name.to_string())
+            } else {
+                field.name.to_string()
+            };
+            format_selection_field(field, &field_name)
+        })
         .collect::<Vec<_>>();
 
     if set.is_empty() {
