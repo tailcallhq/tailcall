@@ -135,6 +135,12 @@ fn pos<A>(a: A) -> Positioned<A> {
 fn const_directive_to_sdl<Input: JsonLikeOwned>(
     directive: &Directive<Input>,
 ) -> DirectiveDefinition {
+    let to_mustache = |s: &str| -> String {
+        s.strip_prefix('$')
+            .map(|v| format!("{{{{{}}}}}", v))
+            .unwrap_or_else(|| s.to_string())
+    };
+
     DirectiveDefinition {
         description: None,
         name: pos(Name::new(directive.name.as_str())),
@@ -143,7 +149,7 @@ fn const_directive_to_sdl<Input: JsonLikeOwned>(
             .iter()
             .filter_map(|(k, v)| {
                 if !v.is_null() {
-                    let v_str = v.to_string_value();
+                    let v_str = to_mustache(&v.to_string_value());
                     Some(pos(InputValueDefinition {
                         description: None,
                         name: pos(Name::new(k)),

@@ -2,8 +2,9 @@ use async_graphql_value::{ConstValue, Value};
 
 use super::super::{Arg, Field, OperationPlan, ResolveInputError, Variables};
 use crate::core::blueprint::Index;
+use crate::core::ir::model::{IO, IR};
 use crate::core::json::{JsonLikeOwned, JsonObjectLike};
-use crate::core::Type;
+use crate::core::{Mustache, Type};
 
 /// Trait to represent conversion from some dynamic type (with variables)
 /// to the resolved variant based on the additional provided info.
@@ -55,7 +56,7 @@ where
         variables: &Variables<Output>,
     ) -> Result<OperationPlan<Output>, ResolveInputError> {
         let index = self.plan.index;
-        let selection = self
+        let mut selection = self
             .plan
             .selection
             .into_iter()
@@ -67,6 +68,15 @@ where
             // this check?
             .map(|field| Self::resolve_field(&index, field?))
             .collect::<Result<Vec<_>, _>>()?;
+
+        // adjust the pre-computed values in selection set like graphql query for @graphql directive.
+        for field in selection.iter_mut() {
+            if let Some(IR::IO(IO::GraphQL { req_template, .. })) = field.ir.as_mut() {
+                if let Some(sel) = req_template.selection.as_mut() {
+                    *sel = Mustache::parse(sel).render(variables);
+                }
+            }
+        }
 
         Ok(OperationPlan {
             root_name: self.plan.root_name.to_string(),
