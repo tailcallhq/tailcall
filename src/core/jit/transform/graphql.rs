@@ -109,6 +109,7 @@ pub fn print_directives<'a, A: 'a + JsonLikeOwned>(
         .join(" ")
 }
 
+#[inline]
 fn pos<A>(a: A) -> Positioned<A> {
     Positioned::new(a, Pos::default())
 }
@@ -139,7 +140,7 @@ fn const_directive_to_sdl<Input: JsonLikeOwned>(
                             nullable: true,
                             base: async_graphql::parser::types::BaseType::Named(Name::new(v_str)),
                         }),
-                        directives: Vec::new(),
+                        directives: Vec::default(),
                     }))
                 } else {
                     None
