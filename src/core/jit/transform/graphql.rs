@@ -142,17 +142,16 @@ fn const_directive_to_sdl<Input: JsonLikeOwned>(
             .arguments
             .iter()
             .filter_map(|(k, v)| {
-                if let Some(v) = v.as_str().map(|v| v.to_string()) {
+                if !v.is_null() {
+                    let v_str = v.to_string_value();
                     Some(pos(InputValueDefinition {
                         description: None,
                         name: pos(Name::new(k)),
+                        default_value: Some(pos(JsonLike::string(Cow::Borrowed(&v_str)))),
                         ty: pos(Type {
                             nullable: true,
-                            base: async_graphql::parser::types::BaseType::Named(Name::new(
-                                v.clone(),
-                            )),
+                            base: async_graphql::parser::types::BaseType::Named(Name::new(v_str)),
                         }),
-                        default_value: Some(pos(JsonLike::string(Cow::Owned(v)))),
                         directives: Vec::new(),
                     }))
                 } else {
