@@ -33,7 +33,7 @@ type NodeC {
 - request:
     method: POST
     url: http://upstream/graphql
-    textBody: { "query": "query { nodeA { name nodeB { name } nodeC { name } } }" }
+    textBody: {"query": "query { nodeA { name nodeB { name } nodeC { name } } }"}
   expectedHits: 1
   response:
     status: 200

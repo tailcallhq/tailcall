@@ -116,9 +116,7 @@ fn pos<A>(a: A) -> Positioned<A> {
     Positioned::new(a, Pos::default())
 }
 
-fn directive_to_sdl<Input: JsonLikeOwned>(
-    directive: &Directive<Input>,
-) -> DirectiveDefinition {
+fn directive_to_sdl<Input: JsonLikeOwned>(directive: &Directive<Input>) -> DirectiveDefinition {
     let to_mustache = |s: &str| -> String {
         s.strip_prefix('$')
             .map(|v| format!("{{{{{}}}}}", v))

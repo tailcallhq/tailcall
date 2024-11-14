@@ -31,7 +31,7 @@ impl Selection {
     pub fn resolve(self, p: &impl PathString) -> Selection {
         match self {
             Selection::UnResolved(template) => Selection::Resolved(template.render(p)),
-            resolved @ _ => resolved,
+            resolved => resolved,
         }
     }
 }
