@@ -27,20 +27,12 @@ impl<A: Display + Debug + JsonLikeOwned> Transform for GraphQL<A> {
 
     fn transform(&self, mut plan: Self::Value) -> Valid<Self::Value, Self::Error> {
         for field in plan.selection.iter_mut() {
-            // TODO: fix this.
-            let rendered = field.render_graphql();
             if let Some(IR::IO(IO::GraphQL { req_template, .. })) = field.ir.as_mut() {
-                req_template.selection = rendered;
+                req_template.selection = format_selection_set(field.selection.iter());
             }
         }
 
         Valid::succeed(plan)
-    }
-}
-
-impl<A: Display + JsonLikeOwned> Field<A> {
-    pub fn render_graphql(&self) -> Option<String> {
-        format_selection_set(self.selection.iter())
     }
 }
 
