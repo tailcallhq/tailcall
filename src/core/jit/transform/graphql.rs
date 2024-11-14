@@ -1,4 +1,4 @@
-use std::{borrow::Cow, convert::Infallible, marker::PhantomData};
+use std::{borrow::Cow, convert::Infallible, fmt::Debug, marker::PhantomData};
 
 use tailcall_valid::Valid;
 
@@ -17,7 +17,7 @@ impl<A> GraphQL<A> {
     }
 }
 
-impl<A: ToString> Transform for GraphQL<A> {
+impl<A: ToString + Debug> Transform for GraphQL<A> {
     type Value = OperationPlan<A>;
     type Error = Infallible;
 
@@ -42,7 +42,9 @@ impl<A: ToString> Field<A> {
 fn format_selection_set<'a, A: 'a + ToString>(
     selection_set: impl Iterator<Item = &'a Field<A>>,
 ) -> Option<String> {
+    // TODO: skip fields that has resolver.
     let set = selection_set
+        .filter(|field| field.ir.is_none())
         .map(|field| format_selection_field(field, &field.name))
         .collect::<Vec<_>>();
 
