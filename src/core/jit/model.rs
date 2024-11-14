@@ -96,6 +96,17 @@ pub struct Arg<Input> {
     pub default_value: Option<Input>,
 }
 
+impl<Input: ToString> ToString for Arg<Input> {
+    fn to_string(&self) -> String {
+        if let Some(val) = self.value.as_ref() {
+            format!("{}:{}", self.name, val.to_string())
+        } else {
+            let value = self.default_value.as_ref().map(|v| v.to_string());
+            format!("{}:{}", self.name, value.unwrap_or_default())
+        }
+    }
+}
+
 impl<Input> Arg<Input> {
     pub fn try_map<Output, Error>(
         self,

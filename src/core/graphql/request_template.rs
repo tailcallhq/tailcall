@@ -26,6 +26,7 @@ pub struct RequestTemplate {
     pub operation_arguments: Option<Vec<(String, Mustache)>>,
     pub headers: MustacheHeaders,
     pub related_fields: RelatedFields,
+    pub selection: Option<String>,
 }
 
 impl RequestTemplate {
@@ -85,7 +86,13 @@ impl RequestTemplate {
         ctx: &C,
     ) -> String {
         let operation_type = &self.operation_type;
-        let selection_set = ctx.selection_set(&self.related_fields).unwrap_or_default();
+        let selection_set = self
+            .selection
+            .as_ref()
+            .map(|s| Cow::Borrowed(s))
+            .unwrap_or_else(|| {
+                Cow::Owned(ctx.selection_set(&self.related_fields).unwrap_or_default())
+            });
 
         let mut operation = Cow::Borrowed(&self.operation_name);
 
@@ -149,6 +156,7 @@ impl RequestTemplate {
             operation_arguments,
             headers,
             related_fields,
+            selection: None,
         })
     }
 }

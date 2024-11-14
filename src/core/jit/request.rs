@@ -49,6 +49,7 @@ impl Request<ConstValue> {
             .pipe(transform::CheckDedupe::new())
             .pipe(transform::CheckProtected::new())
             .pipe(transform::CheckCache::new())
+            .pipe(transform::GraphQL::new())
             .transform(plan)
             .to_result()
             // both transformers are infallible right now

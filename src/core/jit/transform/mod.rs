@@ -4,6 +4,7 @@ mod check_dedupe;
 mod check_protected;
 mod input_resolver;
 mod skip;
+mod graphql;
 
 pub use check_cache::*;
 pub use check_const::*;
@@ -11,3 +12,4 @@ pub use check_dedupe::*;
 pub use check_protected::*;
 pub use input_resolver::*;
 pub use skip::*;
+pub use graphql::*;
