@@ -30,6 +30,7 @@ pub trait JsonLike<'json>: Sized {
     fn get_path<T: AsRef<str>>(&'json self, path: &[T]) -> Option<&'json Self>;
     fn get_key(&'json self, path: &str) -> Option<&'json Self>;
     fn group_by(&'json self, path: &[String]) -> HashMap<String, Vec<&'json Self>>;
+    fn to_string_value(&'json self) -> String;
 }
 
 /// A trait for objects that can be used as JSON objects

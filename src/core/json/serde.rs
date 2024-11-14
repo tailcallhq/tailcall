@@ -124,4 +124,8 @@ impl<'json> JsonLike<'json> for serde_json::Value {
     fn string(s: Cow<'json, str>) -> Self {
         serde_json::Value::String(s.to_string())
     }
+
+    fn to_string_value(&'json self) -> String {
+        format!("{}", self)
+    }
 }

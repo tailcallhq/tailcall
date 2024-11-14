@@ -134,4 +134,8 @@ impl<'ctx> JsonLike<'ctx> for Value<'ctx> {
         let src = gather_path_matches(self, path, vec![]);
         group_by_key(src)
     }
+
+    fn to_string_value(&'ctx self) -> String {
+        format!("{}", self)
+    }
 }
