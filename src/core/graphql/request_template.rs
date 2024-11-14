@@ -90,7 +90,7 @@ impl RequestTemplate {
         let selection_set = self
             .selection
             .as_ref()
-            .map(|s| Cow::Borrowed(s))
+            .map(Cow::Borrowed)
             .unwrap_or_else(|| {
                 Cow::Owned(ctx.selection_set(&self.related_fields).unwrap_or_default())
             });
@@ -129,7 +129,8 @@ impl RequestTemplate {
             }
         }
 
-        let query = format!(r#"{{ "query": "{operation_type} {{ {operation} {selection_set} }}" }}"#);
+        let query =
+            format!(r#"{{ "query": "{operation_type} {{ {operation} {selection_set} }}" }}"#);
         info!("Query {} ", query);
         query
     }

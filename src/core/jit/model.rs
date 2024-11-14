@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::fmt::{Debug, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 use std::num::NonZeroU64;
 use std::sync::Arc;
 
@@ -104,14 +104,19 @@ pub struct Arg<Input> {
     pub default_value: Option<Input>,
 }
 
-impl<Input: ToString> ToString for Arg<Input> {
-    fn to_string(&self) -> String {
-        if let Some(val) = self.value.as_ref() {
-            format!("{}: {}", self.name, val.to_string())
-        } else {
-            let value = self.default_value.as_ref().map(|v| v.to_string());
-            format!("{}: {}", self.name, value.unwrap_or_default())
-        }
+impl<Input: Display> Display for Arg<Input> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let v = self
+            .value
+            .as_ref()
+            .map(|v| format!("{}", v))
+            .unwrap_or_else(|| {
+                self.default_value
+                    .as_ref()
+                    .map(|v| format!("{}", v))
+                    .unwrap_or_default()
+            });
+        write!(f, "{}: {}", self.name, v)
     }
 }
 

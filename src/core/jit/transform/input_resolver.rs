@@ -69,7 +69,8 @@ where
             .map(|field| Self::resolve_field(&index, field?))
             .collect::<Result<Vec<_>, _>>()?;
 
-        // adjust the pre-computed values in selection set like graphql query for @graphql directive.
+        // adjust the pre-computed values in selection set like graphql query for
+        // @graphql directive.
         for field in selection.iter_mut() {
             if let Some(IR::IO(IO::GraphQL { req_template, .. })) = field.ir.as_mut() {
                 if let Some(sel) = req_template.selection.as_mut() {

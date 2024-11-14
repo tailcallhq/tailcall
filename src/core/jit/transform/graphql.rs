@@ -1,17 +1,16 @@
-use std::{borrow::Cow, convert::Infallible, fmt::Debug, marker::PhantomData};
+use std::borrow::Cow;
+use std::convert::Infallible;
+use std::fmt::{Debug, Display};
+use std::marker::PhantomData;
 
-use async_graphql::{
-    parser::types::{DirectiveDefinition, InputValueDefinition, Type},
-    Name, Pos, Positioned,
-};
+use async_graphql::parser::types::{DirectiveDefinition, InputValueDefinition, Type};
+use async_graphql::{Name, Pos, Positioned};
 use tailcall_valid::Valid;
 
-use crate::core::{
-    ir::model::{IO, IR},
-    jit::{Directive, Field, OperationPlan},
-    json::{JsonLike, JsonLikeOwned},
-    Transform,
-};
+use crate::core::ir::model::{IO, IR};
+use crate::core::jit::{Directive, Field, OperationPlan};
+use crate::core::json::{JsonLike, JsonLikeOwned};
+use crate::core::Transform;
 
 #[derive(Default)]
 pub struct GraphQL<A>(PhantomData<A>);
@@ -22,7 +21,7 @@ impl<A> GraphQL<A> {
     }
 }
 
-impl<A: ToString + Debug + JsonLikeOwned> Transform for GraphQL<A> {
+impl<A: Display + Debug + JsonLikeOwned> Transform for GraphQL<A> {
     type Value = OperationPlan<A>;
     type Error = Infallible;
 
@@ -39,24 +38,21 @@ impl<A: ToString + Debug + JsonLikeOwned> Transform for GraphQL<A> {
     }
 }
 
-impl<A: ToString + JsonLikeOwned> Field<A> {
+impl<A: Display + JsonLikeOwned> Field<A> {
     pub fn render_graphql(&self) -> Option<String> {
         format_selection_set(self.selection.iter())
     }
 }
 
-fn format_selection_set<'a, A: 'a + ToString + JsonLikeOwned>(
+fn format_selection_set<'a, A: 'a + Display + JsonLikeOwned>(
     selection_set: impl Iterator<Item = &'a Field<A>>,
 ) -> Option<String> {
     let set = selection_set
-        .filter(|field| match &field.ir {
-            Some(IR::IO(_)) | Some(IR::Dynamic(_)) => false,
-            _ => true,
-        })
+        .filter(|field| !matches!(&field.ir, Some(IR::IO(_)) | Some(IR::Dynamic(_))))
         .map(|field| {
             // handle @modify directive scenario.
             let field_name = if let Some(IR::ContextPath(data)) = &field.ir {
-                data.get(0).cloned().unwrap_or(field.name.to_string())
+                data.first().cloned().unwrap_or(field.name.to_string())
             } else {
                 field.name.to_string()
             };
@@ -71,7 +67,7 @@ fn format_selection_set<'a, A: 'a + ToString + JsonLikeOwned>(
     Some(format!("{{ {} }}", set.join(" ")))
 }
 
-fn format_selection_field<A: ToString + JsonLikeOwned>(field: &Field<A>, name: &str) -> String {
+fn format_selection_field<A: Display + JsonLikeOwned>(field: &Field<A>, name: &str) -> String {
     let arguments = format_selection_field_arguments(field);
     let selection_set = format_selection_set(field.selection.iter());
 
@@ -94,7 +90,7 @@ fn format_selection_field<A: ToString + JsonLikeOwned>(field: &Field<A>, name: &
     output
 }
 
-fn format_selection_field_arguments<A: ToString>(field: &Field<A>) -> Cow<'static, str> {
+fn format_selection_field_arguments<A: Display>(field: &Field<A>) -> Cow<'static, str> {
     let arguments = field
         .args
         .iter()
