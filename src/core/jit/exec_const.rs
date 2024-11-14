@@ -59,7 +59,13 @@ impl ConstValueExecutor {
         let result = InputResolver::new(plan).resolve_input(variables);
 
         let plan = match result {
-            Ok(plan) => plan,
+            Ok(plan) => {
+                let plan = transform::GraphQL::new()
+                    .transform(plan)
+                    .to_result()
+                    .unwrap();
+                plan
+            }
             Err(err) => {
                 return Response::default().with_errors(vec![Positioned::new(
                     BuildError::from(err).into(),
