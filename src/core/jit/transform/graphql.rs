@@ -3,14 +3,12 @@ use std::convert::Infallible;
 use std::fmt::{Debug, Display};
 use std::marker::PhantomData;
 
-use async_graphql::parser::types::{DirectiveDefinition, InputValueDefinition, Type};
-use async_graphql::{Name, Pos, Positioned};
 use tailcall_valid::Valid;
 
-use crate::core::document::print_directive;
+use crate::core::document::print_directives;
 use crate::core::ir::model::{IO, IR};
-use crate::core::jit::{Directive, Field, OperationPlan};
-use crate::core::json::{JsonLike, JsonLikeOwned};
+use crate::core::jit::{Field, OperationPlan};
+use crate::core::json::JsonLikeOwned;
 use crate::core::{Mustache, Transform};
 
 #[derive(Default)]
@@ -98,56 +96,5 @@ fn format_selection_field_arguments<A: Display>(field: &Field<A>) -> Cow<'static
         Cow::Borrowed("")
     } else {
         Cow::Owned(format!("({})", arguments.escape_default()))
-    }
-}
-
-// TODO: refactor this.
-pub fn print_directives<'a, A: 'a + JsonLikeOwned>(
-    directives: impl Iterator<Item = &'a Directive<A>>,
-) -> String {
-    directives
-        .map(|d| print_directive(&directive_to_sdl(d)))
-        .collect::<Vec<String>>()
-        .join(" ")
-}
-
-#[inline]
-fn pos<A>(a: A) -> Positioned<A> {
-    Positioned::new(a, Pos::default())
-}
-
-fn directive_to_sdl<Input: JsonLikeOwned>(directive: &Directive<Input>) -> DirectiveDefinition {
-    let to_mustache = |s: &str| -> String {
-        s.strip_prefix('$')
-            .map(|v| format!("{{{{{}}}}}", v))
-            .unwrap_or_else(|| s.to_string())
-    };
-
-    DirectiveDefinition {
-        description: None,
-        name: pos(Name::new(directive.name.as_str())),
-        arguments: directive
-            .arguments
-            .iter()
-            .filter_map(|(k, v)| {
-                if !v.is_null() {
-                    let v_str = to_mustache(&v.to_string_value());
-                    Some(pos(InputValueDefinition {
-                        description: None,
-                        name: pos(Name::new(k)),
-                        default_value: Some(pos(JsonLike::string(Cow::Borrowed(&v_str)))),
-                        ty: pos(Type {
-                            nullable: true,
-                            base: async_graphql::parser::types::BaseType::Named(Name::new(v_str)),
-                        }),
-                        directives: Vec::default(),
-                    }))
-                } else {
-                    None
-                }
-            })
-            .collect(),
-        is_repeatable: true,
-        locations: vec![],
     }
 }

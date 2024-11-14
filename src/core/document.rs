@@ -1,10 +1,11 @@
-use async_graphql::parser::types::*;
-use async_graphql::{Pos, Positioned};
-use async_graphql_value::{ConstValue, Name};
+use std::borrow::Cow;
 
-fn pos<A>(a: A) -> Positioned<A> {
-    Positioned::new(a, Pos::default())
-}
+use async_graphql::parser::types::*;
+use async_graphql::Positioned;
+use async_graphql_value::ConstValue;
+
+use super::jit::Directive as JitDirective;
+use super::json::JsonLikeOwned;
 
 struct LineBreaker<'a> {
     string: &'a str,
@@ -61,9 +62,12 @@ fn get_formatted_docs(docs: Option<String>, indent: usize) -> String {
     formatted_docs
 }
 
-pub fn print_directives<'a>(directives: impl Iterator<Item = &'a ConstDirective>) -> String {
+pub fn print_directives<'a, T>(directives: impl Iterator<Item = &'a T>) -> String
+where
+    &'a T: Into<Directive<'a>> + 'a,
+{
     directives
-        .map(|d| print_directive(&const_directive_to_sdl(d)))
+        .map(|d| print_directive(d))
         .collect::<Vec<String>>()
         .join(" ")
 }
@@ -100,37 +104,6 @@ fn print_schema(schema: &SchemaDefinition) -> String {
         "schema {}{{\n{}{}{}}}\n",
         directives, query, mutation, subscription
     )
-}
-
-fn const_directive_to_sdl(directive: &ConstDirective) -> DirectiveDefinition {
-    DirectiveDefinition {
-        description: None,
-        name: pos(Name::new(directive.name.node.as_str())),
-        arguments: directive
-            .arguments
-            .iter()
-            .filter_map(|(k, v)| {
-                if v.node != ConstValue::Null {
-                    Some(pos(InputValueDefinition {
-                        description: None,
-                        name: pos(Name::new(k.node.clone())),
-                        ty: pos(Type {
-                            nullable: true,
-                            base: async_graphql::parser::types::BaseType::Named(Name::new(
-                                v.to_string(),
-                            )),
-                        }),
-                        default_value: Some(pos(ConstValue::String(v.to_string()))),
-                        directives: Vec::new(),
-                    }))
-                } else {
-                    None
-                }
-            })
-            .collect(),
-        is_repeatable: true,
-        locations: vec![],
-    }
 }
 
 fn print_type_def(type_def: &TypeDefinition) -> String {
@@ -310,18 +283,23 @@ fn print_input_value(field: &async_graphql::parser::types::InputValueDefinition)
         print_default_value(field.default_value.as_ref())
     )
 }
-pub fn print_directive(directive: &DirectiveDefinition) -> String {
+
+pub fn print_directive<'a, T>(directive: &'a T) -> String
+where
+    &'a T: Into<Directive<'a>>,
+{
+    let directive: Directive<'a> = directive.into();
     let args = directive
-        .arguments
+        .args
         .iter()
-        .map(|arg| format!("{}: {}", arg.node.name.node, arg.node.ty.node))
+        .map(|arg| format!("{}: {}", arg.name, arg.value))
         .collect::<Vec<String>>()
         .join(", ");
 
     if args.is_empty() {
-        format!("@{}", directive.name.node)
+        format!("@{}", directive.name)
     } else {
-        format!("@{}({})", directive.name.node, args)
+        format!("@{}({})", directive.name, args)
     }
 }
 
@@ -409,4 +387,61 @@ pub fn print(sd: ServiceDocument) -> String {
         .join("\n");
 
     sdl_string.trim_end_matches('\n').to_string()
+}
+
+pub struct Directive<'a> {
+    pub name: Cow<'a, str>,
+    pub args: Vec<Arg<'a>>,
+}
+
+pub struct Arg<'a> {
+    pub name: Cow<'a, str>,
+    pub value: Cow<'a, str>,
+}
+
+impl<'a> From<&'a ConstDirective> for Directive<'a> {
+    fn from(value: &'a ConstDirective) -> Self {
+        Self {
+            name: Cow::Borrowed(value.name.node.as_str()),
+            args: value
+                .arguments
+                .iter()
+                .filter_map(|(k, v)| {
+                    if v.node != async_graphql_value::ConstValue::Null {
+                        Some(Arg {
+                            name: Cow::Borrowed(k.node.as_str()),
+                            value: Cow::Owned(v.to_string()),
+                        })
+                    } else {
+                        None
+                    }
+                })
+                .collect(),
+        }
+    }
+}
+
+impl<'a, Input: JsonLikeOwned> From<&'a JitDirective<Input>> for Directive<'a> {
+    fn from(value: &'a JitDirective<Input>) -> Self {
+        let to_mustache = |s: &str| -> String {
+            s.strip_prefix('$')
+                .map(|v| format!("{{{{{}}}}}", v))
+                .unwrap_or_else(|| s.to_string())
+        };
+        Self {
+            name: Cow::Borrowed(value.name.as_str()),
+            args: value
+                .arguments
+                .iter()
+                .filter_map(|(k, v)| {
+                    if !v.is_null() {
+                        let v_str = to_mustache(&v.to_string_value());
+                        Some(Arg { name: Cow::Borrowed(k), value: Cow::Owned(v_str) })
+                    } else {
+                        None
+                    }
+                })
+                .collect(),
+        }
+    }
 }
