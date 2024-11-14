@@ -80,7 +80,7 @@ fn format_selection_field_arguments<A: ToString>(field: &Field<A>) -> Cow<'stati
     let arguments = field
         .args
         .iter()
-        .filter_map(|a| a.value.as_ref())
+        .filter(|a| a.value.is_some())
         .collect::<Vec<_>>();
 
     if arguments.is_empty() {
