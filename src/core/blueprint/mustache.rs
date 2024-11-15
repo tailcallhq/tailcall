@@ -59,7 +59,7 @@ impl<'a> MustachePartsValidator<'a> {
         let tail = parts[1].as_str();
 
         match head {
-            "value" => {
+            "value" | "values" => {
                 // all items on parts except the first one
                 let tail = &parts[1..];
 
