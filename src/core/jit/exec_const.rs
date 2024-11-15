@@ -122,6 +122,16 @@ impl<'ctx> IRExecutor for ConstValueExec<'ctx> {
     ) -> Result<Self::Output> {
         let field = ctx.field();
 
+        if field.name == "user" {
+            // Test out the idea?
+            match ctx.value() {
+                Some(v) if v.as_array().is_some() => {
+                    let _ = self.call(ctx, ir).await;
+                }
+                _ => {}
+            };
+        }
+
         match ctx.value() {
             // TODO: check that field is expected list and it's a list of the required deepness
             Some(value) if value.as_array().is_some() => {
