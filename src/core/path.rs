@@ -85,6 +85,7 @@ impl<Ctx: ResolverContextLike> EvalContext<'_, Ctx> {
 
         path.split_first()
             .and_then(move |(head, tail)| match head.as_ref() {
+                "values" => Some(ValueString::Value(ctx.path_value_list(tail)?)),
                 "value" => Some(ValueString::Value(ctx.path_value(tail)?)),
                 "args" => Some(ValueString::Value(ctx.path_arg(tail)?)),
                 "headers" => Some(ValueString::String(Cow::Borrowed(
