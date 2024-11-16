@@ -836,6 +836,11 @@ dependencies = [
 ]
 
 [[package]]
+name = "chunk"
+version = "0.1.0"
+source = "git+https://github.com/tailcallhq/chunk#8e7fa4fdc82789f9009bd9ae3c79b9b23893b416"
+
+[[package]]
 name = "ciborium"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5391,6 +5396,7 @@ dependencies = [
  "cacache 13.0.0",
  "cache_control",
  "chrono",
+ "chunk",
  "clap",
  "colored",
  "convert_case 0.6.0",

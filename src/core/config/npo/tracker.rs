@@ -1,7 +1,8 @@
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Display, Formatter};
 
-use super::chunk::Chunk;
+use chunk::Chunk;
+
 use crate::core::config::Config;
 
 ///
