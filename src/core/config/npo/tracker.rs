@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Display, Formatter};
 
-use chunk::Chunk;
+use tailcall_chunk::Chunk;
 
 use crate::core::config::Config;
 
