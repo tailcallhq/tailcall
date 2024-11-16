@@ -29,6 +29,17 @@ type Post
   blog: Blog!
 }
 
+type Account
+  @http(
+    url: "http://jsonplaceholder.typicode.com/posts"
+    query: [{key: "id", value: "{{.value.type.id}}"}]
+    batchKey: ["blog", "blogId"]
+  ) {
+  id: Int!
+  balance: Blog!
+  type: AccountType
+}
+
 type Blog @http(url: "http://jsonplaceholder.typicode.com/posts", query: [{key: "id", value: "{{.value.blogId}}"}]) {
   id: Int!
 }

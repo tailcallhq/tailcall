@@ -4,6 +4,13 @@ expression: errors
 ---
 [
   {
+    "message": "Type 'AccountType' not found in config",
+    "trace": [
+      "Account"
+    ],
+    "description": null
+  },
+  {
     "message": "Invalid key at index 0: 'blogId' is not a field of 'Blog'",
     "trace": [
       "Blog"
