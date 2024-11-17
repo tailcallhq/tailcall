@@ -5478,6 +5478,7 @@ dependencies = [
  "tailcall-prettier",
  "tailcall-tracker",
  "tailcall-typedefs-common",
+ "tailcall-valid",
  "tailcall-version",
  "tempfile",
  "test-log",
@@ -5671,6 +5672,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "tailcall-valid"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d32dc2612dd67fdbe214cd396b388a386974d57daf732f00c2562b3b2421778d"
+dependencies = [
+ "derive_setters",
+ "http 1.1.0",
+ "regex",
+ "serde",
+ "serde_json",
+ "serde_path_to_error",
+ "thiserror",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "tailcall-version"
 version = "0.1.0"
 
@@ -5689,6 +5706,7 @@ dependencies = [
  "reqwest 0.11.27",
  "serde_json",
  "tailcall",
+ "tailcall-valid",
  "tracing",
  "tracing-subscriber",
  "tracing-subscriber-wasm",

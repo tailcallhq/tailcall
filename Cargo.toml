@@ -28,6 +28,7 @@ derive_more = "0.99.18"
 thiserror = "1.0.59"
 url = { version = "2.5.0", features = ["serde"] }
 convert_case = "0.6.0"
+tailcall-valid = "0.1.1"
 
 [dependencies]
 # dependencies specific to CLI must have optional = true and the dep should be added to default feature.
@@ -170,6 +171,7 @@ num = "0.4.3"
 indenter = "0.3.3"
 derive_more = { workspace = true }
 strum = "0.26.2"
+tailcall-valid = { workspace = true }
 dashmap = "6.1.0"
 urlencoding = "2.1.3"
 
