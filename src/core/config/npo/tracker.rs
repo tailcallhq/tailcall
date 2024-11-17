@@ -133,7 +133,7 @@ impl<'a> PathTracker<'a> {
 
     fn iter(
         &mut self,
-        path: Chunk<Name<'a>>,
+        parent_name: Option<Name<'a>>,
         type_name: TypeName<'a>,
         is_list: bool,
     ) -> Chunk<Chunk<Name<'a>>> {
@@ -146,15 +146,14 @@ impl<'a> PathTracker<'a> {
             let mut chunks = Chunk::new();
             if let Some(type_of) = self.config.find_type(type_name.as_str()) {
                 for (name, field) in type_of.fields.iter() {
-                    let chunk_name = Name::Field(FieldName::new(name));
-                    let path = Chunk::new().append(chunk_name);
+                    let field_name = Name::Field(FieldName::new(name));
 
                     if is_list && field.has_resolver() && !field.has_batched_resolver() {
-                        chunks = chunks.append(path);
+                        chunks = chunks.append(Chunk::new().append(field_name));
                     } else {
                         let is_list = is_list | field.type_of.is_list();
                         chunks = chunks.concat(self.iter(
-                            path,
+                            Some(field_name),
                             TypeName::new(field.type_of.name()),
                             is_list,
                         ))
@@ -169,31 +168,34 @@ impl<'a> PathTracker<'a> {
 
         // chunks contains only paths from the current type.
         // Prepend every subpath with parent path
-        chunks.map(&mut |chunk| path.clone().concat(chunk.clone()))
+        if let Some(path) = parent_name {
+            chunks.map(&mut |chunk| Chunk::new().append(path).concat(chunk.clone()))
+        } else {
+            chunks
+        }
     }
 
     fn find_chunks(&mut self) -> Chunk<Chunk<Name<'a>>> {
         let mut chunks = match &self.config.schema.query {
             None => Chunk::new(),
-            Some(query) => self.iter(Chunk::new(), TypeName::new(query.as_str()), false),
+            Some(query) => self.iter(None, TypeName::new(query.as_str()), false),
         };
 
         for (type_name, type_of) in &self.config.types {
             if type_of.has_resolver() {
-                let chunk_name = Name::Entity(TypeName(type_name.as_str()));
-                let chunk = Chunk::new().append(chunk_name);
+                let parent_path = Name::Entity(TypeName(type_name.as_str()));
                 // entity resolver are used to fetch multiple instances at once
                 // and therefore the resolver itself should be batched to avoid n + 1
                 if type_of.has_batched_resolver() {
                     // if batched resolver is present traverse inner fields
                     chunks = chunks.concat(self.iter(
-                        chunk,
+                        Some(parent_path),
                         TypeName::new(type_name.as_str()),
                         // entities are basically returning list of data
                         true,
                     ));
                 } else {
-                    chunks = chunks.append(chunk);
+                    chunks = chunks.append(Chunk::new().append(parent_path));
                 }
             }
         }
@@ -298,6 +300,13 @@ mod tests {
     #[test]
     fn test_nested_config() {
         let config = include_config!("fixtures/nested.graphql").unwrap();
+
+        assert_n_plus_one!(config);
+    }
+
+    #[test]
+    fn test_multiple_deeply_nested() {
+        let config = include_config!("fixtures/multiple-deeply-nested.graphql").unwrap();
 
         assert_n_plus_one!(config);
     }
