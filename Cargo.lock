@@ -5520,8 +5520,9 @@ dependencies = [
 
 [[package]]
 name = "tailcall-chunk"
-version = "0.1.0"
-source = "git+https://github.com/tailcallhq/tailcall-chunk#4f1568faa1854a6a670861280d95e8571773a469"
+version = "0.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d684c265789778d9b76a268b079bca63dd8801d695e3c1d7f41df78e7a7adb4f"
 
 [[package]]
 name = "tailcall-cloudflare"

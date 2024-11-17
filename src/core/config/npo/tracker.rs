@@ -126,7 +126,7 @@ impl<'a> PathTracker<'a> {
             return chunks.clone();
         }
 
-        let mut chunks = Chunk::new();
+        let mut chunks = Chunk::default();
         if let Some(type_of) = self.config.find_type(type_name.as_str()) {
             for (name, field) in type_of.fields.iter() {
                 let field_name = FieldName::new(name);
@@ -155,9 +155,9 @@ impl<'a> PathTracker<'a> {
 
     fn find_chunks(&mut self) -> Chunk<Chunk<FieldName<'a>>> {
         match &self.config.schema.query {
-            None => Chunk::new(),
+            None => Chunk::default(),
             Some(query) => self.iter(
-                Chunk::new(),
+                Chunk::default(),
                 TypeName::new(query.as_str()),
                 false,
                 HashSet::new(),

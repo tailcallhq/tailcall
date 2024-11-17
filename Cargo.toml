@@ -173,7 +173,7 @@ strum = "0.26.2"
 tailcall-valid = { workspace = true }
 dashmap = "6.1.0"
 urlencoding = "2.1.3"
-tailcall-chunk = { git = "https://github.com/tailcallhq/tailcall-chunk" }
+tailcall-chunk = "0.2.5"
 
 [dev-dependencies]
 datatest-stable = "0.2.9"
