@@ -5,8 +5,9 @@ use std::thread;
 use async_graphql_value::ConstValue;
 use rquickjs::{Context, Ctx, FromJs, Function, IntoJs, Value};
 
+use crate::core::config::ScriptRuntime;
 use crate::core::worker::{Command, Event, WorkerRequest};
-use crate::core::{blueprint, worker, WorkerIO};
+use crate::core::{worker, WorkerIO};
 
 struct LocalRuntime(Context);
 
@@ -33,10 +34,10 @@ fn setup_builtins(ctx: &Ctx<'_>) -> rquickjs::Result<()> {
     Ok(())
 }
 
-impl TryFrom<blueprint::Script> for LocalRuntime {
+impl TryFrom<ScriptRuntime> for LocalRuntime {
     type Error = anyhow::Error;
 
-    fn try_from(script: blueprint::Script) -> Result<Self, Self::Error> {
+    fn try_from(script: ScriptRuntime) -> Result<Self, Self::Error> {
         let source = script.source;
         let js_runtime = rquickjs::Runtime::new()?;
         let context = Context::full(&js_runtime)?;
@@ -51,7 +52,7 @@ impl TryFrom<blueprint::Script> for LocalRuntime {
 }
 
 pub struct Runtime {
-    script: blueprint::Script,
+    script: ScriptRuntime,
     // Single threaded JS runtime, that's shared across all tokio workers.
     tokio_runtime: Option<tokio::runtime::Runtime>,
 }
@@ -63,7 +64,7 @@ impl Debug for Runtime {
 }
 
 impl Runtime {
-    pub fn new(script: blueprint::Script) -> Self {
+    pub fn new(script: ScriptRuntime) -> Self {
         let tokio_runtime = tokio::runtime::Builder::new_multi_thread()
             .worker_threads(1)
             .build()
@@ -125,7 +126,7 @@ impl WorkerIO<ConstValue, ConstValue> for Runtime {
     }
 }
 
-fn init_rt(script: blueprint::Script) -> anyhow::Result<()> {
+fn init_rt(script: ScriptRuntime) -> anyhow::Result<()> {
     // initialize runtime if this is the first call
     // exit if failed to initialize
     LOCAL_RUNTIME.with(move |cell| {

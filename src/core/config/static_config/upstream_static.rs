@@ -12,16 +12,7 @@ mod batch;
 pub use batch::*;
 
 #[derive(
-    Deserialize,
-    Serialize,
-    Clone,
-    Debug,
-    Default,
-    Setters,
-    PartialEq,
-    Eq,
-    JsonSchema,
-    MergeRight,
+    Deserialize, Serialize, Clone, Debug, Default, Setters, PartialEq, Eq, JsonSchema, MergeRight,
 )]
 #[serde(deny_unknown_fields)]
 /// The `upstream` configuration allows you to control various aspects of the

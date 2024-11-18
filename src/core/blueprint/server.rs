@@ -5,12 +5,13 @@ use std::time::Duration;
 
 use derive_setters::Setters;
 use http::header::{HeaderMap, HeaderName, HeaderValue};
-use rustls_pki_types::CertificateDer;
 use tailcall_valid::{Valid, ValidationError, Validator};
 
-use super::Auth;
 use crate::core::config::cors_static::CorsStatic;
-use crate::core::config::{self, ConfigModule, CorsRuntime, HttpVersion, PrivateKey, Routes};
+use crate::core::config::{
+    self, AuthRuntime, ConfigModule, CorsRuntime, HttpVersion, HttpVersionRuntime, Routes,
+    ScriptRuntime,
+};
 
 #[derive(Clone, Debug, Setters)]
 pub struct Server {
@@ -29,29 +30,13 @@ pub struct Server {
     pub hostname: IpAddr,
     pub vars: BTreeMap<String, String>,
     pub response_headers: HeaderMap,
-    pub http: Http,
+    pub http: HttpVersionRuntime,
     pub pipeline_flush: bool,
-    pub script: Option<Script>,
+    pub script: Option<ScriptRuntime>,
     pub cors: Option<CorsRuntime>,
     pub experimental_headers: HashSet<HeaderName>,
-    pub auth: Option<Auth>,
+    pub auth: Option<AuthRuntime>,
     pub routes: Routes,
-}
-
-/// Mimic of mini_v8::Script that's wasm compatible
-#[derive(Clone, Debug)]
-pub struct Script {
-    pub source: String,
-    pub timeout: Option<Duration>,
-}
-
-#[derive(Clone, Debug)]
-pub enum Http {
-    HTTP1,
-    HTTP2 {
-        cert: Vec<CertificateDer<'static>>,
-        key: PrivateKey,
-    },
 }
 
 impl Default for Server {
@@ -104,9 +89,9 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
                     .ok_or_else(|| ValidationError::new("Key is required for HTTP2".to_string()))?
                     .clone();
 
-                Valid::succeed(Http::HTTP2 { cert, key })
+                Valid::succeed(HttpVersionRuntime::HTTP2 { cert, key })
             }
-            _ => Valid::succeed(Http::HTTP1),
+            _ => Valid::succeed(HttpVersionRuntime::HTTP1),
         };
 
         validate_hostname((config_server).get_hostname().to_lowercase())
@@ -124,7 +109,7 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
                     .as_ref()
                     .and_then(|headers| headers.get_cors()),
             ))
-            .fuse(Auth::make(&config_module))
+            .fuse(AuthRuntime::make(&config_module))
             .map(
                 |(hostname, http, response_headers, script, experimental_headers, cors, auth)| {
                     Server {
@@ -157,11 +142,13 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
     }
 }
 
-fn to_script(config_module: &crate::core::config::ConfigModule) -> Valid<Option<Script>, String> {
+fn to_script(
+    config_module: &crate::core::config::ConfigModule,
+) -> Valid<Option<ScriptRuntime>, String> {
     config_module.extensions().script.as_ref().map_or_else(
         || Valid::succeed(None),
         |script| {
-            Valid::succeed(Some(Script {
+            Valid::succeed(Some(ScriptRuntime {
                 source: script.clone(),
                 timeout: config_module
                     .server

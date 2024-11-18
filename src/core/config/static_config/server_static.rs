@@ -1,40 +1,32 @@
-pub mod headers_static;
-pub mod routes_static;
 pub mod cors_static;
+pub mod headers_static;
 pub mod key_values;
-pub use headers_static::*;
-pub use routes_static::*;
-pub use key_values::*;
-
+pub mod routes_static;
 use std::collections::{BTreeMap, BTreeSet};
 
 use derive_getters::Getters;
+pub use headers_static::*;
+pub use key_values::*;
+pub use routes_static::*;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
 use crate::core::config::Server;
 use crate::core::is_default;
 use crate::core::macros::MergeRight;
 
 #[derive(
-    Serialize,
-    Deserialize,
-    Clone,
-    Default,
-    Debug,
-    Getters,
-    PartialEq,
-    Eq,
-    JsonSchema,
-    MergeRight,
+    Serialize, Deserialize, Clone, Default, Debug, Getters, PartialEq, Eq, JsonSchema, MergeRight,
 )]
 /// This structure offers a comprehensive set of server configurations.
 /// It dictates how the server behaves and helps tune tailcall for various
 /// use-cases.
 #[serde(deny_unknown_fields)]
 pub struct ServerStatic {
-    /// The `enable_jit` option activates Just-In-Time (JIT) compilation. When set to true, it
-    /// optimizes execution of each incoming request independently, resulting in significantly
-    /// better performance in most cases, it's enabled by default.
+    /// The `enable_jit` option activates Just-In-Time (JIT) compilation. When
+    /// set to true, it optimizes execution of each incoming request
+    /// independently, resulting in significantly better performance in most
+    /// cases, it's enabled by default.
     #[serde(default, skip_serializing_if = "is_default")]
     pub enable_jit: Option<bool>,
 

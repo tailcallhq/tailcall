@@ -22,7 +22,7 @@ pub fn benchmark_handle_request(c: &mut Criterion) {
     let endpoints = config_module.extensions().endpoint_set.clone();
     let endpoints_clone = endpoints.clone();
 
-    blueprint.server.enable_jit = false;
+    blueprint.config.server.enable_jit = false;
     let server_config = tokio_runtime
         .block_on(ServerConfig::new(blueprint.clone(), endpoints.clone()))
         .unwrap();
@@ -47,7 +47,7 @@ pub fn benchmark_handle_request(c: &mut Criterion) {
         })
     });
 
-    blueprint_clone.server.enable_jit = true;
+    blueprint_clone.config.server.enable_jit = true;
     let server_config = tokio_runtime
         .block_on(ServerConfig::new(blueprint_clone, endpoints_clone))
         .unwrap();

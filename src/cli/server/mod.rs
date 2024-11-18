@@ -16,7 +16,7 @@ fn log_launch(sc: &ServerConfig) {
         sc.http_version()
     );
 
-    let gql_slug = sc.app_ctx.blueprint.server.routes.graphql();
+    let gql_slug = sc.app_ctx.blueprint.config.server.routes.graphql();
 
     let graphiql_url = sc.graphiql_url() + gql_slug;
     let url = playground::build_url(&graphiql_url);

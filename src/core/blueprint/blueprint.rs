@@ -7,9 +7,8 @@ use async_graphql::ValidationMode;
 use derive_setters::Setters;
 
 use super::directive::Directive;
-use super::telemetry::Telemetry;
 use super::{GlobalTimeout, Index};
-use crate::core::blueprint::{Server, Upstream};
+use crate::core::config::RuntimeConfig;
 use crate::core::ir::model::IR;
 use crate::core::schema_extension::SchemaExtension;
 use crate::core::{scalar, Type};
@@ -22,9 +21,7 @@ use crate::core::{scalar, Type};
 pub struct Blueprint {
     pub definitions: Vec<Definition>,
     pub schema: SchemaDefinition,
-    pub server: Server,
-    pub upstream: Upstream,
-    pub telemetry: Telemetry,
+    pub config: RuntimeConfig,
 }
 
 #[derive(Clone, Debug)]
@@ -210,7 +207,7 @@ impl Blueprint {
             self.clone()
         };
 
-        let server = &blueprint.server;
+        let server = &blueprint.config.server;
         let mut schema = SchemaBuilder::from(&blueprint);
 
         if server.enable_apollo_tracing {

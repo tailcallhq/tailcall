@@ -11,19 +11,10 @@ use crate::core::mustache::Mustache;
 
 pub mod apollo_static;
 pub mod reader_context;
-pub use reader_context::ConfigReaderContext;
 pub use apollo_static::ApolloTelemetry;
+pub use reader_context::ConfigReaderContext;
 
-#[derive(
-    Debug,
-    Default,
-    Clone,
-    Serialize,
-    Deserialize,
-    PartialEq,
-    Eq,
-    schemars::JsonSchema
-)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 /// The `telemetry` option facilitates seamless integration with OpenTelemetry,
 /// enhancing the observability of your GraphQL services powered by Tailcall.
@@ -143,7 +134,9 @@ mod tests {
     fn merge_right() {
         let exporter_none = TelemetryStatic { export: None, ..Default::default() };
         let exporter_stdout = TelemetryStatic {
-            export: Some(TelemetryExporterConfig::Stdout(StdoutExporter { pretty: true })),
+            export: Some(TelemetryExporterConfig::Stdout(StdoutExporter {
+                pretty: true,
+            })),
             ..Default::default()
         };
         let exporter_otlp_1 = TelemetryStatic {

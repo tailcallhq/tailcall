@@ -8,9 +8,9 @@ use http::header::{HeaderMap, HeaderName, HeaderValue};
 use rustls_pki_types::CertificateDer;
 use tailcall_valid::{Valid, ValidationError, Validator};
 
+use crate::core::blueprint;
 use crate::core::config::cors_static::CorsStatic;
-use crate::core::config::Routes;
-use crate::core::config::{self, ConfigModule, HttpVersion, PrivateKey};
+use crate::core::config::{self, ConfigModule, HttpVersion, PrivateKey, Routes};
 
 pub mod auth_runtime;
 pub use auth_runtime::*;
@@ -162,7 +162,38 @@ impl TryFrom<crate::core::config::ConfigModule> for ServerRuntime {
     }
 }
 
-fn to_script(config_module: &crate::core::config::ConfigModule) -> Valid<Option<ScriptRuntime>, String> {
+impl From<blueprint::Server> for ServerRuntime {
+    fn from(server: blueprint::Server) -> Self {
+        Self {
+            enable_jit: server.enable_jit,
+            enable_apollo_tracing: server.enable_apollo_tracing,
+            enable_cache_control_header: server.enable_cache_control_header,
+            enable_set_cookie_header: server.enable_set_cookie_header,
+            enable_introspection: server.enable_introspection,
+            enable_query_validation: server.enable_query_validation,
+            enable_response_validation: server.enable_response_validation,
+            enable_batch_requests: server.enable_batch_requests,
+            enable_showcase: server.enable_showcase,
+            global_response_timeout: server.global_response_timeout,
+            worker: server.worker,
+            port: server.port,
+            hostname: server.hostname,
+            vars: server.vars,
+            response_headers: server.response_headers,
+            http: server.http,
+            pipeline_flush: server.pipeline_flush,
+            script: server.script,
+            cors: server.cors,
+            experimental_headers: server.experimental_headers,
+            auth: server.auth,
+            routes: server.routes,
+        }
+    }
+}
+
+fn to_script(
+    config_module: &crate::core::config::ConfigModule,
+) -> Valid<Option<ScriptRuntime>, String> {
     config_module.extensions().script.as_ref().map_or_else(
         || Valid::succeed(None),
         |script| {

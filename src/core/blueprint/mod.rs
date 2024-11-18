@@ -1,4 +1,3 @@
-mod auth;
 mod blueprint;
 mod compress;
 mod cors;
@@ -15,12 +14,10 @@ mod mustache;
 mod operators;
 mod schema;
 mod server;
-pub mod telemetry;
 mod timeout;
 mod union_resolver;
 mod upstream;
 
-pub use auth::*;
 pub use blueprint::*;
 pub use cors::*;
 pub use definitions::*;

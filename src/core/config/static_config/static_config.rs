@@ -5,7 +5,10 @@ use tailcall_macros::MergeRight;
 use tailcall_valid::{Valid, Validator};
 
 use super::{LinkStatic, ServerStatic, TelemetryStatic, UpstreamStatic};
-use crate::core::{config::{Config, Source}, is_default, merge_right::MergeRight, variance::Invariant};
+use crate::core::config::{Config, Source};
+use crate::core::is_default;
+use crate::core::merge_right::MergeRight;
+use crate::core::variance::Invariant;
 
 #[derive(
     Serialize, Deserialize, Clone, Debug, Default, Getters, PartialEq, Eq, JsonSchema, MergeRight,
@@ -83,5 +86,5 @@ impl Invariant for StaticConfig {
 
 #[cfg(test)]
 mod tests {
-   // TODO: FIXME
+    // TODO: FIXME
 }

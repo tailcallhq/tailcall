@@ -15,6 +15,7 @@ use reqwest::{Client, Request};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use tailcall::core::blueprint::{Server, Upstream};
 use tailcall::core::cache::InMemoryCache;
+use tailcall::core::config::{ServerRuntime, UpstreamRuntime};
 use tailcall::core::http::{RequestContext, Response};
 use tailcall::core::ir::{EvalContext, ResolverContextLike, SelectionField};
 use tailcall::core::path::PathString;
@@ -242,6 +243,8 @@ fn request_context() -> RequestContext {
     let server = Server::try_from(config_module).unwrap();
     let http = Arc::new(Http::init(&upstream));
     let http2 = Arc::new(Http::init(&upstream.clone().http2_only(true)));
+    let server = ServerRuntime::from(server);
+    let upstream = UpstreamRuntime::from(upstream);
     let runtime = TargetRuntime {
         http2_only: http2,
         http,

@@ -20,8 +20,7 @@ use super::telemetry::{get_response_status_code, RequestCounter};
 use super::{showcase, telemetry, TAILCALL_HTTPS_ORIGIN, TAILCALL_HTTP_ORIGIN};
 use crate::core::app_context::AppContext;
 use crate::core::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
-use crate::core::blueprint::telemetry::TelemetryExporter;
-use crate::core::config::{PrometheusExporter, PrometheusFormat};
+use crate::core::config::{PrometheusExporter, PrometheusFormat, TelemetryExporterRuntime};
 use crate::core::jit::JITExecutor;
 
 pub const API_URL_PREFIX: &str = "/api";
@@ -55,8 +54,10 @@ fn not_found() -> Result<Response<Body>> {
 }
 
 fn create_request_context(req: &Request<Body>, app_ctx: &AppContext) -> RequestContext {
-    let allowed_headers =
-        create_allowed_headers(req.headers(), &app_ctx.blueprint.upstream.allowed_headers);
+    let allowed_headers = create_allowed_headers(
+        req.headers(),
+        &app_ctx.blueprint.config.upstream.allowed_headers,
+    );
     RequestContext::from(app_ctx).allowed_headers(allowed_headers)
 }
 
@@ -65,10 +66,10 @@ pub fn update_response_headers(
     req_ctx: &RequestContext,
     app_ctx: &AppContext,
 ) {
-    if !app_ctx.blueprint.server.response_headers.is_empty() {
+    if !app_ctx.blueprint.config.server.response_headers.is_empty() {
         // Add static response headers
         resp.headers_mut()
-            .extend(app_ctx.blueprint.server.response_headers.clone());
+            .extend(app_ctx.blueprint.config.server.response_headers.clone());
     }
 
     // Insert Cookie Headers
@@ -119,14 +120,14 @@ async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
     request: T,
     req: Parts,
 ) -> anyhow::Result<Response<Body>> {
-    let mut response = if app_ctx.blueprint.server.enable_jit {
+    let mut response = if app_ctx.blueprint.config.server.enable_jit {
         let operation_id = request.operation_id(&req.headers);
         let exec = JITExecutor::new(app_ctx.clone(), req_ctx.clone(), operation_id);
         request
             .execute_with_jit(exec)
             .await
             .set_cache_control(
-                app_ctx.blueprint.server.enable_cache_control_header,
+                app_ctx.blueprint.config.server.enable_cache_control_header,
                 req_ctx.get_min_max_age().unwrap_or(0),
                 req_ctx.is_cache_public().unwrap_or(true),
             )
@@ -137,7 +138,7 @@ async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
             .execute(&app_ctx.schema)
             .await
             .set_cache_control(
-                app_ctx.blueprint.server.enable_cache_control_header,
+                app_ctx.blueprint.config.server.enable_cache_control_header,
                 req_ctx.get_min_max_age().unwrap_or(0),
                 req_ctx.is_cache_public().unwrap_or(true),
             )
@@ -200,7 +201,7 @@ async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
 ) -> Result<Response<Body>> {
     // Safe to call `.unwrap()` because this method will only be called when
     // `cors` is `Some`
-    let cors = app_ctx.blueprint.server.cors.as_ref().unwrap();
+    let cors = app_ctx.blueprint.config.server.cors.as_ref().unwrap();
     let (parts, body) = req.into_parts();
     let origin = parts.headers.get(&header::ORIGIN);
 
@@ -270,7 +271,7 @@ async fn handle_rest_apis(
                 .execute(&app_ctx.schema)
                 .await
                 .set_cache_control(
-                    app_ctx.blueprint.server.enable_cache_control_header,
+                    app_ctx.blueprint.config.server.enable_cache_control_header,
                     req_ctx.get_min_max_age().unwrap_or(0),
                     req_ctx.is_cache_public().unwrap_or(true),
                 )
@@ -294,8 +295,8 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
         return handle_rest_apis(req, app_ctx, req_counter).await;
     }
 
-    let health_check_endpoint = app_ctx.blueprint.server.routes.status();
-    let graphql_endpoint = app_ctx.blueprint.server.routes.graphql();
+    let health_check_endpoint = app_ctx.blueprint.config.server.routes.status();
+    let graphql_endpoint = app_ctx.blueprint.config.server.routes.graphql();
 
     match *req.method() {
         // NOTE:
@@ -305,7 +306,7 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
             graphql_request::<T>(req, &app_ctx, req_counter).await
         }
         Method::POST
-            if app_ctx.blueprint.server.enable_showcase
+            if app_ctx.blueprint.config.server.enable_showcase
                 && req.uri().path() == "/showcase/graphql" =>
         {
             let app_ctx =
@@ -324,8 +325,8 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
             Ok(status_response)
         }
         Method::GET => {
-            if let Some(TelemetryExporter::Prometheus(prometheus)) =
-                app_ctx.blueprint.telemetry.export.as_ref()
+            if let Some(TelemetryExporterRuntime::Prometheus(prometheus)) =
+                app_ctx.blueprint.config.telemetry.export.as_ref()
             {
                 if req.uri().path() == prometheus.path {
                     return prometheus_metrics(prometheus);
@@ -352,9 +353,9 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
     app_ctx: Arc<AppContext>,
 ) -> Result<Response<Body>> {
     telemetry::propagate_context(&req);
-    let mut req_counter = RequestCounter::new(&app_ctx.blueprint.telemetry, &req);
+    let mut req_counter = RequestCounter::new(&app_ctx.blueprint.config.telemetry, &req);
 
-    let response = if app_ctx.blueprint.server.cors.is_some() {
+    let response = if app_ctx.blueprint.config.server.cors.is_some() {
         handle_request_with_cors::<T>(req, app_ctx, &mut req_counter).await
     } else if let Some(origin) = req.headers().get(&header::ORIGIN) {
         if origin == TAILCALL_HTTPS_ORIGIN || origin == TAILCALL_HTTP_ORIGIN {
@@ -391,7 +392,7 @@ mod test {
         let sdl = tokio::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER).await?;
         let config = Config::from_sdl(&sdl).to_result()?;
         let mut blueprint = Blueprint::try_from(&ConfigModule::from(config))?;
-        blueprint.server.routes = Routes::default().with_status("/health");
+        blueprint.config.server.routes = Routes::default().with_status("/health");
         let app_ctx = Arc::new(AppContext::new(
             blueprint,
             init(None),
@@ -417,7 +418,7 @@ mod test {
         let sdl = tokio::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER).await?;
         let config = Config::from_sdl(&sdl).to_result()?;
         let mut blueprint = Blueprint::try_from(&ConfigModule::from(config))?;
-        blueprint.server.routes = Routes::default().with_graphql("/gql");
+        blueprint.config.server.routes = Routes::default().with_graphql("/gql");
         let app_ctx = Arc::new(AppContext::new(
             blueprint,
             init(None),

@@ -3,7 +3,7 @@ use futures_util::join;
 use super::basic::BasicVerifier;
 use super::jwt::jwt_verify::JwtVerifier;
 use super::verification::Verification;
-use crate::core::blueprint;
+use crate::core::config::{AuthProviderRuntime, AuthRuntime};
 use crate::core::http::RequestContext;
 
 #[async_trait::async_trait]
@@ -22,23 +22,23 @@ pub enum AuthVerifier {
     Or(Box<AuthVerifier>, Box<AuthVerifier>),
 }
 
-impl From<blueprint::Provider> for Verifier {
-    fn from(provider: blueprint::Provider) -> Self {
+impl From<AuthProviderRuntime> for Verifier {
+    fn from(provider: AuthProviderRuntime) -> Self {
         match provider {
-            blueprint::Provider::Basic(options) => Verifier::Basic(BasicVerifier::new(options)),
-            blueprint::Provider::Jwt(options) => Verifier::Jwt(JwtVerifier::new(options)),
+            AuthProviderRuntime::Basic(options) => Verifier::Basic(BasicVerifier::new(options)),
+            AuthProviderRuntime::Jwt(options) => Verifier::Jwt(JwtVerifier::new(options)),
         }
     }
 }
 
-impl From<blueprint::Auth> for AuthVerifier {
-    fn from(provider: blueprint::Auth) -> Self {
+impl From<AuthRuntime> for AuthVerifier {
+    fn from(provider: AuthRuntime) -> Self {
         match provider {
-            blueprint::Auth::Provider(provider) => AuthVerifier::Single(provider.into()),
-            blueprint::Auth::And(left, right) => {
+            AuthRuntime::Provider(provider) => AuthVerifier::Single(provider.into()),
+            AuthRuntime::And(left, right) => {
                 AuthVerifier::And(Box::new((*left).into()), Box::new((*right).into()))
             }
-            blueprint::Auth::Or(left, right) => {
+            AuthRuntime::Or(left, right) => {
                 AuthVerifier::Or(Box::new((*left).into()), Box::new((*right).into()))
             }
         }
@@ -81,7 +81,7 @@ mod tests {
     };
     use crate::core::auth::verification::Verification;
     use crate::core::auth::verify::Verify;
-    use crate::core::blueprint::{Auth, Basic, Jwt, Provider};
+    use crate::core::config::{AuthProviderRuntime, AuthRuntime, BasicRuntime, JwtRuntime};
     use crate::core::http::RequestContext;
 
     #[tokio::test]
@@ -143,20 +143,22 @@ mod tests {
     }
 
     fn setup_basic_verifier() -> AuthVerifier {
-        AuthVerifier::from(Auth::Provider(Provider::Basic(Basic::test_value())))
+        AuthVerifier::from(AuthRuntime::Provider(AuthProviderRuntime::Basic(
+            BasicRuntime::test_value(),
+        )))
     }
 
     fn setup_and_verifier() -> AuthVerifier {
-        AuthVerifier::from(Auth::And(
-            Auth::Provider(Provider::Basic(Basic::test_value())).into(),
-            Auth::Provider(Provider::Basic(Basic::test_value())).into(),
+        AuthVerifier::from(AuthRuntime::And(
+            AuthRuntime::Provider(AuthProviderRuntime::Basic(BasicRuntime::test_value())).into(),
+            AuthRuntime::Provider(AuthProviderRuntime::Basic(BasicRuntime::test_value())).into(),
         ))
     }
 
     fn setup_or_verifier() -> AuthVerifier {
-        AuthVerifier::from(Auth::Or(
-            Auth::Provider(Provider::Basic(Basic::test_value())).into(),
-            Auth::Provider(Provider::Jwt(Jwt::test_value())).into(),
+        AuthVerifier::from(AuthRuntime::Or(
+            AuthRuntime::Provider(AuthProviderRuntime::Basic(BasicRuntime::test_value())).into(),
+            AuthRuntime::Provider(AuthProviderRuntime::Jwt(JwtRuntime::test_value())).into(),
         ))
     }
 }

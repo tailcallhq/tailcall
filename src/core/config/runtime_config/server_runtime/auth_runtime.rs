@@ -50,6 +50,21 @@ pub struct BasicRuntime {
     pub htpasswd: String,
 }
 
+// testuser1:password123
+// testuser2:mypassword
+// testuser3:abc123
+pub static HTPASSWD_TEST: &str = "
+testuser1:$apr1$e3dp9qh2$fFIfHU9bilvVZBl8TxKzL/
+testuser2:$2y$10$wJ/mZDURcAOBIrswCAKFsO0Nk7BpHmWl/XuhF7lNm3gBAFH3ofsuu
+testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
+";
+
+impl BasicRuntime {
+    pub fn test_value() -> Self {
+        Self { htpasswd: HTPASSWD_TEST.to_owned() }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct JwtRuntime {
     pub issuer: Option<String>,
@@ -70,40 +85,6 @@ mod tests {
 
     use super::*;
 
-    pub static JWK_SET: Lazy<JwkSet> = Lazy::new(|| {
-        let value = serde_json::json!({
-          "keys": [
-            {
-              "kty": "RSA",
-              "use": "sig",
-              "alg": "RS256",
-              "kid": "I48qMJp566SSKQogYXYtHBo9q6ZcEKHixNPeNoxV1c8",
-              "n": "ksMb5oMlhJ_HzAebCuBG6-v5Qc4J111ur7Aux6-8SbxzqFONsf2Bw6ATG8pAfNeZ-USA3_T1mGkYTDvfoggXnxsduWV_lePZKKOq_Qp_EDdzic1bVTJQDad3CXldR3wV6UFDtMx6cCLXxPZM5n76e7ybPt0iNgwoGpJE28emMZJXrnEUFzxwFMq61UlzWEumYqW3uOUVp7r5XAF5jQ_1nQAnpHBnRFzdNPVb3E6odMGu3jgp8mkPbPMP16Fund4LVplLz8yrsE9TdVrSdYJThylRWn_BwvJ0DjUcp8ibJya86iClUlixAmBwR9NdStHwQqHwmMXMKkTXo-ytRmSUobzxX9T8ESkij6iBhQpmDMD3FbkK30Y7pUVEBBOyDfNcWOhholjOj9CRrxu9to5rc2wvufe24VlbKb9wngS_uGfK4AYvVyrcjdYMFkdqw-Mft14HwzdO2BTS0TeMDZuLmYhj_bu5_g2Zu6PH5OpIXF6Fi8_679pCG8wWAcFQrFrM0eA70wD_SqD_BXn6pWRpFXlcRy_7PWTZ3QmC7ycQFR6Wc6Px44y1xDUoq3rH0RlZkeicfvP6FRlpjFU7xF6LjAfd9ciYBZfJll6PE7zf-i_ZXEslv-tJ5-30-I4Slwj0tDrZ2Z54OgAg07AIwAiI5o4y-0vmuhUscNpfZsGAGhE",
-              "e": "AQAB"
-            },
-            {
-              "kty": "RSA",
-              "n": "u1SU1LfVLPHCozMxH2Mo4lgOEePzNm0tRgeLezV6ffAt0gunVTLw7onLRnrq0_IzW7yWR7QkrmBL7jTKEn5u-qKhbwKfBstIs-bMY2Zkp18gnTxKLxoS2tFczGkPLPgizskuemMghRniWaoLcyehkd3qqGElvW_VDL5AaWTg0nLVkjRo9z-40RQzuVaE8AkAFmxZzow3x-VJYKdjykkJ0iT9wCS0DRTXu269V264Vf_3jvredZiKRkgwlL9xNAwxXFg0x_XFw005UWVRIkdgcKWTjpBP2dPwVZ4WWC-9aGVd-Gyn1o0CLelf4rEjGoXbAAEgAqeGUxrcIlbjXfbcmw",
-              "e": "AQAB",
-              "alg": "RS256"
-            }
-          ]
-        });
-
-        serde_json::from_value(value).unwrap()
-    });
-
-    impl JwtRuntime {
-        fn test_value() -> Self {
-            Self {
-                issuer: Default::default(),
-                audiences: Default::default(),
-                optional_kid: false,
-                jwks: JWK_SET.clone(),
-            }
-        }
-    }
-
     fn test_basic_provider_1() -> AuthProviderRuntime {
         AuthProviderRuntime::Basic(BasicRuntime { htpasswd: "1".into() })
     }
@@ -122,7 +103,8 @@ mod tests {
         let basic_provider_2 = test_basic_provider_2();
 
         assert_eq!(
-            AuthRuntime::Provider(basic_provider_1.clone()).and(AuthRuntime::Provider(basic_provider_2.clone())),
+            AuthRuntime::Provider(basic_provider_1.clone())
+                .and(AuthRuntime::Provider(basic_provider_2.clone())),
             AuthRuntime::And(
                 AuthRuntime::Provider(basic_provider_1).into(),
                 AuthRuntime::Provider(basic_provider_2).into()
@@ -136,7 +118,8 @@ mod tests {
         let jwt_provider = test_jwt_provider();
 
         assert_eq!(
-            AuthRuntime::Provider(basic_provider.clone()).and(AuthRuntime::Provider(jwt_provider.clone())),
+            AuthRuntime::Provider(basic_provider.clone())
+                .and(AuthRuntime::Provider(jwt_provider.clone())),
             AuthRuntime::And(
                 AuthRuntime::Provider(basic_provider).into(),
                 AuthRuntime::Provider(jwt_provider).into()

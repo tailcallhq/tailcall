@@ -3,12 +3,7 @@ use std::collections::BTreeSet;
 use derive_setters::Setters;
 use tailcall_valid::{Valid, ValidationError, Validator};
 
-use crate::core::config::{self, Batch, ConfigModule};
-
-#[derive(PartialEq, Eq, Clone, Debug, schemars::JsonSchema)]
-pub struct Proxy {
-    pub url: String,
-}
+use crate::core::config::{self, Batch, ConfigModule, Proxy};
 
 #[derive(PartialEq, Eq, Clone, Debug, Setters, schemars::JsonSchema)]
 pub struct Upstream {

@@ -1,7 +1,5 @@
 use rustls_pki_types::PrivateKeyDer;
 
-
-
 #[derive(Debug)]
 pub struct PrivateKey(PrivateKeyDer<'static>);
 

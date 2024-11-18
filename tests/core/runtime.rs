@@ -8,9 +8,8 @@ use std::sync::Arc;
 use async_graphql::Value;
 use derive_setters::Setters;
 use tailcall::cli::javascript::init_worker_io;
-use tailcall::core::blueprint::Script;
 use tailcall::core::cache::InMemoryCache;
-use tailcall::core::config::Source;
+use tailcall::core::config::{ScriptRuntime, Source};
 use tailcall::core::runtime::TargetRuntime;
 use tailcall::core::worker::{Command, Event};
 
@@ -65,7 +64,7 @@ impl ExecutionMock {
 pub fn create_runtime(
     http_client: Arc<Http>,
     env: Option<HashMap<String, String>>,
-    script: Option<Script>,
+    script: Option<ScriptRuntime>,
 ) -> TargetRuntime {
     let http = http_client.clone();
 

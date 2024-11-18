@@ -31,16 +31,7 @@ pub enum LinkType {
 /// Used to represent external resources, such as
 /// configuration – which will be merged into the config importing it –,
 /// or a .proto file – which will be later used by `@grpc` directive –.
-#[derive(
-    Default,
-    Serialize,
-    Deserialize,
-    PartialEq,
-    Eq,
-    Debug,
-    Clone,
-    schemars::JsonSchema,
-)]
+#[derive(Default, Serialize, Deserialize, PartialEq, Eq, Debug, Clone, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct LinkStatic {
     ///

@@ -4,20 +4,22 @@ use async_graphql::dynamic::SchemaBuilder;
 use indexmap::IndexMap;
 use tailcall_valid::{Valid, ValidationError, Validator};
 
-use self::telemetry::to_opentelemetry;
 use super::Server;
 use crate::core::blueprint::compress::compress;
 use crate::core::blueprint::*;
 use crate::core::config::transformer::Required;
-use crate::core::config::{Arg, Batch, Config, ConfigModule};
+use crate::core::config::{to_opentelemetry, Arg, Batch, Config, ConfigModule};
 use crate::core::ir::model::{IO, IR};
 use crate::core::json::JsonSchema;
 use crate::core::try_fold::TryFold;
 use crate::core::Type;
 
 pub fn config_blueprint<'a>() -> TryFold<'a, ConfigModule, Blueprint, String> {
-    let server = TryFoldConfig::<Blueprint>::new(|config_module, blueprint| {
-        Valid::from(Server::try_from(config_module.clone())).map(|server| blueprint.server(server))
+    let server = TryFoldConfig::<Blueprint>::new(|config_module, mut blueprint| {
+        Valid::from(Server::try_from(config_module.clone())).map(|server| {
+            blueprint.config = blueprint.config.server(server.into());
+            blueprint
+        })
     });
 
     let schema = to_schema().transform::<Blueprint>(
@@ -30,8 +32,11 @@ pub fn config_blueprint<'a>() -> TryFold<'a, ConfigModule, Blueprint, String> {
         |blueprint| blueprint.definitions,
     );
 
-    let upstream = TryFoldConfig::<Blueprint>::new(|config_module, blueprint| {
-        Valid::from(Upstream::try_from(config_module)).map(|upstream| blueprint.upstream(upstream))
+    let upstream = TryFoldConfig::<Blueprint>::new(|config_module, mut blueprint| {
+        Valid::from(Upstream::try_from(config_module)).map(|upstream| {
+            blueprint.config = blueprint.config.upstream(upstream.into());
+            blueprint
+        })
     });
 
     let links = TryFoldConfig::<Blueprint>::new(|config_module, blueprint| {
@@ -39,8 +44,11 @@ pub fn config_blueprint<'a>() -> TryFold<'a, ConfigModule, Blueprint, String> {
     });
 
     let opentelemetry = to_opentelemetry().transform::<Blueprint>(
-        |opentelemetry, blueprint| blueprint.telemetry(opentelemetry),
-        |blueprint| blueprint.telemetry,
+        |opentelemetry, mut blueprint| {
+            blueprint.config = blueprint.config.telemetry(opentelemetry);
+            blueprint
+        },
+        |blueprint| blueprint.config.telemetry,
     );
 
     server
@@ -63,7 +71,8 @@ pub fn apply_batching(mut blueprint: Blueprint) -> Blueprint {
         if let Definition::Object(object_type_definition) = def {
             for field in object_type_definition.fields.iter() {
                 if let Some(IR::IO(IO::Http { group_by: Some(_), .. })) = field.resolver.clone() {
-                    blueprint.upstream.batch = blueprint.upstream.batch.or(Some(Batch::default()));
+                    blueprint.config.upstream.batch =
+                        blueprint.config.upstream.batch.or(Some(Batch::default()));
                     return blueprint;
                 }
             }

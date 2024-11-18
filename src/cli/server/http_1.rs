@@ -32,7 +32,7 @@ pub async fn start_http_1(
     });
     let builder = hyper::Server::try_bind(&addr)
         .map_err(Errata::from)?
-        .http1_pipeline_flush(sc.app_ctx.blueprint.server.pipeline_flush);
+        .http1_pipeline_flush(sc.app_ctx.blueprint.config.server.pipeline_flush);
     super::log_launch(sc.as_ref());
 
     if let Some(sender) = server_up_sender {
@@ -42,7 +42,7 @@ pub async fn start_http_1(
     }
 
     let server: std::prelude::v1::Result<(), hyper::Error> =
-        if sc.blueprint.server.enable_batch_requests {
+        if sc.blueprint.config.server.enable_batch_requests {
             builder.serve(make_svc_batch_req).await
         } else {
             builder.serve(make_svc_single_req).await

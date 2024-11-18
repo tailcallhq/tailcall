@@ -2,7 +2,7 @@ use std::sync::{Arc, RwLock};
 
 use super::verification::Verification;
 use super::verify::{AuthVerifier, Verify};
-use crate::core::blueprint::Auth;
+use crate::core::config::AuthRuntime;
 use crate::core::http::RequestContext;
 
 #[derive(Default)]
@@ -31,7 +31,7 @@ impl GlobalAuthContext {
 }
 
 impl GlobalAuthContext {
-    pub fn new(auth: Option<Auth>) -> Self {
+    pub fn new(auth: Option<AuthRuntime>) -> Self {
         Self { verifier: auth.map(AuthVerifier::from) }
     }
 }
@@ -62,7 +62,7 @@ impl From<&Arc<GlobalAuthContext>> for AuthContext {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::auth::basic::tests::{create_basic_auth_request, HTPASSWD_TEST};
+    use crate::core::auth::basic::tests::create_basic_auth_request;
     use crate::core::auth::basic::BasicVerifier;
     use crate::core::auth::error::Error;
     use crate::core::auth::jwt::jwt_verify::tests::{
@@ -70,7 +70,7 @@ mod tests {
     };
     use crate::core::auth::jwt::jwt_verify::JwtVerifier;
     use crate::core::auth::verify::Verifier;
-    use crate::core::blueprint;
+    use crate::core::config::{BasicRuntime, JwtRuntime, HTPASSWD_TEST};
 
     #[tokio::test]
     async fn validate_request_missing_credentials() {
@@ -109,8 +109,8 @@ mod tests {
     // Helper function for setting up the auth context
     async fn setup_auth_context() -> GlobalAuthContext {
         let basic_provider =
-            BasicVerifier::new(blueprint::Basic { htpasswd: HTPASSWD_TEST.to_owned() });
-        let jwt_options = blueprint::Jwt::test_value();
+            BasicVerifier::new(BasicRuntime { htpasswd: HTPASSWD_TEST.to_owned() });
+        let jwt_options = JwtRuntime::test_value();
         let jwt_provider = JwtVerifier::new(jwt_options);
 
         GlobalAuthContext {

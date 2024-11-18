@@ -109,19 +109,19 @@
         }
       }
     },
-    "Apollo": {
+    "ApolloTelemetry": {
       "type": "object",
       "required": [
-        "apiKey",
-        "graphRef"
+        "api_key",
+        "graph_ref"
       ],
       "properties": {
-        "apiKey": {
-          "description": "Setting `apiKey` for Apollo.",
+        "api_key": {
+          "description": "Setting `api_key` for Apollo.",
           "type": "string"
         },
-        "graphRef": {
-          "description": "Setting `graphRef` for Apollo in the format <graphId>@<variant>.",
+        "graph_ref": {
+          "description": "Setting `graph_ref` for Apollo in the format <graphId>@<variant>.",
           "type": "string"
         },
         "platform": {
@@ -131,8 +131,8 @@
             "null"
           ]
         },
-        "userVersion": {
-          "description": "Setting `userVersion` for Apollo.",
+        "user_version": {
+          "description": "Setting `user_version` for Apollo.",
           "type": [
             "string",
             "null"
@@ -177,22 +177,24 @@
     },
     "Batch": {
       "type": "object",
+      "required": [
+        "delay",
+        "headers"
+      ],
       "properties": {
         "delay": {
-          "default": 0,
           "type": "integer",
           "format": "uint",
           "minimum": 0.0
         },
         "headers": {
-          "default": [],
           "type": "array",
           "items": {
             "type": "string"
           },
           "uniqueItems": true
         },
-        "maxSize": {
+        "max_size": {
           "type": [
             "integer",
             "null"
@@ -245,53 +247,53 @@
         }
       }
     },
-    "Cors": {
+    "CorsStatic": {
       "description": "Type to configure Cross-Origin Resource Sharing (CORS) for a server.",
       "type": "object",
       "properties": {
-        "allowCredentials": {
+        "allow_credentials": {
           "description": "Indicates whether the server allows credentials (e.g., cookies, authorization headers) to be sent in cross-origin requests.",
           "type": [
             "boolean",
             "null"
           ]
         },
-        "allowHeaders": {
+        "allow_headers": {
           "description": "A list of allowed headers in cross-origin requests. This can be used to specify custom headers that are allowed to be included in cross-origin requests.",
           "type": "array",
           "items": {
             "type": "string"
           }
         },
-        "allowMethods": {
+        "allow_methods": {
           "description": "A list of allowed HTTP methods in cross-origin requests. These methods specify the actions that are permitted in cross-origin requests.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/Method"
           }
         },
-        "allowOrigins": {
+        "allow_origins": {
           "description": "A list of origins that are allowed to access the server's resources in cross-origin requests. An origin can be a domain, a subdomain, or even 'null' for local file schemes.",
           "type": "array",
           "items": {
             "type": "string"
           }
         },
-        "allowPrivateNetwork": {
+        "allow_private_network": {
           "description": "Indicates whether requests from private network addresses are allowed in cross-origin requests. Private network addresses typically include IP addresses reserved for internal networks.",
           "type": [
             "boolean",
             "null"
           ]
         },
-        "exposeHeaders": {
+        "expose_headers": {
           "description": "A list of headers that the server exposes to the browser in cross-origin responses. Exposing certain headers allows the client-side code to access them in the response.",
           "type": "array",
           "items": {
             "type": "string"
           }
         },
-        "maxAge": {
+        "max_age": {
           "description": "The maximum time (in seconds) that the client should cache preflight OPTIONS requests in order to avoid sending excessive requests to the server.",
           "type": [
             "integer",
@@ -662,8 +664,8 @@
     "Headers": {
       "type": "object",
       "properties": {
-        "cacheControl": {
-          "description": "`cacheControl` sends `Cache-Control` headers in responses when activated. The `max-age` value is the least of the values received from upstream services. @default `false`.",
+        "cache_control": {
+          "description": "`cache_control` sends `Cache-Control` headers in responses when activated. The `max-age` value is the least of the values received from upstream services. @default `false`.",
           "type": [
             "boolean",
             "null"
@@ -673,7 +675,7 @@
           "description": "`cors` allows Cross-Origin Resource Sharing (CORS) for a server.",
           "anyOf": [
             {
-              "$ref": "#/definitions/Cors"
+              "$ref": "#/definitions/CorsStatic"
             },
             {
               "type": "null"
@@ -681,7 +683,7 @@
           ]
         },
         "custom": {
-          "description": "`headers` are key-value pairs included in every server response. Useful for setting headers like `Access-Control-Allow-Origin` for cross-origin requests or additional headers for downstream services.",
+          "description": "`custom` are key-value pairs included in every server response. Useful for setting headers like `Access-Control-Allow-Origin` for cross-origin requests or additional headers for downstream services.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/KeyValue"
@@ -698,8 +700,8 @@
           },
           "uniqueItems": true
         },
-        "setCookies": {
-          "description": "`setCookies` when enabled stores `set-cookie` headers and all the response will be sent with the headers.",
+        "set_cookies": {
+          "description": "`set_cookies` when enabled stores `set-cookie` headers and all the response will be sent with the headers.",
           "type": [
             "boolean",
             "null"
@@ -901,6 +903,7 @@
       "additionalProperties": false
     },
     "LinkType": {
+      "description": "The acceptable types of linked files that can be loaded on bootstrap.",
       "type": "string",
       "enum": [
         "Config",
@@ -951,7 +954,7 @@
       "type": "object",
       "additionalProperties": false
     },
-    "OtlpExporter": {
+    "OtlpExporterConfig": {
       "description": "Output the opentelemetry data to otlp collector",
       "type": "object",
       "required": [
@@ -990,8 +993,8 @@
       "description": "Output format for prometheus data",
       "type": "string",
       "enum": [
-        "text",
-        "protobuf"
+        "Text",
+        "Protobuf"
       ]
     },
     "Protected": {
@@ -1032,14 +1035,19 @@
       }
     },
     "Routes": {
+      "description": "Used to configure the default routes of the server.",
       "type": "object",
+      "required": [
+        "graphql",
+        "status"
+      ],
       "properties": {
-        "graphQL": {
-          "default": "/graphql",
+        "graphql": {
+          "description": "The path for the GraphQL endpoint. Defaults to `/graphql`.",
           "type": "string"
         },
         "status": {
-          "default": "/status",
+          "description": "The path for the status endpoint. Defaults to `/status`.",
           "type": "string"
         }
       }
@@ -1252,7 +1260,7 @@
         "export": {
           "anyOf": [
             {
-              "$ref": "#/definitions/TelemetryExporter"
+              "$ref": "#/definitions/TelemetryExporterConfig"
             },
             {
               "type": "null"
@@ -1269,15 +1277,15 @@
       },
       "additionalProperties": false
     },
-    "TelemetryExporter": {
+    "TelemetryExporterConfig": {
       "oneOf": [
         {
           "type": "object",
           "required": [
-            "stdout"
+            "Stdout"
           ],
           "properties": {
-            "stdout": {
+            "Stdout": {
               "$ref": "#/definitions/StdoutExporter"
             }
           },
@@ -1286,11 +1294,11 @@
         {
           "type": "object",
           "required": [
-            "otlp"
+            "Otlp"
           ],
           "properties": {
-            "otlp": {
-              "$ref": "#/definitions/OtlpExporter"
+            "Otlp": {
+              "$ref": "#/definitions/OtlpExporterConfig"
             }
           },
           "additionalProperties": false
@@ -1298,10 +1306,10 @@
         {
           "type": "object",
           "required": [
-            "prometheus"
+            "Prometheus"
           ],
           "properties": {
-            "prometheus": {
+            "Prometheus": {
               "$ref": "#/definitions/PrometheusExporter"
             }
           },
@@ -1310,11 +1318,11 @@
         {
           "type": "object",
           "required": [
-            "apollo"
+            "Apollo"
           ],
           "properties": {
-            "apollo": {
-              "$ref": "#/definitions/Apollo"
+            "Apollo": {
+              "$ref": "#/definitions/ApolloTelemetry"
             }
           },
           "additionalProperties": false

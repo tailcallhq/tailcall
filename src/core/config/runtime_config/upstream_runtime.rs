@@ -3,6 +3,7 @@ use std::collections::BTreeSet;
 use derive_setters::Setters;
 use tailcall_valid::{Valid, ValidationError, Validator};
 
+use crate::core::blueprint::{self};
 use crate::core::config::{Batch, ConfigModule, Proxy, UpstreamStatic};
 
 #[derive(PartialEq, Eq, Clone, Debug, Setters, schemars::JsonSchema)]
@@ -79,6 +80,29 @@ impl TryFrom<&ConfigModule> for UpstreamRuntime {
                 verify_ssl: (config_upstream).get_verify_ssl(),
             })
             .to_result()
+    }
+}
+
+impl From<blueprint::Upstream> for UpstreamRuntime {
+    fn from(upstream: blueprint::Upstream) -> Self {
+        Self {
+            pool_idle_timeout: upstream.pool_idle_timeout,
+            pool_max_idle_per_host: upstream.pool_max_idle_per_host,
+            keep_alive_interval: upstream.keep_alive_interval,
+            keep_alive_timeout: upstream.keep_alive_timeout,
+            keep_alive_while_idle: upstream.keep_alive_while_idle,
+            proxy: upstream.proxy,
+            connect_timeout: upstream.connect_timeout,
+            timeout: upstream.timeout,
+            tcp_keep_alive: upstream.tcp_keep_alive,
+            user_agent: upstream.user_agent,
+            allowed_headers: upstream.allowed_headers,
+            http_cache: upstream.http_cache,
+            batch: upstream.batch,
+            http2_only: upstream.http2_only,
+            on_request: upstream.on_request,
+            verify_ssl: upstream.verify_ssl,
+        }
     }
 }
 

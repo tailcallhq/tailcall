@@ -9,9 +9,10 @@ mod runtime;
 
 pub use runtime::Runtime;
 
-use crate::core::{blueprint, WorkerIO};
+use crate::core::config::ScriptRuntime;
+use crate::core::WorkerIO;
 
-pub fn init_worker_io<T, V>(script: blueprint::Script) -> Arc<dyn WorkerIO<T, V> + Send + Sync>
+pub fn init_worker_io<T, V>(script: ScriptRuntime) -> Arc<dyn WorkerIO<T, V> + Send + Sync>
 where
     Runtime: WorkerIO<T, V>,
 {

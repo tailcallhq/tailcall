@@ -5,7 +5,7 @@ use htpasswd_verify::Htpasswd;
 use super::error::Error;
 use super::verification::Verification;
 use super::verify::Verify;
-use crate::core::blueprint;
+use crate::core::config::BasicRuntime;
 use crate::core::http::RequestContext;
 
 pub struct BasicVerifier {
@@ -36,7 +36,7 @@ impl Verify for BasicVerifier {
 }
 
 impl BasicVerifier {
-    pub fn new(options: blueprint::Basic) -> Self {
+    pub fn new(options: BasicRuntime) -> Self {
         Self { verifier: Htpasswd::new_owned(&options.htpasswd) }
     }
 }
@@ -46,21 +46,7 @@ pub mod tests {
     use http::header::HeaderValue;
 
     use super::*;
-
-    // testuser1:password123
-    // testuser2:mypassword
-    // testuser3:abc123
-    pub static HTPASSWD_TEST: &str = "
-testuser1:$apr1$e3dp9qh2$fFIfHU9bilvVZBl8TxKzL/
-testuser2:$2y$10$wJ/mZDURcAOBIrswCAKFsO0Nk7BpHmWl/XuhF7lNm3gBAFH3ofsuu
-testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
-";
-
-    impl blueprint::Basic {
-        pub fn test_value() -> Self {
-            Self { htpasswd: HTPASSWD_TEST.to_owned() }
-        }
-    }
+    use crate::core::config::HTPASSWD_TEST;
 
     pub fn create_basic_auth_request(username: &str, password: &str) -> RequestContext {
         let mut req_context = RequestContext::default();
@@ -129,6 +115,6 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
 
     // Helper function for setting up the provider
     fn setup_provider() -> BasicVerifier {
-        BasicVerifier::new(blueprint::Basic { htpasswd: HTPASSWD_TEST.to_owned() })
+        BasicVerifier::new(BasicRuntime { htpasswd: HTPASSWD_TEST.to_owned() })
     }
 }

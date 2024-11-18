@@ -47,7 +47,7 @@ impl AppContext {
         for def in blueprint.definitions.iter_mut() {
             if let Definition::Object(def) = def {
                 for field in &mut def.fields {
-                    let upstream_batch = &blueprint.upstream.batch;
+                    let upstream_batch = &blueprint.config.upstream.batch;
                     field.map_expr(|expr| {
                         expr.modify(&mut |expr| match expr {
                             IR::IO(io) => match io {
@@ -138,7 +138,7 @@ impl AppContext {
 
         let schema = blueprint
             .to_schema_with(SchemaModifiers::default().extensions(runtime.extensions.clone()));
-        let auth = blueprint.server.auth.clone();
+        let auth = blueprint.config.server.auth.clone();
         let auth_ctx = GlobalAuthContext::new(auth);
 
         AppContext {

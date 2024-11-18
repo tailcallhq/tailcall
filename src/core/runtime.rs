@@ -59,10 +59,11 @@ pub mod test {
     use crate::cli::javascript::init_worker_io;
     use crate::core::blueprint::Upstream;
     use crate::core::cache::InMemoryCache;
+    use crate::core::config::ScriptRuntime;
     use crate::core::http::Response;
     use crate::core::runtime::TargetRuntime;
     use crate::core::worker::{Command, Event};
-    use crate::core::{blueprint, EnvIO, FileIO, HttpIO};
+    use crate::core::{EnvIO, FileIO, HttpIO};
 
     #[derive(Clone)]
     struct TestHttp {
@@ -174,7 +175,7 @@ pub mod test {
         }
     }
 
-    pub fn init(script: Option<blueprint::Script>) -> TargetRuntime {
+    pub fn init(script: Option<ScriptRuntime>) -> TargetRuntime {
         let http = TestHttp::init(&Default::default());
         let http2 = TestHttp::init(&Upstream::default().http2_only(true));
 

@@ -299,7 +299,7 @@ async fn run_test(
         .body(body)?;
 
     // TODO: reuse logic from server.rs to select the correct handler
-    if app_ctx.blueprint.server.enable_batch_requests {
+    if app_ctx.blueprint.config.server.enable_batch_requests {
         handle_request::<GraphQLBatchRequest>(req, app_ctx).await
     } else {
         handle_request::<GraphQLRequest>(req, app_ctx).await

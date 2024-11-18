@@ -5,8 +5,8 @@ use async_graphql_extension_apollo_tracing::ApolloTracing;
 
 use crate::cli::runtime::init;
 use crate::core::app_context::AppContext;
-use crate::core::blueprint::telemetry::TelemetryExporter;
-use crate::core::blueprint::{Blueprint, Http};
+use crate::core::blueprint::Blueprint;
+use crate::core::config::{HttpVersionRuntime, TelemetryExporterRuntime};
 use crate::core::rest::{EndpointSet, Unchecked};
 use crate::core::schema_extension::SchemaExtension;
 
@@ -24,7 +24,9 @@ impl ServerConfig {
 
         let mut extensions = vec![];
 
-        if let Some(TelemetryExporter::Apollo(apollo)) = blueprint.telemetry.export.as_ref() {
+        if let Some(TelemetryExporterRuntime::Apollo(apollo)) =
+            blueprint.config.telemetry.export.as_ref()
+        {
             let (graph_id, variant) = apollo.graph_ref.split_once('@').unwrap();
             extensions.push(SchemaExtension::new(ApolloTracing::new(
                 apollo.api_key.clone(),
@@ -43,12 +45,16 @@ impl ServerConfig {
     }
 
     pub fn addr(&self) -> SocketAddr {
-        (self.blueprint.server.hostname, self.blueprint.server.port).into()
+        (
+            self.blueprint.config.server.hostname,
+            self.blueprint.config.server.port,
+        )
+            .into()
     }
 
     pub fn http_version(&self) -> String {
-        match self.blueprint.server.http {
-            Http::HTTP2 { cert: _, key: _ } => "HTTP/2".to_string(),
+        match self.blueprint.config.server.http {
+            HttpVersionRuntime::HTTP2 { cert: _, key: _ } => "HTTP/2".to_string(),
             _ => "HTTP/1.1".to_string(),
         }
     }

@@ -24,7 +24,7 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::{Layer, Registry};
 
 use super::metrics::init_metrics;
-use crate::core::blueprint::telemetry::{OtlpExporter, Telemetry, TelemetryExporter};
+use crate::core::config::{OtlpExporterRuntime, TelemetryExporterRuntime, TelemetryRuntime};
 use crate::core::runtime::TargetRuntime;
 use crate::core::tracing::{
     default_tracing, default_tracing_tailcall, get_log_level, tailcall_filter_target,
@@ -53,7 +53,7 @@ fn pretty_encoder<T: Serialize>(writer: &mut dyn Write, data: T) -> Result<()> {
 }
 
 // TODO: add more options for otlp exporter if needed
-fn otlp_exporter(config: &OtlpExporter) -> TonicExporterBuilder {
+fn otlp_exporter(config: &OtlpExporterRuntime) -> TonicExporterBuilder {
     opentelemetry_otlp::new_exporter()
         .tonic()
         .with_endpoint(config.url.as_str())
@@ -61,10 +61,10 @@ fn otlp_exporter(config: &OtlpExporter) -> TonicExporterBuilder {
 }
 
 fn set_trace_provider(
-    exporter: &TelemetryExporter,
+    exporter: &TelemetryExporterRuntime,
 ) -> TraceResult<Option<OpenTelemetryLayer<Registry, Tracer>>> {
     let provider = match exporter {
-        TelemetryExporter::Stdout(config) => TracerProvider::builder()
+        TelemetryExporterRuntime::Stdout(config) => TracerProvider::builder()
             .with_batch_exporter(
                 {
                     let mut builder = opentelemetry_stdout::SpanExporterBuilder::default();
@@ -82,7 +82,7 @@ fn set_trace_provider(
             )
             .with_config(opentelemetry_sdk::trace::config().with_resource(RESOURCE.clone()))
             .build(),
-        TelemetryExporter::Otlp(config) => opentelemetry_otlp::new_pipeline()
+        TelemetryExporterRuntime::Otlp(config) => opentelemetry_otlp::new_pipeline()
             .tracing()
             .with_exporter(otlp_exporter(config))
             .with_trace_config(opentelemetry_sdk::trace::config().with_resource(RESOURCE.clone()))
@@ -92,8 +92,8 @@ fn set_trace_provider(
                 anyhow!("Failed to instantiate OTLP provider").into(),
             ))?,
         // Prometheus works only with metrics
-        TelemetryExporter::Prometheus(_) => return Ok(None),
-        TelemetryExporter::Apollo(_) => return Ok(None),
+        TelemetryExporterRuntime::Prometheus(_) => return Ok(None),
+        TelemetryExporterRuntime::Apollo(_) => return Ok(None),
     };
     let tracer = provider.tracer("tracing");
     let telemetry = tracing_opentelemetry::layer()
@@ -107,10 +107,10 @@ fn set_trace_provider(
 }
 
 fn set_logger_provider(
-    exporter: &TelemetryExporter,
+    exporter: &TelemetryExporterRuntime,
 ) -> LogResult<Option<OpenTelemetryTracingBridge<LoggerProvider, Logger>>> {
     let provider = match exporter {
-        TelemetryExporter::Stdout(config) => LoggerProvider::builder()
+        TelemetryExporterRuntime::Stdout(config) => LoggerProvider::builder()
             .with_batch_exporter(
                 {
                     let mut builder = opentelemetry_stdout::LogExporterBuilder::default();
@@ -127,15 +127,15 @@ fn set_logger_provider(
             )
             .with_config(opentelemetry_sdk::logs::config().with_resource(RESOURCE.clone()))
             .build(),
-        TelemetryExporter::Otlp(config) => opentelemetry_otlp::new_pipeline()
+        TelemetryExporterRuntime::Otlp(config) => opentelemetry_otlp::new_pipeline()
             .logging()
             .with_exporter(otlp_exporter(config))
             .with_log_config(opentelemetry_sdk::logs::config().with_resource(RESOURCE.clone()))
             .install_batch(runtime::Tokio)?
         ,
         // Prometheus works only with metrics
-        TelemetryExporter::Prometheus(_) => return Ok(None),
-        TelemetryExporter::Apollo(_) => return Ok(None),
+        TelemetryExporterRuntime::Prometheus(_) => return Ok(None),
+        TelemetryExporterRuntime::Apollo(_) => return Ok(None),
     };
 
     let otel_tracing_appender = OpenTelemetryTracingBridge::new(&provider);
@@ -143,9 +143,9 @@ fn set_logger_provider(
     Ok(Some(otel_tracing_appender))
 }
 
-fn set_meter_provider(exporter: &TelemetryExporter) -> MetricsResult<()> {
+fn set_meter_provider(exporter: &TelemetryExporterRuntime) -> MetricsResult<()> {
     let provider = match exporter {
-        TelemetryExporter::Stdout(config) => {
+        TelemetryExporterRuntime::Stdout(config) => {
             let mut builder = opentelemetry_stdout::MetricsExporterBuilder::default();
 
             if config.pretty {
@@ -162,12 +162,12 @@ fn set_meter_provider(exporter: &TelemetryExporter) -> MetricsResult<()> {
                 .with_resource(RESOURCE.clone())
                 .build()
         }
-        TelemetryExporter::Otlp(config) => opentelemetry_otlp::new_pipeline()
+        TelemetryExporterRuntime::Otlp(config) => opentelemetry_otlp::new_pipeline()
             .metrics(Tokio)
             .with_resource(RESOURCE.clone())
             .with_exporter(otlp_exporter(config))
             .build()?,
-        TelemetryExporter::Prometheus(_) => {
+        TelemetryExporterRuntime::Prometheus(_) => {
             let exporter = opentelemetry_prometheus::exporter()
                 .with_registry(prometheus::default_registry().clone())
                 .build()?;
@@ -192,7 +192,7 @@ fn set_tracing_subscriber(subscriber: impl Subscriber + Send + Sync) {
     let _ = tracing::subscriber::set_global_default(subscriber);
 }
 
-pub fn init_opentelemetry(config: Telemetry, runtime: &TargetRuntime) -> anyhow::Result<()> {
+pub fn init_opentelemetry(config: TelemetryRuntime, runtime: &TargetRuntime) -> anyhow::Result<()> {
     if let Some(export) = &config.export {
         global::set_error_handler(|error| {
             if !matches!(

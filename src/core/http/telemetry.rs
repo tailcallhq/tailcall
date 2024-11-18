@@ -10,7 +10,7 @@ use opentelemetry_semantic_conventions::trace::{
 };
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
-use crate::core::blueprint::telemetry::Telemetry;
+use crate::core::config::TelemetryRuntime;
 
 static HTTP_SERVER_REQUEST_COUNT: Lazy<Counter<u64>> = Lazy::new(|| {
     let meter = opentelemetry::global::meter("http_request");
@@ -27,7 +27,7 @@ pub struct RequestCounter {
 }
 
 impl RequestCounter {
-    pub fn new(telemetry: &Telemetry, req: &Request<Body>) -> Self {
+    pub fn new(telemetry: &TelemetryRuntime, req: &Request<Body>) -> Self {
         if telemetry.export.is_none() {
             return Self::default();
         }

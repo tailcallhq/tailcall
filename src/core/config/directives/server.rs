@@ -3,7 +3,9 @@ use std::collections::{BTreeMap, BTreeSet};
 use serde::{Deserialize, Serialize};
 use tailcall_macros::DirectiveDefinition;
 
-use crate::core::config::{merge_key_value_vecs, Headers, HttpVersion, KeyValue, Routes, ScriptOptions};
+use crate::core::config::{
+    merge_key_value_vecs, Headers, HttpVersion, KeyValue, Routes, ScriptOptions,
+};
 use crate::core::is_default;
 use crate::core::macros::MergeRight;
 

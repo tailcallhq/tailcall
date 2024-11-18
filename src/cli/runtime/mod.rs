@@ -11,9 +11,10 @@ use inquire::{Confirm, Select};
 
 use crate::core::blueprint::Blueprint;
 use crate::core::cache::InMemoryCache;
+use crate::core::config::ScriptRuntime;
 use crate::core::runtime::TargetRuntime;
 use crate::core::worker::{Command, Event};
-use crate::core::{blueprint, EnvIO, FileIO, HttpIO, WorkerIO};
+use crate::core::{EnvIO, FileIO, HttpIO, WorkerIO};
 
 // Provides access to env in native rust environment
 fn init_env() -> Arc<dyn EnvIO> {
@@ -25,9 +26,7 @@ fn init_file() -> Arc<dyn FileIO> {
     Arc::new(file::NativeFileIO::init())
 }
 
-fn init_http_worker_io(
-    script: Option<blueprint::Script>,
-) -> Option<Arc<dyn WorkerIO<Event, Command>>> {
+fn init_http_worker_io(script: Option<ScriptRuntime>) -> Option<Arc<dyn WorkerIO<Event, Command>>> {
     #[cfg(feature = "js")]
     return Some(super::javascript::init_worker_io(script?));
     #[cfg(not(feature = "js"))]
@@ -38,7 +37,7 @@ fn init_http_worker_io(
 }
 
 fn init_resolver_worker_io(
-    script: Option<blueprint::Script>,
+    script: Option<ScriptRuntime>,
 ) -> Option<Arc<dyn WorkerIO<async_graphql::Value, async_graphql::Value>>> {
     #[cfg(feature = "js")]
     return Some(super::javascript::init_worker_io(script?));
@@ -52,16 +51,16 @@ fn init_resolver_worker_io(
 // Provides access to http in native rust environment
 fn init_http(blueprint: &Blueprint) -> Arc<dyn HttpIO> {
     Arc::new(http::NativeHttp::init(
-        &blueprint.upstream,
-        &blueprint.telemetry,
+        &blueprint.config.upstream,
+        &blueprint.config.telemetry,
     ))
 }
 
 // Provides access to http in native rust environment
 fn init_http2_only(blueprint: &Blueprint) -> Arc<dyn HttpIO> {
     Arc::new(http::NativeHttp::init(
-        &blueprint.upstream.clone().http2_only(true),
-        &blueprint.telemetry,
+        &blueprint.config.upstream.clone().http2_only(true),
+        &blueprint.config.telemetry,
     ))
 }
 
@@ -80,8 +79,8 @@ pub fn init(blueprint: &Blueprint) -> TargetRuntime {
         file: init_file(),
         cache: Arc::new(init_in_memory_cache()),
         extensions: Arc::new(vec![]),
-        cmd_worker: init_http_worker_io(blueprint.server.script.clone()),
-        worker: init_resolver_worker_io(blueprint.server.script.clone()),
+        cmd_worker: init_http_worker_io(blueprint.config.server.script.clone()),
+        worker: init_resolver_worker_io(blueprint.config.server.script.clone()),
     }
 }
 

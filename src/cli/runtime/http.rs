@@ -17,8 +17,7 @@ use tailcall_http_cache::HttpCacheManager;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use super::HttpIO;
-use crate::core::blueprint::telemetry::Telemetry;
-use crate::core::blueprint::Upstream;
+use crate::core::config::{TelemetryRuntime, UpstreamRuntime};
 use crate::core::http::Response;
 
 static HTTP_CLIENT_REQUEST_COUNT: Lazy<Counter<u64>> = Lazy::new(|| {
@@ -85,7 +84,7 @@ impl Default for NativeHttp {
 }
 
 impl NativeHttp {
-    pub fn init(upstream: &Upstream, telemetry: &Telemetry) -> Self {
+    pub fn init(upstream: &UpstreamRuntime, telemetry: &TelemetryRuntime) -> Self {
         let mut builder = Client::builder()
             .tcp_keepalive(Some(Duration::from_secs(upstream.tcp_keep_alive)))
             .timeout(Duration::from_secs(upstream.timeout))
@@ -253,7 +252,7 @@ mod tests {
             then.status(200).body("Hello");
         });
 
-        let upstream = Upstream { http_cache: 2, ..Default::default() };
+        let upstream = UpstreamRuntime { http_cache: 2, ..Default::default() };
         let native_http = NativeHttp::init(&upstream, &Default::default());
         let port = server.port();
 

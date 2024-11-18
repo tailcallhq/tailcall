@@ -9,17 +9,7 @@ use crate::core::is_default;
 
 pub const DEFAULT_MAX_SIZE: usize = 100;
 
-#[derive(
-    Serialize,
-    Deserialize,
-    Clone,
-    Debug,
-    Setters,
-    PartialEq,
-    Eq,
-    JsonSchema,
-    MergeRight,
-)]
+#[derive(Serialize, Deserialize, Clone, Debug, Setters, PartialEq, Eq, JsonSchema, MergeRight)]
 pub struct Batch {
     pub delay: usize,
     pub headers: BTreeSet<String>,

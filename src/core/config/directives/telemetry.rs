@@ -74,15 +74,18 @@ impl Telemetry {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::config::{OtlpExporterConfig, PrometheusExporter, PrometheusFormat, StdoutExporter};
-
     use super::*;
+    use crate::core::config::{
+        OtlpExporterConfig, PrometheusExporter, PrometheusFormat, StdoutExporter,
+    };
 
     #[test]
     fn merge_right() {
         let exporter_none = Telemetry { export: None, ..Default::default() };
         let exporter_stdout = Telemetry {
-            export: Some(TelemetryExporterConfig::Stdout(StdoutExporter { pretty: true })),
+            export: Some(TelemetryExporterConfig::Stdout(StdoutExporter {
+                pretty: true,
+            })),
             ..Default::default()
         };
         let exporter_otlp_1 = Telemetry {

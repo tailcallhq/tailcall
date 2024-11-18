@@ -12,8 +12,9 @@ pub mod test {
     use reqwest::Client;
     use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
     use tailcall::cli::javascript::init_worker_io;
-    use tailcall::core::blueprint::{Script, Upstream};
+    use tailcall::core::blueprint::Upstream;
     use tailcall::core::cache::InMemoryCache;
+    use tailcall::core::config::ScriptRuntime;
     use tailcall::core::http::Response;
     use tailcall::core::runtime::TargetRuntime;
     use tailcall::core::worker::{Command, Event};
@@ -131,7 +132,7 @@ pub mod test {
         }
     }
 
-    pub fn init(script: Option<Script>) -> TargetRuntime {
+    pub fn init(script: Option<ScriptRuntime>) -> TargetRuntime {
         let http = TestHttp::init(&Default::default());
         let http2 = TestHttp::init(&Upstream::default().http2_only(true));
 

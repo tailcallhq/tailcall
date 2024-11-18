@@ -3,11 +3,10 @@ use std::collections::BTreeSet;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use super::cors_static::CorsStatic;
 use crate::core::config::KeyValue;
 use crate::core::is_default;
 use crate::core::macros::MergeRight;
-
-use super::cors_static::CorsStatic;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, JsonSchema, MergeRight)]
 pub struct Headers {

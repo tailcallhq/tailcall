@@ -9,7 +9,7 @@ use http::header::{HeaderMap, HeaderName, HeaderValue};
 
 use crate::core::app_context::AppContext;
 use crate::core::auth::context::AuthContext;
-use crate::core::blueprint::{Server, Upstream};
+use crate::core::config::{ServerRuntime, UpstreamRuntime};
 use crate::core::data_loader::{DataLoader, DedupeResult};
 use crate::core::graphql::GraphqlDataLoader;
 use crate::core::grpc::data_loader::GrpcDataLoader;
@@ -21,8 +21,8 @@ use crate::core::{cache, grpc};
 
 #[derive(Setters)]
 pub struct RequestContext {
-    pub server: Server,
-    pub upstream: Upstream,
+    pub server: ServerRuntime,
+    pub upstream: UpstreamRuntime,
     pub x_response_headers: Arc<Mutex<HeaderMap>>,
     pub cookie_headers: Option<Arc<Mutex<HeaderMap>>>,
     // A subset of all the headers received in the GraphQL Request that will be sent to the
@@ -185,14 +185,14 @@ impl RequestContext {
 
 impl From<&AppContext> for RequestContext {
     fn from(app_ctx: &AppContext) -> Self {
-        let cookie_headers = if app_ctx.blueprint.server.enable_set_cookie_header {
+        let cookie_headers = if app_ctx.blueprint.config.server.enable_set_cookie_header {
             Some(Arc::new(Mutex::new(HeaderMap::new())))
         } else {
             None
         };
         Self {
-            server: app_ctx.blueprint.server.clone(),
-            upstream: app_ctx.blueprint.upstream.clone(),
+            server: app_ctx.blueprint.config.server.clone(),
+            upstream: app_ctx.blueprint.config.upstream.clone(),
             x_response_headers: Arc::new(Mutex::new(HeaderMap::new())),
             cookie_headers,
             allowed_headers: HeaderMap::new(),
@@ -214,7 +214,7 @@ mod test {
     use cache_control::Cachability;
 
     use crate::core::blueprint::{Server, Upstream};
-    use crate::core::config::{self, Batch};
+    use crate::core::config::{self, Batch, ServerRuntime, UpstreamRuntime};
     use crate::core::http::RequestContext;
 
     impl Default for RequestContext {
@@ -223,6 +223,8 @@ mod test {
 
             let upstream = Upstream::try_from(&config_module).unwrap();
             let server = Server::try_from(config_module).unwrap();
+            let upstream = UpstreamRuntime::from(upstream);
+            let server = ServerRuntime::from(server);
             RequestContext::new(crate::core::runtime::test::init(None))
                 .upstream(upstream)
                 .server(server)
@@ -271,6 +273,8 @@ mod test {
         let mut upstream = Upstream::try_from(&config_module).unwrap();
         let server = Server::try_from(config_module).unwrap();
         upstream.batch = Some(batch);
+        let upstream = UpstreamRuntime::from(upstream);
+        let server = ServerRuntime::from(server);
         RequestContext::default().upstream(upstream).server(server)
     }
 
