@@ -124,7 +124,7 @@ impl<'ctx> IRExecutor for ConstValueExec<'ctx> {
 
         if field.name == "user" {
             // Test out the idea?
-            if let Some(_v) = ctx.value().map(|v| v.as_array()).flatten() {
+            if let Some(_v) = ctx.value().and_then(|v| v.as_array()) {
                 let response = self.call(ctx, ir).await;
                 return response;
             }
