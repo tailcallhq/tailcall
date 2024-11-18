@@ -71,8 +71,7 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         let dl = &self.data_loader;
 
         let response = if is_get && self.batch_loader.is_some() {
-            let batch_loader = self.batch_loader.unwrap();
-            batch_loader.load_batch(req).await?
+            self.batch_loader.unwrap().load_batch(req).await?
         } else if is_get && dl.is_some() {
             execute_request_with_dl(ctx, req, self.data_loader).await?
         } else {
