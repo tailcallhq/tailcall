@@ -71,6 +71,7 @@ impl AppContext {
                                     )
                                     .to_data_loader(upstream_batch.clone().unwrap_or_default());
 
+                                    // TODO: FIXME - this is a hack to get the batch loader working but figure out better way to do this.
                                     let bl_id = if group_by.is_some() {
                                         Some(LoaderId::new(batched_data_loaders.len()))
                                     } else {
