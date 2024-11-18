@@ -97,10 +97,12 @@ impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
                 .enumerate()
                 .filter_map(|(idx, _)| {
                     indexed_path[0] = idx.to_string();
-                    self.path_value(&indexed_path).map(|v| match v {
-                        Cow::Borrowed(v) => v.clone(),
-                        Cow::Owned(v) => v,
-                    })
+                    self.path_value(&indexed_path)
+                        .map(|v| match v {
+                            Cow::Borrowed(v) => v.clone(),
+                            Cow::Owned(v) => v,
+                        })
+                        .or(Some(Default::default()))
                 })
                 .collect();
 
