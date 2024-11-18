@@ -59,6 +59,13 @@ impl BatchLoader {
         &self,
         mut request: Request,
     ) -> async_graphql::Result<Response<ConstValue>, anyhow::Error> {
+        // remove duplicate query parameters while keeping the original order.
+        let original_query_param_order = request
+            .url()
+            .query_pairs()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect::<IndexSet<_>>();
+
         // query parameters that are part of the group by
         let dynamic_query_pairs = request
             .url()
@@ -80,22 +87,48 @@ impl BatchLoader {
             .query_pairs()
             .filter(|(k, _)| !self.group_by.key().eq(&k.to_string()))
             .map(|(k, v)| (k.to_string(), v.to_string()))
-            .collect::<Vec<_>>();
+            .collect::<IndexSet<_>>();
 
         let mut requests = vec![];
         let batch_size = self.max_batch_size - static_query_pairs.len();
-
         // Check if the number of query parameters exceeds the maximum batch size
-        if dynamic_query_pairs.len() <= batch_size {
+        if unique_query_pairs.len() <= batch_size {
             request.url_mut().query_pairs_mut().clear();
-            request
-                .url_mut()
-                .query_pairs_mut()
-                .extend_pairs(static_query_pairs);
-            request
-                .url_mut()
-                .query_pairs_mut()
-                .extend_pairs(unique_query_pairs);
+
+            // preserve the original order of query params in request.
+            for (k, v) in original_query_param_order {
+                let key = &(k.clone(), v.clone());
+                if unique_query_pairs.contains(key) {
+                    if v.is_empty() {
+                        request
+                            .url_mut()
+                            .query_pairs_mut()
+                            .append_key_only(k.as_str());
+                    } else {
+                        request
+                            .url_mut()
+                            .query_pairs_mut()
+                            .append_pair(k.as_str(), v.as_str());
+                    }
+                } else if static_query_pairs.contains(key) {
+                    if v.is_empty() {
+                        request
+                            .url_mut()
+                            .query_pairs_mut()
+                            .append_key_only(k.as_str());
+                    } else {
+                        request
+                            .url_mut()
+                            .query_pairs_mut()
+                            .append_pair(k.as_str(), v.as_str());
+                    }
+                } else {
+                    panic!(
+                        "This is definitely a bug, please report it. Query param should either found in dynamic or static query params: {:?}",
+                        key
+                    );
+                }
+            }
             requests.push(request);
         } else {
             // Split the query parameters into chunks based on max_batch_size
@@ -110,11 +143,41 @@ impl BatchLoader {
                     req
                 });
                 new_request.url_mut().query_pairs_mut().clear();
-                new_request
-                    .url_mut()
-                    .query_pairs_mut()
-                    .extend_pairs(static_query_pairs.clone());
-                new_request.url_mut().query_pairs_mut().extend_pairs(batch);
+
+                // preserve the original order of query params in request.
+                for (k, v) in original_query_param_order.clone() {
+                    let key = &(k.clone(), v.clone());
+                    if batch.contains(key) {
+                        if v.is_empty() {
+                            request
+                                .url_mut()
+                                .query_pairs_mut()
+                                .append_key_only(k.as_str());
+                        } else {
+                            request
+                                .url_mut()
+                                .query_pairs_mut()
+                                .append_pair(k.as_str(), v.as_str());
+                        }
+                    } else if static_query_pairs.contains(key) {
+                        if v.is_empty() {
+                            request
+                                .url_mut()
+                                .query_pairs_mut()
+                                .append_key_only(k.as_str());
+                        } else {
+                            request
+                                .url_mut()
+                                .query_pairs_mut()
+                                .append_pair(k.as_str(), v.as_str());
+                        }
+                    } else {
+                        panic!(
+            "This is definitely a bug, please report it. Query param should either found in dynamic or static query params: {:?}",
+            key
+        );
+                    }
+                }
                 requests.push(new_request);
             }
         }
