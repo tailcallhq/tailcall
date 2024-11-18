@@ -88,11 +88,15 @@ impl AppContext {
                                     }));
 
                                     if bl_id.is_some() {
+                                        let sz = upstream_batch
+                                            .clone()
+                                            .and_then(|ub| ub.max_size)
+                                            .unwrap_or(1000);
                                         batched_data_loaders.push(BatchLoader::new(
                                             runtime.clone(),
                                             group_by.as_ref().unwrap().clone(),
                                             is_list,
-                                            10,
+                                            sz,
                                         ));
                                     }
 
