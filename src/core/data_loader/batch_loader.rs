@@ -6,9 +6,10 @@ use futures_util::future::join_all;
 use indexmap::IndexSet;
 use reqwest::Request;
 
-use crate::core::{
-    config::group_by::GroupBy, http::Response, json::JsonLike, runtime::TargetRuntime,
-};
+use crate::core::config::group_by::GroupBy;
+use crate::core::http::Response;
+use crate::core::json::JsonLike;
+use crate::core::runtime::TargetRuntime;
 
 fn get_body_value_single(body_value: &HashMap<String, Vec<&ConstValue>>, id: &str) -> ConstValue {
     body_value
