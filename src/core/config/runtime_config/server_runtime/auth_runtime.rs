@@ -81,8 +81,6 @@ pub enum AuthProviderRuntime {
 
 #[cfg(test)]
 mod tests {
-    use once_cell::sync::Lazy;
-
     use super::*;
 
     fn test_basic_provider_1() -> AuthProviderRuntime {

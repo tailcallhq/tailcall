@@ -213,7 +213,6 @@ impl From<&AppContext> for RequestContext {
 mod test {
     use cache_control::Cachability;
 
-    use crate::core::blueprint::{Server, Upstream};
     use crate::core::config::{self, Batch, ServerRuntime, UpstreamRuntime};
     use crate::core::http::RequestContext;
 
@@ -221,10 +220,8 @@ mod test {
         fn default() -> Self {
             let config_module = crate::core::config::ConfigModule::default();
 
-            let upstream = Upstream::try_from(&config_module).unwrap();
-            let server = Server::try_from(config_module).unwrap();
-            let upstream = UpstreamRuntime::from(upstream);
-            let server = ServerRuntime::from(server);
+            let upstream = UpstreamRuntime::try_from(&config_module).unwrap();
+            let server = ServerRuntime::try_from(config_module).unwrap();
             RequestContext::new(crate::core::runtime::test::init(None))
                 .upstream(upstream)
                 .server(server)
@@ -270,11 +267,9 @@ mod test {
 
     fn create_req_ctx_with_batch(batch: Batch) -> RequestContext {
         let config_module = config::ConfigModule::default();
-        let mut upstream = Upstream::try_from(&config_module).unwrap();
-        let server = Server::try_from(config_module).unwrap();
+        let mut upstream = UpstreamRuntime::try_from(&config_module).unwrap();
+        let server = ServerRuntime::try_from(config_module).unwrap();
         upstream.batch = Some(batch);
-        let upstream = UpstreamRuntime::from(upstream);
-        let server = ServerRuntime::from(server);
         RequestContext::default().upstream(upstream).server(server)
     }
 

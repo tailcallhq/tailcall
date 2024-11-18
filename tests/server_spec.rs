@@ -12,9 +12,8 @@ pub mod test {
     use reqwest::Client;
     use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
     use tailcall::cli::javascript::init_worker_io;
-    use tailcall::core::blueprint::Upstream;
     use tailcall::core::cache::InMemoryCache;
-    use tailcall::core::config::ScriptRuntime;
+    use tailcall::core::config::{ScriptRuntime, UpstreamRuntime};
     use tailcall::core::http::Response;
     use tailcall::core::runtime::TargetRuntime;
     use tailcall::core::worker::{Command, Event};
@@ -34,7 +33,7 @@ pub mod test {
     }
 
     impl TestHttp {
-        fn init(upstream: &Upstream) -> Arc<Self> {
+        fn init(upstream: &UpstreamRuntime) -> Arc<Self> {
             let mut builder = Client::builder()
                 .tcp_keepalive(Some(Duration::from_secs(upstream.tcp_keep_alive)))
                 .timeout(Duration::from_secs(upstream.timeout))
@@ -134,7 +133,7 @@ pub mod test {
 
     pub fn init(script: Option<ScriptRuntime>) -> TargetRuntime {
         let http = TestHttp::init(&Default::default());
-        let http2 = TestHttp::init(&Upstream::default().http2_only(true));
+        let http2 = TestHttp::init(&UpstreamRuntime::default().http2_only(true));
 
         let file = TestFileIO::init();
         let env = TestEnvIO::init();

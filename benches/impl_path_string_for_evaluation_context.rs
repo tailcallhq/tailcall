@@ -13,7 +13,6 @@ use indexmap::IndexMap;
 use once_cell::sync::Lazy;
 use reqwest::{Client, Request};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-use tailcall::core::blueprint::{Server, Upstream};
 use tailcall::core::cache::InMemoryCache;
 use tailcall::core::config::{ServerRuntime, UpstreamRuntime};
 use tailcall::core::http::{RequestContext, Response};
@@ -29,7 +28,7 @@ struct Http {
 }
 
 impl Http {
-    fn init(upstream: &Upstream) -> Self {
+    fn init(upstream: &UpstreamRuntime) -> Self {
         let mut builder = Client::builder()
             .tcp_keepalive(Some(Duration::from_secs(upstream.tcp_keep_alive)))
             .timeout(Duration::from_secs(upstream.timeout))
@@ -239,12 +238,12 @@ fn request_context() -> RequestContext {
     let config_module = tailcall::core::config::ConfigModule::default();
 
     //TODO: default is used only in tests. Drop default and move it to test.
-    let upstream = Upstream::try_from(&config_module).unwrap();
-    let server = Server::try_from(config_module).unwrap();
+    let upstream = UpstreamRuntime::try_from(&config_module).unwrap();
+    let server = ServerRuntime::try_from(config_module).unwrap();
     let http = Arc::new(Http::init(&upstream));
     let http2 = Arc::new(Http::init(&upstream.clone().http2_only(true)));
-    let server = ServerRuntime::from(server);
-    let upstream = UpstreamRuntime::from(upstream);
+    let server = server;
+    let upstream = upstream;
     let runtime = TargetRuntime {
         http2_only: http2,
         http,

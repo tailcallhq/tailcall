@@ -4,11 +4,12 @@ use async_graphql::dynamic::SchemaBuilder;
 use indexmap::IndexMap;
 use tailcall_valid::{Valid, ValidationError, Validator};
 
-use super::Server;
 use crate::core::blueprint::compress::compress;
 use crate::core::blueprint::*;
 use crate::core::config::transformer::Required;
-use crate::core::config::{to_opentelemetry, Arg, Batch, Config, ConfigModule};
+use crate::core::config::{
+    to_opentelemetry, Batch, Config, ConfigModule, ServerRuntime, UpstreamRuntime,
+};
 use crate::core::ir::model::{IO, IR};
 use crate::core::json::JsonSchema;
 use crate::core::try_fold::TryFold;
@@ -16,8 +17,8 @@ use crate::core::Type;
 
 pub fn config_blueprint<'a>() -> TryFold<'a, ConfigModule, Blueprint, String> {
     let server = TryFoldConfig::<Blueprint>::new(|config_module, mut blueprint| {
-        Valid::from(Server::try_from(config_module.clone())).map(|server| {
-            blueprint.config = blueprint.config.server(server.into());
+        Valid::from(ServerRuntime::try_from(config_module.clone())).map(|server| {
+            blueprint.config = blueprint.config.server(server);
             blueprint
         })
     });
@@ -33,8 +34,8 @@ pub fn config_blueprint<'a>() -> TryFold<'a, ConfigModule, Blueprint, String> {
     );
 
     let upstream = TryFoldConfig::<Blueprint>::new(|config_module, mut blueprint| {
-        Valid::from(Upstream::try_from(config_module)).map(|upstream| {
-            blueprint.config = blueprint.config.upstream(upstream.into());
+        Valid::from(UpstreamRuntime::try_from(config_module)).map(|upstream| {
+            blueprint.config = blueprint.config.upstream(upstream);
             blueprint
         })
     });
