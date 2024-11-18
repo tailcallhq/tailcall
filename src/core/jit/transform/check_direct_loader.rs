@@ -16,14 +16,12 @@ impl<A> CheckDirectLoader<A> {
 fn can_ir_use_batch_loader(ir: &mut IR, is_parent_list: bool) -> bool {
     let mut use_batch_loader = false;
     match ir {
-        IR::IO(io) => {
-            if let IO::Http { bl_id, .. } = io {
-                if is_parent_list && bl_id.is_some() {
-                    use_batch_loader = true;
-                }
-                if !use_batch_loader {
-                    *bl_id = None;
-                }
+        IR::IO(IO::Http { bl_id, .. }) => {
+            if is_parent_list && bl_id.is_some() {
+                use_batch_loader = true;
+            }
+            if !use_batch_loader {
+                *bl_id = None;
             }
         }
         IR::Cache(cache) => {
