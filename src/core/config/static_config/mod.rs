@@ -1,0 +1,10 @@
+pub mod server_static;
+pub mod upstream_static;
+pub mod link;
+pub mod telemetry_static;
+pub use telemetry_static::*;
+pub use link::*;
+pub use upstream_static::*;
+pub use server_static::*;
+pub mod static_config;
+pub use static_config::*;

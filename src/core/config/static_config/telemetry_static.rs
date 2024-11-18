@@ -1,13 +1,18 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use tailcall_macros::{DirectiveDefinition, InputDefinition};
 use tailcall_valid::Validator;
 
-use crate::core::config::{ConfigReaderContext, KeyValue, TelemetryExporterConfig};
+use crate::core::config::{KeyValue, Telemetry};
 use crate::core::helpers::headers::to_mustache_headers;
 use crate::core::is_default;
+use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
 use crate::core::mustache::Mustache;
+
+pub mod apollo_static;
+pub mod reader_context;
+pub use reader_context::ConfigReaderContext;
+pub use apollo_static::ApolloTelemetry;
 
 #[derive(
     Debug,
@@ -17,18 +22,15 @@ use crate::core::mustache::Mustache;
     Deserialize,
     PartialEq,
     Eq,
-    schemars::JsonSchema,
-    DirectiveDefinition,
-    InputDefinition,
+    schemars::JsonSchema
 )]
-#[directive_definition(locations = "Schema")]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
-/// The @telemetry directive facilitates seamless integration with
-/// OpenTelemetry, enhancing the observability of your GraphQL services powered
-/// by Tailcall.  By leveraging this directive, developers gain access to
-/// valuable insights into the performance and behavior of their applications.
-pub struct Telemetry {
+/// The `telemetry` option facilitates seamless integration with OpenTelemetry,
+/// enhancing the observability of your GraphQL services powered by Tailcall.
+/// By configuring `telemetry`, developers gain access to valuable insights
+/// into the performance and behavior of their applications.
+pub struct TelemetryStatic {
+    // TODO: FIXME
     pub export: Option<TelemetryExporterConfig>,
     /// The list of headers that will be sent as additional attributes to
     /// telemetry exporters Be careful about **leaking sensitive
@@ -38,7 +40,7 @@ pub struct Telemetry {
     pub request_headers: Vec<String>,
 }
 
-impl Telemetry {
+impl TelemetryStatic {
     pub fn merge_right(mut self, other: Self) -> Self {
         self.export = match (&self.export, other.export) {
             (None, None) => None,
@@ -72,41 +74,100 @@ impl Telemetry {
     }
 }
 
+impl From<Telemetry> for TelemetryStatic {
+    fn from(telemetry: Telemetry) -> Self {
+        Self {
+            export: telemetry.export,
+            request_headers: telemetry.request_headers,
+        }
+    }
+}
+
+mod defaults {
+    pub mod prometheus {
+        pub fn path() -> String {
+            "/metrics".to_owned()
+        }
+    }
+}
+
+/// Output the opentelemetry data to the stdout. Mostly used for debug purposes
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
+pub struct StdoutExporter {
+    /// Output to stdout in pretty human-readable format
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub pretty: bool,
+}
+
+/// Output the opentelemetry data to otlp collector
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
+pub struct OtlpExporterConfig {
+    pub url: String,
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub headers: Vec<KeyValue>,
+}
+
+/// Output format for prometheus data
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
+pub enum PrometheusFormat {
+    #[default]
+    Text,
+    Protobuf,
+}
+
+/// Output the telemetry metrics data to prometheus server
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
+pub struct PrometheusExporter {
+    #[serde(
+        default = "defaults::prometheus::path",
+        skip_serializing_if = "is_default"
+    )]
+    pub path: String,
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub format: PrometheusFormat,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
+pub enum TelemetryExporterConfig {
+    Stdout(StdoutExporter),
+    Otlp(OtlpExporterConfig),
+    Prometheus(PrometheusExporter),
+    Apollo(ApolloTelemetry),
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::core::config::{OtlpExporterConfig, PrometheusExporter, PrometheusFormat, StdoutExporter};
-
     use super::*;
 
     #[test]
     fn merge_right() {
-        let exporter_none = Telemetry { export: None, ..Default::default() };
-        let exporter_stdout = Telemetry {
+        let exporter_none = TelemetryStatic { export: None, ..Default::default() };
+        let exporter_stdout = TelemetryStatic {
             export: Some(TelemetryExporterConfig::Stdout(StdoutExporter { pretty: true })),
             ..Default::default()
         };
-        let exporter_otlp_1 = Telemetry {
+        let exporter_otlp_1 = TelemetryStatic {
             export: Some(TelemetryExporterConfig::Otlp(OtlpExporterConfig {
                 url: "test-url".to_owned(),
                 headers: vec![KeyValue { key: "header_a".to_owned(), value: "a".to_owned() }],
             })),
             request_headers: vec!["Api-Key-A".to_owned()],
         };
-        let exporter_otlp_2 = Telemetry {
+        let exporter_otlp_2 = TelemetryStatic {
             export: Some(TelemetryExporterConfig::Otlp(OtlpExporterConfig {
                 url: "test-url-2".to_owned(),
                 headers: vec![KeyValue { key: "header_b".to_owned(), value: "b".to_owned() }],
             })),
             request_headers: vec!["Api-Key-B".to_owned()],
         };
-        let exporter_prometheus_1 = Telemetry {
+        let exporter_prometheus_1 = TelemetryStatic {
             export: Some(TelemetryExporterConfig::Prometheus(PrometheusExporter {
                 path: "/metrics".to_owned(),
                 format: PrometheusFormat::Text,
             })),
             ..Default::default()
         };
-        let exporter_prometheus_2 = Telemetry {
+        let exporter_prometheus_2 = TelemetryStatic {
             export: Some(TelemetryExporterConfig::Prometheus(PrometheusExporter {
                 path: "/prom".to_owned(),
                 format: PrometheusFormat::Protobuf,
@@ -141,7 +202,7 @@ mod tests {
 
         assert_eq!(
             exporter_otlp_1.clone().merge_right(exporter_otlp_2.clone()),
-            Telemetry {
+            TelemetryStatic {
                 export: Some(TelemetryExporterConfig::Otlp(OtlpExporterConfig {
                     url: "test-url-2".to_owned(),
                     headers: vec![KeyValue { key: "header_b".to_owned(), value: "b".to_owned() }]

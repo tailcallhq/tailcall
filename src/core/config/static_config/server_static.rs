@@ -1,9 +1,17 @@
+pub mod headers_static;
+pub mod routes_static;
+pub mod cors_static;
+pub mod key_values;
+pub use headers_static::*;
+pub use routes_static::*;
+pub use key_values::*;
+
 use std::collections::{BTreeMap, BTreeSet};
 
+use derive_getters::Getters;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use tailcall_macros::DirectiveDefinition;
-
-use crate::core::config::{merge_key_value_vecs, Headers, HttpVersion, KeyValue, Routes, ScriptOptions};
+use crate::core::config::Server;
 use crate::core::is_default;
 use crate::core::macros::MergeRight;
 
@@ -11,116 +19,114 @@ use crate::core::macros::MergeRight;
     Serialize,
     Deserialize,
     Clone,
-    Debug,
     Default,
+    Debug,
+    Getters,
     PartialEq,
     Eq,
-    schemars::JsonSchema,
+    JsonSchema,
     MergeRight,
-    DirectiveDefinition,
 )]
-#[directive_definition(locations = "Schema")]
+/// This structure offers a comprehensive set of server configurations.
+/// It dictates how the server behaves and helps tune tailcall for various
+/// use-cases.
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
-/// The `@server` directive, when applied at the schema level, offers a
-/// comprehensive set of server configurations. It dictates how the server
-/// behaves and helps tune tailcall for various use-cases.
-pub struct Server {
-    // The `enableJIT` option activates Just-In-Time (JIT) compilation. When set to true, it
-    // optimizes execution of each incoming request independently, resulting in significantly
-    // better performance in most cases, it's enabled by default.
-    #[serde(default, skip_serializing_if = "is_default", rename = "enableJIT")]
+pub struct ServerStatic {
+    /// The `enable_jit` option activates Just-In-Time (JIT) compilation. When set to true, it
+    /// optimizes execution of each incoming request independently, resulting in significantly
+    /// better performance in most cases, it's enabled by default.
+    #[serde(default, skip_serializing_if = "is_default")]
     pub enable_jit: Option<bool>,
 
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// `apolloTracing` exposes GraphQL query performance data, including
+    /// `apollo_tracing` exposes GraphQL query performance data, including
     /// execution time of queries and individual resolvers.
+    #[serde(default, skip_serializing_if = "is_default")]
     pub apollo_tracing: Option<bool>,
 
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// `batchRequests` combines multiple requests into one, improving
+    /// `batch_requests` combines multiple requests into one, improving
     /// performance but potentially introducing latency and complicating
     /// debugging. Use judiciously. @default `false`.
+    #[serde(default, skip_serializing_if = "is_default")]
     pub batch_requests: Option<bool>,
 
-    #[serde(default, skip_serializing_if = "is_default")]
     /// `headers` contains key-value pairs that are included as default headers
     /// in server responses, allowing for consistent header management across
     /// all responses.
+    #[serde(default, skip_serializing_if = "is_default")]
     pub headers: Option<Headers>,
 
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// `globalResponseTimeout` sets the maximum query duration before
+    /// `global_response_timeout` sets the maximum query duration before
     /// termination, acting as a safeguard against long-running queries.
+    #[serde(default, skip_serializing_if = "is_default")]
     pub global_response_timeout: Option<i64>,
 
-    #[serde(default, skip_serializing_if = "is_default")]
     /// `hostname` sets the server hostname.
+    #[serde(default, skip_serializing_if = "is_default")]
     pub hostname: Option<String>,
 
-    #[serde(default, skip_serializing_if = "is_default")]
     /// `introspection` allows clients to fetch schema information directly,
     /// aiding tools and applications in understanding available types, fields,
     /// and operations. @default `true`.
+    #[serde(default, skip_serializing_if = "is_default")]
     pub introspection: Option<bool>,
 
-    /// `enableFederation` enables functionality to Tailcall server to act
+    /// `enable_federation` enables functionality to Tailcall server to act
     /// as a federation subgraph.
     #[serde(default, skip_serializing_if = "is_default")]
     pub enable_federation: Option<bool>,
 
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// `pipelineFlush` allows to control flushing behavior of the server
+    /// `pipeline_flush` allows to control flushing behavior of the server
     /// pipeline.
+    #[serde(default, skip_serializing_if = "is_default")]
     pub pipeline_flush: Option<bool>,
 
-    #[serde(default, skip_serializing_if = "is_default")]
     /// `port` sets the Tailcall running port. @default `8000`.
+    #[serde(default, skip_serializing_if = "is_default")]
     pub port: Option<u16>,
 
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// `queryValidation` checks incoming GraphQL queries against the schema,
+    /// `query_validation` checks incoming GraphQL queries against the schema,
     /// preventing errors from invalid queries. Can be disabled for performance.
     /// @default `false`.
+    #[serde(default, skip_serializing_if = "is_default")]
     pub query_validation: Option<bool>,
 
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// `responseValidation` Tailcall automatically validates responses from
+    /// `response_validation` Tailcall automatically validates responses from
     /// upstream services using inferred schema. @default `false`.
+    #[serde(default, skip_serializing_if = "is_default")]
     pub response_validation: Option<bool>,
 
-    #[serde(default, skip_serializing_if = "is_default")]
     /// A link to an external JS file that listens on every HTTP request
     /// response event.
+    #[serde(default, skip_serializing_if = "is_default")]
     pub script: Option<ScriptOptions>,
 
-    #[serde(default, skip_serializing_if = "is_default")]
     /// `showcase` enables the /showcase/graphql endpoint.
+    #[serde(default, skip_serializing_if = "is_default")]
     pub showcase: Option<bool>,
 
-    #[serde(default, skip_serializing_if = "is_default")]
     #[merge_right(merge_right_fn = "merge_right_vars")]
     /// This configuration defines local variables for server operations. Useful
     /// for storing constant configurations, secrets, or shared information.
+    #[serde(default, skip_serializing_if = "is_default")]
     pub vars: Vec<KeyValue>,
 
-    #[serde(default, skip_serializing_if = "is_default")]
     /// `version` sets the HTTP version for the server. Options are `HTTP1` and
     /// `HTTP2`. @default `HTTP1`.
+    #[serde(default, skip_serializing_if = "is_default")]
     pub version: Option<HttpVersion>,
 
-    #[serde(default, skip_serializing_if = "is_default")]
     /// `workers` sets the number of worker threads. @default the number of
     /// system cores.
+    #[serde(default, skip_serializing_if = "is_default")]
     pub workers: Option<usize>,
 
-    #[serde(default, skip_serializing_if = "is_default")]
     /// `routes` allows customization of server endpoint paths.
     /// It provides options to change the default paths for status and GraphQL
     /// endpoints. Default values are:
     /// - status: "/status"
     /// - graphQL: "/graphql" If not specified, these default values will be
     ///   used.
+    #[serde(default, skip_serializing_if = "is_default")]
     pub routes: Option<Routes>,
 }
 
@@ -129,7 +135,21 @@ fn merge_right_vars(mut left: Vec<KeyValue>, right: Vec<KeyValue>) -> Vec<KeyVal
     left
 }
 
-impl Server {
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
+pub struct ScriptOptions {
+    pub timeout: Option<u64>,
+}
+
+#[derive(
+    Deserialize, Serialize, Debug, PartialEq, Eq, Clone, Default, schemars::JsonSchema, MergeRight,
+)]
+pub enum HttpVersion {
+    #[default]
+    HTTP1,
+    HTTP2,
+}
+
+impl ServerStatic {
     pub fn enable_apollo_tracing(&self) -> bool {
         self.apollo_tracing.unwrap_or(false)
     }
@@ -212,7 +232,7 @@ impl Server {
         self.pipeline_flush.unwrap_or(true)
     }
 
-    pub fn enable_jit(&self) -> bool {
+    pub fn get_enable_jit(&self) -> bool {
         self.enable_jit.unwrap_or(true)
     }
 
@@ -225,14 +245,39 @@ impl Server {
     }
 }
 
+impl From<Server> for ServerStatic {
+    fn from(server: Server) -> Self {
+        Self {
+            enable_jit: server.enable_jit,
+            apollo_tracing: server.apollo_tracing,
+            batch_requests: server.batch_requests,
+            headers: server.headers,
+            global_response_timeout: server.global_response_timeout,
+            hostname: server.hostname,
+            introspection: server.introspection,
+            enable_federation: server.enable_federation,
+            pipeline_flush: server.pipeline_flush,
+            port: server.port,
+            query_validation: server.query_validation,
+            response_validation: server.response_validation,
+            script: server.script,
+            showcase: server.showcase,
+            vars: server.vars,
+            version: server.version,
+            workers: server.workers,
+            routes: server.routes.map(Routes::from),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::core::config::ScriptOptions;
     use crate::core::merge_right::MergeRight;
 
-    fn server_with_script_options(so: ScriptOptions) -> Server {
-        Server { script: Some(so), ..Default::default() }
+    fn server_with_script_options(so: ScriptOptions) -> ServerStatic {
+        ServerStatic { script: Some(so), ..Default::default() }
     }
 
     #[test]
@@ -265,7 +310,7 @@ mod tests {
     #[test]
     fn script_options_merge_second_default() {
         let a = server_with_script_options(ScriptOptions { timeout: Some(100) });
-        let b = Server::default();
+        let b = ServerStatic::default();
         let merged = a.merge_right(b);
         let expected = ScriptOptions { timeout: Some(100) };
         assert_eq!(merged.script, Some(expected));
@@ -273,7 +318,7 @@ mod tests {
 
     #[test]
     fn script_options_merge_first_default() {
-        let a = Server::default();
+        let a = ServerStatic::default();
         let b = server_with_script_options(ScriptOptions { timeout: Some(100) });
         let merged = a.merge_right(b);
         let expected = ScriptOptions { timeout: Some(100) };

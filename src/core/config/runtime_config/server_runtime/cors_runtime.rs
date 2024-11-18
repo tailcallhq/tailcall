@@ -9,7 +9,7 @@ use tailcall_valid::ValidationError;
 use crate::core::config::cors_static::CorsStatic;
 
 #[derive(Clone, Debug, Setters, Default)]
-pub struct Cors {
+pub struct CorsRuntime {
     pub allow_credentials: bool,
     pub allow_headers: Option<HeaderValue>,
     pub allow_methods: Option<HeaderValue>,
@@ -20,7 +20,7 @@ pub struct Cors {
     pub vary: Vec<HeaderValue>,
 }
 
-impl Cors {
+impl CorsRuntime {
     pub fn allow_origin_to_header(
         &self,
         origin: Option<&HeaderValue>,
@@ -118,7 +118,7 @@ impl Cors {
     }
 }
 
-fn ensure_usable_cors_rules(layer: &Cors) -> Result<(), ValidationError<String>> {
+fn ensure_usable_cors_rules(layer: &CorsRuntime) -> Result<(), ValidationError<String>> {
     if layer.allow_credentials {
         let allowing_all_headers = layer
             .allow_headers
@@ -161,11 +161,11 @@ fn to_validation_err<T: Display>(err: T) -> ValidationError<String> {
     ValidationError::new(err.to_string())
 }
 
-impl TryFrom<CorsStatic> for Cors {
+impl TryFrom<CorsStatic> for CorsRuntime {
     type Error = ValidationError<String>;
 
     fn try_from(value: CorsStatic) -> Result<Self, ValidationError<String>> {
-        let cors = Cors {
+        let cors = CorsRuntime {
             allow_credentials: value.allow_credentials.unwrap_or_default(),
             allow_headers: (!value.allow_headers.is_empty()).then_some(
                 value
@@ -229,7 +229,7 @@ mod tests {
 
     #[test]
     fn test_allow_origin_to_header() {
-        let cors = Cors {
+        let cors = CorsRuntime {
             allow_origins: vec![HeaderValue::from_static("https://example.com")],
             ..std::default::Default::default()
         };

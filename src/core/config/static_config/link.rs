@@ -1,10 +1,34 @@
 use serde::{Deserialize, Serialize};
-use tailcall_macros::DirectiveDefinition;
 
-use crate::core::config::{KeyValue, LinkType};
+use crate::core::config::{KeyValue, Link};
 use crate::core::is_default;
 
-/// The @link directive allows you to import external resources, such as
+#[derive(
+    Default,
+    Serialize,
+    Deserialize,
+    PartialEq,
+    Eq,
+    Debug,
+    Clone,
+    schemars::JsonSchema,
+    strum_macros::Display,
+)]
+/// The acceptable types of linked files that can be loaded on bootstrap.
+pub enum LinkType {
+    #[default]
+    Config,
+    Protobuf,
+    Script,
+    Cert,
+    Key,
+    Operation,
+    Htpasswd,
+    Jwks,
+    Grpc,
+}
+
+/// Used to represent external resources, such as
 /// configuration – which will be merged into the config importing it –,
 /// or a .proto file – which will be later used by `@grpc` directive –.
 #[derive(
@@ -16,11 +40,9 @@ use crate::core::is_default;
     Debug,
     Clone,
     schemars::JsonSchema,
-    DirectiveDefinition,
 )]
-#[directive_definition(repeatable, locations = "Schema")]
 #[serde(deny_unknown_fields)]
-pub struct Link {
+pub struct LinkStatic {
     ///
     /// The id of the link. It is used to reference the link in the schema.
     #[serde(default, skip_serializing_if = "is_default")]
@@ -42,4 +64,16 @@ pub struct Link {
     /// Additional metadata pertaining to the linked resource.
     #[serde(default, skip_serializing_if = "is_default")]
     pub meta: Option<serde_json::Value>,
+}
+
+impl From<Link> for LinkStatic {
+    fn from(link: Link) -> Self {
+        Self {
+            id: link.id,
+            src: link.src,
+            type_of: link.type_of,
+            headers: link.headers,
+            meta: link.meta,
+        }
+    }
 }

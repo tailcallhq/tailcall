@@ -1,47 +1,46 @@
 use std::collections::BTreeSet;
 
 use derive_setters::Setters;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use tailcall_macros::{DirectiveDefinition, InputDefinition};
 
-use crate::core::config::{Batch, Proxy, DEFAULT_MAX_SIZE};
+use crate::core::config::Upstream;
 use crate::core::macros::MergeRight;
 use crate::core::{default_verify_ssl, is_default, verify_ssl_is_default};
 
+mod batch;
+pub use batch::*;
+
 #[derive(
-    Serialize,
     Deserialize,
-    PartialEq,
-    Eq,
+    Serialize,
     Clone,
     Debug,
-    Setters,
     Default,
-    schemars::JsonSchema,
+    Setters,
+    PartialEq,
+    Eq,
+    JsonSchema,
     MergeRight,
-    DirectiveDefinition,
-    InputDefinition,
 )]
-#[directive_definition(locations = "Schema")]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase", default)]
-/// The `upstream` directive allows you to control various aspects of the
+/// The `upstream` configuration allows you to control various aspects of the
 /// upstream server connection. This includes settings like connection timeouts,
 /// keep-alive intervals, and more. If not specified, default values are used.
-pub struct Upstream {
-    #[serde(rename = "onRequest", default, skip_serializing_if = "is_default")]
-    /// onRequest field gives the ability to specify the global request
+pub struct UpstreamStatic {
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// `on_request` field gives the ability to specify the global request
     /// interception handler.
     pub on_request: Option<String>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// `allowedHeaders` defines the HTTP headers allowed to be forwarded to
+    /// `allowed_headers` defines the HTTP headers allowed to be forwarded to
     /// upstream services. If not set, no headers are forwarded, enhancing
     /// security but possibly limiting data flow.
     pub allowed_headers: Option<BTreeSet<String>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// An object that specifies the batch settings, including `maxSize` (the
+    /// An object that specifies the batch settings, including `max_size` (the
     /// maximum size of the batch), `delay` (the delay in milliseconds between
     /// each batch), and `headers` (an array of HTTP headers to be included in
     /// the batch).
@@ -53,12 +52,12 @@ pub struct Upstream {
     pub connect_timeout: Option<u64>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// Providing httpCache size enables Tailcall's HTTP caching, adhering to the [HTTP Caching RFC](https://tools.ietf.org/html/rfc7234), to enhance performance by minimizing redundant data fetches. Defaults to `0` if unspecified.
+    /// Providing `http_cache` size enables Tailcall's HTTP caching, adhering to the [HTTP Caching RFC](https://tools.ietf.org/html/rfc7234), to enhance performance by minimizing redundant data fetches. Defaults to `0` if unspecified.
     pub http_cache: Option<u64>,
 
     #[setters(strip_option)]
-    #[serde(rename = "http2Only", default, skip_serializing_if = "is_default")]
-    /// The `http2Only` setting allows you to specify whether the client should
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// The `http2_only` setting allows you to specify whether the client should
     /// always issue HTTP2 requests, without checking if the server supports it
     /// or not. By default it is set to `false` for all HTTP requests made by
     /// the server, but is automatically set to true for GRPC.
@@ -112,7 +111,6 @@ pub struct Upstream {
 
     #[serde(
         default = "default_verify_ssl",
-        rename = "verifySSL",
         skip_serializing_if = "verify_ssl_is_default"
     )]
     /// A boolean value that determines whether to verify certificates.
@@ -123,7 +121,7 @@ pub struct Upstream {
     pub verify_ssl: Option<bool>,
 }
 
-impl Upstream {
+impl UpstreamStatic {
     pub fn get_pool_idle_timeout(&self) -> u64 {
         self.pool_idle_timeout.unwrap_or(60)
     }
@@ -180,13 +178,41 @@ impl Upstream {
     }
 }
 
+impl From<Upstream> for UpstreamStatic {
+    fn from(upstream: Upstream) -> Self {
+        Self {
+            on_request: upstream.on_request,
+            allowed_headers: upstream.allowed_headers,
+            batch: upstream.batch.map(Batch::from),
+            connect_timeout: upstream.connect_timeout,
+            http_cache: upstream.http_cache,
+            http2_only: upstream.http2_only,
+            keep_alive_interval: upstream.keep_alive_interval,
+            keep_alive_timeout: upstream.keep_alive_timeout,
+            keep_alive_while_idle: upstream.keep_alive_while_idle,
+            pool_max_idle_per_host: upstream.pool_max_idle_per_host,
+            pool_idle_timeout: upstream.pool_idle_timeout,
+            proxy: upstream.proxy.map(Proxy::from),
+            tcp_keep_alive: upstream.tcp_keep_alive,
+            timeout: upstream.timeout,
+            user_agent: upstream.user_agent,
+            verify_ssl: upstream.verify_ssl,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, schemars::JsonSchema, MergeRight)]
+pub struct Proxy {
+    pub url: String,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::core::merge_right::MergeRight;
 
-    fn setup_upstream_with_headers(headers: &[&str]) -> Upstream {
-        Upstream {
+    fn setup_upstream_with_headers(headers: &[&str]) -> UpstreamStatic {
+        UpstreamStatic {
             allowed_headers: Some(headers.iter().map(|s| s.to_string()).collect()),
             ..Default::default()
         }
@@ -211,7 +237,7 @@ mod tests {
     #[test]
     fn allowed_headers_merge_first() {
         let a = setup_upstream_with_headers(&["a", "b", "c"]);
-        let b = Upstream::default();
+        let b = UpstreamStatic::default();
         let merged = a.merge_right(b);
 
         assert_eq!(
@@ -222,7 +248,7 @@ mod tests {
 
     #[test]
     fn allowed_headers_merge_second() {
-        let a = Upstream::default();
+        let a = UpstreamStatic::default();
         let b = setup_upstream_with_headers(&["a", "b", "c"]);
         let merged = a.merge_right(b);
 

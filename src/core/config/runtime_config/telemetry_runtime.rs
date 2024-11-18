@@ -4,31 +4,31 @@ use http::header::{HeaderMap, HeaderName, HeaderValue};
 use tailcall_valid::{Valid, ValidationError, Validator};
 use url::Url;
 
-use super::TryFoldConfig;
+use crate::core::blueprint::TryFoldConfig;
 use crate::core::config::{
-    self, ApolloTelemetry, ConfigModule, KeyValue, PrometheusExporter, StdoutExporter
+    ApolloTelemetry, ConfigModule, KeyValue, PrometheusExporter, StdoutExporter,
+    TelemetryExporterConfig,
 };
-use crate::core::directive::DirectiveCodec;
 use crate::core::try_fold::TryFold;
 
+#[derive(Debug, Default, Clone)]
+pub struct TelemetryRuntime {
+    pub export: Option<TelemetryExporterRuntime>,
+    pub request_headers: Vec<String>,
+}
+
 #[derive(Debug, Clone)]
-pub struct OtlpExporter {
+pub struct OtlpExporterRuntime {
     pub url: Url,
     pub headers: HeaderMap,
 }
 
 #[derive(Debug, Clone)]
-pub enum TelemetryExporter {
+pub enum TelemetryExporterRuntime {
     Stdout(StdoutExporter),
-    Otlp(OtlpExporter),
+    Otlp(OtlpExporterRuntime),
     Prometheus(PrometheusExporter),
     Apollo(ApolloTelemetry),
-}
-
-#[derive(Debug, Default, Clone)]
-pub struct Telemetry {
-    pub export: Option<TelemetryExporter>,
-    pub request_headers: Vec<String>,
 }
 
 fn to_url(url: &str) -> Valid<Url, String> {
@@ -50,30 +50,30 @@ fn to_headers(headers: Vec<KeyValue>) -> Valid<HeaderMap, String> {
     .trace("headers")
 }
 
-pub fn to_opentelemetry<'a>() -> TryFold<'a, ConfigModule, Telemetry, String> {
-    TryFoldConfig::<Telemetry>::new(|config, up| {
+pub fn to_opentelemetry<'a>() -> TryFold<'a, ConfigModule, TelemetryRuntime, String> {
+    TryFoldConfig::<TelemetryRuntime>::new(|config, up| {
         if let Some(export) = config.telemetry.export.as_ref() {
             let export = match export {
-                config::TelemetryExporterConfig::Stdout(config) => {
-                    Valid::succeed(TelemetryExporter::Stdout(config.clone()))
+                TelemetryExporterConfig::Stdout(config) => {
+                    Valid::succeed(TelemetryExporterRuntime::Stdout(config.clone()))
                 }
-                config::TelemetryExporterConfig::Otlp(config) => to_url(&config.url)
+                TelemetryExporterConfig::Otlp(config) => to_url(&config.url)
                     .zip(to_headers(config.headers.clone()))
-                    .map(|(url, headers)| TelemetryExporter::Otlp(OtlpExporter { url, headers }))
+                    .map(|(url, headers)| {
+                        TelemetryExporterRuntime::Otlp(OtlpExporterRuntime { url, headers })
+                    })
                     .trace("otlp"),
-                config::TelemetryExporterConfig::Prometheus(config) => {
-                    Valid::succeed(TelemetryExporter::Prometheus(config.clone()))
+                TelemetryExporterConfig::Prometheus(config) => {
+                    Valid::succeed(TelemetryExporterRuntime::Prometheus(config.clone()))
                 }
-                config::TelemetryExporterConfig::Apollo(apollo) => validate_apollo(apollo.clone())
-                    .and_then(|apollo| Valid::succeed(TelemetryExporter::Apollo(apollo))),
+                TelemetryExporterConfig::Apollo(apollo) => validate_apollo(apollo.clone())
+                    .and_then(|apollo| Valid::succeed(TelemetryExporterRuntime::Apollo(apollo))),
             };
 
-            export
-                .map(|export| Telemetry {
-                    export: Some(export),
-                    request_headers: config.telemetry.request_headers.clone(),
-                })
-                .trace(config::Telemetry::trace_name().as_str())
+            export.map(|export| TelemetryRuntime {
+                export: Some(export),
+                request_headers: config.telemetry.request_headers.clone(),
+            })
         } else {
             Valid::succeed(up)
         }

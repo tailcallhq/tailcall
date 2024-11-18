@@ -8,12 +8,17 @@ use http::header::{HeaderMap, HeaderName, HeaderValue};
 use rustls_pki_types::CertificateDer;
 use tailcall_valid::{Valid, ValidationError, Validator};
 
-use super::Auth;
 use crate::core::config::cors_static::CorsStatic;
-use crate::core::config::{self, ConfigModule, CorsRuntime, HttpVersion, PrivateKey, Routes};
+use crate::core::config::Routes;
+use crate::core::config::{self, ConfigModule, HttpVersion, PrivateKey};
+
+pub mod auth_runtime;
+pub use auth_runtime::*;
+pub mod cors_runtime;
+pub use cors_runtime::*;
 
 #[derive(Clone, Debug, Setters)]
-pub struct Server {
+pub struct ServerRuntime {
     pub enable_jit: bool,
     pub enable_apollo_tracing: bool,
     pub enable_cache_control_header: bool,
@@ -29,24 +34,24 @@ pub struct Server {
     pub hostname: IpAddr,
     pub vars: BTreeMap<String, String>,
     pub response_headers: HeaderMap,
-    pub http: Http,
+    pub http: HttpVersionRuntime,
     pub pipeline_flush: bool,
-    pub script: Option<Script>,
+    pub script: Option<ScriptRuntime>,
     pub cors: Option<CorsRuntime>,
     pub experimental_headers: HashSet<HeaderName>,
-    pub auth: Option<Auth>,
+    pub auth: Option<AuthRuntime>,
     pub routes: Routes,
 }
 
 /// Mimic of mini_v8::Script that's wasm compatible
 #[derive(Clone, Debug)]
-pub struct Script {
+pub struct ScriptRuntime {
     pub source: String,
     pub timeout: Option<Duration>,
 }
 
 #[derive(Clone, Debug)]
-pub enum Http {
+pub enum HttpVersionRuntime {
     HTTP1,
     HTTP2 {
         cert: Vec<CertificateDer<'static>>,
@@ -54,14 +59,14 @@ pub enum Http {
     },
 }
 
-impl Default for Server {
+impl Default for ServerRuntime {
     fn default() -> Self {
         // NOTE: Using unwrap because try_from default will never fail
-        Server::try_from(ConfigModule::default()).unwrap()
+        ServerRuntime::try_from(ConfigModule::default()).unwrap()
     }
 }
 
-impl Server {
+impl ServerRuntime {
     pub fn get_enable_http_validation(&self) -> bool {
         self.enable_response_validation
     }
@@ -82,7 +87,7 @@ impl Server {
     }
 }
 
-impl TryFrom<crate::core::config::ConfigModule> for Server {
+impl TryFrom<crate::core::config::ConfigModule> for ServerRuntime {
     type Error = ValidationError<String>;
 
     fn try_from(config_module: config::ConfigModule) -> Result<Self, Self::Error> {
@@ -104,9 +109,9 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
                     .ok_or_else(|| ValidationError::new("Key is required for HTTP2".to_string()))?
                     .clone();
 
-                Valid::succeed(Http::HTTP2 { cert, key })
+                Valid::succeed(HttpVersionRuntime::HTTP2 { cert, key })
             }
-            _ => Valid::succeed(Http::HTTP1),
+            _ => Valid::succeed(HttpVersionRuntime::HTTP1),
         };
 
         validate_hostname((config_server).get_hostname().to_lowercase())
@@ -124,10 +129,10 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
                     .as_ref()
                     .and_then(|headers| headers.get_cors()),
             ))
-            .fuse(Auth::make(&config_module))
+            .fuse(AuthRuntime::make(&config_module))
             .map(
                 |(hostname, http, response_headers, script, experimental_headers, cors, auth)| {
-                    Server {
+                    ServerRuntime {
                         enable_jit: (config_server).enable_jit(),
                         enable_apollo_tracing: (config_server).enable_apollo_tracing(),
                         enable_cache_control_header: (config_server).enable_cache_control(),
@@ -157,11 +162,11 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
     }
 }
 
-fn to_script(config_module: &crate::core::config::ConfigModule) -> Valid<Option<Script>, String> {
+fn to_script(config_module: &crate::core::config::ConfigModule) -> Valid<Option<ScriptRuntime>, String> {
     config_module.extensions().script.as_ref().map_or_else(
         || Valid::succeed(None),
         |script| {
-            Valid::succeed(Some(Script {
+            Valid::succeed(Some(ScriptRuntime {
                 source: script.clone(),
                 timeout: config_module
                     .server
@@ -176,10 +181,6 @@ fn to_script(config_module: &crate::core::config::ConfigModule) -> Valid<Option<
 
 fn validate_cors(cors: Option<CorsStatic>) -> Valid<Option<CorsRuntime>, String> {
     Valid::from(cors.map(|cors| cors.try_into()).transpose())
-        .trace("cors")
-        .trace("headers")
-        .trace("@server")
-        .trace("schema")
 }
 
 fn validate_hostname(hostname: String) -> Valid<IpAddr, String> {
@@ -241,7 +242,7 @@ mod tests {
 
     #[test]
     fn test_try_from_default() {
-        let actual = super::Server::try_from(ConfigModule::default());
+        let actual = super::ServerRuntime::try_from(ConfigModule::default());
         assert!(actual.is_ok())
     }
 }

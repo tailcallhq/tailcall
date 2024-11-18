@@ -3,7 +3,7 @@ use std::ops::Deref;
 
 use jsonwebtoken::jwk::JwkSet;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
-use rustls_pki_types::{CertificateDer, PrivateKeyDer};
+use rustls_pki_types::CertificateDer;
 use tailcall_valid::{Valid, Validator};
 
 use crate::core::config::Config;
@@ -12,6 +12,8 @@ use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoMetadata;
 use crate::core::rest::{EndpointSet, Unchecked};
 use crate::core::Transform;
+
+use super::PrivateKey;
 
 mod merge;
 
@@ -100,27 +102,6 @@ impl<A> Deref for Content<A> {
     type Target = A;
     fn deref(&self) -> &Self::Target {
         &self.content
-    }
-}
-
-#[derive(Debug)]
-pub struct PrivateKey(PrivateKeyDer<'static>);
-
-impl Clone for PrivateKey {
-    fn clone(&self) -> Self {
-        Self(self.0.clone_key())
-    }
-}
-
-impl From<PrivateKeyDer<'static>> for PrivateKey {
-    fn from(value: PrivateKeyDer<'static>) -> Self {
-        Self(value)
-    }
-}
-
-impl PrivateKey {
-    pub fn into_inner(self) -> PrivateKeyDer<'static> {
-        self.0
     }
 }
 

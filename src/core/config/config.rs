@@ -679,15 +679,6 @@ impl Config {
     }
 }
 
-#[derive(
-    Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Default, schemars::JsonSchema,
-)]
-pub enum Encoding {
-    #[default]
-    ApplicationJson,
-    ApplicationXWwwFormUrlencoded,
-}
-
 #[cfg(test)]
 mod tests {
     use pretty_assertions::assert_eq;

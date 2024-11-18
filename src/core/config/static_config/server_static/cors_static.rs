@@ -9,8 +9,7 @@ use crate::core::macros::MergeRight;
 #[derive(
     Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight,
 )]
-#[serde(rename_all = "camelCase")]
-pub struct Cors {
+pub struct CorsStatic {
     /// Indicates whether the server allows credentials (e.g., cookies,
     /// authorization headers) to be sent in cross-origin requests.
     #[serde(default, skip_serializing_if = "is_default")]
