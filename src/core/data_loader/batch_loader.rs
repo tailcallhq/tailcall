@@ -197,7 +197,6 @@ impl BatchLoader {
         &self,
         request: Request,
     ) -> async_graphql::Result<HashMap<String, Response<ConstValue>>, anyhow::Error> {
-        println!("[Finder]: request: {}", request.url());
         let query_set = request
             .url()
             .query_pairs()
