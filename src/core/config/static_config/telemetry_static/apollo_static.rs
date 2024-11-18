@@ -5,7 +5,7 @@ use crate::core::is_default;
 use crate::core::mustache::Mustache;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
-pub struct ApolloTelemetryConfig {
+pub struct ApolloTelemetryStatic {
     ///
     /// Setting `api_key` for Apollo.
     pub api_key: String,
@@ -30,9 +30,9 @@ pub struct ApolloTelemetryConfig {
     pub version: Option<String>,
 }
 
-impl ApolloTelemetryConfig {
+impl ApolloTelemetryStatic {
     pub fn render_mustache(&mut self, reader_ctx: &ConfigReaderContext) -> anyhow::Result<()> {
-        let ApolloTelemetryConfig { api_key, graph_ref, user_version, platform, version } = self;
+        let ApolloTelemetryStatic { api_key, graph_ref, user_version, platform, version } = self;
 
         let api_key_tmpl = Mustache::parse(api_key);
         *api_key = api_key_tmpl.render(reader_ctx);

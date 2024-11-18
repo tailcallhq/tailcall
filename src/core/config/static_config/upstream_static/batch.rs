@@ -20,14 +20,14 @@ pub const DEFAULT_MAX_SIZE: usize = 100;
     JsonSchema,
     MergeRight,
 )]
-pub struct BatchConfig {
+pub struct BatchStatic {
     pub delay: usize,
     pub headers: BTreeSet<String>,
     #[serde(default, skip_serializing_if = "is_default")]
     pub max_size: Option<usize>,
 }
 
-impl Default for BatchConfig {
+impl Default for BatchStatic {
     fn default() -> Self {
         Self {
             max_size: Some(DEFAULT_MAX_SIZE),

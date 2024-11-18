@@ -5,7 +5,7 @@ use anyhow::Result;
 
 use super::helpers::{GRAPHQL_RC, TAILCALL_RC, TAILCALL_RC_SCHEMA};
 use crate::cli::runtime::{confirm_and_write, create_directory, select_prompt};
-use crate::core::config::{Config, Expr, Field, Resolver, RootSchema, Source};
+use crate::core::config::{Config, Expr, Field, Resolver, RootSchema, SourceUtil};
 use crate::core::merge_right::MergeRight;
 use crate::core::runtime::TargetRuntime;
 use crate::core::{config, Type};
@@ -15,7 +15,7 @@ pub(super) async fn init_command(runtime: TargetRuntime, folder_path: &str) -> R
 
     let selection = select_prompt(
         "Please select the format in which you want to generate the config.",
-        vec![Source::GraphQL, Source::Json, Source::Yml],
+        vec![SourceUtil::GraphQL, SourceUtil::Json, SourceUtil::Yml],
     )?;
 
     let tailcallrc = include_str!("../../../generated/.tailcallrc.graphql");
@@ -26,7 +26,7 @@ pub(super) async fn init_command(runtime: TargetRuntime, folder_path: &str) -> R
     let graphql_rc = Path::new(folder_path).join(GRAPHQL_RC);
 
     match selection {
-        Source::GraphQL => {
+        SourceUtil::GraphQL => {
             // .tailcallrc.graphql
             confirm_and_write(
                 runtime.clone(),
@@ -39,7 +39,7 @@ pub(super) async fn init_command(runtime: TargetRuntime, folder_path: &str) -> R
             confirm_and_write_yml(runtime.clone(), &graphql_rc).await?;
         }
 
-        Source::Json | Source::Yml => {
+        SourceUtil::Json | SourceUtil::Yml => {
             // .tailcallrc.schema.json
             confirm_and_write(
                 runtime.clone(),
@@ -111,14 +111,14 @@ fn main_config() -> Config {
 async fn create_main(
     runtime: TargetRuntime,
     folder_path: impl AsRef<Path>,
-    source: Source,
+    source: SourceUtil,
 ) -> Result<()> {
     let config = main_config();
 
     let content = match source {
-        Source::GraphQL => config.to_sdl(),
-        Source::Json => config.to_json(true)?,
-        Source::Yml => config.to_yaml()?,
+        SourceUtil::GraphQL => config.to_sdl(),
+        SourceUtil::Json => config.to_json(true)?,
+        SourceUtil::Yml => config.to_yaml()?,
     };
 
     let path = folder_path

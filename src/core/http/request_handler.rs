@@ -21,25 +21,25 @@ use super::{showcase, telemetry, TAILCALL_HTTPS_ORIGIN, TAILCALL_HTTP_ORIGIN};
 use crate::core::app_context::AppContext;
 use crate::core::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::core::blueprint::telemetry::TelemetryExporter;
-use crate::core::config::{PrometheusExporter, PrometheusFormat};
+use crate::core::config::{PrometheusExporterStatic, PrometheusFormatStatic};
 use crate::core::jit::JITExecutor;
 
 pub const API_URL_PREFIX: &str = "/api";
 
-fn prometheus_metrics(prometheus_exporter: &PrometheusExporter) -> Result<Response<Body>> {
+fn prometheus_metrics(prometheus_exporter: &PrometheusExporterStatic) -> Result<Response<Body>> {
     let metric_families = prometheus::default_registry().gather();
     let mut buffer = vec![];
 
     match prometheus_exporter.format {
-        PrometheusFormat::Text => TextEncoder::new().encode(&metric_families, &mut buffer)?,
-        PrometheusFormat::Protobuf => {
+        PrometheusFormatStatic::Text => TextEncoder::new().encode(&metric_families, &mut buffer)?,
+        PrometheusFormatStatic::Protobuf => {
             ProtobufEncoder::new().encode(&metric_families, &mut buffer)?
         }
     };
 
     let content_type = match prometheus_exporter.format {
-        PrometheusFormat::Text => TEXT_FORMAT,
-        PrometheusFormat::Protobuf => prometheus::PROTOBUF_FORMAT,
+        PrometheusFormatStatic::Text => TEXT_FORMAT,
+        PrometheusFormatStatic::Protobuf => prometheus::PROTOBUF_FORMAT,
     };
 
     Ok(Response::builder()
@@ -382,7 +382,7 @@ mod test {
     use super::*;
     use crate::core::async_graphql_hyper::GraphQLRequest;
     use crate::core::blueprint::Blueprint;
-    use crate::core::config::{Config, ConfigModule, Routes};
+    use crate::core::config::{Config, ConfigModule, RoutesStatic};
     use crate::core::rest::EndpointSet;
     use crate::core::runtime::test::init;
 
@@ -391,7 +391,7 @@ mod test {
         let sdl = tokio::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER).await?;
         let config = Config::from_sdl(&sdl).to_result()?;
         let mut blueprint = Blueprint::try_from(&ConfigModule::from(config))?;
-        blueprint.server.routes = Routes::default().with_status("/health");
+        blueprint.server.routes = RoutesStatic::default().with_status("/health");
         let app_ctx = Arc::new(AppContext::new(
             blueprint,
             init(None),
@@ -417,7 +417,7 @@ mod test {
         let sdl = tokio::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER).await?;
         let config = Config::from_sdl(&sdl).to_result()?;
         let mut blueprint = Blueprint::try_from(&ConfigModule::from(config))?;
-        blueprint.server.routes = Routes::default().with_graphql("/gql");
+        blueprint.server.routes = RoutesStatic::default().with_graphql("/gql");
         let app_ctx = Arc::new(AppContext::new(
             blueprint,
             init(None),

@@ -11,7 +11,7 @@ use crate::core::{config, helpers, Mustache};
 
 pub fn compile_http(
     config_module: &config::ConfigModule,
-    http: &config::Http,
+    http: &config::HttpVersionRuntime,
     is_list: bool,
 ) -> Valid<IR, String> {
     let dedupe = http.dedupe.unwrap_or_default();

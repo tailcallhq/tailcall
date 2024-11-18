@@ -4,7 +4,7 @@ use super::helpers::{display_schema, log_endpoint_set};
 use crate::cli::fmt::Fmt;
 use crate::core::blueprint::Blueprint;
 use crate::core::config::reader::ConfigReader;
-use crate::core::config::Source;
+use crate::core::config::SourceUtil;
 use crate::core::runtime::TargetRuntime;
 use crate::core::Errata;
 
@@ -12,7 +12,7 @@ pub(super) struct CheckParams {
     pub(super) file_paths: Vec<String>,
     pub(super) n_plus_one_queries: bool,
     pub(super) schema: bool,
-    pub(super) format: Option<Source>,
+    pub(super) format: Option<SourceUtil>,
     pub(super) runtime: TargetRuntime,
 }
 

@@ -6,8 +6,8 @@ use url::Url;
 
 use crate::core::blueprint::TryFoldConfig;
 use crate::core::config::{
-    ApolloTelemetryConfig, ConfigModule, KeyValue, PrometheusExporter, StdoutExporter,
-    TelemetryExporterConfig,
+    ApolloTelemetryStatic, ConfigModule, KeyValue, PrometheusExporterStatic, StdoutExporterStatic,
+    TelemetryExporterConfigStatic,
 };
 use crate::core::try_fold::TryFold;
 
@@ -25,10 +25,10 @@ pub struct OtlpExporterRuntime {
 
 #[derive(Debug, Clone)]
 pub enum TelemetryExporterRuntime {
-    Stdout(StdoutExporter),
+    Stdout(StdoutExporterStatic),
     Otlp(OtlpExporterRuntime),
-    Prometheus(PrometheusExporter),
-    Apollo(ApolloTelemetryConfig),
+    Prometheus(PrometheusExporterStatic),
+    Apollo(ApolloTelemetryStatic),
 }
 
 fn to_url(url: &str) -> Valid<Url, String> {
@@ -54,19 +54,19 @@ pub fn to_opentelemetry<'a>() -> TryFold<'a, ConfigModule, TelemetryRuntime, Str
     TryFoldConfig::<TelemetryRuntime>::new(|config, up| {
         if let Some(export) = config.telemetry.export.as_ref() {
             let export = match export {
-                TelemetryExporterConfig::Stdout(config) => {
+                TelemetryExporterConfigStatic::Stdout(config) => {
                     Valid::succeed(TelemetryExporterRuntime::Stdout(config.clone()))
                 }
-                TelemetryExporterConfig::Otlp(config) => to_url(&config.url)
+                TelemetryExporterConfigStatic::Otlp(config) => to_url(&config.url)
                     .zip(to_headers(config.headers.clone()))
                     .map(|(url, headers)| {
                         TelemetryExporterRuntime::Otlp(OtlpExporterRuntime { url, headers })
                     })
                     .trace("otlp"),
-                TelemetryExporterConfig::Prometheus(config) => {
+                TelemetryExporterConfigStatic::Prometheus(config) => {
                     Valid::succeed(TelemetryExporterRuntime::Prometheus(config.clone()))
                 }
-                TelemetryExporterConfig::Apollo(apollo) => validate_apollo(apollo.clone())
+                TelemetryExporterConfigStatic::Apollo(apollo) => validate_apollo(apollo.clone())
                     .and_then(|apollo| Valid::succeed(TelemetryExporterRuntime::Apollo(apollo))),
             };
 
@@ -80,7 +80,7 @@ pub fn to_opentelemetry<'a>() -> TryFold<'a, ConfigModule, TelemetryRuntime, Str
     })
 }
 
-fn validate_apollo(apollo: ApolloTelemetryConfig) -> Valid<ApolloTelemetryConfig, String> {
+fn validate_apollo(apollo: ApolloTelemetryStatic) -> Valid<ApolloTelemetryStatic, String> {
     validate_graph_ref(&apollo.graph_ref)
         .map(|_| apollo)
         .trace("apollo.graph_ref")

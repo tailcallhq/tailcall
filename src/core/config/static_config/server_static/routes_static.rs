@@ -5,20 +5,20 @@ use tailcall_macros::MergeRight;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, MergeRight, JsonSchema, Getters)]
 /// Used to configure the default routes of the server.
-pub struct Routes {
+pub struct RoutesStatic {
     /// The path for the status endpoint. Defaults to `/status`.
     status: String,
     /// The path for the GraphQL endpoint. Defaults to `/graphql`.
     graphql: String,
 }
 
-impl Default for Routes {
+impl Default for RoutesStatic {
     fn default() -> Self {
         Self { status: "/status".into(), graphql: "/graphql".into() }
     }
 }
 
-impl Routes {
+impl RoutesStatic {
     pub fn with_status<T: Into<String>>(self, status: T) -> Self {
         Self { graphql: self.graphql, status: status.into() }
     }

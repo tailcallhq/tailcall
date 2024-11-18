@@ -7,7 +7,7 @@ use tailcall_hasher::TailcallHasher;
 use url::Url;
 
 use super::query_encoder::QueryEncoder;
-use crate::core::config::Encoding;
+use crate::core::config::EncodingUtil;
 use crate::core::endpoint::Endpoint;
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
@@ -27,7 +27,7 @@ pub struct RequestTemplate {
     pub headers: MustacheHeaders,
     pub body_path: Option<Mustache>,
     pub endpoint: Endpoint,
-    pub encoding: Encoding,
+    pub encoding: EncodingUtil,
     pub query_encoder: QueryEncoder,
 }
 
@@ -132,10 +132,10 @@ impl RequestTemplate {
     ) -> anyhow::Result<reqwest::Request> {
         if let Some(body_path) = &self.body_path {
             match &self.encoding {
-                Encoding::ApplicationJson => {
+                EncodingUtil::ApplicationJson => {
                     req.body_mut().replace(body_path.render(ctx).into());
                 }
-                Encoding::ApplicationXWwwFormUrlencoded => {
+                EncodingUtil::ApplicationXWwwFormUrlencoded => {
                     // TODO: this is a performance bottleneck
                     // We first encode everything to string and then back to form-urlencoded
                     let body: String = body_path.render(ctx);
@@ -170,8 +170,8 @@ impl RequestTemplate {
             headers.insert(
                 reqwest::header::CONTENT_TYPE,
                 match self.encoding {
-                    Encoding::ApplicationJson => HeaderValue::from_static("application/json"),
-                    Encoding::ApplicationXWwwFormUrlencoded => {
+                    EncodingUtil::ApplicationJson => HeaderValue::from_static("application/json"),
+                    EncodingUtil::ApplicationXWwwFormUrlencoded => {
                         HeaderValue::from_static("application/x-www-form-urlencoded")
                     }
                 },
@@ -197,7 +197,7 @@ impl RequestTemplate {
 
     /// Creates a new RequestTemplate with the given form encoded URL
     pub fn form_encoded_url(url: &str) -> anyhow::Result<Self> {
-        Ok(Self::new(url)?.encoding(Encoding::ApplicationXWwwFormUrlencoded))
+        Ok(Self::new(url)?.encoding(EncodingUtil::ApplicationXWwwFormUrlencoded))
     }
 
     pub fn with_body(mut self, body: Mustache) -> Self {
@@ -572,7 +572,7 @@ mod tests {
         let tmpl = RequestTemplate::new("http://localhost:3000")
             .unwrap()
             .method(reqwest::Method::POST)
-            .encoding(crate::core::config::Encoding::ApplicationJson);
+            .encoding(crate::core::config::EncodingUtil::ApplicationJson);
         let ctx = Context::default();
         let req = tmpl.to_request(&ctx).unwrap();
         assert_eq!(
@@ -586,7 +586,7 @@ mod tests {
         let tmpl = RequestTemplate::new("http://localhost:3000")
             .unwrap()
             .method(reqwest::Method::POST)
-            .encoding(crate::core::config::Encoding::ApplicationXWwwFormUrlencoded);
+            .encoding(crate::core::config::EncodingUtil::ApplicationXWwwFormUrlencoded);
         let ctx = Context::default();
         let req = tmpl.to_request(&ctx).unwrap();
         assert_eq!(
@@ -633,7 +633,7 @@ mod tests {
     fn test_body_encoding_application_json() {
         let tmpl = RequestTemplate::new("http://localhost:3000")
             .unwrap()
-            .encoding(crate::core::config::Encoding::ApplicationJson)
+            .encoding(crate::core::config::EncodingUtil::ApplicationJson)
             .body_path(Some(Mustache::parse("{{foo.bar}}")));
         let ctx = Context::default().value(json!({
           "foo": {

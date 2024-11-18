@@ -141,7 +141,7 @@ mod tests {
     use crate::core::blueprint::GrpcMethod;
     use crate::core::config::reader::ConfigReader;
     use crate::core::config::{
-        Config, Field, GraphQLOperationType, Grpc, LinkConfig, LinkType, Resolver, Type,
+        Config, Field, GraphQLOperationType, Grpc, LinkStatic, LinkTypeStatic, Resolver, Type,
     };
     use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::core::ir::model::CacheKey;
@@ -154,10 +154,10 @@ mod tests {
 
         let runtime = crate::core::runtime::test::init(None);
         let reader = ConfigReader::init(runtime);
-        let mut config = Config::default().links(vec![LinkConfig {
+        let mut config = Config::default().links(vec![LinkStatic {
             id: Some(id.clone()),
             src: test_file.to_string(),
-            type_of: LinkType::Protobuf,
+            type_of: LinkTypeStatic::Protobuf,
             headers: None,
             meta: None,
         }]);

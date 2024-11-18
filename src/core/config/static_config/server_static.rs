@@ -1,9 +1,9 @@
-pub mod headers;
-pub mod routes;
-pub mod config_cors;
+pub mod headers_static;
+pub mod routes_static;
+pub mod cors_static;
 pub mod key_values;
-pub use headers::*;
-pub use routes::*;
+pub use headers_static::*;
+pub use routes_static::*;
 pub use key_values::*;
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -30,7 +30,7 @@ use crate::core::macros::MergeRight;
 /// It dictates how the server behaves and helps tune tailcall for various
 /// use-cases.
 #[serde(deny_unknown_fields)]
-pub struct ServerConfig {
+pub struct ServerStatic {
     /// The `enable_jit` option activates Just-In-Time (JIT) compilation. When set to true, it
     /// optimizes execution of each incoming request independently, resulting in significantly
     /// better performance in most cases, it's enabled by default.
@@ -52,7 +52,7 @@ pub struct ServerConfig {
     /// in server responses, allowing for consistent header management across
     /// all responses.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub headers: Option<Headers>,
+    pub headers: Option<HeadersStatic>,
 
     /// `global_response_timeout` sets the maximum query duration before
     /// termination, acting as a safeguard against long-running queries.
@@ -97,7 +97,7 @@ pub struct ServerConfig {
     /// A link to an external JS file that listens on every HTTP request
     /// response event.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub script: Option<ScriptOptions>,
+    pub script: Option<ScriptOptionsStatic>,
 
     /// `showcase` enables the /showcase/graphql endpoint.
     #[serde(default, skip_serializing_if = "is_default")]
@@ -112,7 +112,7 @@ pub struct ServerConfig {
     /// `version` sets the HTTP version for the server. Options are `HTTP1` and
     /// `HTTP2`. @default `HTTP1`.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub version: Option<HttpVersion>,
+    pub version: Option<HttpVersionStatic>,
 
     /// `workers` sets the number of worker threads. @default the number of
     /// system cores.
@@ -126,7 +126,7 @@ pub struct ServerConfig {
     /// - graphQL: "/graphql" If not specified, these default values will be
     ///   used.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub routes: Option<Routes>,
+    pub routes: Option<RoutesStatic>,
 }
 
 fn merge_right_vars(mut left: Vec<KeyValue>, right: Vec<KeyValue>) -> Vec<KeyValue> {
@@ -135,20 +135,20 @@ fn merge_right_vars(mut left: Vec<KeyValue>, right: Vec<KeyValue>) -> Vec<KeyVal
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
-pub struct ScriptOptions {
+pub struct ScriptOptionsStatic {
     pub timeout: Option<u64>,
 }
 
 #[derive(
     Deserialize, Serialize, Debug, PartialEq, Eq, Clone, Default, schemars::JsonSchema, MergeRight,
 )]
-pub enum HttpVersion {
+pub enum HttpVersionStatic {
     #[default]
     HTTP1,
     HTTP2,
 }
 
-impl ServerConfig {
+impl ServerStatic {
     pub fn enable_apollo_tracing(&self) -> bool {
         self.apollo_tracing.unwrap_or(false)
     }
@@ -223,8 +223,8 @@ impl ServerConfig {
             .unwrap_or_default()
     }
 
-    pub fn get_version(self) -> HttpVersion {
-        self.version.unwrap_or(HttpVersion::HTTP1)
+    pub fn get_version(self) -> HttpVersionStatic {
+        self.version.unwrap_or(HttpVersionStatic::HTTP1)
     }
 
     pub fn get_pipeline_flush(&self) -> bool {
@@ -235,7 +235,7 @@ impl ServerConfig {
         self.enable_jit.unwrap_or(true)
     }
 
-    pub fn get_routes(&self) -> Routes {
+    pub fn get_routes(&self) -> RoutesStatic {
         self.routes.clone().unwrap_or_default()
     }
 
@@ -247,55 +247,55 @@ impl ServerConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::config::ScriptOptions;
+    use crate::core::config::ScriptOptionsStatic;
     use crate::core::merge_right::MergeRight;
 
-    fn server_with_script_options(so: ScriptOptions) -> ServerConfig {
-        ServerConfig { script: Some(so), ..Default::default() }
+    fn server_with_script_options(so: ScriptOptionsStatic) -> ServerStatic {
+        ServerStatic { script: Some(so), ..Default::default() }
     }
 
     #[test]
     fn script_options_merge_both() {
-        let a = server_with_script_options(ScriptOptions { timeout: Some(100) });
-        let b = server_with_script_options(ScriptOptions { timeout: Some(200) });
+        let a = server_with_script_options(ScriptOptionsStatic { timeout: Some(100) });
+        let b = server_with_script_options(ScriptOptionsStatic { timeout: Some(200) });
         let merged = a.merge_right(b);
-        let expected = ScriptOptions { timeout: Some(200) };
+        let expected = ScriptOptionsStatic { timeout: Some(200) };
         assert_eq!(merged.script, Some(expected));
     }
 
     #[test]
     fn script_options_merge_first() {
-        let a = server_with_script_options(ScriptOptions { timeout: Some(100) });
-        let b = server_with_script_options(ScriptOptions { timeout: None });
+        let a = server_with_script_options(ScriptOptionsStatic { timeout: Some(100) });
+        let b = server_with_script_options(ScriptOptionsStatic { timeout: None });
         let merged = a.merge_right(b);
-        let expected = ScriptOptions { timeout: Some(100) };
+        let expected = ScriptOptionsStatic { timeout: Some(100) };
         assert_eq!(merged.script, Some(expected));
     }
 
     #[test]
     fn script_options_merge_second() {
-        let a = server_with_script_options(ScriptOptions { timeout: None });
-        let b = server_with_script_options(ScriptOptions { timeout: Some(100) });
+        let a = server_with_script_options(ScriptOptionsStatic { timeout: None });
+        let b = server_with_script_options(ScriptOptionsStatic { timeout: Some(100) });
         let merged = a.merge_right(b);
-        let expected = ScriptOptions { timeout: Some(100) };
+        let expected = ScriptOptionsStatic { timeout: Some(100) };
         assert_eq!(merged.script, Some(expected));
     }
 
     #[test]
     fn script_options_merge_second_default() {
-        let a = server_with_script_options(ScriptOptions { timeout: Some(100) });
-        let b = ServerConfig::default();
+        let a = server_with_script_options(ScriptOptionsStatic { timeout: Some(100) });
+        let b = ServerStatic::default();
         let merged = a.merge_right(b);
-        let expected = ScriptOptions { timeout: Some(100) };
+        let expected = ScriptOptionsStatic { timeout: Some(100) };
         assert_eq!(merged.script, Some(expected));
     }
 
     #[test]
     fn script_options_merge_first_default() {
-        let a = ServerConfig::default();
-        let b = server_with_script_options(ScriptOptions { timeout: Some(100) });
+        let a = ServerStatic::default();
+        let b = server_with_script_options(ScriptOptionsStatic { timeout: Some(100) });
         let merged = a.merge_right(b);
-        let expected = ScriptOptions { timeout: Some(100) };
+        let expected = ScriptOptionsStatic { timeout: Some(100) };
         assert_eq!(merged.script, Some(expected));
     }
 

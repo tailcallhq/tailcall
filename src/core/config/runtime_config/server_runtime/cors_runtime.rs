@@ -6,7 +6,7 @@ use http::header::{HeaderName, HeaderValue};
 use http::request::Parts;
 use tailcall_valid::ValidationError;
 
-use crate::core::config::config_cors::CorsConfig;
+use crate::core::config::cors_static::CorsStatic;
 
 #[derive(Clone, Debug, Setters, Default)]
 pub struct CorsRuntime {
@@ -161,10 +161,10 @@ fn to_validation_err<T: Display>(err: T) -> ValidationError<String> {
     ValidationError::new(err.to_string())
 }
 
-impl TryFrom<CorsConfig> for CorsRuntime {
+impl TryFrom<CorsStatic> for CorsRuntime {
     type Error = ValidationError<String>;
 
-    fn try_from(value: CorsConfig) -> Result<Self, ValidationError<String>> {
+    fn try_from(value: CorsStatic) -> Result<Self, ValidationError<String>> {
         let cors = CorsRuntime {
             allow_credentials: value.allow_credentials.unwrap_or_default(),
             allow_headers: (!value.allow_headers.is_empty()).then_some(

@@ -8,8 +8,8 @@ use http::header::{HeaderMap, HeaderName, HeaderValue};
 use rustls_pki_types::CertificateDer;
 use tailcall_valid::{Valid, ValidationError, Validator};
 
-use crate::core::config::config_cors::CorsConfig;
-use crate::core::config::{self, ConfigModule, HttpVersion, PrivateKey, Routes};
+use crate::core::config::cors_static::CorsStatic;
+use crate::core::config::{self, ConfigModule, HttpVersionStatic, PrivateKeyUtil, RoutesStatic};
 
 pub mod auth_runtime;
 pub use auth_runtime::*;
@@ -33,28 +33,28 @@ pub struct ServerRuntime {
     pub hostname: IpAddr,
     pub vars: BTreeMap<String, String>,
     pub response_headers: HeaderMap,
-    pub http: Http,
+    pub http: HttpVersionRuntime,
     pub pipeline_flush: bool,
-    pub script: Option<Script>,
+    pub script: Option<ScriptRuntime>,
     pub cors: Option<CorsRuntime>,
     pub experimental_headers: HashSet<HeaderName>,
     pub auth: Option<AuthRuntime>,
-    pub routes: Routes,
+    pub routes: RoutesStatic,
 }
 
 /// Mimic of mini_v8::Script that's wasm compatible
 #[derive(Clone, Debug)]
-pub struct Script {
+pub struct ScriptRuntime {
     pub source: String,
     pub timeout: Option<Duration>,
 }
 
 #[derive(Clone, Debug)]
-pub enum Http {
+pub enum HttpVersionRuntime {
     HTTP1,
     HTTP2 {
         cert: Vec<CertificateDer<'static>>,
-        key: PrivateKey,
+        key: PrivateKeyUtil,
     },
 }
 
@@ -93,7 +93,7 @@ impl TryFrom<crate::core::config::ConfigModule> for ServerRuntime {
         let config_server = config_module.server.clone();
 
         let http_server = match config_server.clone().get_version() {
-            HttpVersion::HTTP2 => {
+            HttpVersionStatic::HTTP2 => {
                 if config_module.extensions().cert.is_empty() {
                     return Valid::fail("Certificate is required for HTTP2".to_string())
                         .to_result();
@@ -108,9 +108,9 @@ impl TryFrom<crate::core::config::ConfigModule> for ServerRuntime {
                     .ok_or_else(|| ValidationError::new("Key is required for HTTP2".to_string()))?
                     .clone();
 
-                Valid::succeed(Http::HTTP2 { cert, key })
+                Valid::succeed(HttpVersionRuntime::HTTP2 { cert, key })
             }
-            _ => Valid::succeed(Http::HTTP1),
+            _ => Valid::succeed(HttpVersionRuntime::HTTP1),
         };
 
         validate_hostname((config_server).get_hostname().to_lowercase())
@@ -161,11 +161,11 @@ impl TryFrom<crate::core::config::ConfigModule> for ServerRuntime {
     }
 }
 
-fn to_script(config_module: &crate::core::config::ConfigModule) -> Valid<Option<Script>, String> {
+fn to_script(config_module: &crate::core::config::ConfigModule) -> Valid<Option<ScriptRuntime>, String> {
     config_module.extensions().script.as_ref().map_or_else(
         || Valid::succeed(None),
         |script| {
-            Valid::succeed(Some(Script {
+            Valid::succeed(Some(ScriptRuntime {
                 source: script.clone(),
                 timeout: config_module
                     .server
@@ -178,7 +178,7 @@ fn to_script(config_module: &crate::core::config::ConfigModule) -> Valid<Option<
     )
 }
 
-fn validate_cors(cors: Option<CorsConfig>) -> Valid<Option<CorsRuntime>, String> {
+fn validate_cors(cors: Option<CorsStatic>) -> Valid<Option<CorsRuntime>, String> {
     Valid::from(cors.map(|cors| cors.try_into()).transpose())
 }
 

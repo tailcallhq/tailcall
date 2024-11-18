@@ -1,14 +1,14 @@
 use tailcall_valid::{Valid, ValidationError, Validator};
 
-use crate::core::config::{LinkConfig, LinkType};
+use crate::core::config::{LinkStatic, LinkTypeStatic};
 use crate::core::directive::DirectiveCodec;
 
 pub struct Links;
 
-impl TryFrom<Vec<LinkConfig>> for Links {
+impl TryFrom<Vec<LinkStatic>> for Links {
     type Error = ValidationError<String>;
 
-    fn try_from(links: Vec<LinkConfig>) -> Result<Self, Self::Error> {
+    fn try_from(links: Vec<LinkStatic>) -> Result<Self, Self::Error> {
         Valid::from_iter(links.iter().enumerate(), |(pos, link)| {
             Valid::succeed(link.to_owned())
                 .and_then(|link| {
@@ -31,8 +31,8 @@ impl TryFrom<Vec<LinkConfig>> for Links {
         .and_then(|links| {
             let script_links = links
                 .iter()
-                .filter(|l| l.type_of == LinkType::Script)
-                .collect::<Vec<&LinkConfig>>();
+                .filter(|l| l.type_of == LinkTypeStatic::Script)
+                .collect::<Vec<&LinkStatic>>();
 
             if script_links.len() > 1 {
                 Valid::fail("Only one script link is allowed".to_string())
@@ -43,8 +43,8 @@ impl TryFrom<Vec<LinkConfig>> for Links {
         .and_then(|links| {
             let key_links = links
                 .iter()
-                .filter(|l| l.type_of == LinkType::Key)
-                .collect::<Vec<&LinkConfig>>();
+                .filter(|l| l.type_of == LinkTypeStatic::Key)
+                .collect::<Vec<&LinkStatic>>();
 
             if key_links.len() > 1 {
                 Valid::fail("Only one key link is allowed".to_string())
@@ -52,7 +52,7 @@ impl TryFrom<Vec<LinkConfig>> for Links {
                 Valid::succeed(links)
             }
         })
-        .trace(LinkConfig::trace_name().as_str())
+        .trace(LinkStatic::trace_name().as_str())
         .trace("schema")
         .map_to(Links)
         .to_result()

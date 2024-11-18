@@ -62,16 +62,16 @@ mod tests {
     use super::DataLoaderRequest;
     use crate::core::blueprint::GrpcMethod;
     use crate::core::config::reader::ConfigReader;
-    use crate::core::config::{Config, Field, Grpc, LinkConfig, LinkType, Resolver, Type};
+    use crate::core::config::{Config, Field, Grpc, LinkStatic, LinkTypeStatic, Resolver, Type};
     use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::core::grpc::request_template::RenderedRequestTemplate;
 
     pub async fn get_protobuf_op() -> ProtobufOperation {
         let test_file = protobuf::GREETINGS;
-        let mut config = Config::default().links(vec![LinkConfig {
+        let mut config = Config::default().links(vec![LinkStatic {
             id: None,
             src: test_file.to_string(),
-            type_of: LinkType::Protobuf,
+            type_of: LinkTypeStatic::Protobuf,
             headers: None,
             meta: None,
         }]);

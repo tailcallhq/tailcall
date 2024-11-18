@@ -97,7 +97,7 @@ pub struct Output<Status = UnResolved> {
     #[serde(skip_serializing_if = "Location::is_empty")]
     pub path: Location<Status>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub format: Option<config::Source>,
+    pub format: Option<config::SourceUtil>,
 }
 
 #[derive(Debug)]
@@ -434,7 +434,7 @@ mod tests {
         let json = r#"
           {"output": {
               "paths": "./output.graphql",
-          }} 
+          }}
         "#;
         let expected_error =
             "unknown field `paths`, expected `path` or `format` at line 3 column 21";
@@ -446,7 +446,7 @@ mod tests {
         let json = r#"
           {"schema": {
               "querys": "Query",
-          }} 
+          }}
         "#;
         let expected_error =
             "unknown field `querys`, expected `query` or `mutation` at line 3 column 22";

@@ -4,7 +4,7 @@ use convert_case::{Case, Casing};
 use regex::Regex;
 use url::Url;
 
-use crate::core::config::{Arg, Field, Http, URLQuery};
+use crate::core::config::{Arg, Field, HttpVersionRuntime, URLQuery};
 use crate::core::generator::PREFIX;
 use crate::core::helpers::gql_type::detect_gql_data_type;
 use crate::core::Type;
@@ -53,12 +53,12 @@ impl<'a> UrlUtility<'a> {
 
 pub struct HttpDirectiveGenerator<'a> {
     url: &'a Url,
-    http: Http,
+    http: HttpVersionRuntime,
 }
 
 impl<'a> HttpDirectiveGenerator<'a> {
     pub fn new(url: &'a Url) -> Self {
-        Self { url, http: Http::default() }
+        Self { url, http: HttpVersionRuntime::default() }
     }
 
     fn add_path_variables(&mut self, field: &mut Field) {
@@ -128,7 +128,7 @@ impl<'a> HttpDirectiveGenerator<'a> {
         }
     }
 
-    pub fn generate_http_directive(mut self, field: &mut Field) -> Http {
+    pub fn generate_http_directive(mut self, field: &mut Field) -> HttpVersionRuntime {
         self.add_path_variables(field);
         self.add_query_variables(field);
 

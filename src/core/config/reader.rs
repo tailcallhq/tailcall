@@ -7,8 +7,8 @@ use rustls_pki_types::{
 use tailcall_valid::{Valid, Validator};
 use url::Url;
 
-use super::{ConfigModule, Content, LinkConfig, LinkType, PrivateKey};
-use crate::core::config::{Config, ConfigReaderContext, Source};
+use super::{ConfigModule, Content, LinkStatic, LinkTypeStatic, PrivateKey};
+use crate::core::config::{Config, ConfigReaderContext, SourceUtil};
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::{Cached, Resource, ResourceReader};
 use crate::core::rest::EndpointSet;
@@ -40,7 +40,7 @@ impl ConfigReader {
         config_module: ConfigModule,
         parent_dir: Option<&'async_recursion Path>,
     ) -> anyhow::Result<ConfigModule> {
-        let links: Vec<LinkConfig> = config_module
+        let links: Vec<LinkStatic> = config_module
             .config()
             .links
             .clone()
@@ -66,11 +66,11 @@ impl ConfigReader {
             let path = Self::resolve_path(&link.src, parent_dir);
 
             match link.type_of {
-                LinkType::Config => {
+                LinkTypeStatic::Config => {
                     let source = self.resource_reader.read_file(path).await?;
                     let content = source.content;
 
-                    let config = Config::from_source(Source::detect(&source.path)?, &content)?;
+                    let config = Config::from_source(SourceUtil::detect(&source.path)?, &content)?;
                     config_module = config_module.and_then(|config_module| {
                         config_module.unify(ConfigModule::from(config.clone()))
                     });
@@ -83,32 +83,32 @@ impl ConfigReader {
                             config_module.and_then(|config_module| config_module.unify(cfg_module));
                     }
                 }
-                LinkType::Protobuf => {
+                LinkTypeStatic::Protobuf => {
                     let meta = self.proto_reader.read(path).await?;
                     extensions.add_proto(meta);
                 }
-                LinkType::Script => {
+                LinkTypeStatic::Script => {
                     let source = self.resource_reader.read_file(path).await?;
                     let content = source.content;
                     extensions.script = Some(content);
                 }
-                LinkType::Cert => {
+                LinkTypeStatic::Cert => {
                     let source = self.resource_reader.read_file(path).await?;
                     let content = source.content;
                     extensions.cert.extend(self.load_cert(content).await?);
                 }
-                LinkType::Key => {
+                LinkTypeStatic::Key => {
                     let source = self.resource_reader.read_file(path).await?;
                     let content = source.content;
                     extensions.keys = self.load_private_key(content).await?
                 }
-                LinkType::Operation => {
+                LinkTypeStatic::Operation => {
                     let source = self.resource_reader.read_file(path).await?;
                     let content = source.content;
 
                     extensions.endpoint_set = EndpointSet::try_new(&content)?;
                 }
-                LinkType::Htpasswd => {
+                LinkTypeStatic::Htpasswd => {
                     let source = self.resource_reader.read_file(path).await?;
                     let content = source.content;
 
@@ -116,7 +116,7 @@ impl ConfigReader {
                         .htpasswd
                         .push(Content { id: link.id.clone(), content });
                 }
-                LinkType::Jwks => {
+                LinkTypeStatic::Jwks => {
                     let source = self.resource_reader.read_file(path).await?;
                     let content = source.content;
 
@@ -127,7 +127,7 @@ impl ConfigReader {
                         content: serde_path_to_error::deserialize(de)?,
                     })
                 }
-                LinkType::Grpc => {
+                LinkTypeStatic::Grpc => {
                     let meta = self
                         .proto_reader
                         .fetch(link.src.as_str(), link.headers.clone())
@@ -191,7 +191,7 @@ impl ConfigReader {
         let mut config_module = Valid::succeed(ConfigModule::default());
 
         for file in files.iter() {
-            let source = Source::detect(&file.path)?;
+            let source = SourceUtil::detect(&file.path)?;
             let schema = &file.content;
 
             // Create initial config module

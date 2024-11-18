@@ -15,7 +15,7 @@ use crate::core::is_default;
     strum_macros::Display,
 )]
 /// The acceptable types of linked files that can be loaded on bootstrap.
-pub enum LinkType {
+pub enum LinkTypeStatic {
     #[default]
     Config,
     Protobuf,
@@ -42,7 +42,7 @@ pub enum LinkType {
     schemars::JsonSchema,
 )]
 #[serde(deny_unknown_fields)]
-pub struct LinkConfig {
+pub struct LinkStatic {
     ///
     /// The id of the link. It is used to reference the link in the schema.
     #[serde(default, skip_serializing_if = "is_default")]
@@ -55,7 +55,7 @@ pub struct LinkConfig {
     ///
     /// The type of the link. It can be `Config`, or `Protobuf`.
     #[serde(default, skip_serializing_if = "is_default", rename = "type")]
-    pub type_of: LinkType,
+    pub type_of: LinkTypeStatic,
     ///
     /// Custom headers for gRPC reflection server.
     #[serde(default, skip_serializing_if = "is_default")]

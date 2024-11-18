@@ -45,7 +45,7 @@ pub enum Command {
 
         /// Prints the input config in the provided format
         #[clap(short, long)]
-        format: Option<config::Source>,
+        format: Option<config::SourceUtil>,
     },
 
     /// Initialize a new project

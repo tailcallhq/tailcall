@@ -499,7 +499,7 @@ pub fn to_field_definition(
     name: &str,
 ) -> Valid<FieldDefinition, String> {
     update_args()
-        .and(update_http().trace(config::Http::trace_name().as_str()))
+        .and(update_http().trace(config::HttpVersionRuntime::trace_name().as_str()))
         .and(update_grpc(operation_type).trace(config::Grpc::trace_name().as_str()))
         .and(update_const_field().trace(config::Expr::trace_name().as_str()))
         .and(update_js_field().trace(config::JS::trace_name().as_str()))

@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use tailcall_macros::MergeRight;
 use tailcall_valid::Valid;
 
-use super::{LinkConfig, ServerConfig, Source, TelemetryConfig, UpstreamConfig};
+use super::{LinkStatic, ServerStatic, SourceUtil, TelemetryStatic, UpstreamStatic};
 use crate::core::{is_default, merge_right::MergeRight, variance::Invariant};
 
 #[derive(
@@ -15,20 +15,20 @@ pub struct Config {
     /// Dictates how the server behaves and helps tune tailcall for all ingress
     /// requests. Features such as request batching, SSL, HTTP2 etc. can be
     /// configured here.
-    pub server: ServerConfig,
+    pub server: ServerStatic,
 
     ///
     /// Dictates how tailcall should handle upstream requests/responses.
     /// Tuning upstream can improve performance and reliability for connections.
-    pub upstream: UpstreamConfig,
+    pub upstream: UpstreamStatic,
 
     ///
     /// Linked files, that merge with config, schema or provide metadata.
-    pub links: Vec<LinkConfig>,
+    pub links: Vec<LinkStatic>,
 
     /// Enable [opentelemetry](https://opentelemetry.io) support.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub telemetry: TelemetryConfig,
+    pub telemetry: TelemetryStatic,
 }
 
 impl Config {
@@ -56,10 +56,10 @@ impl Config {
         Ok(serde_yaml::from_str(yaml)?)
     }
 
-    pub fn from_source(source: Source, data: &str) -> anyhow::Result<Self> {
+    pub fn from_source(source: SourceUtil, data: &str) -> anyhow::Result<Self> {
         match source {
-            Source::Json => Ok(Config::from_json(data)?),
-            Source::Yml => Ok(Config::from_yaml(data)?),
+            SourceUtil::Json => Ok(Config::from_json(data)?),
+            SourceUtil::Yml => Ok(Config::from_yaml(data)?),
         }
     }
 }

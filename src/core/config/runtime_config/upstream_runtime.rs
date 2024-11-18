@@ -3,7 +3,7 @@ use std::collections::BTreeSet;
 use derive_setters::Setters;
 use tailcall_valid::{Valid, ValidationError, Validator};
 
-use crate::core::config::{BatchConfig, ConfigModule, Proxy, UpstreamConfig};
+use crate::core::config::{BatchStatic, ConfigModule, ProxyStatic, UpstreamStatic};
 
 #[derive(PartialEq, Eq, Clone, Debug, Setters, schemars::JsonSchema)]
 pub struct UpstreamRuntime {
@@ -12,14 +12,14 @@ pub struct UpstreamRuntime {
     pub keep_alive_interval: u64,
     pub keep_alive_timeout: u64,
     pub keep_alive_while_idle: bool,
-    pub proxy: Option<Proxy>,
+    pub proxy: Option<ProxyStatic>,
     pub connect_timeout: u64,
     pub timeout: u64,
     pub tcp_keep_alive: u64,
     pub user_agent: String,
     pub allowed_headers: BTreeSet<String>,
     pub http_cache: u64,
-    pub batch: Option<BatchConfig>,
+    pub batch: Option<BatchStatic>,
     pub http2_only: bool,
     pub on_request: Option<String>,
     pub verify_ssl: bool,
@@ -81,11 +81,11 @@ impl TryFrom<&ConfigModule> for UpstreamRuntime {
     }
 }
 
-fn get_batch(upstream: &UpstreamConfig) -> Valid<Option<BatchConfig>, String> {
+fn get_batch(upstream: &UpstreamStatic) -> Valid<Option<BatchStatic>, String> {
     upstream.batch.as_ref().map_or_else(
         || Valid::succeed(None),
         |batch| {
-            Valid::succeed(Some(BatchConfig {
+            Valid::succeed(Some(BatchStatic {
                 max_size: Some((upstream).get_max_size()),
                 delay: (upstream).get_delay(),
                 headers: batch.headers.clone(),
@@ -94,9 +94,9 @@ fn get_batch(upstream: &UpstreamConfig) -> Valid<Option<BatchConfig>, String> {
     )
 }
 
-fn get_proxy(upstream: &UpstreamConfig) -> Valid<Option<Proxy>, String> {
+fn get_proxy(upstream: &UpstreamStatic) -> Valid<Option<ProxyStatic>, String> {
     if let Some(ref proxy) = upstream.proxy {
-        Valid::succeed(Some(Proxy { url: proxy.url.clone() }))
+        Valid::succeed(Some(ProxyStatic { url: proxy.url.clone() }))
     } else {
         Valid::succeed(None)
     }

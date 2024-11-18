@@ -26,7 +26,7 @@ pub use batch::*;
 /// The `upstream` configuration allows you to control various aspects of the
 /// upstream server connection. This includes settings like connection timeouts,
 /// keep-alive intervals, and more. If not specified, default values are used.
-pub struct UpstreamConfig {
+pub struct UpstreamStatic {
     #[serde(default, skip_serializing_if = "is_default")]
     /// `on_request` field gives the ability to specify the global request
     /// interception handler.
@@ -43,7 +43,7 @@ pub struct UpstreamConfig {
     /// maximum size of the batch), `delay` (the delay in milliseconds between
     /// each batch), and `headers` (an array of HTTP headers to be included in
     /// the batch).
-    pub batch: Option<BatchConfig>,
+    pub batch: Option<BatchStatic>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// The time in seconds that the connection will wait for a response before
@@ -91,7 +91,7 @@ pub struct UpstreamConfig {
     /// upstream requests will be routed before reaching their intended
     /// endpoint. By specifying a proxy URL, you introduce an additional layer,
     /// enabling custom routing and security policies.
-    pub proxy: Option<Proxy>,
+    pub proxy: Option<ProxyStatic>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// The time in seconds between each TCP keep-alive message sent to maintain
@@ -120,7 +120,7 @@ pub struct UpstreamConfig {
     pub verify_ssl: Option<bool>,
 }
 
-impl UpstreamConfig {
+impl UpstreamStatic {
     pub fn get_pool_idle_timeout(&self) -> u64 {
         self.pool_idle_timeout.unwrap_or(60)
     }
@@ -178,7 +178,7 @@ impl UpstreamConfig {
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, schemars::JsonSchema, MergeRight)]
-pub struct Proxy {
+pub struct ProxyStatic {
     pub url: String,
 }
 
@@ -187,8 +187,8 @@ mod tests {
     use super::*;
     use crate::core::merge_right::MergeRight;
 
-    fn setup_upstream_with_headers(headers: &[&str]) -> UpstreamConfig {
-        UpstreamConfig {
+    fn setup_upstream_with_headers(headers: &[&str]) -> UpstreamStatic {
+        UpstreamStatic {
             allowed_headers: Some(headers.iter().map(|s| s.to_string()).collect()),
             ..Default::default()
         }
@@ -213,7 +213,7 @@ mod tests {
     #[test]
     fn allowed_headers_merge_first() {
         let a = setup_upstream_with_headers(&["a", "b", "c"]);
-        let b = UpstreamConfig::default();
+        let b = UpstreamStatic::default();
         let merged = a.merge_right(b);
 
         assert_eq!(
@@ -224,7 +224,7 @@ mod tests {
 
     #[test]
     fn allowed_headers_merge_second() {
-        let a = UpstreamConfig::default();
+        let a = UpstreamStatic::default();
         let b = setup_upstream_with_headers(&["a", "b", "c"]);
         let merged = a.merge_right(b);
 

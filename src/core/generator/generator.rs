@@ -9,7 +9,7 @@ use url::Url;
 
 use super::from_proto::from_proto;
 use super::{FromJsonGenerator, NameGenerator, RequestSample, PREFIX};
-use crate::core::config::{self, Config, ConfigModule, LinkConfig, LinkType};
+use crate::core::config::{self, Config, ConfigModule, LinkStatic, LinkTypeStatic};
 use crate::core::http::Method;
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoMetadata;
@@ -45,7 +45,7 @@ pub enum Input {
     },
     Config {
         schema: String,
-        source: config::Source,
+        source: config::SourceUtil,
     },
 }
 
@@ -91,10 +91,10 @@ impl Generator {
     ) -> anyhow::Result<Config> {
         let descriptor_set = resolve_file_descriptor_set(metadata.descriptor_set.clone())?;
         let mut config = from_proto(&[descriptor_set], operation_name, url)?;
-        config.links.push(LinkConfig {
+        config.links.push(LinkStatic {
             id: None,
             src: metadata.path.to_owned(),
-            type_of: LinkType::Protobuf,
+            type_of: LinkTypeStatic::Protobuf,
             headers: None,
             meta: None,
         });
@@ -276,7 +276,7 @@ pub mod test {
         let cfg_module = Generator::default()
             .inputs(vec![Input::Config {
                 schema: std::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER)?,
-                source: crate::core::config::Source::GraphQL,
+                source: crate::core::config::SourceUtil::GraphQL,
             }])
             .generate(true)?;
 
@@ -322,7 +322,7 @@ pub mod test {
         // Config input
         let config_input = Input::Config {
             schema: std::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER)?,
-            source: crate::core::config::Source::GraphQL,
+            source: crate::core::config::SourceUtil::GraphQL,
         };
 
         // Json Input
