@@ -250,8 +250,8 @@ mod tests {
     use crate::core::config::ScriptOptions;
     use crate::core::merge_right::MergeRight;
 
-    fn server_with_script_options(so: ScriptOptions) -> Server {
-        Server { script: Some(so), ..Default::default() }
+    fn server_with_script_options(so: ScriptOptions) -> ServerConfig {
+        ServerConfig { script: Some(so), ..Default::default() }
     }
 
     #[test]
@@ -284,7 +284,7 @@ mod tests {
     #[test]
     fn script_options_merge_second_default() {
         let a = server_with_script_options(ScriptOptions { timeout: Some(100) });
-        let b = Server::default();
+        let b = ServerConfig::default();
         let merged = a.merge_right(b);
         let expected = ScriptOptions { timeout: Some(100) };
         assert_eq!(merged.script, Some(expected));
@@ -292,7 +292,7 @@ mod tests {
 
     #[test]
     fn script_options_merge_first_default() {
-        let a = Server::default();
+        let a = ServerConfig::default();
         let b = server_with_script_options(ScriptOptions { timeout: Some(100) });
         let merged = a.merge_right(b);
         let expected = ScriptOptions { timeout: Some(100) };

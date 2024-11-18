@@ -9,7 +9,7 @@ use url::Url;
 
 use super::from_proto::from_proto;
 use super::{FromJsonGenerator, NameGenerator, RequestSample, PREFIX};
-use crate::core::config::{self, Config, ConfigModule, Link, LinkType};
+use crate::core::config::{self, Config, ConfigModule, LinkConfig, LinkType};
 use crate::core::http::Method;
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoMetadata;
@@ -91,7 +91,7 @@ impl Generator {
     ) -> anyhow::Result<Config> {
         let descriptor_set = resolve_file_descriptor_set(metadata.descriptor_set.clone())?;
         let mut config = from_proto(&[descriptor_set], operation_name, url)?;
-        config.links.push(Link {
+        config.links.push(LinkConfig {
             id: None,
             src: metadata.path.to_owned(),
             type_of: LinkType::Protobuf,

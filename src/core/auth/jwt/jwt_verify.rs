@@ -118,6 +118,8 @@ pub mod tests {
     use jsonwebtoken::jwk::JwkSet;
     use once_cell::sync::Lazy;
 
+    use crate::core::config;
+
     use super::*;
 
     // tokens are valid for 10 years. If it is expired, update it =)
@@ -152,7 +154,7 @@ pub mod tests {
         serde_json::from_value(value).unwrap()
     });
 
-    impl blueprint::Jwt {
+    impl config::Jwt {
         pub fn test_value() -> Self {
             Self {
                 issuer: Default::default(),

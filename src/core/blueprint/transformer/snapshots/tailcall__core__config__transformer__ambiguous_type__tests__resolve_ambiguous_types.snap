@@ -1,0 +1,33 @@
+---
+source: src/core/config/transformer/ambiguous_type.rs
+expression: config.to_sdl()
+---
+schema @server @upstream {
+  query: Query
+}
+
+input Type1Input {
+  name: String
+}
+
+input Type2Input {
+  ty1: Type1Input
+}
+
+type Query {
+  field1(arg1: Type1Input, arg2: Type2Input): Type1
+  field2(arg1: Type1Input, arg2: Type2Input): Type2
+}
+
+type Type1 {
+  name: String
+}
+
+type Type2 {
+  ty1: Type1
+}
+
+type Type3 {
+  ty1: Type1
+  ty2: Type2
+}

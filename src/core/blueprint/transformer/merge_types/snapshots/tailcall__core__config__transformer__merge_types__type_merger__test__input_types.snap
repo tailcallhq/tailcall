@@ -1,0 +1,22 @@
+---
+source: src/core/config/transformer/merge_types/type_merger.rs
+expression: config.to_sdl()
+---
+schema @server @upstream {
+  query: Query
+}
+
+input Far {
+  id: ID
+  tar: String
+}
+
+input GEN__M1 {
+  tar: String
+}
+
+type Query {
+  bar(input: GEN__M1): String @http(url: "https://jsonplaceholder.typicode.com/bar")
+  far(input: Far): String @http(url: "https://jsonplaceholder.typicode.com/far")
+  foo(input: GEN__M1): String @http(url: "https://jsonplaceholder.typicode.com/foo")
+}

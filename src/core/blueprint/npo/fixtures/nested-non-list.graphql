@@ -1,0 +1,15 @@
+schema {
+  query: Query
+}
+
+type F {
+  g: [G] @http(url: "")
+}
+
+type G {
+  e: String
+}
+
+type Query {
+  f: F @http(url: "")
+}

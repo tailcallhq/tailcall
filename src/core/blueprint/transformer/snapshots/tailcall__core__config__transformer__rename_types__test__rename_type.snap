@@ -1,0 +1,39 @@
+---
+source: src/core/config/transformer/rename_types.rs
+expression: cfg.to_sdl()
+---
+schema @server @upstream {
+  query: PostQuery
+}
+
+input InputUser {
+  name: String
+  username: String
+}
+
+union FooBar = InputUser | User
+
+enum TaskStatus {
+  COMPLETED
+  PENDING
+  STARTED
+}
+
+type Post {
+  body: String
+  id: ID!
+  title: String
+}
+
+type PostQuery {
+  posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts")
+}
+
+type User {
+  id: ID!
+  name: String
+}
+
+type UserMutation {
+  createUser(user: InputUser!): User @http(url: "http://jsonplaceholder.typicode.com/users", body: "{{args.user}}", method: "POST")
+}

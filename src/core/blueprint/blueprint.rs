@@ -7,9 +7,7 @@ use async_graphql::ValidationMode;
 use derive_setters::Setters;
 
 use super::directive::Directive;
-use super::telemetry::Telemetry;
 use super::{GlobalTimeout, Index};
-use crate::core::blueprint::{Server, Upstream};
 use crate::core::ir::model::IR;
 use crate::core::schema_extension::SchemaExtension;
 use crate::core::{scalar, Type};
@@ -22,9 +20,6 @@ use crate::core::{scalar, Type};
 pub struct Blueprint {
     pub definitions: Vec<Definition>,
     pub schema: SchemaDefinition,
-    pub server: Server,
-    pub upstream: Upstream,
-    pub telemetry: Telemetry,
 }
 
 #[derive(Clone, Debug)]

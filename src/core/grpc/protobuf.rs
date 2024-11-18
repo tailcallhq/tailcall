@@ -251,7 +251,7 @@ pub mod tests {
     use super::*;
     use crate::core::blueprint::GrpcMethod;
     use crate::core::config::reader::ConfigReader;
-    use crate::core::config::{Config, Field, Grpc, Link, LinkType, Resolver, Type};
+    use crate::core::config::{Config, Field, Grpc, LinkConfig, LinkType, Resolver, Type};
 
     pub async fn get_proto_file(path: &str) -> Result<FileDescriptorSet> {
         let runtime = crate::core::runtime::test::init(None);
@@ -262,7 +262,7 @@ pub mod tests {
             .map(|s| s.to_string_lossy().to_string())
             .unwrap_or_default();
 
-        let mut config = Config::default().links(vec![Link {
+        let mut config = Config::default().links(vec![LinkConfig {
             id: Some(id.clone()),
             src: path.to_string(),
             type_of: LinkType::Protobuf,
