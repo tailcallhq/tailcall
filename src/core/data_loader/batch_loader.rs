@@ -122,11 +122,6 @@ impl BatchLoader {
                             .query_pairs_mut()
                             .append_pair(k.as_str(), v.as_str());
                     }
-                } else {
-                    panic!(
-                        "This is definitely a bug, please report it. Query param should either found in dynamic or static query params: {:?}",
-                        key
-                    );
                 }
             }
             requests.push(request);
@@ -149,33 +144,28 @@ impl BatchLoader {
                     let key = &(k.clone(), v.clone());
                     if batch.contains(key) {
                         if v.is_empty() {
-                            request
+                            new_request
                                 .url_mut()
                                 .query_pairs_mut()
                                 .append_key_only(k.as_str());
                         } else {
-                            request
+                            new_request
                                 .url_mut()
                                 .query_pairs_mut()
                                 .append_pair(k.as_str(), v.as_str());
                         }
                     } else if static_query_pairs.contains(key) {
                         if v.is_empty() {
-                            request
+                            new_request
                                 .url_mut()
                                 .query_pairs_mut()
                                 .append_key_only(k.as_str());
                         } else {
-                            request
+                            new_request
                                 .url_mut()
                                 .query_pairs_mut()
                                 .append_pair(k.as_str(), v.as_str());
                         }
-                    } else {
-                        panic!(
-            "This is definitely a bug, please report it. Query param should either found in dynamic or static query params: {:?}",
-            key
-        );
                     }
                 }
                 requests.push(new_request);
@@ -250,7 +240,6 @@ mod test {
         );
 
         let request = Request::new(reqwest::Method::GET, url.parse().unwrap());
-        let result = batch_loader.load_batch(request).await.unwrap();
-        println!("[Finder]: result: {:#?}", result);
+        let _result = batch_loader.load_batch(request).await.unwrap();
     }
 }
