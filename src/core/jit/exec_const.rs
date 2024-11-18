@@ -122,7 +122,11 @@ impl<'ctx> IRExecutor for ConstValueExec<'ctx> {
     ) -> Result<Self::Output> {
         let field = ctx.field();
 
-        if field.use_batch_loader.is_some() {
+        if field
+            .use_batch_loader
+            .and_then(|v| if v == true { Some(v) } else { None })
+            .is_some()
+        {
             if let Some(_v) = ctx.value().and_then(|v| v.as_array()) {
                 let response = self.call(ctx, ir).await;
                 return response;
