@@ -126,7 +126,6 @@ impl BatchLoader {
                 response = Some(res.clone());
             }
         }
-
         let merged_response = ConstValue::List(final_result);
         Ok(response.unwrap().body(merged_response))
     }
