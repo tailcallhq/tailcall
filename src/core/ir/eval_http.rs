@@ -6,7 +6,7 @@ use tailcall_valid::Validator;
 
 use super::model::DataLoaderId;
 use super::{EvalContext, ResolverContextLike};
-use crate::core::data_loader::{DataLoader, Loader};
+use crate::core::data_loader::{BatchLoader, DataLoader, Loader};
 use crate::core::grpc::protobuf::ProtobufOperation;
 use crate::core::grpc::request::execute_grpc_request;
 use crate::core::grpc::request_template::RenderedRequestTemplate;
@@ -25,6 +25,7 @@ use crate::core::{grpc, http, worker, WorkerIO};
 pub struct EvalHttp<'a, 'ctx, Context: ResolverContextLike + Sync> {
     evaluation_ctx: &'ctx EvalContext<'a, Context>,
     data_loader: Option<&'a DataLoader<DataLoaderRequest, HttpDataLoader>>,
+    batch_loader: Option<&'a BatchLoader>,
     request_template: &'a http::RequestTemplate,
 }
 
@@ -33,6 +34,7 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         evaluation_ctx: &'ctx EvalContext<'a, Context>,
         request_template: &'a RequestTemplate,
         id: &Option<DataLoaderId>,
+        bl_id: &Option<usize>,
     ) -> Self {
         let data_loader = if evaluation_ctx.request_ctx.is_batching_enabled() {
             id.and_then(|id| {
@@ -45,7 +47,14 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
             None
         };
 
-        Self { evaluation_ctx, data_loader, request_template }
+        let batch_loader = bl_id.and_then(|id| {
+            evaluation_ctx
+                .request_ctx
+                .batched_data_loaders
+                .get(id)
+        });
+
+        Self { evaluation_ctx, data_loader, request_template, batch_loader }
     }
 
     pub fn init_request(&self) -> Result<Request, Error> {
@@ -56,7 +65,13 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         let ctx = &self.evaluation_ctx;
         let is_get = req.method() == reqwest::Method::GET;
         let dl = &self.data_loader;
-        let response = if is_get && dl.is_some() {
+
+
+        let response = 
+        if is_get && self.batch_loader.is_some() {
+            let batch_loader = self.batch_loader.unwrap();
+            batch_loader.load_batch(req).await?
+        } else if is_get && dl.is_some() {
             execute_request_with_dl(ctx, req, self.data_loader).await?
         } else {
             execute_raw_request(ctx, req).await?

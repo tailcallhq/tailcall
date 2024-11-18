@@ -45,6 +45,7 @@ pub enum IO {
         req_template: http::RequestTemplate,
         group_by: Option<GroupBy>,
         dl_id: Option<DataLoaderId>,
+        bl_id: Option<usize>,
         http_filter: Option<HttpFilter>,
         is_list: bool,
         dedupe: bool,

@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use anyhow::Ok;
 use async_graphql_value::ConstValue;
 use futures_util::future::join_all;
+use indexmap::IndexSet;
 use reqwest::Request;
 
 use crate::core::{
@@ -65,6 +66,13 @@ impl BatchLoader {
             .map(|(k, v)| (k.to_string(), v.to_string()))
             .collect::<Vec<_>>();
 
+        let unique_query_pairs = dynamic_query_pairs
+            .clone()
+            .into_iter()
+            .collect::<IndexSet<_>>()
+            .into_iter()
+            .collect::<Vec<_>>();
+
         // query parameters that are not part of the group by
         let static_query_pairs = request
             .url()
@@ -80,7 +88,7 @@ impl BatchLoader {
             requests.push(request);
         } else {
             // Split the query parameters into chunks based on max_batch_size
-            let batches = dynamic_query_pairs.chunks(batch_size);
+            let batches = unique_query_pairs.chunks(batch_size);
             for batch in batches {
                 // Build a new set of query parameters for the current batch
                 let mut new_request = request.try_clone().unwrap_or_else(|| {

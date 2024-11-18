@@ -4,6 +4,7 @@ use async_graphql::dynamic::{self, DynamicRequest};
 use async_graphql_value::ConstValue;
 use dashmap::DashMap;
 
+use super::data_loader::BatchLoader;
 use super::jit::AnyResponse;
 use crate::core::async_graphql_hyper::OperationId;
 use crate::core::auth::context::GlobalAuthContext;
@@ -26,6 +27,7 @@ pub struct AppContext {
     pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
     pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
     pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
+    pub batched_data_loaders: Arc<Vec<BatchLoader>>,
     pub endpoints: EndpointSet<Checked>,
     pub auth_ctx: Arc<GlobalAuthContext>,
     pub dedupe_handler: Arc<DedupeResult<IoId, ConstValue, Error>>,
@@ -43,6 +45,7 @@ impl AppContext {
         let mut http_data_loaders = vec![];
         let mut gql_data_loaders = vec![];
         let mut grpc_data_loaders = vec![];
+        let mut batched_data_loaders = vec![];
 
         for def in blueprint.definitions.iter_mut() {
             if let Definition::Object(def) = def {
@@ -68,14 +71,30 @@ impl AppContext {
                                     )
                                     .to_data_loader(upstream_batch.clone().unwrap_or_default());
 
+                                    let bl_id = if group_by.is_some() {
+                                        Some(batched_data_loaders.len())
+                                    } else {
+                                        None
+                                    };
+
                                     let result = Some(IR::IO(IO::Http {
                                         req_template: req_template.clone(),
                                         group_by: group_by.clone(),
                                         dl_id: Some(DataLoaderId::new(http_data_loaders.len())),
+                                        bl_id,
                                         http_filter: http_filter.clone(),
                                         is_list,
                                         dedupe,
                                     }));
+
+                                    if bl_id.is_some() {
+                                        batched_data_loaders.push(BatchLoader::new(
+                                            runtime.clone(),
+                                            group_by.as_ref().unwrap().clone(),
+                                            is_list,
+                                            10,
+                                        ));
+                                    }
 
                                     http_data_loaders.push(data_loader);
 
@@ -148,6 +167,7 @@ impl AppContext {
             http_data_loaders: Arc::new(http_data_loaders),
             gql_data_loaders: Arc::new(gql_data_loaders),
             grpc_data_loaders: Arc::new(grpc_data_loaders),
+            batched_data_loaders: Arc::new(batched_data_loaders),
             endpoints,
             auth_ctx: Arc::new(auth_ctx),
             dedupe_handler: Arc::new(DedupeResult::new(false)),
