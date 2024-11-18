@@ -44,7 +44,7 @@ type User {
         title: foo
 - request:
     method: GET
-    url: http://jsonplaceholder.typicode.com/users?id&foo=bar&id=1 # query should be id&foo=bar&id=1
+    url: http://jsonplaceholder.typicode.com/users?id=1&id&foo=bar # query should be id=1&id&foo=bar
   response:
     status: 200
     body:

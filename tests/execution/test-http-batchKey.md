@@ -54,7 +54,7 @@ type Bar {
       }
 - request:
     method: GET
-    url: http://jsonplaceholder.typicode.com/bar?baz=static_value&barId[]=bar_1&barId%5B%5D=bar_2
+    url: http://jsonplaceholder.typicode.com/bar?baz=static_value&barId%5B%5D=bar_1&barId%5B%5D=bar_2
   response:
     status: 200
     body:
