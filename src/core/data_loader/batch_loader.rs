@@ -57,7 +57,7 @@ impl BatchLoader {
 
     pub async fn load_batch(
         &self,
-        request: Request,
+        mut request: Request,
     ) -> async_graphql::Result<Response<ConstValue>, anyhow::Error> {
         // query parameters that are part of the group by
         let dynamic_query_pairs = request
@@ -79,6 +79,7 @@ impl BatchLoader {
             .url()
             .query_pairs()
             .filter(|(k, _)| !self.group_by.key().eq(&k.to_string()))
+            .map(|(k, v)| (k.to_string(), v.to_string()))
             .collect::<Vec<_>>();
 
         let mut requests = vec![];
@@ -86,6 +87,15 @@ impl BatchLoader {
 
         // Check if the number of query parameters exceeds the maximum batch size
         if dynamic_query_pairs.len() <= batch_size {
+            request.url_mut().query_pairs_mut().clear();
+            request
+                .url_mut()
+                .query_pairs_mut()
+                .extend_pairs(static_query_pairs);
+            request
+                .url_mut()
+                .query_pairs_mut()
+                .extend_pairs(unique_query_pairs);
             requests.push(request);
         } else {
             // Split the query parameters into chunks based on max_batch_size
@@ -134,6 +144,7 @@ impl BatchLoader {
         &self,
         request: Request,
     ) -> async_graphql::Result<HashMap<String, Response<ConstValue>>, anyhow::Error> {
+        println!("[Finder]: request: {}", request.url());
         let query_set = request
             .url()
             .query_pairs()

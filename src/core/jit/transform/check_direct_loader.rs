@@ -15,9 +15,14 @@ impl<A> CheckDirectLoader<A> {
 
 fn mark_direct_loader<A>(selection: &mut [Field<A>], is_parent_list: bool) {
     for field in selection.iter_mut() {
-        if let Some(IR::IO(IO::Http { bl_id, .. })) = field.ir {
-            if is_parent_list {
-                field.use_batch_loader = Some(bl_id.is_some());
+        if let Some(IR::IO(IO::Http { bl_id, .. })) = field.ir.as_mut() {
+            if is_parent_list && bl_id.is_some() {
+                field.use_batch_loader = Some(true);
+            }
+
+            if field.use_batch_loader.is_none() {
+                // TODO: temp fix.
+                *bl_id = None
             }
         }
         mark_direct_loader(&mut field.selection, field.type_of.is_list());
