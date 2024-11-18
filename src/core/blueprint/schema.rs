@@ -9,7 +9,7 @@ use crate::core::directive::DirectiveCodec;
 
 fn validate_query(config: &Config) -> Valid<(), String> {
     Valid::from_option(
-        config.schema.query.clone(),
+        config.blueprint_builder.schema.query.clone(),
         "Query root is missing".to_owned(),
     )
     .and_then(|ref query_type_name| {
@@ -17,7 +17,12 @@ fn validate_query(config: &Config) -> Valid<(), String> {
             return Valid::fail("Query type is not defined".to_owned()).trace(query_type_name);
         };
         let mut set = HashSet::new();
-        validate_type_has_resolvers(query_type_name, query, &config.types, &mut set)
+        validate_type_has_resolvers(
+            query_type_name,
+            query,
+            &config.blueprint_builder.types,
+            &mut set,
+        )
     })
     .unit()
 }
@@ -66,7 +71,7 @@ pub fn validate_field_has_resolver(
 }
 
 fn validate_mutation(config: &Config) -> Valid<(), String> {
-    let mutation_type_name = config.schema.mutation.as_ref();
+    let mutation_type_name = config.blueprint_builder.schema.mutation.as_ref();
 
     if let Some(mutation_type_name) = mutation_type_name {
         let Some(mutation) = config.find_type(mutation_type_name) else {
@@ -74,7 +79,12 @@ fn validate_mutation(config: &Config) -> Valid<(), String> {
                 .trace(mutation_type_name);
         };
         let mut set = HashSet::new();
-        validate_type_has_resolvers(mutation_type_name, mutation, &config.types, &mut set)
+        validate_type_has_resolvers(
+            mutation_type_name,
+            mutation,
+            &config.blueprint_builder.types,
+            &mut set,
+        )
     } else {
         Valid::succeed(())
     }
@@ -85,13 +95,13 @@ pub fn to_schema<'a>() -> TryFoldConfig<'a, SchemaDefinition> {
         validate_query(config)
             .and(validate_mutation(config))
             .and(Valid::from_option(
-                config.schema.query.as_ref(),
+                config.blueprint_builder.schema.query.as_ref(),
                 "Query root is missing".to_owned(),
             ))
             .zip(to_directive(config.server.to_directive()))
             .map(|(query_type_name, directive)| SchemaDefinition {
                 query: query_type_name.to_owned(),
-                mutation: config.schema.mutation.clone(),
+                mutation: config.blueprint_builder.schema.mutation.clone(),
                 directives: vec![directive],
             })
     })

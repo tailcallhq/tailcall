@@ -57,7 +57,7 @@ impl OperationTypeGenerator {
             .operation_type
             .to_string()
             .to_case(Case::Pascal);
-        if let Some(type_) = config.types.get_mut(req_op.as_str()) {
+        if let Some(type_) = config.blueprint_builder.types.get_mut(req_op.as_str()) {
             type_
                 .fields
                 .insert(request_sample.field_name.to_owned(), field);
@@ -65,7 +65,7 @@ impl OperationTypeGenerator {
             let mut ty = config::Type::default();
             ty.fields
                 .insert(request_sample.field_name.to_owned(), field);
-            config.types.insert(req_op.to_owned(), ty);
+            config.blueprint_builder.types.insert(req_op.to_owned(), ty);
         }
 
         Valid::succeed(config)
@@ -114,7 +114,10 @@ mod test {
         );
 
         let type_ = Type { fields, ..Default::default() };
-        config.types.insert("Query".to_owned(), type_);
+        config
+            .blueprint_builder
+            .types
+            .insert("Query".to_owned(), type_);
 
         let config = OperationTypeGenerator
             .generate(&sample, "T44", &NameGenerator::new("Input"), config)

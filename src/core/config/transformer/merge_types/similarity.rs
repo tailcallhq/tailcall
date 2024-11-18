@@ -91,8 +91,9 @@ impl<'a> Similarity<'a> {
                             // If the list properties don't match, we cannot merge these types.
                             return Valid::fail("Type merge failed: The fields have different list types and cannot be merged.".to_string());
                         }
-                    } else if let Some(type_1) = config.types.get(field_1_type_of) {
-                        if let Some(type_2) = config.types.get(field_2_type_of) {
+                    } else if let Some(type_1) = config.blueprint_builder.types.get(field_1_type_of)
+                    {
+                        if let Some(type_2) = config.blueprint_builder.types.get(field_2_type_of) {
                             if visited_type.contains(field_1_type_of, field_2_type_of) {
                                 // it's cyclic type, return true as they're the same.
                                 return Valid::succeed(true);
@@ -195,10 +196,14 @@ mod test {
         );
 
         let mut cfg: Config = Config::default();
-        cfg.types.insert("Foo1".to_owned(), foo1.to_owned());
-        cfg.types.insert("Foo2".to_owned(), foo2.to_owned());
-        cfg.types.insert("Bar1".to_owned(), bar1);
-        cfg.types.insert("Bar2".to_owned(), bar2);
+        cfg.blueprint_builder
+            .types
+            .insert("Foo1".to_owned(), foo1.to_owned());
+        cfg.blueprint_builder
+            .types
+            .insert("Foo2".to_owned(), foo2.to_owned());
+        cfg.blueprint_builder.types.insert("Bar1".to_owned(), bar1);
+        cfg.blueprint_builder.types.insert("Bar2".to_owned(), bar2);
 
         let mut gen = Similarity::new(&cfg);
         let is_similar = gen
@@ -235,10 +240,14 @@ mod test {
         );
 
         let mut cfg: Config = Config::default();
-        cfg.types.insert("Foo1".to_owned(), foo1.to_owned());
-        cfg.types.insert("Foo2".to_owned(), foo2.to_owned());
-        cfg.types.insert("Bar1".to_owned(), bar1);
-        cfg.types.insert("Bar2".to_owned(), bar2);
+        cfg.blueprint_builder
+            .types
+            .insert("Foo1".to_owned(), foo1.to_owned());
+        cfg.blueprint_builder
+            .types
+            .insert("Foo2".to_owned(), foo2.to_owned());
+        cfg.blueprint_builder.types.insert("Bar1".to_owned(), bar1);
+        cfg.blueprint_builder.types.insert("Bar2".to_owned(), bar2);
 
         let mut gen = Similarity::new(&cfg);
         let is_similar = gen
@@ -287,12 +296,16 @@ mod test {
         );
 
         let mut cfg: Config = Config::default();
-        cfg.types.insert("Foo1".to_owned(), foo1.to_owned());
-        cfg.types.insert("Foo2".to_owned(), foo2.to_owned());
-        cfg.types.insert("Bar1".to_owned(), bar1);
-        cfg.types.insert("Bar2".to_owned(), bar2);
-        cfg.types.insert("Far1".to_owned(), far1);
-        cfg.types.insert("Far2".to_owned(), far2);
+        cfg.blueprint_builder
+            .types
+            .insert("Foo1".to_owned(), foo1.to_owned());
+        cfg.blueprint_builder
+            .types
+            .insert("Foo2".to_owned(), foo2.to_owned());
+        cfg.blueprint_builder.types.insert("Bar1".to_owned(), bar1);
+        cfg.blueprint_builder.types.insert("Bar2".to_owned(), bar2);
+        cfg.blueprint_builder.types.insert("Far1".to_owned(), far1);
+        cfg.blueprint_builder.types.insert("Far2".to_owned(), far2);
 
         let mut gen = Similarity::new(&cfg);
         let is_similar = gen
@@ -329,8 +342,14 @@ mod test {
             .insert("c".to_string(), optional_int_field.clone());
 
         let mut config = Config::default();
-        config.types.insert("Foo".to_string(), ty1.clone());
-        config.types.insert("Bar".to_string(), ty2.clone());
+        config
+            .blueprint_builder
+            .types
+            .insert("Foo".to_string(), ty1.clone());
+        config
+            .blueprint_builder
+            .types
+            .insert("Bar".to_string(), ty2.clone());
 
         let types_equal = Similarity::new(&config)
             .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
@@ -360,8 +379,14 @@ mod test {
             .insert("a".to_string(), optional_int_field.clone());
 
         let mut config = Config::default();
-        config.types.insert("Foo".to_string(), ty1.clone());
-        config.types.insert("Bar".to_string(), ty2.clone());
+        config
+            .blueprint_builder
+            .types
+            .insert("Foo".to_string(), ty1.clone());
+        config
+            .blueprint_builder
+            .types
+            .insert("Bar".to_string(), ty2.clone());
 
         let types_equal = Similarity::new(&config)
             .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
@@ -391,8 +416,14 @@ mod test {
             .insert("a".to_string(), optional_int_field.clone());
 
         let mut config = Config::default();
-        config.types.insert("Foo".to_string(), ty1.clone());
-        config.types.insert("Bar".to_string(), ty2.clone());
+        config
+            .blueprint_builder
+            .types
+            .insert("Foo".to_string(), ty1.clone());
+        config
+            .blueprint_builder
+            .types
+            .insert("Bar".to_string(), ty2.clone());
 
         let types_equal = Similarity::new(&config)
             .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
@@ -417,8 +448,14 @@ mod test {
             .insert("a".to_string(), required_int_field.clone());
 
         let mut config = Config::default();
-        config.types.insert("Foo".to_string(), ty1.clone());
-        config.types.insert("Bar".to_string(), ty2.clone());
+        config
+            .blueprint_builder
+            .types
+            .insert("Foo".to_string(), ty1.clone());
+        config
+            .blueprint_builder
+            .types
+            .insert("Bar".to_string(), ty2.clone());
 
         let types_equal = Similarity::new(&config)
             .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
@@ -443,8 +480,14 @@ mod test {
             .insert("a".to_string(), required_int_field.clone());
 
         let mut config = Config::default();
-        config.types.insert("Foo".to_string(), ty1.clone());
-        config.types.insert("Bar".to_string(), ty2.clone());
+        config
+            .blueprint_builder
+            .types
+            .insert("Foo".to_string(), ty1.clone());
+        config
+            .blueprint_builder
+            .types
+            .insert("Bar".to_string(), ty2.clone());
 
         let types_equal = Similarity::new(&config)
             .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
@@ -472,8 +515,14 @@ mod test {
             .insert("a".to_string(), required_int_field.clone());
 
         let mut config = Config::default();
-        config.types.insert("Foo".to_string(), ty1.clone());
-        config.types.insert("Bar".to_string(), ty2.clone());
+        config
+            .blueprint_builder
+            .types
+            .insert("Foo".to_string(), ty1.clone());
+        config
+            .blueprint_builder
+            .types
+            .insert("Bar".to_string(), ty2.clone());
 
         let types_equal = Similarity::new(&config)
             .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
@@ -504,8 +553,14 @@ mod test {
 
         // Create configuration with Foo and Bar types
         let mut config = Config::default();
-        config.types.insert("Foo".to_owned(), foo.clone());
-        config.types.insert("Bar".to_owned(), bar.clone());
+        config
+            .blueprint_builder
+            .types
+            .insert("Foo".to_owned(), foo.clone());
+        config
+            .blueprint_builder
+            .types
+            .insert("Bar".to_owned(), bar.clone());
 
         // Calculate similarity between Foo and Bar
         let result = Similarity::new(&config)
@@ -532,8 +587,8 @@ mod test {
 
         let result = similarity
             .similarity(
-                ("B", config.types.get("B").unwrap()),
-                ("A", config.types.get("A").unwrap()),
+                ("B", config.blueprint_builder.types.get("B").unwrap()),
+                ("A", config.blueprint_builder.types.get("A").unwrap()),
                 0.9,
             )
             .to_result()

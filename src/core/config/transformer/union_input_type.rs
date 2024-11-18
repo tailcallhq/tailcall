@@ -34,7 +34,7 @@ impl Transform for UnionInputType {
 
         let new_types = visitor.visit();
 
-        config.types = new_types;
+        config.blueprint_builder.types = new_types;
 
         Valid::succeed(config)
     }
@@ -51,7 +51,7 @@ enum UnionPresence {
 struct Visitor<'cfg> {
     /// Original config
     config: &'cfg Config,
-    /// Result types that will replace original config.types
+    /// Result types that will replace original config.blueprint_builder.types
     new_types: BTreeMap<String, Type>,
     // maps type name to UnionPresence
     union_presence: HashMap<&'cfg String, UnionPresence>,
@@ -73,7 +73,7 @@ impl<'cfg> Visitor<'cfg> {
     /// or replace the field set for the type if any of the arguments use
     /// a union somewhere down the fields tree.
     fn visit(mut self) -> BTreeMap<String, Type> {
-        for (type_name, type_) in &self.config.types {
+        for (type_name, type_) in &self.config.blueprint_builder.types {
             let fields = type_
                 .fields
                 .iter()
@@ -112,7 +112,7 @@ impl<'cfg> Visitor<'cfg> {
         // avoid endless recursion
         self.visited_types.insert(type_name);
 
-        if let Some(union_) = self.config.unions.get(type_name) {
+        if let Some(union_) = self.config.blueprint_builder.unions.get(type_name) {
             // if the type is union process the nested types recursively
             for type_name in &union_.types {
                 self.collect_nested_unions_for_type(type_name);
@@ -133,7 +133,7 @@ impl<'cfg> Visitor<'cfg> {
 
             self.union_presence
                 .insert(type_name, UnionPresence::Union(types.into_iter().collect()));
-        } else if let Some(type_) = self.config.types.get(type_name) {
+        } else if let Some(type_) = self.config.blueprint_builder.types.get(type_name) {
             // first, recursively walk over nested fields to see if there any nested unions
             for field in type_.fields.values() {
                 self.collect_nested_unions_for_type(field.type_of.name());

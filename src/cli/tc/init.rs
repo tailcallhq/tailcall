@@ -5,6 +5,7 @@ use anyhow::Result;
 
 use super::helpers::{GRAPHQL_RC, TAILCALL_RC, TAILCALL_RC_SCHEMA};
 use crate::cli::runtime::{confirm_and_write, create_directory, select_prompt};
+use crate::core::blueprint::BlueprintBuilder;
 use crate::core::config::{Config, Expr, Field, Resolver, RootSchema, Source};
 use crate::core::merge_right::MergeRight;
 use crate::core::runtime::TargetRuntime;
@@ -102,9 +103,13 @@ fn main_config() -> Config {
     Config {
         server: Default::default(),
         upstream: Default::default(),
-        schema: RootSchema { query: Some("Query".to_string()), ..Default::default() },
-        types: BTreeMap::from([("Query".into(), query_type)]),
-        ..Default::default()
+        blueprint_builder: BlueprintBuilder {
+            schema: RootSchema { query: Some("Query".to_string()), ..Default::default() },
+            types: BTreeMap::from([("Query".into(), query_type)]),
+            ..Default::default()
+        },
+        links: Default::default(),
+        telemetry: Default::default(),
     }
 }
 

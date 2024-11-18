@@ -272,7 +272,7 @@ pub mod tests {
 
         let method = GrpcMethod { package: id, service: "a".to_owned(), name: "b".to_owned() };
         let grpc = Grpc { method: method.to_string(), ..Default::default() };
-        config.types.insert(
+        config.blueprint_builder.types.insert(
             "foo".to_string(),
             Type::default().fields(vec![(
                 "bar",

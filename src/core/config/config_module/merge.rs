@@ -5,6 +5,7 @@ use tailcall_valid::{Valid, Validator};
 
 use super::{Cache, ConfigModule};
 use crate::core;
+use crate::core::blueprint::BlueprintBuilder;
 use crate::core::config::{Arg, Config, Enum, Field, Type};
 use crate::core::merge_right::MergeRight;
 use crate::core::variance::{Contravariant, Covariant, Invariant};
@@ -185,10 +186,10 @@ impl Covariant for Enum {
 
 impl Invariant for Cache {
     fn unify(self, other: Self) -> Valid<Self, String> {
-        let mut types = self.config.types;
-        let mut enums = self.config.enums;
+        let mut types = self.config.blueprint_builder.types;
+        let mut enums = self.config.blueprint_builder.enums;
 
-        Valid::from_iter(other.config.types, |(type_name, other_type)| {
+        Valid::from_iter(other.config.blueprint_builder.types, |(type_name, other_type)| {
             let trace_name = type_name.clone();
             match types.remove(&type_name) {
                 Some(ty) => {
@@ -229,7 +230,7 @@ impl Invariant for Cache {
             .map(|ty| (type_name, ty))
             .trace(&trace_name)
         })
-        .fuse(Valid::from_iter(other.config.enums, |(name, other_enum)| {
+        .fuse(Valid::from_iter(other.config.blueprint_builder.enums, |(name, other_enum)| {
             let trace_name = name.clone();
 
             match enums.remove(&name) {
@@ -275,7 +276,17 @@ impl Invariant for Cache {
             enums.extend(merged_enums);
 
             let config = Config {
-                types, enums, unions: self.config.unions.merge_right(other.config.unions), server: self.config.server.merge_right(other.config.server), upstream: self.config.upstream.merge_right(other.config.upstream), schema: self.config.schema.merge_right(other.config.schema), links: self.config.links.merge_right(other.config.links), telemetry: self.config.telemetry.merge_right(other.config.telemetry)  };
+                blueprint_builder: BlueprintBuilder {
+                    types,
+                    enums,
+                    unions: self.config.blueprint_builder.unions.merge_right(other.config.blueprint_builder.unions),
+                    schema: self.config.blueprint_builder.schema.merge_right(other.config.blueprint_builder.schema),
+                },
+                server: self.config.server.merge_right(other.config.server),
+                upstream: self.config.upstream.merge_right(other.config.upstream),
+                links: self.config.links.merge_right(other.config.links),
+                telemetry: self.config.telemetry.merge_right(other.config.telemetry)
+            };
 
             Cache {
                 config,

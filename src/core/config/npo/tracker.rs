@@ -153,7 +153,7 @@ impl<'a> PathTracker<'a> {
     }
 
     fn find_chunks(&mut self) -> Chunk<Chunk<FieldName<'a>>> {
-        match &self.config.schema.query {
+        match &self.config.blueprint_builder.schema.query {
             None => Chunk::new(),
             Some(query) => self.iter(
                 Chunk::new(),

@@ -242,8 +242,6 @@ fn request_context() -> RequestContext {
     let server = ServerRuntime::try_from(config_module).unwrap();
     let http = Arc::new(Http::init(&upstream));
     let http2 = Arc::new(Http::init(&upstream.clone().http2_only(true)));
-    let server = server;
-    let upstream = upstream;
     let runtime = TargetRuntime {
         http2_only: http2,
         http,

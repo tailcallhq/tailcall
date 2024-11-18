@@ -43,13 +43,20 @@ fn config_document(config: &Config) -> ServiceDocument {
     let schema_definition = SchemaDefinition {
         extend: false,
         directives,
-        query: config.schema.query.clone().map(|name| pos(Name::new(name))),
+        query: config
+            .blueprint_builder
+            .schema
+            .query
+            .clone()
+            .map(|name| pos(Name::new(name))),
         mutation: config
+            .blueprint_builder
             .schema
             .mutation
             .clone()
             .map(|name| pos(Name::new(name))),
         subscription: config
+            .blueprint_builder
             .schema
             .subscription
             .clone()
@@ -58,7 +65,7 @@ fn config_document(config: &Config) -> ServiceDocument {
     definitions.push(TypeSystemDefinition::Schema(pos(schema_definition)));
     let interface_types = config.interfaces_types_map();
     let input_types = config.input_types();
-    for (type_name, type_def) in config.types.iter() {
+    for (type_name, type_def) in config.blueprint_builder.types.iter() {
         let kind = if interface_types.contains_key(type_name) {
             TypeKind::Interface(InterfaceType {
                 implements: type_def
@@ -159,7 +166,7 @@ fn config_document(config: &Config) -> ServiceDocument {
             kind,
         })));
     }
-    for (name, union) in config.unions.iter() {
+    for (name, union) in config.blueprint_builder.unions.iter() {
         definitions.push(TypeSystemDefinition::Type(pos(TypeDefinition {
             extend: false,
             description: None,
@@ -175,7 +182,7 @@ fn config_document(config: &Config) -> ServiceDocument {
         })));
     }
 
-    for (name, values) in config.enums.iter() {
+    for (name, values) in config.blueprint_builder.enums.iter() {
         definitions.push(TypeSystemDefinition::Type(pos(TypeDefinition {
             extend: false,
             description: values.doc.clone().map(pos),

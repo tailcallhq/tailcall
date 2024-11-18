@@ -2,16 +2,14 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Config",
   "type": "object",
-  "required": [
-    "schema"
-  ],
   "properties": {
-    "enums": {
-      "description": "A map of all the enum types in the schema",
-      "type": "object",
-      "additionalProperties": {
-        "$ref": "#/definitions/Enum"
-      }
+    "blueprintBuilder": {
+      "description": "A builder for generating the blueprint.",
+      "allOf": [
+        {
+          "$ref": "#/definitions/BlueprintBuilder"
+        }
+      ]
     },
     "links": {
       "description": "A list of all links in the schema.",
@@ -19,14 +17,6 @@
       "items": {
         "$ref": "#/definitions/Link"
       }
-    },
-    "schema": {
-      "description": "Specifies the entry points for query and mutation in the generated GraphQL schema.",
-      "allOf": [
-        {
-          "$ref": "#/definitions/RootSchema"
-        }
-      ]
     },
     "server": {
       "description": "Dictates how the server behaves and helps tune tailcall for all ingress requests. Features such as request batching, SSL, HTTP2 etc. can be configured here.",
@@ -44,21 +34,6 @@
           "$ref": "#/definitions/Telemetry"
         }
       ]
-    },
-    "types": {
-      "description": "A map of all the types in the schema.",
-      "default": {},
-      "type": "object",
-      "additionalProperties": {
-        "$ref": "#/definitions/Type"
-      }
-    },
-    "unions": {
-      "description": "A map of all the union types in the schema.",
-      "type": "object",
-      "additionalProperties": {
-        "$ref": "#/definitions/Union"
-      }
     },
     "upstream": {
       "description": "Dictates how tailcall should handle upstream requests/responses. Tuning upstream can improve performance and reliability for connections.",
@@ -201,6 +176,44 @@
           ],
           "format": "uint",
           "minimum": 0.0
+        }
+      }
+    },
+    "BlueprintBuilder": {
+      "type": "object",
+      "required": [
+        "schema"
+      ],
+      "properties": {
+        "enums": {
+          "description": "A map of all the enum types in the schema",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/Enum"
+          }
+        },
+        "schema": {
+          "description": "Specifies the entry points for query and mutation in the generated GraphQL schema.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/RootSchema"
+            }
+          ]
+        },
+        "types": {
+          "description": "A map of all the types in the schema.",
+          "default": {},
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/Type"
+          }
+        },
+        "unions": {
+          "description": "A map of all the union types in the schema.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/Union"
+          }
         }
       }
     },

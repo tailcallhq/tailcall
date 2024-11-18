@@ -13,6 +13,7 @@ use tailcall_valid::{Valid, ValidationError, Validator};
 
 use super::directive::{to_directive, Directive};
 use super::{Alias, Discriminate, Resolver, Telemetry, FEDERATION_DIRECTIVES};
+use crate::core::blueprint::BlueprintBuilder;
 use crate::core::config::{
     self, Cache, Config, Enum, Link, Modify, Omit, Protected, RootSchema, Server, Union, Upstream,
     Variant,
@@ -54,12 +55,9 @@ pub fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
                 |(server, upstream, types, unions, enums, schema, links, telemetry)| Config {
                     server,
                     upstream,
-                    types,
-                    unions,
-                    enums,
-                    schema,
                     links,
                     telemetry,
+                    blueprint_builder: BlueprintBuilder { types, unions, enums, schema },
                 },
             )
     })

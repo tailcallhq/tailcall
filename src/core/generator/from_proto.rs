@@ -58,7 +58,10 @@ impl Context {
 
     /// Resolves the actual name and inserts the type.
     fn insert_type(mut self, name: String, ty: config::Type) -> Self {
-        self.config.types.insert(name.to_string(), ty);
+        self.config
+            .blueprint_builder
+            .types
+            .insert(name.to_string(), ty);
         self
     }
 
@@ -137,7 +140,7 @@ impl Context {
         // to actually create union and use just this type
         if union_types.len() == 1 {
             let (_, ty) = union_types.pop().unwrap();
-            self.config.types.insert(type_name, ty);
+            self.config.blueprint_builder.types.insert(type_name, ty);
             return self;
         }
 
@@ -152,8 +155,14 @@ impl Context {
         }
 
         // base interface type
-        self.config.types.insert(interface_name, base_type);
-        self.config.unions.insert(type_name, union_);
+        self.config
+            .blueprint_builder
+            .types
+            .insert(interface_name, base_type);
+        self.config
+            .blueprint_builder
+            .unions
+            .insert(type_name, union_);
 
         self
     }
@@ -211,6 +220,7 @@ impl Context {
                 .collect();
 
             self.config
+                .blueprint_builder
                 .enums
                 .insert(type_name, Enum { variants: variants_with_comments, doc });
         }
@@ -383,10 +393,11 @@ impl Context {
 
                 let ty = self
                     .config
+                    .blueprint_builder
                     .types
                     .entry(self.query.clone())
                     .or_insert_with(|| {
-                        self.config.schema.query = Some(self.query.clone());
+                        self.config.blueprint_builder.schema.query = Some(self.query.clone());
                         config::Type::default()
                     });
 

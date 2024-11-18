@@ -114,7 +114,7 @@ pub fn update_federation<'a>() -> TryFoldConfig<'a, Blueprint> {
                 return Valid::fail("Query type is not an object inside the blueprint".to_string());
             };
 
-            let Some(config_type) = config_module.types.get(&query_name) else {
+            let Some(config_type) = config_module.blueprint_builder.types.get(&query_name) else {
                 return Valid::fail(format!("Cannot find type {query_name} in the config"));
             };
 

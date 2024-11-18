@@ -265,7 +265,7 @@ mod reader_tests {
         let runtime = crate::core::runtime::test::init(None);
 
         let mut cfg = Config::default();
-        cfg.schema.query = Some("Test".to_string());
+        cfg.blueprint_builder.schema.query = Some("Test".to_string());
         cfg = cfg.types([("Test", Type::default())].to_vec());
 
         let server = start_mock_server();
@@ -301,7 +301,8 @@ mod reader_tests {
                 .iter()
                 .map(|i| i.to_string())
                 .collect::<Vec<String>>(),
-            c.types
+            c.blueprint_builder
+                .types
                 .keys()
                 .map(|i| i.to_string())
                 .collect::<Vec<String>>()
@@ -329,7 +330,8 @@ mod reader_tests {
                 .iter()
                 .map(|i| i.to_string())
                 .collect::<Vec<String>>(),
-            c.types
+            c.blueprint_builder
+                .types
                 .keys()
                 .map(|i| i.to_string())
                 .collect::<Vec<String>>()

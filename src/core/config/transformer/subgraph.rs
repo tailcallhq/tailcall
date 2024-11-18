@@ -39,30 +39,33 @@ impl Transform for Subgraph {
             // if federation is disabled don't process the config
             return Valid::succeed(config);
         }
-        let config_types = config.types.clone();
+        let config_types = config.blueprint_builder.types.clone();
         let mut resolver_by_type = BTreeMap::new();
 
-        let valid = Valid::from_iter(config.types.iter_mut(), |(type_name, ty)| {
-            if let Some(resolver) = &ty.resolver {
-                resolver_by_type.insert(type_name.clone(), resolver.clone());
+        let valid = Valid::from_iter(
+            config.blueprint_builder.types.iter_mut(),
+            |(type_name, ty)| {
+                if let Some(resolver) = &ty.resolver {
+                    resolver_by_type.insert(type_name.clone(), resolver.clone());
 
-                KeysExtractor::validate(&config_types, resolver, type_name).and_then(|_| {
-                    KeysExtractor::extract_keys(resolver).and_then(|fields| match fields {
-                        Some(fields) => {
-                            let key = Key { fields };
+                    KeysExtractor::validate(&config_types, resolver, type_name).and_then(|_| {
+                        KeysExtractor::extract_keys(resolver).and_then(|fields| match fields {
+                            Some(fields) => {
+                                let key = Key { fields };
 
-                            to_directive(key.to_directive()).map(|directive| {
-                                ty.directives.push(directive);
-                            })
-                        }
-                        None => Valid::succeed(()),
+                                to_directive(key.to_directive()).map(|directive| {
+                                    ty.directives.push(directive);
+                                })
+                            }
+                            None => Valid::succeed(()),
+                        })
                     })
-                })
-            } else {
-                Valid::succeed(())
-            }
-            .trace(type_name)
-        });
+                } else {
+                    Valid::succeed(())
+                }
+                .trace(type_name)
+            },
+        );
 
         if valid.is_fail() {
             return valid.map_to(config);
@@ -77,18 +80,23 @@ impl Transform for Subgraph {
 
         // type that represents the response for service
         config
+            .blueprint_builder
             .types
             .insert(SERVICE_TYPE_NAME.to_owned(), service_type);
 
-        let query_type_name = match config.schema.query.as_ref() {
+        let query_type_name = match config.blueprint_builder.schema.query.as_ref() {
             Some(name) => name,
             None => {
-                config.schema.query = Some("Query".to_string());
+                config.blueprint_builder.schema.query = Some("Query".to_string());
                 "Query"
             }
         };
 
-        let query_type = config.types.entry(query_type_name.to_owned()).or_default();
+        let query_type = config
+            .blueprint_builder
+            .types
+            .entry(query_type_name.to_owned())
+            .or_default();
 
         query_type.fields.insert(
             SERVICE_FIELD_NAME.to_string(),
@@ -110,14 +118,20 @@ impl Transform for Subgraph {
 
             // union that wraps any possible types for entities
             config
+                .blueprint_builder
                 .unions
                 .insert(UNION_ENTITIES_NAME.to_owned(), entity_union);
             // any scalar for argument `representations`
             config
+                .blueprint_builder
                 .types
                 .insert(ENTITIES_TYPE_NAME.to_owned(), config::Type::default());
 
-            let query_type = config.types.entry(query_type_name.to_owned()).or_default();
+            let query_type = config
+                .blueprint_builder
+                .types
+                .entry(query_type_name.to_owned())
+                .or_default();
 
             let arg = Arg {
                 type_of: Type::from(ENTITIES_TYPE_NAME.to_string())

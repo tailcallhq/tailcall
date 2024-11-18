@@ -81,7 +81,7 @@ mod tests {
             name: "SayHello".to_string(),
         };
         let grpc = Grpc { method: method.to_string(), ..Default::default() };
-        config.types.insert(
+        config.blueprint_builder.types.insert(
             "foo".to_string(),
             Type::default().fields(vec![(
                 "bar",

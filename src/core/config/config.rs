@@ -15,6 +15,7 @@ use super::{
     AddField, Alias, Cache, Call, Discriminate, Expr, GraphQL, Grpc, Http, Link, Modify, Omit,
     Protected, Server, Telemetry, Upstream, JS,
 };
+use crate::core::blueprint::BlueprintBuilder;
 pub use crate::core::blueprint::{
     Arg, Enum, Field, GraphQLOperationType, RootSchema, Type, Union, Variant,
 };
@@ -53,27 +54,6 @@ pub struct Config {
     pub upstream: Upstream,
 
     ///
-    /// Specifies the entry points for query and mutation in the generated
-    /// GraphQL schema.
-    pub schema: RootSchema,
-
-    ///
-    /// A map of all the types in the schema.
-    #[serde(default)]
-    #[setters(skip)]
-    pub types: BTreeMap<String, Type>,
-
-    ///
-    /// A map of all the union types in the schema.
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub unions: BTreeMap<String, Union>,
-
-    ///
-    /// A map of all the enum types in the schema
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub enums: BTreeMap<String, Enum>,
-
-    ///
     /// A list of all links in the schema.
     #[serde(default, skip_serializing_if = "is_default")]
     pub links: Vec<Link>,
@@ -81,6 +61,11 @@ pub struct Config {
     /// Enable [opentelemetry](https://opentelemetry.io) support
     #[serde(default, skip_serializing_if = "is_default")]
     pub telemetry: Telemetry,
+
+    ///
+    /// A builder for generating the blueprint.
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub blueprint_builder: BlueprintBuilder,
 }
 
 impl Config {
@@ -88,9 +73,9 @@ impl Config {
         let type_name = type_name.to_lowercase();
 
         [
-            &self.schema.query,
-            &self.schema.mutation,
-            &self.schema.subscription,
+            &self.blueprint_builder.schema.query,
+            &self.blueprint_builder.schema.mutation,
+            &self.blueprint_builder.schema.subscription,
         ]
         .iter()
         .filter_map(|&root_name| root_name.as_ref())
@@ -102,15 +87,15 @@ impl Config {
     }
 
     pub fn find_type(&self, name: &str) -> Option<&Type> {
-        self.types.get(name)
+        self.blueprint_builder.types.get(name)
     }
 
     pub fn find_union(&self, name: &str) -> Option<&Union> {
-        self.unions.get(name)
+        self.blueprint_builder.unions.get(name)
     }
 
     pub fn find_enum(&self, name: &str) -> Option<&Enum> {
-        self.enums.get(name)
+        self.blueprint_builder.enums.get(name)
     }
 
     pub fn to_yaml(&self) -> Result<String> {
@@ -131,7 +116,7 @@ impl Config {
     }
 
     pub fn query(mut self, query: &str) -> Self {
-        self.schema.query = Some(query.to_string());
+        self.blueprint_builder.schema.query = Some(query.to_string());
         self
     }
 
@@ -140,14 +125,14 @@ impl Config {
         for (name, type_) in types {
             graphql_types.insert(name.to_string(), type_);
         }
-        self.types = graphql_types;
+        self.blueprint_builder.types = graphql_types;
         self
     }
 
     pub fn contains(&self, name: &str) -> bool {
-        self.types.contains_key(name)
-            || self.unions.contains_key(name)
-            || self.enums.contains_key(name)
+        self.blueprint_builder.types.contains_key(name)
+            || self.blueprint_builder.unions.contains_key(name)
+            || self.blueprint_builder.enums.contains_key(name)
     }
 
     pub fn from_json(json: &str) -> Result<Self> {
@@ -204,7 +189,8 @@ impl Config {
     ///
     /// Checks if a type is a scalar or not.
     pub fn is_scalar(&self, type_name: &str) -> bool {
-        self.types
+        self.blueprint_builder
+            .types
             .get(type_name)
             .map_or(Scalar::is_predefined(type_name), |ty| ty.scalar())
     }
@@ -224,7 +210,8 @@ impl Config {
 
     /// finds the all types which are present in union.
     pub fn union_types(&self) -> HashSet<String> {
-        self.unions
+        self.blueprint_builder
+            .unions
             .values()
             .flat_map(|union| union.types.iter().cloned())
             .collect()
@@ -234,11 +221,11 @@ impl Config {
     pub fn output_types(&self) -> HashSet<String> {
         let mut types = HashSet::new();
 
-        if let Some(ref query) = &self.schema.query {
+        if let Some(ref query) = &self.blueprint_builder.schema.query {
             types = self.find_connections(query, types);
         }
 
-        if let Some(ref mutation) = &self.schema.mutation {
+        if let Some(ref mutation) = &self.blueprint_builder.schema.mutation {
             types = self.find_connections(mutation, types);
         }
 
@@ -248,7 +235,7 @@ impl Config {
     pub fn interfaces_types_map(&self) -> BTreeMap<String, BTreeSet<String>> {
         let mut interfaces_types: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
 
-        for (type_name, type_definition) in self.types.iter() {
+        for (type_name, type_definition) in self.blueprint_builder.types.iter() {
             for implement_name in type_definition.implements.clone() {
                 interfaces_types
                     .entry(implement_name)
@@ -306,7 +293,8 @@ impl Config {
 
     /// Returns a list of all the arguments in the configuration
     fn arguments(&self) -> Vec<(&String, &Arg)> {
-        self.types
+        self.blueprint_builder
+            .types
             .iter()
             .flat_map(|(_, type_of)| type_of.fields.iter())
             .flat_map(|(_, field)| field.args.iter())
@@ -315,8 +303,8 @@ impl Config {
     /// Removes all types that are passed in the set
     pub fn remove_types(mut self, types: HashSet<String>) -> Self {
         for unused_type in types {
-            self.types.remove(&unused_type);
-            self.unions.remove(&unused_type);
+            self.blueprint_builder.types.remove(&unused_type);
+            self.blueprint_builder.unions.remove(&unused_type);
         }
 
         self
@@ -325,9 +313,10 @@ impl Config {
     pub fn unused_types(&self) -> HashSet<String> {
         let used_types = self.get_all_used_type_names();
         let all_types: HashSet<String> = self
+            .blueprint_builder
             .types
             .keys()
-            .chain(self.unions.keys())
+            .chain(self.blueprint_builder.unions.keys())
             .cloned()
             .collect();
         all_types.difference(&used_types).cloned().collect()
@@ -337,22 +326,22 @@ impl Config {
     pub fn get_all_used_type_names(&self) -> HashSet<String> {
         let mut set = HashSet::new();
         let mut stack = Vec::new();
-        if let Some(query) = &self.schema.query {
+        if let Some(query) = &self.blueprint_builder.schema.query {
             stack.push(query.clone());
         }
-        if let Some(mutation) = &self.schema.mutation {
+        if let Some(mutation) = &self.blueprint_builder.schema.mutation {
             stack.push(mutation.clone());
         }
         while let Some(type_name) = stack.pop() {
             if set.contains(&type_name) {
                 continue;
             }
-            if let Some(union_) = self.unions.get(&type_name) {
+            if let Some(union_) = self.blueprint_builder.unions.get(&type_name) {
                 set.insert(type_name);
                 for type_ in &union_.types {
                     stack.push(type_.clone());
                 }
-            } else if let Some(typ) = self.types.get(&type_name) {
+            } else if let Some(typ) = self.blueprint_builder.types.get(&type_name) {
                 set.insert(type_name);
                 for field in typ.fields.values() {
                     stack.extend(field.args.values().map(|arg| arg.type_of.name().to_owned()));
@@ -489,7 +478,7 @@ mod tests {
     #[test]
     fn test_is_root_operation_type_with_query() {
         let mut config = Config::default();
-        config.schema.query = Some("Query".to_string());
+        config.blueprint_builder.schema.query = Some("Query".to_string());
 
         assert!(config.is_root_operation_type("Query"));
         assert!(!config.is_root_operation_type("Mutation"));
@@ -499,7 +488,7 @@ mod tests {
     #[test]
     fn test_is_root_operation_type_with_mutation() {
         let mut config = Config::default();
-        config.schema.mutation = Some("Mutation".to_string());
+        config.blueprint_builder.schema.mutation = Some("Mutation".to_string());
 
         assert!(!config.is_root_operation_type("Query"));
         assert!(config.is_root_operation_type("Mutation"));
@@ -509,7 +498,7 @@ mod tests {
     #[test]
     fn test_is_root_operation_type_with_subscription() {
         let mut config = Config::default();
-        config.schema.subscription = Some("Subscription".to_string());
+        config.blueprint_builder.schema.subscription = Some("Subscription".to_string());
 
         assert!(!config.is_root_operation_type("Query"));
         assert!(!config.is_root_operation_type("Mutation"));

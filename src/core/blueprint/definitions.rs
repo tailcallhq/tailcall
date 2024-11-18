@@ -335,7 +335,13 @@ pub fn fix_dangling_resolvers<'a>(
         move |(config, field, _, name), mut b_field| {
             let mut set = HashSet::new();
             if !field.has_resolver()
-                && validate_field_has_resolver(name, field, &config.types, &mut set).is_succeed()
+                && validate_field_has_resolver(
+                    name,
+                    field,
+                    &config.blueprint_builder.types,
+                    &mut set,
+                )
+                .is_succeed()
             {
                 b_field = b_field.resolver(Some(IR::Dynamic(DynamicValue::Value(
                     ConstValue::Object(Default::default()),
@@ -378,6 +384,7 @@ fn to_fields(
     config_module: &ConfigModule,
 ) -> Valid<Vec<FieldDefinition>, String> {
     let operation_type = if config_module
+        .blueprint_builder
         .schema
         .mutation
         .as_deref()
@@ -520,32 +527,42 @@ pub fn to_field_definition(
 
 pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String> {
     TryFold::<ConfigModule, Vec<Definition>, String>::new(|config_module, _| {
-        Valid::from_iter(config_module.types.iter(), |(name, type_)| {
-            if type_.scalar() {
-                to_scalar_type_definition(name).trace(name)
-            } else {
-                to_object_type_definition(name, type_, config_module)
-                    .trace(name)
-                    .and_then(|definition| match definition.clone() {
-                        Definition::Object(object_type_definition) => {
-                            if config_module.input_types().contains(name) {
-                                to_input_object_type_definition(object_type_definition).trace(name)
-                            } else if config_module.interfaces_types_map().contains_key(name) {
-                                to_interface_type_definition(object_type_definition).trace(name)
-                            } else {
-                                Valid::succeed(definition)
+        Valid::from_iter(
+            config_module.blueprint_builder.types.iter(),
+            |(name, type_)| {
+                if type_.scalar() {
+                    to_scalar_type_definition(name).trace(name)
+                } else {
+                    to_object_type_definition(name, type_, config_module)
+                        .trace(name)
+                        .and_then(|definition| match definition.clone() {
+                            Definition::Object(object_type_definition) => {
+                                if config_module.input_types().contains(name) {
+                                    to_input_object_type_definition(object_type_definition)
+                                        .trace(name)
+                                } else if config_module.interfaces_types_map().contains_key(name) {
+                                    to_interface_type_definition(object_type_definition).trace(name)
+                                } else {
+                                    Valid::succeed(definition)
+                                }
                             }
-                        }
-                        _ => Valid::succeed(definition),
-                    })
-            }
-        })
+                            _ => Valid::succeed(definition),
+                        })
+                }
+            },
+        )
         .map(|mut types| {
-            types.extend(config_module.unions.iter().map(to_union_type_definition));
+            types.extend(
+                config_module
+                    .blueprint_builder
+                    .unions
+                    .iter()
+                    .map(to_union_type_definition),
+            );
             types
         })
         .fuse(Valid::from_iter(
-            config_module.enums.iter(),
+            config_module.blueprint_builder.enums.iter(),
             |(name, type_)| {
                 if type_.variants.is_empty() {
                     Valid::fail("No variants found for enum".to_string())
