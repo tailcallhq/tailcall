@@ -60,7 +60,7 @@ fn default_graphqlrc() -> serde_yaml::Value {
         "schema".into(),
         serde_yaml::Value::Sequence(vec![
             "./.tailcallrc.graphql".into(),
-            "./main.graphql".into(),
+            "./*.graphql".into(),
         ]),
     )]))
 }
