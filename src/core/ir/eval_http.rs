@@ -33,11 +33,11 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
     pub fn new(
         evaluation_ctx: &'ctx EvalContext<'a, Context>,
         request_template: &'a RequestTemplate,
-        id: &Option<LoaderId>,
-        bl_id: &Option<usize>,
+        dl_id: &Option<LoaderId>,
+        bl_id: &Option<LoaderId>,
     ) -> Self {
         let data_loader = if evaluation_ctx.request_ctx.is_batching_enabled() {
-            id.and_then(|id| {
+            dl_id.and_then(|id| {
                 evaluation_ctx
                     .request_ctx
                     .http_data_loaders
@@ -47,12 +47,16 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
             None
         };
 
-        let batch_loader = bl_id.and_then(|id| {
-            evaluation_ctx
-                .request_ctx
-                .batched_data_loaders
-                .get(id)
-        });
+        let batch_loader = if evaluation_ctx.request_ctx.is_batching_enabled() {
+            bl_id.and_then(|id| {
+                evaluation_ctx
+                    .request_ctx
+                    .batched_data_loaders
+                    .get(id.as_usize())
+            })
+        } else {
+            None
+        };
 
         Self { evaluation_ctx, data_loader, request_template, batch_loader }
     }
@@ -66,9 +70,7 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         let is_get = req.method() == reqwest::Method::GET;
         let dl = &self.data_loader;
 
-
-        let response = 
-        if is_get && self.batch_loader.is_some() {
+        let response = if is_get && self.batch_loader.is_some() {
             let batch_loader = self.batch_loader.unwrap();
             batch_loader.load_batch(req).await?
         } else if is_get && dl.is_some() {

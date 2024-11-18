@@ -72,7 +72,7 @@ impl AppContext {
                                     .to_data_loader(upstream_batch.clone().unwrap_or_default());
 
                                     let bl_id = if group_by.is_some() {
-                                        Some(batched_data_loaders.len())
+                                        Some(LoaderId::new(batched_data_loaders.len()))
                                     } else {
                                         None
                                     };
