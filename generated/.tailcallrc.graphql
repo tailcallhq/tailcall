@@ -262,13 +262,6 @@ directive @link(
   The type of the link. It can be `Config`, or `Protobuf`.
   """
   type: LinkType
-  """
-  A boolean value that determines whether to verify certificates. Setting this as `false` 
-  will make tailcall accept self-signed certificates. NOTE: use this *only* during 
-  development or testing. It is highly recommended to keep this enabled (`true`) in 
-  production.
-  """
-  verifySSL: Boolean
 ) repeatable on SCHEMA
 
 directive @modify(
