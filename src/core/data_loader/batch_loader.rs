@@ -126,7 +126,7 @@ impl RequestWrapper {
             .collect::<IndexSet<_>>();
 
         self.request.url_mut().query_pairs_mut().clear();
-        for (key, value) in original_query_param_order.iter() {
+        for (key, value) in original_query_param_order {
             if value.is_empty() {
                 self.request
                     .url_mut()
