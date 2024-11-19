@@ -49,7 +49,7 @@ impl Request<ConstValue> {
             .pipe(transform::CheckDedupe::new())
             .pipe(transform::CheckProtected::new())
             .pipe(transform::CheckCache::new())
-            .pipe(transform::CheckDirectLoader::new())
+            .pipe(transform::CheckBatchLoader::new())
             .transform(plan)
             .to_result()
             // both transformers are infallible right now

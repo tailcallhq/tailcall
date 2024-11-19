@@ -6,13 +6,14 @@ use crate::core::ir::model::IO;
 use crate::core::jit::{Field, OperationPlan};
 use crate::core::Transform;
 
-pub struct CheckDirectLoader<A>(std::marker::PhantomData<A>);
-impl<A> CheckDirectLoader<A> {
+pub struct CheckBatchLoader<A>(std::marker::PhantomData<A>);
+impl<A> CheckBatchLoader<A> {
     pub fn new() -> Self {
         Self(std::marker::PhantomData)
     }
 }
 
+// if parent is list and if we can IR the use batch loader.
 fn mark_direct_loader<A>(selection: &mut [Field<A>], is_parent_list: bool) {
     for field in selection.iter_mut() {
         if let Some(ir) = &mut field.ir {
@@ -29,7 +30,7 @@ fn mark_direct_loader<A>(selection: &mut [Field<A>], is_parent_list: bool) {
     }
 }
 
-impl<A> Transform for CheckDirectLoader<A> {
+impl<A> Transform for CheckBatchLoader<A> {
     type Value = OperationPlan<A>;
     type Error = Infallible;
 
