@@ -2,6 +2,7 @@ use std::fmt::Display;
 
 use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::FieldDescriptor;
+use tailcall_jq::mustache::Mustache;
 use tailcall_valid::{Valid, ValidationError, Validator};
 
 use super::apply_select;
@@ -12,7 +13,6 @@ use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
 use crate::core::grpc::request_template::RequestTemplate;
 use crate::core::ir::model::{IO, IR};
 use crate::core::json::JsonSchema;
-use crate::core::mustache::Mustache;
 use crate::core::try_fold::TryFold;
 use crate::core::{config, helpers};
 

@@ -1,3 +1,4 @@
+use tailcall_jq::mustache::Mustache;
 use tailcall_valid::{Valid, ValidationError, Validator};
 
 use crate::core::blueprint::*;
@@ -7,7 +8,7 @@ use crate::core::endpoint::Endpoint;
 use crate::core::http::{HttpFilter, Method, RequestTemplate};
 use crate::core::ir::model::{IO, IR};
 use crate::core::try_fold::TryFold;
-use crate::core::{config, helpers, Mustache};
+use crate::core::{config, helpers};
 
 pub fn compile_http(
     config_module: &config::ConfigModule,

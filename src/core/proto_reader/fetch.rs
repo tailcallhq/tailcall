@@ -9,13 +9,13 @@ use prost::Message;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use tailcall_jq::mustache::Mustache;
 
 use crate::core::blueprint::GrpcMethod;
 use crate::core::config::{ConfigReaderContext, KeyValue};
 use crate::core::grpc::protobuf::ProtobufSet;
 use crate::core::grpc::request_template::RequestBody;
 use crate::core::grpc::RequestTemplate;
-use crate::core::mustache::Mustache;
 use crate::core::runtime::TargetRuntime;
 
 ///

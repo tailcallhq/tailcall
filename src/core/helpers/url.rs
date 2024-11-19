@@ -1,6 +1,5 @@
+use tailcall_jq::mustache::Mustache;
 use tailcall_valid::Valid;
-
-use crate::core::mustache::Mustache;
 
 pub fn to_url(url: &str) -> Valid<Mustache, String> {
     Valid::succeed(Mustache::parse(url))
@@ -8,13 +7,13 @@ pub fn to_url(url: &str) -> Valid<Mustache, String> {
 
 #[cfg(test)]
 mod tests {
+    use tailcall_jq::mustache::Mustache;
+
     use super::to_url;
 
     #[test]
     fn parse_url() {
         use tailcall_valid::Valid;
-
-        use crate::core::mustache::Mustache;
 
         let url = to_url("http://localhost:3000");
 

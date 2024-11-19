@@ -8,7 +8,7 @@ use tailcall::core::endpoint::Endpoint;
 use tailcall::core::has_headers::HasHeaders;
 use tailcall::core::http::RequestTemplate;
 use tailcall::core::json::JsonLike;
-use tailcall::core::path::{PathString, PathValue, ValueString};
+use tailcall_jq::mustache::path::{PathString, PathValue, ValueString};
 
 #[derive(Setters)]
 struct Context {

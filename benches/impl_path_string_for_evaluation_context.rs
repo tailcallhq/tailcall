@@ -17,10 +17,10 @@ use tailcall::core::blueprint::{Server, Upstream};
 use tailcall::core::cache::InMemoryCache;
 use tailcall::core::http::{RequestContext, Response};
 use tailcall::core::ir::{EvalContext, ResolverContextLike, SelectionField};
-use tailcall::core::path::PathString;
 use tailcall::core::runtime::TargetRuntime;
 use tailcall::core::{EnvIO, FileIO, HttpIO};
 use tailcall_http_cache::HttpCacheManager;
+use tailcall_jq::mustache::path::PathString;
 
 struct Http {
     client: ClientWithMiddleware,

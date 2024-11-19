@@ -4,6 +4,9 @@ use std::hash::{Hash, Hasher};
 use derive_setters::Setters;
 use http::header::{HeaderMap, HeaderValue};
 use tailcall_hasher::TailcallHasher;
+use tailcall_jq::mustache::eval::Eval;
+use tailcall_jq::mustache::path::{PathString, PathValue, ValueString};
+use tailcall_jq::mustache::{Mustache, Segment};
 use url::Url;
 
 use super::query_encoder::QueryEncoder;
@@ -12,8 +15,6 @@ use crate::core::endpoint::Endpoint;
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
 use crate::core::ir::model::{CacheKey, IoId};
-use crate::core::mustache::{Eval, Mustache, Segment};
-use crate::core::path::{PathString, PathValue, ValueString};
 
 /// RequestTemplate is an extension of a Mustache template.
 /// Various parts of the template can be written as a mustache template.
@@ -310,12 +311,12 @@ mod tests {
     use http::header::{HeaderMap, HeaderName};
     use pretty_assertions::assert_eq;
     use serde_json::json;
+    use tailcall_jq::mustache::path::{PathString, PathValue, ValueString};
+    use tailcall_jq::mustache::Mustache;
 
     use super::{Query, RequestTemplate};
     use crate::core::has_headers::HasHeaders;
     use crate::core::json::JsonLike;
-    use crate::core::mustache::Mustache;
-    use crate::core::path::{PathString, PathValue, ValueString};
 
     #[derive(Setters)]
     struct Context {
@@ -330,10 +331,7 @@ mod tests {
     }
 
     impl PathValue for Context {
-        fn raw_value<'a, T: AsRef<str>>(
-            &'a self,
-            path: &[T],
-        ) -> Option<crate::core::path::ValueString<'a>> {
+        fn raw_value<'a, T: AsRef<str>>(&'a self, path: &[T]) -> Option<ValueString<'a>> {
             self.value.get_path(path).map(|a| {
                 ValueString::Value(Cow::Owned(
                     async_graphql::Value::from_json(a.clone()).unwrap(),
@@ -342,7 +340,7 @@ mod tests {
         }
     }
 
-    impl crate::core::path::PathString for Context {
+    impl PathString for Context {
         fn path_string<'a, T: AsRef<str>>(&'a self, parts: &'a [T]) -> Option<Cow<'a, str>> {
             self.value.path_string(parts)
         }
@@ -780,10 +778,10 @@ mod tests {
 
     mod form_encoded_url {
         use serde_json::json;
+        use tailcall_jq::mustache::Mustache;
 
         use crate::core::http::request_template::tests::Context;
         use crate::core::http::RequestTemplate;
-        use crate::core::mustache::Mustache;
 
         #[test]
         fn test_with_string() {
@@ -844,11 +842,11 @@ mod tests {
 
         use http::header::HeaderMap;
         use serde_json::json;
+        use tailcall_jq::mustache::Mustache;
 
         use crate::core::http::request_template::tests::Context;
         use crate::core::http::RequestTemplate;
         use crate::core::ir::model::{CacheKey, IoId};
-        use crate::core::mustache::Mustache;
 
         fn assert_no_duplicate<const N: usize>(arr: [Option<IoId>; N]) {
             let len = arr.len();

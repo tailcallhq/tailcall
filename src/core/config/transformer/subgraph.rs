@@ -4,6 +4,7 @@ use std::convert::identity;
 use std::fmt::{Display, Write};
 use std::ops::Deref;
 
+use tailcall_jq::mustache::{Mustache, Segment};
 use tailcall_macros::MergeRight;
 use tailcall_valid::{Valid, Validator};
 
@@ -14,8 +15,7 @@ use crate::core::config::{
 };
 use crate::core::directive::DirectiveCodec;
 use crate::core::merge_right::MergeRight;
-use crate::core::mustache::Segment;
-use crate::core::{Mustache, Transform, Type};
+use crate::core::{Transform, Type};
 
 const ENTITIES_FIELD_NAME: &str = "_entities";
 const SERVICE_FIELD_NAME: &str = "_service";

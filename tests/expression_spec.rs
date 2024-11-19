@@ -7,7 +7,7 @@ mod tests {
     use tailcall::core::http::RequestContext;
     use tailcall::core::ir::model::IR;
     use tailcall::core::ir::{EmptyResolverContext, Error, EvalContext};
-    use tailcall::core::mustache::Mustache;
+    use tailcall_jq::mustache::Mustache;
 
     async fn eval(expr: &IR) -> Result<Value, Error> {
         let runtime = tailcall::cli::runtime::init(&Blueprint::default());

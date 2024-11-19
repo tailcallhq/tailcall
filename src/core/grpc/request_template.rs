@@ -4,6 +4,8 @@ use anyhow::Result;
 use derive_setters::Setters;
 use http::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
 use tailcall_hasher::TailcallHasher;
+use tailcall_jq::mustache::path::PathString;
+use tailcall_jq::mustache::Mustache;
 use url::Url;
 
 use super::request::create_grpc_request;
@@ -12,8 +14,6 @@ use crate::core::grpc::protobuf::ProtobufOperation;
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
 use crate::core::ir::model::{CacheKey, IoId};
-use crate::core::mustache::Mustache;
-use crate::core::path::PathString;
 
 static GRPC_MIME_TYPE: HeaderValue = HeaderValue::from_static("application/grpc");
 
@@ -136,6 +136,8 @@ mod tests {
     use http::Method;
     use pretty_assertions::assert_eq;
     use tailcall_fixtures::protobuf;
+    use tailcall_jq::mustache::path::PathString;
+    use tailcall_jq::mustache::Mustache;
 
     use super::{RequestBody, RequestTemplate};
     use crate::core::blueprint::GrpcMethod;
@@ -145,7 +147,6 @@ mod tests {
     };
     use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::core::ir::model::CacheKey;
-    use crate::core::mustache::Mustache;
 
     async fn get_protobuf_op() -> ProtobufOperation {
         let test_file = protobuf::GREETINGS;
@@ -203,7 +204,7 @@ mod tests {
         }
     }
 
-    impl crate::core::path::PathString for Context {
+    impl PathString for Context {
         fn path_string<'a, T: AsRef<str>>(&'a self, parts: &'a [T]) -> Option<Cow<'a, str>> {
             self.value.path_string(parts)
         }

@@ -6,6 +6,8 @@ use std::hash::{Hash, Hasher};
 use derive_setters::Setters;
 use http::header::{HeaderMap, HeaderValue};
 use tailcall_hasher::TailcallHasher;
+use tailcall_jq::mustache::path::PathGraphql;
+use tailcall_jq::mustache::Mustache;
 
 use crate::core::config::{GraphQLOperationType, KeyValue};
 use crate::core::has_headers::HasHeaders;
@@ -13,8 +15,6 @@ use crate::core::helpers::headers::MustacheHeaders;
 use crate::core::http::Method::POST;
 use crate::core::ir::model::{CacheKey, IoId};
 use crate::core::ir::{GraphQLOperationContext, RelatedFields};
-use crate::core::mustache::Mustache;
-use crate::core::path::PathGraphql;
 
 /// RequestTemplate for GraphQL requests (See RequestTemplate documentation)
 #[derive(Setters, Debug, Clone)]
@@ -170,6 +170,7 @@ mod tests {
     use http::header::HeaderMap;
     use pretty_assertions::assert_eq;
     use serde_json::json;
+    use tailcall_jq::mustache::path::PathGraphql;
 
     use crate::core::config::GraphQLOperationType;
     use crate::core::graphql::request_template::RelatedFields;
@@ -178,7 +179,6 @@ mod tests {
     use crate::core::ir::model::CacheKey;
     use crate::core::ir::GraphQLOperationContext;
     use crate::core::json::JsonLike;
-    use crate::core::path::PathGraphql;
 
     struct Context {
         pub value: Value,

@@ -1,8 +1,7 @@
 use async_graphql_value::{ConstValue, Name};
 use indexmap::IndexMap;
 use serde_json::Value;
-
-use crate::core::mustache::Mustache;
+use tailcall_jq::mustache::{Mustache, Segment};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum DynamicValue<A> {
@@ -24,9 +23,7 @@ impl<A> DynamicValue<A> {
                     DynamicValue::Mustache(mustache)
                 } else {
                     let segments = mustache.segments_mut();
-                    if let Some(crate::core::mustache::Segment::Expression(vec)) =
-                        segments.get_mut(0)
-                    {
+                    if let Some(Segment::Expression(vec)) = segments.get_mut(0) {
                         vec.insert(0, name.to_string());
                     }
                     DynamicValue::Mustache(mustache)
