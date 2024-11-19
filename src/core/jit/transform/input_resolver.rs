@@ -2,7 +2,7 @@ use async_graphql_value::{ConstValue, Value};
 
 use super::super::{Arg, Field, OperationPlan, ResolveInputError, Variables};
 use crate::core::blueprint::Index;
-use crate::core::ir::model::{IO, IR};
+use crate::core::ir::model::IO;
 use crate::core::json::{JsonLikeOwned, JsonObjectLike};
 use crate::core::Type;
 
