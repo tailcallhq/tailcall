@@ -129,7 +129,7 @@ impl Cache {
 
 impl IR {
     // allows to modify the IO node in the IR tree
-    pub fn modify_io(&mut self, io_modifier: &mut dyn FnMut(&mut IO) -> ()) {
+    pub fn modify_io(&mut self, io_modifier: &mut dyn FnMut(&mut IO)) {
         match self {
             IR::IO(io) => io_modifier(io),
             IR::Cache(cache) => io_modifier(&mut cache.io),
