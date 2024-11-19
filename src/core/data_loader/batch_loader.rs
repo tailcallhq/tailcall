@@ -1,15 +1,13 @@
-use std::collections::HashMap;
-
-use anyhow::Ok;
-use async_graphql_value::ConstValue;
-use futures_util::future::join_all;
-use indexmap::IndexSet;
-use reqwest::Request;
-
 use crate::core::config::group_by::GroupBy;
 use crate::core::http::Response;
 use crate::core::json::JsonLike;
 use crate::core::runtime::TargetRuntime;
+
+use anyhow::Ok;
+use async_graphql_value::ConstValue;
+use indexmap::IndexSet;
+use reqwest::Request;
+use std::collections::HashMap;
 
 fn get_body_value_single(body_value: &HashMap<String, Vec<&ConstValue>>, id: &str) -> ConstValue {
     body_value
@@ -31,164 +29,48 @@ fn get_body_value_list(body_value: &HashMap<String, Vec<&ConstValue>>, id: &str)
 
 pub struct BatchLoader {
     runtime: TargetRuntime,
-    max_batch_size: usize,
 }
 
 impl BatchLoader {
-    pub fn new(runtime: TargetRuntime, max_batch_size: usize) -> Self {
-        Self { runtime, max_batch_size }
+    pub fn new(runtime: TargetRuntime) -> Self {
+        Self { runtime }
     }
 
-    pub async fn load_batch(
-        &self,
-        group_by: &GroupBy,
-        is_list: &bool,
-        mut request: Request,
-    ) -> async_graphql::Result<Response<ConstValue>, anyhow::Error> {
-        // remove duplicate query parameters while keeping the original order.
-        let original_query_param_order = request
-            .url()
-            .query_pairs()
-            .map(|(k, v)| (k.to_string(), v.to_string()))
-            .collect::<IndexSet<_>>();
-
-        // query parameters that are part of the group by
-        let dynamic_query_pairs = request
-            .url()
-            .query_pairs()
-            .filter(|(k, _)| group_by.key().eq(&k.to_string()))
-            .map(|(k, v)| (k.to_string(), v.to_string()))
-            .collect::<Vec<_>>();
-
-        let unique_query_pairs = dynamic_query_pairs
-            .clone()
-            .into_iter()
-            .collect::<IndexSet<_>>()
-            .into_iter()
-            .collect::<Vec<_>>();
-
-        // query parameters that are not part of the group by
-        let static_query_pairs = request
-            .url()
-            .query_pairs()
-            .filter(|(k, _)| !group_by.key().eq(&k.to_string()))
-            .map(|(k, v)| (k.to_string(), v.to_string()))
-            .collect::<IndexSet<_>>();
-
-        let mut requests = vec![];
-        let batch_size = self.max_batch_size - static_query_pairs.len();
-        // Check if the number of query parameters exceeds the maximum batch size
-        if unique_query_pairs.len() <= batch_size {
-            request.url_mut().query_pairs_mut().clear();
-
-            // preserve the original order of query params in request.
-            for (k, v) in original_query_param_order {
-                let key = &(k.clone(), v.clone());
-                if unique_query_pairs.contains(key) {
-                    if v.is_empty() {
-                        request
-                            .url_mut()
-                            .query_pairs_mut()
-                            .append_key_only(k.as_str());
-                    } else {
-                        request
-                            .url_mut()
-                            .query_pairs_mut()
-                            .append_pair(k.as_str(), v.as_str());
-                    }
-                } else if static_query_pairs.contains(key) {
-                    if v.is_empty() {
-                        request
-                            .url_mut()
-                            .query_pairs_mut()
-                            .append_key_only(k.as_str());
-                    } else {
-                        request
-                            .url_mut()
-                            .query_pairs_mut()
-                            .append_pair(k.as_str(), v.as_str());
-                    }
-                }
-            }
-            requests.push(request);
-        } else {
-            // Split the query parameters into chunks based on max_batch_size
-            let batches = unique_query_pairs.chunks(batch_size);
-            for batch in batches {
-                // Build a new set of query parameters for the current batch
-                let mut new_request = request.try_clone().unwrap_or_else(|| {
-                    // fail safe, clone it manually.
-                    let mut req =
-                        reqwest::Request::new(request.method().clone(), request.url().clone());
-                    req.headers_mut().extend(request.headers().clone());
-                    req
-                });
-                new_request.url_mut().query_pairs_mut().clear();
-
-                // preserve the original order of query params in request.
-                for (k, v) in original_query_param_order.clone() {
-                    let key = &(k.clone(), v.clone());
-                    if batch.contains(key) {
-                        if v.is_empty() {
-                            new_request
-                                .url_mut()
-                                .query_pairs_mut()
-                                .append_key_only(k.as_str());
-                        } else {
-                            new_request
-                                .url_mut()
-                                .query_pairs_mut()
-                                .append_pair(k.as_str(), v.as_str());
-                        }
-                    } else if static_query_pairs.contains(key) {
-                        if v.is_empty() {
-                            new_request
-                                .url_mut()
-                                .query_pairs_mut()
-                                .append_key_only(k.as_str());
-                        } else {
-                            new_request
-                                .url_mut()
-                                .query_pairs_mut()
-                                .append_pair(k.as_str(), v.as_str());
-                        }
-                    }
-                }
-                requests.push(new_request);
-            }
-        }
-
-        // Execute all batched requests concurrently
-        let results = join_all(
-            requests
-                .into_iter()
-                .map(|req| self.load_one(group_by, is_list, req)),
-        )
-        .await
-        .into_iter()
-        .collect::<Result<Vec<_>, anyhow::Error>>()?;
-
-        let merged_results: HashMap<String, Response<ConstValue>> =
-            results.into_iter().flatten().collect();
-
-        let mut final_result: Vec<ConstValue> = vec![];
-        let mut response = None;
-        for (_, v) in dynamic_query_pairs {
-            if let Some(res) = merged_results.get(&v) {
-                final_result.push(res.body.clone());
-                response = Some(res.clone());
-            }
-        }
-        let merged_response = ConstValue::List(final_result);
-        Ok(response.unwrap().body(merged_response))
-    }
-
-    async fn load_one(
+    pub async fn load(
         &self,
         group_by: &GroupBy,
         is_list: &bool,
         request: Request,
-    ) -> async_graphql::Result<HashMap<String, Response<ConstValue>>, anyhow::Error> {
+    ) -> async_graphql::Result<Response<ConstValue>, anyhow::Error> {
+        let query_pairs = request
+            .url()
+            .query_pairs()
+            .filter(|(k, _)| group_by.key().eq(&k.to_string()))
+            .map(|(_, v)| (v.to_string()))
+            .collect::<Vec<_>>();
+        let req_wrapper: RequestWrapper = request.into();
+        let request = req_wrapper.to_request();
+        let (response_map, response) = self.execute(group_by, is_list, request).await?;
+
+        let mut final_result: Vec<ConstValue> = vec![];
+        for v in query_pairs {
+            if let Some(res) = response_map.get(&v) {
+                final_result.push(res.body.clone());
+            }
+        }
+        let merged_response = ConstValue::List(final_result);
+        Ok(response.body(merged_response))
+    }
+
+    async fn execute(
+        &self,
+        group_by: &GroupBy,
+        is_list: &bool,
+        request: Request,
+    ) -> async_graphql::Result<
+        (HashMap<String, Response<ConstValue>>, Response<ConstValue>),
+        anyhow::Error,
+    > {
         let body = if *is_list {
             get_body_value_list
         } else {
@@ -216,7 +98,46 @@ impl BatchLoader {
             map.insert(id, res);
         }
 
-        Ok(map)
+        Ok((map, response))
+    }
+}
+
+struct RequestWrapper {
+    request: Request,
+}
+
+impl From<Request> for RequestWrapper {
+    fn from(request: Request) -> Self {
+        Self { request }
+    }
+}
+
+impl RequestWrapper {
+    pub fn to_request(mut self) -> Request {
+        // retain the original order of query parameters
+        let original_query_param_order = self
+            .request
+            .url()
+            .query_pairs()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect::<IndexSet<_>>();
+
+        self.request.url_mut().query_pairs_mut().clear();
+        for (key, value) in original_query_param_order.iter() {
+            if value.is_empty() {
+                self.request
+                    .url_mut()
+                    .query_pairs_mut()
+                    .append_key_only(key.as_str());
+            } else {
+                self.request
+                    .url_mut()
+                    .query_pairs_mut()
+                    .append_pair(key.as_str(), value.as_str());
+            }
+        }
+
+        self.request
     }
 }
 
@@ -228,11 +149,11 @@ mod test {
     async fn test_batch_loader() {
         let url = "http://jsonplaceholder.typicode.com/users?static=12&id=1&id=1&id=1&id=1&id=1&id=1&id=1&id=1&id=1&id=1&id=2&id=2&id=2&id=2&id=2&id=2&id=2&id=2&id=2&id=2&id=3&id=3&id=3&id=3&id=3&id=3&id=3&id=3&id=3&id=3&id=4&id=4&id=4&id=4&id=4&id=4&id=4&id=4&id=4&id=4&id=5&id=5&id=5&id=5&id=5&id=5&id=5&id=5&id=5&id=5&id=6&id=6&id=6&id=6&id=6&id=6&id=6&id=6&id=6&id=6&id=7&id=7&id=7&id=7&id=7&id=7&id=7&id=7&id=7&id=7&id=8&id=8&id=8&id=8&id=8&id=8&id=8&id=8&id=8&id=8&id=9&id=9&id=9&id=9&id=9&id=9&id=9&id=9&id=9&id=9&id=10&id=10&id=10&id=10&id=10&id=10&id=10&id=10&id=10&id=10";
         let rt = crate::core::runtime::test::init(None);
-        let batch_loader = BatchLoader::new(rt, 10);
+        let batch_loader = BatchLoader::new(rt);
         let group_by = GroupBy::new(vec!["id".into()], Some("id".into()));
         let request = Request::new(reqwest::Method::GET, url.parse().unwrap());
         let _result = batch_loader
-            .load_batch(&group_by, &false, request)
+            .load(&group_by, &false, request)
             .await
             .unwrap();
     }

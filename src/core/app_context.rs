@@ -157,7 +157,7 @@ impl AppContext {
             dedupe_operation_handler: DedupeResult::new(false),
             operation_plans: DashMap::new(),
             const_execution_cache: DashMap::default(),
-            batch_loader: Arc::new(BatchLoader::new(runtime, 100)),
+            batch_loader: Arc::new(BatchLoader::new(runtime)),
         }
     }
 

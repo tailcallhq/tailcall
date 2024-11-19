@@ -75,7 +75,7 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
             let group_by = self.group_by.as_ref().unwrap();
             ctx.request_ctx
                 .batch_loader
-                .load_batch(group_by, self.is_list, req)
+                .load(group_by, self.is_list, req)
                 .await?
         } else if is_get && dl.is_some() {
             execute_request_with_dl(ctx, req, self.data_loader).await?

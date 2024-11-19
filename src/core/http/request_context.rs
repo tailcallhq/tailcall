@@ -50,7 +50,7 @@ impl RequestContext {
             http_data_loaders: Arc::new(vec![]),
             gql_data_loaders: Arc::new(vec![]),
             grpc_data_loaders: Arc::new(vec![]),
-            batch_loader: Arc::new(BatchLoader::new(target_runtime.clone(), 100)),
+            batch_loader: Arc::new(BatchLoader::new(target_runtime.clone())),
             min_max_age: Arc::new(Mutex::new(None)),
             cache_public: Arc::new(Mutex::new(None)),
             runtime: target_runtime,
