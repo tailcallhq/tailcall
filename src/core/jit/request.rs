@@ -41,12 +41,7 @@ impl Request<ConstValue> {
         &self,
         blueprint: &Blueprint,
     ) -> Result<OperationPlan<async_graphql_value::Value>> {
-        let _is_batching_capability_enabled = blueprint
-            .upstream
-            .batch
-            .as_ref()
-            .and_then(|b| if b.delay > 0 { Some(true) } else { None })
-            .is_some();
+        let batching_disabled = blueprint.upstream.batch.as_ref().map_or(true, |b| b.delay == 0);
         let doc = async_graphql::parser::parse_query(&self.query)?;
         let builder = Builder::new(blueprint, doc);
         let plan = builder.build(self.operation_name.as_deref())?;
@@ -55,7 +50,7 @@ impl Request<ConstValue> {
             .pipe(transform::CheckDedupe::new())
             .pipe(transform::CheckProtected::new())
             .pipe(transform::CheckCache::new())
-            .pipe(transform::CheckHttpMerge::new())
+            .pipe(transform::CheckHttpMerge::new().when(batching_disabled))
             .transform(plan)
             .to_result()
             // both transformers are infallible right now
