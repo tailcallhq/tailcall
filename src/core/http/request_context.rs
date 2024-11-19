@@ -10,7 +10,7 @@ use http::header::{HeaderMap, HeaderName, HeaderValue};
 use crate::core::app_context::AppContext;
 use crate::core::auth::context::AuthContext;
 use crate::core::blueprint::{Server, Upstream};
-use crate::core::data_loader::{HttpMerge, DataLoader, DedupeResult};
+use crate::core::data_loader::{DataLoader, DedupeResult, HttpMerge};
 use crate::core::graphql::GraphqlDataLoader;
 use crate::core::grpc::data_loader::GrpcDataLoader;
 use crate::core::http::{DataLoaderRequest, HttpDataLoader};

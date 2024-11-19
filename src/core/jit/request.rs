@@ -41,7 +41,11 @@ impl Request<ConstValue> {
         &self,
         blueprint: &Blueprint,
     ) -> Result<OperationPlan<async_graphql_value::Value>> {
-        let batching_disabled = blueprint.upstream.batch.as_ref().map_or(true, |b| b.delay == 0);
+        let batching_disabled = blueprint
+            .upstream
+            .batch
+            .as_ref()
+            .map_or(true, |b| b.delay == 0);
         let doc = async_graphql::parser::parse_query(&self.query)?;
         let builder = Builder::new(blueprint, doc);
         let plan = builder.build(self.operation_name.as_deref())?;
