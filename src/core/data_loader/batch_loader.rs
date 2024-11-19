@@ -116,6 +116,8 @@ impl From<Request> for RequestWrapper {
 impl RequestWrapper {
     pub fn request(mut self) -> Request {
         // retain the original order of query parameters
+        // note: indexset is slow in some scenarios, if this becomes a bottleneck,
+        // think about alternative approach.
         let original_query_param_order = self
             .request
             .url()
@@ -149,15 +151,20 @@ mod test {
     #[test]
     fn test_request_wrapper() {
         let url = "http://jsonplaceholder.typicode.com/users?static=12&id=1&id=1&id=1&id=1&id=1&id=1&id=1&id=1&id=1&id=1&id=2&id=2&id=2&id=2&id=2&id=2&id=2&id=2&id=2&id=2&id=3&id=3&id=3&id=3&id=3&id=3&id=3&id=3&id=3&id=3&id=4&id=4&id=4&id=4&id=4&id=4&id=4&id=4&id=4&id=4&id=5&id=5&id=5&id=5&id=5&id=5&id=5&id=5&id=5&id=5&id=6&id=6&id=6&id=6&id=6&id=6&id=6&id=6&id=6&id=6&id=7&id=7&id=7&id=7&id=7&id=7&id=7&id=7&id=7&id=7&id=8&id=8&id=8&id=8&id=8&id=8&id=8&id=8&id=8&id=8&id=9&id=9&id=9&id=9&id=9&id=9&id=9&id=9&id=9&id=9&id=10&id=10&id=10&id=10&id=10&id=10&id=10&id=10&id=10&id=10";
-        let request_wrapper: RequestWrapper = Request::new(reqwest::Method::GET, url.parse().unwrap()).into();
+        let request_wrapper: RequestWrapper =
+            Request::new(reqwest::Method::GET, url.parse().unwrap()).into();
         let request = request_wrapper.request();
-        assert_eq!(request.url().query(), Some("static=12&id=1&id=2&id=3&id=4&id=5&id=6&id=7&id=8&id=9&id=10"));
+        assert_eq!(
+            request.url().query(),
+            Some("static=12&id=1&id=2&id=3&id=4&id=5&id=6&id=7&id=8&id=9&id=10")
+        );
     }
 
     #[test]
     fn test_request_wrapper_key_without_value() {
         let url = "http://jsonplaceholder.typicode.com/users?static=12&id";
-        let request_wrapper: RequestWrapper = Request::new(reqwest::Method::GET, url.parse().unwrap()).into();
+        let request_wrapper: RequestWrapper =
+            Request::new(reqwest::Method::GET, url.parse().unwrap()).into();
         let request = request_wrapper.request();
         assert_eq!(request.url().query(), Some("static=12&id"));
     }
