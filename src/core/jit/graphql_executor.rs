@@ -37,7 +37,11 @@ impl JITExecutor {
         exec: ConstValueExecutor,
         jit_request: jit::Request<ConstValue>,
     ) -> AnyResponse<Vec<u8>> {
-        let is_introspection_query = self.app_ctx.blueprint.server.get_enable_introspection()
+        let is_introspection_query = self
+            .app_ctx
+            .runtime_config
+            .server
+            .get_enable_introspection()
             && exec.plan.is_introspection_query;
         let response = exec.execute(&self.req_ctx, &jit_request).await;
         let response = if is_introspection_query {

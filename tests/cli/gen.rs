@@ -276,7 +276,7 @@ pub mod test {
         use std::sync::Arc;
 
         use tailcall::cli::generator::Generator;
-        use tailcall::core::blueprint::Blueprint;
+        use tailcall::core::blueprint::RuntimeConfig;
         use tailcall::core::config::{self, ConfigModule};
         use tailcall::core::generator::Generator as ConfigGenerator;
         use tailcall_valid::{ValidateInto, Validator};
@@ -291,7 +291,7 @@ pub mod test {
             let IO { fs, paths } = spec.configs.into_io().await;
             let path = paths.first().unwrap().as_str();
 
-            let mut runtime = tailcall::cli::runtime::init(&Blueprint::default());
+            let mut runtime = tailcall::cli::runtime::init(&RuntimeConfig::default());
             runtime.http = Arc::new(NativeHttpTest::default());
             runtime.file = Arc::new(fs);
             if let Some(env) = spec.env {

@@ -6,7 +6,7 @@ use async_graphql_extension_apollo_tracing::ApolloTracing;
 use crate::cli::runtime::init;
 use crate::core::app_context::AppContext;
 use crate::core::blueprint::telemetry::TelemetryExporter;
-use crate::core::blueprint::{Blueprint, Http};
+use crate::core::blueprint::{Blueprint, Http, RuntimeConfig};
 use crate::core::rest::{EndpointSet, Unchecked};
 use crate::core::schema_extension::SchemaExtension;
 
@@ -18,13 +18,14 @@ pub struct ServerConfig {
 impl ServerConfig {
     pub async fn new(
         blueprint: Blueprint,
+        runtime_config: RuntimeConfig,
         endpoints: EndpointSet<Unchecked>,
     ) -> anyhow::Result<Self> {
-        let mut rt = init(&blueprint);
+        let mut rt = init(&runtime_config);
 
         let mut extensions = vec![];
 
-        if let Some(TelemetryExporter::Apollo(apollo)) = blueprint.telemetry.export.as_ref() {
+        if let Some(TelemetryExporter::Apollo(apollo)) = runtime_config.telemetry.export.as_ref() {
             let (graph_id, variant) = apollo.graph_ref.split_once('@').unwrap();
             extensions.push(SchemaExtension::new(ApolloTracing::new(
                 apollo.api_key.clone(),
@@ -36,18 +37,29 @@ impl ServerConfig {
         }
         rt.add_extensions(extensions);
 
-        let endpoints = endpoints.into_checked(&blueprint, rt.clone()).await?;
-        let app_context = Arc::new(AppContext::new(blueprint.clone(), rt, endpoints));
+        let endpoints = endpoints
+            .into_checked(&blueprint, &runtime_config, rt.clone())
+            .await?;
+        let app_context = Arc::new(AppContext::new(
+            blueprint.clone(),
+            rt,
+            runtime_config,
+            endpoints,
+        ));
 
         Ok(Self { app_ctx: app_context, blueprint })
     }
 
     pub fn addr(&self) -> SocketAddr {
-        (self.blueprint.server.hostname, self.blueprint.server.port).into()
+        (
+            self.app_ctx.runtime_config.server.hostname,
+            self.app_ctx.runtime_config.server.port,
+        )
+            .into()
     }
 
     pub fn http_version(&self) -> String {
-        match self.blueprint.server.http {
+        match self.app_ctx.runtime_config.server.http {
             Http::HTTP2 { cert: _, key: _ } => "HTTP/2".to_string(),
             _ => "HTTP/1.1".to_string(),
         }

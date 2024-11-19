@@ -4,22 +4,15 @@ use async_graphql::dynamic::SchemaBuilder;
 use indexmap::IndexMap;
 use tailcall_valid::{Valid, ValidationError, Validator};
 
-use self::telemetry::to_opentelemetry;
-use super::Server;
 use crate::core::blueprint::compress::compress;
 use crate::core::blueprint::*;
 use crate::core::config::transformer::Required;
-use crate::core::config::{Arg, Batch, Config, ConfigModule};
-use crate::core::ir::model::{IO, IR};
+use crate::core::config::{Arg, Config, ConfigModule};
 use crate::core::json::JsonSchema;
 use crate::core::try_fold::TryFold;
 use crate::core::Type;
 
 pub fn config_blueprint<'a>() -> TryFold<'a, ConfigModule, Blueprint, String> {
-    let server = TryFoldConfig::<Blueprint>::new(|config_module, blueprint| {
-        Valid::from(Server::try_from(config_module.clone())).map(|server| blueprint.server(server))
-    });
-
     let schema = to_schema().transform::<Blueprint>(
         |schema, blueprint| blueprint.schema(schema),
         |blueprint| blueprint.schema,
@@ -30,46 +23,17 @@ pub fn config_blueprint<'a>() -> TryFold<'a, ConfigModule, Blueprint, String> {
         |blueprint| blueprint.definitions,
     );
 
-    let upstream = TryFoldConfig::<Blueprint>::new(|config_module, blueprint| {
-        Valid::from(Upstream::try_from(config_module)).map(|upstream| blueprint.upstream(upstream))
-    });
-
     let links = TryFoldConfig::<Blueprint>::new(|config_module, blueprint| {
         Valid::from(Links::try_from(config_module.links.clone())).map_to(blueprint)
     });
 
-    let opentelemetry = to_opentelemetry().transform::<Blueprint>(
-        |opentelemetry, blueprint| blueprint.telemetry(opentelemetry),
-        |blueprint| blueprint.telemetry,
-    );
-
-    server
-        .and(schema)
+    schema
         .and(definitions)
-        .and(upstream)
         .and(links)
-        .and(opentelemetry)
         // set the federation config only after setting other properties to be able
         // to use blueprint inside the handler and to avoid recursion overflow
         .and(update_federation().trace("federation"))
-        .update(apply_batching)
         .update(compress)
-}
-
-// Apply batching if any of the fields have a @http directive with groupBy field
-
-pub fn apply_batching(mut blueprint: Blueprint) -> Blueprint {
-    for def in blueprint.definitions.iter() {
-        if let Definition::Object(object_type_definition) = def {
-            for field in object_type_definition.fields.iter() {
-                if let Some(IR::IO(IO::Http { group_by: Some(_), .. })) = field.resolver.clone() {
-                    blueprint.upstream.batch = blueprint.upstream.batch.or(Some(Batch::default()));
-                    return blueprint;
-                }
-            }
-        }
-    }
-    blueprint
 }
 
 pub fn to_json_schema_for_args(args: &IndexMap<String, Arg>, config: &Config) -> JsonSchema {

@@ -6,7 +6,7 @@ use super::helpers::TRACKER;
 use super::{check, gen, init, start};
 use crate::cli::command::{Cli, Command};
 use crate::cli::{self, update_checker};
-use crate::core::blueprint::Blueprint;
+use crate::core::blueprint::RuntimeConfig;
 use crate::core::config::reader::ConfigReader;
 use crate::core::runtime::TargetRuntime;
 
@@ -16,7 +16,7 @@ pub async fn run() -> Result<()> {
     }
     let cli = Cli::parse();
     update_checker::check_for_update().await;
-    let runtime = cli::runtime::init(&Blueprint::default());
+    let runtime = cli::runtime::init(&RuntimeConfig::default());
     let config_reader = ConfigReader::init(runtime.clone());
 
     // Initialize ping event every 60 seconds

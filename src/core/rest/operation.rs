@@ -5,7 +5,7 @@ use tailcall_valid::{Cause, Valid, Validator};
 
 use super::{Error, Result};
 use crate::core::async_graphql_hyper::{GraphQLRequest, GraphQLRequestLike};
-use crate::core::blueprint::{Blueprint, SchemaModifiers};
+use crate::core::blueprint::{Blueprint, RuntimeConfig, SchemaModifiers};
 use crate::core::http::RequestContext;
 
 #[derive(Debug)]
@@ -32,9 +32,13 @@ impl OperationQuery {
 
 pub async fn validate_operations(
     blueprint: &Blueprint,
+    runtime_config: &RuntimeConfig,
     operations: Vec<OperationQuery>,
 ) -> Valid<(), String> {
-    let schema = blueprint.to_schema_with(SchemaModifiers::default().with_no_resolver());
+    let schema = blueprint.to_schema_with(
+        SchemaModifiers::default().with_no_resolver(),
+        runtime_config,
+    );
     Valid::from_iter(
         futures_util::future::join_all(operations.into_iter().map(|op| op.validate(&schema)))
             .await

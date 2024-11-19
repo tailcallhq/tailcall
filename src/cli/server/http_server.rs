@@ -8,7 +8,7 @@ use super::http_1::start_http_1;
 use super::http_2::start_http_2;
 use super::server_config::ServerConfig;
 use crate::cli::telemetry::init_opentelemetry;
-use crate::core::blueprint::{Blueprint, Http};
+use crate::core::blueprint::{Blueprint, Http, RuntimeConfig};
 use crate::core::config::ConfigModule;
 use crate::core::Errata;
 
@@ -34,11 +34,16 @@ impl Server {
     pub async fn start(self) -> Result<()> {
         let blueprint = Blueprint::try_from(&self.config_module).map_err(Errata::from)?;
         let endpoints = self.config_module.extensions().endpoint_set.clone();
-        let server_config = Arc::new(ServerConfig::new(blueprint.clone(), endpoints).await?);
+        let runtime_config = RuntimeConfig::try_from(&self.config_module).map_err(Errata::from)?;
+        let server_config =
+            Arc::new(ServerConfig::new(blueprint.clone(), runtime_config, endpoints).await?);
 
-        init_opentelemetry(blueprint.telemetry.clone(), &server_config.app_ctx.runtime)?;
+        init_opentelemetry(
+            server_config.app_ctx.runtime_config.telemetry.clone(),
+            &server_config.app_ctx.runtime,
+        )?;
 
-        match blueprint.server.http.clone() {
+        match server_config.app_ctx.runtime_config.server.http.clone() {
             Http::HTTP2 { cert, key } => {
                 start_http_2(server_config, cert, key, self.server_up_sender).await
             }

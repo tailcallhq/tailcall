@@ -9,7 +9,7 @@ use std::sync::Arc;
 pub use http::NativeHttp;
 use inquire::{Confirm, Select};
 
-use crate::core::blueprint::Blueprint;
+use crate::core::blueprint::RuntimeConfig;
 use crate::core::cache::InMemoryCache;
 use crate::core::runtime::TargetRuntime;
 use crate::core::worker::{Command, Event};
@@ -50,18 +50,18 @@ fn init_resolver_worker_io(
 }
 
 // Provides access to http in native rust environment
-fn init_http(blueprint: &Blueprint) -> Arc<dyn HttpIO> {
+fn init_http(runtime_config: &RuntimeConfig) -> Arc<dyn HttpIO> {
     Arc::new(http::NativeHttp::init(
-        &blueprint.upstream,
-        &blueprint.telemetry,
+        &runtime_config.upstream,
+        &runtime_config.telemetry,
     ))
 }
 
 // Provides access to http in native rust environment
-fn init_http2_only(blueprint: &Blueprint) -> Arc<dyn HttpIO> {
+fn init_http2_only(runtime_config: &RuntimeConfig) -> Arc<dyn HttpIO> {
     Arc::new(http::NativeHttp::init(
-        &blueprint.upstream.clone().http2_only(true),
-        &blueprint.telemetry,
+        &runtime_config.upstream.clone().http2_only(true),
+        &runtime_config.telemetry,
     ))
 }
 
@@ -69,19 +69,19 @@ fn init_in_memory_cache<K: Hash + Eq, V: Clone>() -> InMemoryCache<K, V> {
     InMemoryCache::default()
 }
 
-pub fn init(blueprint: &Blueprint) -> TargetRuntime {
+pub fn init(runtime_config: &RuntimeConfig) -> TargetRuntime {
     #[cfg(not(feature = "js"))]
     tracing::warn!("JS capabilities are disabled in this build");
 
     TargetRuntime {
-        http: init_http(blueprint),
-        http2_only: init_http2_only(blueprint),
+        http: init_http(runtime_config),
+        http2_only: init_http2_only(runtime_config),
         env: init_env(),
         file: init_file(),
         cache: Arc::new(init_in_memory_cache()),
         extensions: Arc::new(vec![]),
-        cmd_worker: init_http_worker_io(blueprint.server.script.clone()),
-        worker: init_resolver_worker_io(blueprint.server.script.clone()),
+        cmd_worker: init_http_worker_io(runtime_config.server.script.clone()),
+        worker: init_resolver_worker_io(runtime_config.server.script.clone()),
     }
 }
 

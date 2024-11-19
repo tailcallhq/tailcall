@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use tailcall::core::app_context::AppContext;
-use tailcall::core::blueprint::Blueprint;
+use tailcall::core::blueprint::{Blueprint, RuntimeConfig};
 use tailcall::core::config::reader::ConfigReader;
 use tailcall::core::config::ConfigModule;
 use tailcall::core::merge_right::MergeRight;
@@ -63,7 +63,13 @@ impl TailcallBuilder {
         self.rt.env = Arc::new(self.env);
 
         let blueprint = Blueprint::try_from(&self.module)?;
-        let app_context = Arc::new(AppContext::new(blueprint, self.rt, EndpointSet::default()));
+        let runtime_config = RuntimeConfig::try_from(&self.module)?;
+        let app_context = Arc::new(AppContext::new(
+            blueprint,
+            self.rt,
+            runtime_config,
+            EndpointSet::default(),
+        ));
 
         Ok(TailcallExecutor { app_context })
     }

@@ -2,7 +2,7 @@ use anyhow::Result;
 
 use super::helpers::{display_schema, log_endpoint_set};
 use crate::cli::fmt::Fmt;
-use crate::core::blueprint::Blueprint;
+use crate::core::blueprint::{Blueprint, RuntimeConfig};
 use crate::core::config::reader::ConfigReader;
 use crate::core::config::Source;
 use crate::core::runtime::TargetRuntime;
@@ -25,6 +25,7 @@ pub(super) async fn check_command(params: CheckParams, config_reader: &ConfigRea
         Fmt::display(format.encode(&config_module)?);
     }
     let blueprint = Blueprint::try_from(&config_module).map_err(Errata::from);
+    let runtime_config = RuntimeConfig::try_from(&config_module).map_err(Errata::from)?;
 
     match blueprint {
         Ok(blueprint) => {
@@ -35,7 +36,7 @@ pub(super) async fn check_command(params: CheckParams, config_reader: &ConfigRea
                 .extensions()
                 .endpoint_set
                 .clone()
-                .into_checked(&blueprint, runtime)
+                .into_checked(&blueprint, &runtime_config, runtime)
                 .await?;
             if schema {
                 display_schema(&blueprint);

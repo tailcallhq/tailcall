@@ -1,15 +1,15 @@
 use criterion::Criterion;
 use http::Method;
 use tailcall::cli::runtime::NativeHttp;
-use tailcall::core::blueprint::Blueprint;
+use tailcall::core::blueprint::RuntimeConfig;
 use tailcall::core::HttpIO;
 
 pub fn benchmark_http_execute_method(c: &mut Criterion) {
     let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
 
-    let mut blueprint = Blueprint::default();
-    blueprint.upstream.http_cache = 42; // allow http caching for bench test.
-    let native_http = NativeHttp::init(&blueprint.upstream, &blueprint.telemetry);
+    let mut runtime_config = RuntimeConfig::default();
+    runtime_config.upstream.http_cache = 42; // allow http caching for bench test.
+    let native_http = NativeHttp::init(&runtime_config.upstream, &runtime_config.telemetry);
     let request_url = String::from("http://jsonplaceholder.typicode.com/users");
 
     tokio_runtime.block_on(async {

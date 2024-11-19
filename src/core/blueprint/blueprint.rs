@@ -7,9 +7,7 @@ use async_graphql::ValidationMode;
 use derive_setters::Setters;
 
 use super::directive::Directive;
-use super::telemetry::Telemetry;
-use super::{GlobalTimeout, Index};
-use crate::core::blueprint::{Server, Upstream};
+use super::{GlobalTimeout, Index, RuntimeConfig};
 use crate::core::ir::model::IR;
 use crate::core::schema_extension::SchemaExtension;
 use crate::core::{scalar, Type};
@@ -22,9 +20,6 @@ use crate::core::{scalar, Type};
 pub struct Blueprint {
     pub definitions: Vec<Definition>,
     pub schema: SchemaDefinition,
-    pub server: Server,
-    pub upstream: Upstream,
-    pub telemetry: Telemetry,
 }
 
 #[derive(Clone, Debug)]
@@ -197,20 +192,24 @@ impl Blueprint {
     ///
     /// This function is used to generate a schema from a blueprint.
     pub fn to_schema(&self) -> Schema {
-        self.to_schema_with(SchemaModifiers::default())
+        self.to_schema_with(SchemaModifiers::default(), &RuntimeConfig::default())
     }
 
     ///
     /// This function is used to generate a schema from a blueprint.
     /// The generated schema can be modified using the SchemaModifiers.
-    pub fn to_schema_with(&self, schema_modifiers: SchemaModifiers) -> Schema {
+    pub fn to_schema_with(
+        &self,
+        schema_modifiers: SchemaModifiers,
+        runtime_config: &RuntimeConfig,
+    ) -> Schema {
         let blueprint = if schema_modifiers.no_resolver {
             self.clone().drop_resolvers()
         } else {
             self.clone()
         };
 
-        let server = &blueprint.server;
+        let server = &runtime_config.server;
         let mut schema = SchemaBuilder::from(&blueprint);
 
         if server.enable_apollo_tracing {

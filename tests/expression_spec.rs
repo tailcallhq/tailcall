@@ -3,14 +3,14 @@ mod tests {
     use async_graphql::Value;
     use pretty_assertions::assert_eq;
     use serde_json::json;
-    use tailcall::core::blueprint::{Blueprint, DynamicValue};
+    use tailcall::core::blueprint::{DynamicValue, RuntimeConfig};
     use tailcall::core::http::RequestContext;
     use tailcall::core::ir::model::IR;
     use tailcall::core::ir::{EmptyResolverContext, Error, EvalContext};
     use tailcall::core::mustache::Mustache;
 
     async fn eval(expr: &IR) -> Result<Value, Error> {
-        let runtime = tailcall::cli::runtime::init(&Blueprint::default());
+        let runtime = tailcall::cli::runtime::init(&RuntimeConfig::default());
         let req_ctx = RequestContext::new(runtime);
         let res_ctx = EmptyResolverContext {};
         let mut eval_ctx = EvalContext::new(&req_ctx, &res_ctx);

@@ -13,7 +13,7 @@ use markdown::mdast::Node;
 use markdown::ParseOptions;
 use tailcall::cli::javascript;
 use tailcall::core::app_context::AppContext;
-use tailcall::core::blueprint::Blueprint;
+use tailcall::core::blueprint::{Blueprint, RuntimeConfig};
 use tailcall::core::cache::InMemoryCache;
 use tailcall::core::config::{ConfigModule, Source};
 use tailcall::core::runtime::TargetRuntime;
@@ -273,13 +273,14 @@ impl ExecutionSpec {
         env: HashMap<String, String>,
         http: Arc<Http>,
     ) -> Arc<AppContext> {
-        let mut blueprint = Blueprint::try_from(config).unwrap();
+        let mut runtime_config = RuntimeConfig::try_from(config).unwrap();
+        let blueprint = Blueprint::try_from(config).unwrap();
 
         if cfg!(feature = "force_jit") {
-            blueprint.server.enable_jit = true;
+            runtime_config.server.enable_jit = true;
         }
 
-        let script = blueprint.server.script.clone();
+        let script = runtime_config.server.script.clone();
 
         let http2_only = http.clone();
 
@@ -312,10 +313,15 @@ impl ExecutionSpec {
             .extensions()
             .endpoint_set
             .clone()
-            .into_checked(&blueprint, runtime.clone())
+            .into_checked(&blueprint, &runtime_config, runtime.clone())
             .await
             .unwrap();
 
-        Arc::new(AppContext::new(blueprint, runtime, endpoints))
+        Arc::new(AppContext::new(
+            blueprint,
+            runtime,
+            runtime_config,
+            endpoints,
+        ))
     }
 }

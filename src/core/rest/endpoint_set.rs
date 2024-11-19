@@ -5,7 +5,7 @@ use tailcall_valid::Validator;
 use super::endpoint::Endpoint;
 use super::partial_request::PartialRequest;
 use super::{Request, Result};
-use crate::core::blueprint::Blueprint;
+use crate::core::blueprint::{Blueprint, RuntimeConfig};
 use crate::core::http::RequestContext;
 use crate::core::macros::MergeRight;
 use crate::core::rest::operation::OperationQuery;
@@ -60,6 +60,7 @@ impl EndpointSet<Unchecked> {
     pub async fn into_checked(
         self,
         blueprint: &Blueprint,
+        runtime_config: &RuntimeConfig,
         target_runtime: TargetRuntime,
     ) -> Result<EndpointSet<Checked>> {
         let mut operations = vec![];
@@ -72,7 +73,7 @@ impl EndpointSet<Unchecked> {
             let operation_qry = OperationQuery::new(req, req_ctx.clone())?;
             operations.push(operation_qry);
         }
-        super::operation::validate_operations(blueprint, operations)
+        super::operation::validate_operations(blueprint, runtime_config, operations)
             .await
             .to_result()?;
         Ok(EndpointSet {

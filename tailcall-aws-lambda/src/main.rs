@@ -6,7 +6,7 @@ use lambda_http::{run, service_fn, Body, Error, Response};
 use runtime::init_runtime;
 use tailcall::core::app_context::AppContext;
 use tailcall::core::async_graphql_hyper::GraphQLRequest;
-use tailcall::core::blueprint::Blueprint;
+use tailcall::core::blueprint::{Blueprint, RuntimeConfig};
 use tailcall::core::config::reader::ConfigReader;
 use tailcall::core::http::handle_request;
 use tailcall::core::tracing::get_log_level;
@@ -35,14 +35,20 @@ async fn main() -> Result<(), Error> {
         .read("./config.graphql")
         .await?;
     let blueprint = Blueprint::try_from(&config)?;
+    let runtime_config = RuntimeConfig::try_from(&config)?;
     let endpoints = config
         .extensions()
         .endpoint_set
         .clone()
-        .into_checked(&blueprint, runtime.clone())
+        .into_checked(&blueprint, &runtime_config, runtime.clone())
         .await?;
 
-    let app_ctx = Arc::new(AppContext::new(blueprint, runtime, endpoints));
+    let app_ctx = Arc::new(AppContext::new(
+        blueprint,
+        runtime,
+        runtime_config,
+        endpoints,
+    ));
 
     run(service_fn(|event| async {
         let resp = handle_request::<GraphQLRequest>(to_request(event)?, app_ctx.clone()).await?;

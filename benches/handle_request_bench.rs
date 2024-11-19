@@ -4,7 +4,7 @@ use criterion::Criterion;
 use http::Request;
 use tailcall::cli::server::server_config::ServerConfig;
 use tailcall::core::async_graphql_hyper::GraphQLRequest;
-use tailcall::core::blueprint::Blueprint;
+use tailcall::core::blueprint::{Blueprint, RuntimeConfig};
 use tailcall::core::config::{Config, ConfigModule};
 use tailcall::core::http::handle_request;
 use tailcall_valid::Validator;
@@ -16,15 +16,20 @@ pub fn benchmark_handle_request(c: &mut Criterion) {
     let sdl = std::fs::read_to_string("./ci-benchmark/benchmark.graphql").unwrap();
     let config_module: ConfigModule = Config::from_sdl(sdl.as_str()).to_result().unwrap().into();
 
-    let mut blueprint = Blueprint::try_from(&config_module).unwrap();
-    let mut blueprint_clone = blueprint.clone();
+    let mut runtime_config = RuntimeConfig::try_from(&config_module).unwrap();
+    let mut runtime_config_clone = runtime_config.clone();
+    let blueprint = Blueprint::try_from(&config_module).unwrap();
 
     let endpoints = config_module.extensions().endpoint_set.clone();
     let endpoints_clone = endpoints.clone();
 
-    blueprint.server.enable_jit = false;
+    runtime_config.server.enable_jit = false;
     let server_config = tokio_runtime
-        .block_on(ServerConfig::new(blueprint.clone(), endpoints.clone()))
+        .block_on(ServerConfig::new(
+            blueprint.clone(),
+            runtime_config,
+            endpoints.clone(),
+        ))
         .unwrap();
     let server_config = Arc::new(server_config);
 
@@ -47,9 +52,13 @@ pub fn benchmark_handle_request(c: &mut Criterion) {
         })
     });
 
-    blueprint_clone.server.enable_jit = true;
+    runtime_config_clone.server.enable_jit = true;
     let server_config = tokio_runtime
-        .block_on(ServerConfig::new(blueprint_clone, endpoints_clone))
+        .block_on(ServerConfig::new(
+            blueprint,
+            runtime_config_clone,
+            endpoints_clone,
+        ))
         .unwrap();
     let server_config = Arc::new(server_config);
 

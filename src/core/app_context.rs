@@ -4,6 +4,7 @@ use async_graphql::dynamic::{self, DynamicRequest};
 use async_graphql_value::ConstValue;
 use dashmap::DashMap;
 
+use super::blueprint::RuntimeConfig;
 use super::jit::AnyResponse;
 use crate::core::async_graphql_hyper::OperationId;
 use crate::core::auth::context::GlobalAuthContext;
@@ -23,6 +24,9 @@ pub struct AppContext {
     pub schema: dynamic::Schema,
     pub runtime: TargetRuntime,
     pub blueprint: Blueprint,
+
+    pub runtime_config: RuntimeConfig,
+
     pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
     pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
     pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
@@ -38,6 +42,7 @@ impl AppContext {
     pub fn new(
         mut blueprint: Blueprint,
         runtime: TargetRuntime,
+        runtime_config: RuntimeConfig,
         endpoints: EndpointSet<Checked>,
     ) -> Self {
         let mut http_data_loaders = vec![];
@@ -47,7 +52,7 @@ impl AppContext {
         for def in blueprint.definitions.iter_mut() {
             if let Definition::Object(def) = def {
                 for field in &mut def.fields {
-                    let upstream_batch = &blueprint.upstream.batch;
+                    let upstream_batch = &runtime_config.upstream.batch;
                     field.map_expr(|expr| {
                         expr.modify(&mut |expr| match expr {
                             IR::IO(io) => match io {
@@ -136,9 +141,11 @@ impl AppContext {
             }
         }
 
-        let schema = blueprint
-            .to_schema_with(SchemaModifiers::default().extensions(runtime.extensions.clone()));
-        let auth = blueprint.server.auth.clone();
+        let schema = blueprint.to_schema_with(
+            SchemaModifiers::default().extensions(runtime.extensions.clone()),
+            &runtime_config,
+        );
+        let auth = runtime_config.server.auth.clone();
         let auth_ctx = GlobalAuthContext::new(auth);
 
         AppContext {
@@ -149,6 +156,7 @@ impl AppContext {
             gql_data_loaders: Arc::new(gql_data_loaders),
             grpc_data_loaders: Arc::new(grpc_data_loaders),
             endpoints,
+            runtime_config,
             auth_ctx: Arc::new(auth_ctx),
             dedupe_handler: Arc::new(DedupeResult::new(false)),
             dedupe_operation_handler: DedupeResult::new(false),

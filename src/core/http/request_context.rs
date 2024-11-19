@@ -185,14 +185,14 @@ impl RequestContext {
 
 impl From<&AppContext> for RequestContext {
     fn from(app_ctx: &AppContext) -> Self {
-        let cookie_headers = if app_ctx.blueprint.server.enable_set_cookie_header {
+        let cookie_headers = if app_ctx.runtime_config.server.enable_set_cookie_header {
             Some(Arc::new(Mutex::new(HeaderMap::new())))
         } else {
             None
         };
         Self {
-            server: app_ctx.blueprint.server.clone(),
-            upstream: app_ctx.blueprint.upstream.clone(),
+            server: app_ctx.runtime_config.server.clone(),
+            upstream: app_ctx.runtime_config.upstream.clone(),
             x_response_headers: Arc::new(Mutex::new(HeaderMap::new())),
             cookie_headers,
             allowed_headers: HeaderMap::new(),

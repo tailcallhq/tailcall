@@ -5,7 +5,7 @@ mod tests {
     use async_graphql::Pos;
     use async_graphql_value::ConstValue;
     use tailcall::core::app_context::AppContext;
-    use tailcall::core::blueprint::Blueprint;
+    use tailcall::core::blueprint::{Blueprint, RuntimeConfig};
     use tailcall::core::config::{Config, ConfigModule};
     use tailcall::core::http::RequestContext;
     use tailcall::core::jit::graphql_error::GraphQLError;
@@ -26,9 +26,16 @@ mod tests {
             let sdl =
                 tokio::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER).await?;
             let config = Config::from_sdl(&sdl).to_result()?;
-            let blueprint = Blueprint::try_from(&ConfigModule::from(config))?;
-            let runtime = tailcall::cli::runtime::init(&blueprint);
-            let app_ctx = Arc::new(AppContext::new(blueprint, runtime, EndpointSet::default()));
+            let config_module = ConfigModule::from(config);
+            let blueprint = Blueprint::try_from(&config_module)?;
+            let runtime_config = RuntimeConfig::try_from(&config_module)?;
+            let runtime = tailcall::cli::runtime::init(&runtime_config);
+            let app_ctx = Arc::new(AppContext::new(
+                blueprint,
+                runtime,
+                runtime_config,
+                EndpointSet::default(),
+            ));
             let req_ctx = Arc::new(RequestContext::from(app_ctx.as_ref()));
 
             Ok(Self { app_ctx, req_ctx })

@@ -13,7 +13,7 @@ use hyper::Body;
 use serde::{Deserialize, Serialize};
 use tailcall::core::app_context::AppContext;
 use tailcall::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
-use tailcall::core::blueprint::Blueprint;
+use tailcall::core::blueprint::{Blueprint, RuntimeConfig};
 use tailcall::core::config::reader::ConfigReader;
 use tailcall::core::config::transformer::Required;
 use tailcall::core::config::{Config, ConfigModule, Source};
@@ -59,29 +59,36 @@ impl From<Cause<String>> for SDLError {
 async fn is_sdl_error(spec: &ExecutionSpec, config_module: Valid<ConfigModule, String>) -> bool {
     if spec.sdl_error {
         // errors: errors are expected, make sure they match
-        let blueprint = config_module.and_then(|cfg| Valid::from(Blueprint::try_from(&cfg)));
+        let blueprint = config_module
+            .clone()
+            .and_then(|cfg| Valid::from(Blueprint::try_from(&cfg)));
+        let runtime_config =
+            config_module.and_then(|cfg| Valid::from(RuntimeConfig::try_from(&cfg)));
 
-        match blueprint.to_result() {
-            Ok(_) => {
+        match (blueprint.to_result(), runtime_config.to_result()) {
+            (Ok(_), Ok(_)) => {
                 tracing::error!("\terror FAIL");
                 panic!(
                     "Spec {} {:?} with \"sdl error\" directive did not have a validation error.",
                     spec.name, spec.path
                 );
             }
-            Err(error) => {
-                let errors: Vec<SDLError> =
-                    error.as_vec().iter().map(|e| e.to_owned().into()).collect();
-
-                let snapshot_name = format!("{}_error", spec.safe_name);
-
-                insta::assert_json_snapshot!(snapshot_name, errors);
-            }
+            (Err(error), Ok(_)) => assert_error_json(&spec.safe_name, error),
+            (Ok(_), Err(error)) => assert_error_json(&spec.safe_name, error),
+            (Err(error_blueprint), Err(_)) => assert_error_json(&spec.safe_name, error_blueprint),
         };
 
         return true;
     }
     false
+}
+
+fn assert_error_json(snapshot_name: &str, error: ValidationError<String>) {
+    let errors: Vec<SDLError> = error.as_vec().iter().map(|e| e.to_owned().into()).collect();
+
+    let snapshot_name = format!("{}_error", snapshot_name);
+
+    insta::assert_json_snapshot!(snapshot_name, errors);
 }
 
 async fn check_identity(spec: &ExecutionSpec) {
@@ -299,7 +306,7 @@ async fn run_test(
         .body(body)?;
 
     // TODO: reuse logic from server.rs to select the correct handler
-    if app_ctx.blueprint.server.enable_batch_requests {
+    if app_ctx.runtime_config.server.enable_batch_requests {
         handle_request::<GraphQLBatchRequest>(req, app_ctx).await
     } else {
         handle_request::<GraphQLRequest>(req, app_ctx).await
