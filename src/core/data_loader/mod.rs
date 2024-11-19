@@ -1,4 +1,4 @@
-mod batch_loader;
+mod http_merge;
 mod cache;
 mod data_loader;
 mod dedupe;
@@ -7,7 +7,7 @@ mod loader;
 mod storage;
 
 // Making public as it is unused and clippy gives warning.
-pub use batch_loader::HttpMerge;
+pub use http_merge::HttpMerge;
 pub use cache::LruCache;
 pub use data_loader::DataLoader;
 pub use dedupe::DedupeResult;

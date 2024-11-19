@@ -7,6 +7,7 @@ use crate::core::jit::{Field, OperationPlan};
 use crate::core::Transform;
 
 pub struct CheckHttpMerge<A>(std::marker::PhantomData<A>);
+
 impl<A> CheckHttpMerge<A> {
     pub fn new() -> Self {
         Self(std::marker::PhantomData)
@@ -20,6 +21,26 @@ fn mark_direct_loader<A>(selection: &mut [Field<A>], has_list_ancestor: bool) {
         if let Some(ir) = &mut field.ir {
             ir.modify_io(&mut |io| {
                 if let IO::Http { use_batcher, group_by, .. } = io {
+                    match (has_list_ancestor, group_by.is_some()) {
+                        (true, true) => {
+                            // ideal condition
+                            // has list ancestor and group by clause
+                            field.use_batch_loader = Some(true);
+                            *use_batcher = true;
+                        }
+                        (false, true) => {
+                            // has not list ancestor but group by clause
+                            field.use_batch_loader = Some(true);
+                            *use_batcher = true;
+                        }
+                        (_, false) => {
+                            // has no group by clause means we can't process
+                            // it with http merge.
+                            *use_batcher = false;
+                            field.use_batch_loader = Some(false);
+                        }
+                    }
+
                     if has_list_ancestor && group_by.is_some() {
                         field.use_batch_loader = Some(true);
                         *use_batcher = true;

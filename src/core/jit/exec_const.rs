@@ -123,10 +123,8 @@ impl<'ctx> IRExecutor for ConstValueExec<'ctx> {
         let field = ctx.field();
 
         if field.use_batch_loader.unwrap_or(false) {
-            if let Some(_v) = ctx.value().and_then(|v| v.as_array()) {
-                let response = self.call(ctx, ir).await;
-                return response;
-            }
+            let response = self.call(ctx, ir).await;
+            return response;
         }
 
         match ctx.value() {

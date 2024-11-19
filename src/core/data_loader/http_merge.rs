@@ -60,7 +60,12 @@ impl HttpMerge {
                 final_result.push(res.body.clone());
             }
         }
-        let merged_response = ConstValue::List(final_result);
+
+        let merged_response = if final_result.len() > 1 {
+            ConstValue::List(final_result)
+        } else {
+            final_result.remove(0)
+        };
         Ok(response.body(merged_response))
     }
 
