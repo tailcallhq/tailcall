@@ -73,6 +73,7 @@ impl ConfigReader {
                         self.resource_reader.read_file(path).await?
                     } else {
                         let client = Client::builder()
+                            .use_rustls_tls()
                             .danger_accept_invalid_certs(verify_ssl)
                             .build()
                             .unwrap();
