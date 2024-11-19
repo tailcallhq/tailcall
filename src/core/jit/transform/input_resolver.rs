@@ -88,7 +88,7 @@ where
 
     // resolves the variables in selection set mustache template for graphql query.
     fn resolve_graphql_selection_set(
-        base_field: &mut Vec<Field<Output>>,
+        base_field: &mut [Field<Output>],
         variables: &Variables<Output>,
     ) {
         for field in base_field.iter_mut() {

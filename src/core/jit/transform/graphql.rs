@@ -20,7 +20,7 @@ impl<A> GraphQL<A> {
     }
 }
 
-fn compute_selection_set<A: Display + Debug + JsonLikeOwned>(base_field: &mut Vec<Field<A>>) {
+fn compute_selection_set<A: Display + Debug + JsonLikeOwned>(base_field: &mut [Field<A>]) {
     for field in base_field.iter_mut() {
         if let Some(ir) = field.ir.as_mut() {
             ir.modify_io(&mut |io| {
