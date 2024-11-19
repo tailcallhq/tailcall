@@ -30,7 +30,7 @@ pub struct RequestContext {
     pub allowed_headers: HeaderMap,
     pub auth_ctx: AuthContext,
     pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
-    pub batched_data_loaders: Arc<Vec<BatchLoader>>,
+    pub batch_loader: Arc<BatchLoader>,
     pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
     pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
     pub min_max_age: Arc<Mutex<Option<i32>>>,
@@ -50,7 +50,7 @@ impl RequestContext {
             http_data_loaders: Arc::new(vec![]),
             gql_data_loaders: Arc::new(vec![]),
             grpc_data_loaders: Arc::new(vec![]),
-            batched_data_loaders: Arc::new(vec![]),
+            batch_loader: Arc::new(BatchLoader::new(target_runtime.clone(), 100)),
             min_max_age: Arc::new(Mutex::new(None)),
             cache_public: Arc::new(Mutex::new(None)),
             runtime: target_runtime,
@@ -202,12 +202,12 @@ impl From<&AppContext> for RequestContext {
             http_data_loaders: app_ctx.http_data_loaders.clone(),
             gql_data_loaders: app_ctx.gql_data_loaders.clone(),
             grpc_data_loaders: app_ctx.grpc_data_loaders.clone(),
-            batched_data_loaders: app_ctx.batched_data_loaders.clone(),
             min_max_age: Arc::new(Mutex::new(None)),
             cache_public: Arc::new(Mutex::new(None)),
             runtime: app_ctx.runtime.clone(),
             cache: DedupeResult::new(true),
             dedupe_handler: app_ctx.dedupe_handler.clone(),
+            batch_loader: app_ctx.batch_loader.clone(),
         }
     }
 }

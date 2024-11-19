@@ -6,7 +6,8 @@ use tailcall_valid::Validator;
 
 use super::model::LoaderId;
 use super::{EvalContext, ResolverContextLike};
-use crate::core::data_loader::{BatchLoader, DataLoader, Loader};
+use crate::core::config::group_by::{self, GroupBy};
+use crate::core::data_loader::{DataLoader, Loader};
 use crate::core::grpc::protobuf::ProtobufOperation;
 use crate::core::grpc::request::execute_grpc_request;
 use crate::core::grpc::request_template::RenderedRequestTemplate;
@@ -25,8 +26,10 @@ use crate::core::{grpc, http, worker, WorkerIO};
 pub struct EvalHttp<'a, 'ctx, Context: ResolverContextLike + Sync> {
     evaluation_ctx: &'ctx EvalContext<'a, Context>,
     data_loader: Option<&'a DataLoader<DataLoaderRequest, HttpDataLoader>>,
-    batch_loader: Option<&'a BatchLoader>,
     request_template: &'a http::RequestTemplate,
+    group_by: &'a Option<GroupBy>,
+    is_list: &'a bool,
+    use_batcher: &'a bool,
 }
 
 impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> {
@@ -34,7 +37,9 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         evaluation_ctx: &'ctx EvalContext<'a, Context>,
         request_template: &'a RequestTemplate,
         dl_id: &Option<LoaderId>,
-        bl_id: &Option<LoaderId>,
+        group_by: &'a Option<group_by::GroupBy>,
+        is_list: &'a bool,
+        use_batcher: &'a bool,
     ) -> Self {
         let data_loader = if evaluation_ctx.request_ctx.is_batching_enabled() {
             dl_id.and_then(|id| {
@@ -47,18 +52,14 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
             None
         };
 
-        let batch_loader = if evaluation_ctx.request_ctx.is_batching_enabled() {
-            bl_id.and_then(|id| {
-                evaluation_ctx
-                    .request_ctx
-                    .batched_data_loaders
-                    .get(id.as_usize())
-            })
-        } else {
-            None
-        };
-
-        Self { evaluation_ctx, data_loader, request_template, batch_loader }
+        Self {
+            evaluation_ctx,
+            data_loader,
+            request_template,
+            is_list,
+            group_by,
+            use_batcher,
+        }
     }
 
     pub fn init_request(&self) -> Result<Request, Error> {
@@ -70,8 +71,12 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         let is_get = req.method() == reqwest::Method::GET;
         let dl = &self.data_loader;
 
-        let response = if is_get && self.batch_loader.is_some() {
-            self.batch_loader.unwrap().load_batch(req).await?
+        let response = if *self.use_batcher && self.group_by.is_some() {
+            let group_by = self.group_by.as_ref().unwrap();
+            ctx.request_ctx
+                .batch_loader
+                .load_batch(group_by, self.is_list, req)
+                .await?
         } else if is_get && dl.is_some() {
             execute_request_with_dl(ctx, req, self.data_loader).await?
         } else {

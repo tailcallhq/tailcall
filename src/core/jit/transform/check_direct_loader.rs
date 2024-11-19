@@ -17,12 +17,10 @@ fn mark_direct_loader<A>(selection: &mut [Field<A>], is_parent_list: bool) {
     for field in selection.iter_mut() {
         if let Some(ir) = &mut field.ir {
             ir.modify_io(&mut |io| {
-                if let IO::Http { bl_id, .. } = io {
-                    if is_parent_list && bl_id.is_some() {
+                if let IO::Http { use_batcher, .. } = io {
+                    if is_parent_list {
                         field.use_batch_loader = Some(true);
-                    }
-                    if !field.use_batch_loader.unwrap_or(false) {
-                        *bl_id = None;
+                        *use_batcher = true;
                     }
                 }
             });

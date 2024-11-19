@@ -32,31 +32,17 @@ fn get_body_value_list(body_value: &HashMap<String, Vec<&ConstValue>>, id: &str)
 pub struct BatchLoader {
     runtime: TargetRuntime,
     max_batch_size: usize,
-    group_by: GroupBy,
-    body: fn(&HashMap<String, Vec<&ConstValue>>, &str) -> ConstValue,
 }
 
 impl BatchLoader {
-    pub fn new(
-        runtime: TargetRuntime,
-        group_by: GroupBy,
-        is_list: bool,
-        max_batch_size: usize,
-    ) -> Self {
-        Self {
-            runtime,
-            group_by,
-            max_batch_size,
-            body: if is_list {
-                get_body_value_list
-            } else {
-                get_body_value_single
-            },
-        }
+    pub fn new(runtime: TargetRuntime, max_batch_size: usize) -> Self {
+        Self { runtime, max_batch_size }
     }
 
     pub async fn load_batch(
         &self,
+        group_by: &GroupBy,
+        is_list: &bool,
         mut request: Request,
     ) -> async_graphql::Result<Response<ConstValue>, anyhow::Error> {
         // remove duplicate query parameters while keeping the original order.
@@ -70,7 +56,7 @@ impl BatchLoader {
         let dynamic_query_pairs = request
             .url()
             .query_pairs()
-            .filter(|(k, _)| self.group_by.key().eq(&k.to_string()))
+            .filter(|(k, _)| group_by.key().eq(&k.to_string()))
             .map(|(k, v)| (k.to_string(), v.to_string()))
             .collect::<Vec<_>>();
 
@@ -85,7 +71,7 @@ impl BatchLoader {
         let static_query_pairs = request
             .url()
             .query_pairs()
-            .filter(|(k, _)| !self.group_by.key().eq(&k.to_string()))
+            .filter(|(k, _)| !group_by.key().eq(&k.to_string()))
             .map(|(k, v)| (k.to_string(), v.to_string()))
             .collect::<IndexSet<_>>();
 
@@ -173,10 +159,14 @@ impl BatchLoader {
         }
 
         // Execute all batched requests concurrently
-        let results = join_all(requests.into_iter().map(|req| self.load_one(req)))
-            .await
-            .into_iter()
-            .collect::<Result<Vec<_>, anyhow::Error>>()?;
+        let results = join_all(
+            requests
+                .into_iter()
+                .map(|req| self.load_one(group_by, is_list, req)),
+        )
+        .await
+        .into_iter()
+        .collect::<Result<Vec<_>, anyhow::Error>>()?;
 
         let merged_results: HashMap<String, Response<ConstValue>> =
             results.into_iter().flatten().collect();
@@ -195,12 +185,19 @@ impl BatchLoader {
 
     async fn load_one(
         &self,
+        group_by: &GroupBy,
+        is_list: &bool,
         request: Request,
     ) -> async_graphql::Result<HashMap<String, Response<ConstValue>>, anyhow::Error> {
+        let body = if *is_list {
+            get_body_value_list
+        } else {
+            get_body_value_single
+        };
         let query_set = request
             .url()
             .query_pairs()
-            .filter(|(k, _)| k.eq(&self.group_by.key()))
+            .filter(|(k, _)| k.eq(&group_by.key()))
             .map(|(_, v)| v.to_string())
             .collect::<Vec<_>>();
 
@@ -211,10 +208,10 @@ impl BatchLoader {
             .await?
             .to_json::<ConstValue>()?;
 
-        let response_map = response.body.group_by(&self.group_by.path());
+        let response_map = response.body.group_by(&group_by.path());
         let mut map = HashMap::new();
         for id in query_set {
-            let body = (self.body)(&response_map, &id);
+            let body = (body)(&response_map, &id);
             let res = response.clone().body(body);
             map.insert(id, res);
         }
@@ -231,14 +228,12 @@ mod test {
     async fn test_batch_loader() {
         let url = "http://jsonplaceholder.typicode.com/users?static=12&id=1&id=1&id=1&id=1&id=1&id=1&id=1&id=1&id=1&id=1&id=2&id=2&id=2&id=2&id=2&id=2&id=2&id=2&id=2&id=2&id=3&id=3&id=3&id=3&id=3&id=3&id=3&id=3&id=3&id=3&id=4&id=4&id=4&id=4&id=4&id=4&id=4&id=4&id=4&id=4&id=5&id=5&id=5&id=5&id=5&id=5&id=5&id=5&id=5&id=5&id=6&id=6&id=6&id=6&id=6&id=6&id=6&id=6&id=6&id=6&id=7&id=7&id=7&id=7&id=7&id=7&id=7&id=7&id=7&id=7&id=8&id=8&id=8&id=8&id=8&id=8&id=8&id=8&id=8&id=8&id=9&id=9&id=9&id=9&id=9&id=9&id=9&id=9&id=9&id=9&id=10&id=10&id=10&id=10&id=10&id=10&id=10&id=10&id=10&id=10";
         let rt = crate::core::runtime::test::init(None);
-        let batch_loader = BatchLoader::new(
-            rt,
-            GroupBy::new(vec!["id".into()], Some("id".into())),
-            false,
-            10,
-        );
-
+        let batch_loader = BatchLoader::new(rt, 10);
+        let group_by = GroupBy::new(vec!["id".into()], Some("id".into()));
         let request = Request::new(reqwest::Method::GET, url.parse().unwrap());
-        let _result = batch_loader.load_batch(request).await.unwrap();
+        let _result = batch_loader
+            .load_batch(&group_by, &false, request)
+            .await
+            .unwrap();
     }
 }

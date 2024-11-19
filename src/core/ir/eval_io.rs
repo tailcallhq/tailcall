@@ -45,9 +45,17 @@ where
     Ctx: ResolverContextLike + Sync,
 {
     match io {
-        IO::Http { req_template, dl_id, http_filter, bl_id, .. } => {
+        IO::Http {
+            req_template,
+            dl_id,
+            http_filter,
+            group_by,
+            is_list,
+            use_batcher,
+            ..
+        } => {
             let worker = &ctx.request_ctx.runtime.cmd_worker;
-            let eval_http = EvalHttp::new(ctx, req_template, dl_id, bl_id);
+            let eval_http = EvalHttp::new(ctx, req_template, dl_id, group_by, is_list, use_batcher);
             let request = eval_http.init_request()?;
             let response = match (&worker, http_filter) {
                 (Some(worker), Some(http_filter)) => {
