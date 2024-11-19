@@ -2,7 +2,7 @@ use std::convert::Infallible;
 
 use tailcall_valid::Valid;
 
-use crate::core::ir::model::{IO, IR};
+use crate::core::ir::model::IO;
 use crate::core::jit::{Field, OperationPlan};
 use crate::core::Transform;
 
@@ -13,91 +13,19 @@ impl<A> CheckDirectLoader<A> {
     }
 }
 
-fn can_ir_use_batch_loader(ir: &mut IR, is_parent_list: bool, allow_batch_loader: bool) -> bool {
-    let mut use_batch_loader = false;
-    match ir {
-        IR::IO(IO::Http { bl_id, .. }) => {
-            if is_parent_list && bl_id.is_some() {
-                use_batch_loader = true;
-            }
-            if !use_batch_loader || !allow_batch_loader || !is_parent_list {
-                *bl_id = None;
-                use_batch_loader = false;
-            }
-        }
-        IR::Cache(cache) => {
-            let io: &mut IO = &mut cache.io;
-            if let IO::Http { bl_id, .. } = io {
-                if is_parent_list && bl_id.is_some() {
-                    use_batch_loader = true;
-                }
-                if !use_batch_loader || !allow_batch_loader || !is_parent_list {
-                    *bl_id = None;
-                    use_batch_loader = false;
-                }
-            }
-        }
-        IR::Discriminate(_, ir) | IR::Protect(ir) | IR::Path(ir, _) => {
-            use_batch_loader = can_ir_use_batch_loader(ir, is_parent_list, allow_batch_loader);
-        }
-        IR::Pipe(ir1, ir2) => {
-            use_batch_loader = can_ir_use_batch_loader(ir1, is_parent_list, allow_batch_loader)
-                && can_ir_use_batch_loader(ir2, is_parent_list, allow_batch_loader);
-        }
-        IR::Entity(hash_map) => {
-            use_batch_loader = hash_map
-                .values_mut()
-                .all(|ir| can_ir_use_batch_loader(ir, is_parent_list, allow_batch_loader));
-        }
-        IR::Map(map) => {
-            use_batch_loader =
-                can_ir_use_batch_loader(&mut map.input, is_parent_list, allow_batch_loader);
-        }
-        _ => {}
-    }
-    use_batch_loader
-}
-
-fn disable_batch_loader(ir: &mut IR) {
-    match ir {
-        IR::IO(IO::Http { bl_id, .. }) => {
-            *bl_id = None;
-        }
-        IR::Cache(cache) => {
-            let io: &mut IO = &mut cache.io;
-            if let IO::Http { bl_id, .. } = io {
-                *bl_id = None;
-            }
-        }
-        IR::Discriminate(_, ir) | IR::Protect(ir) | IR::Path(ir, _) => {
-            disable_batch_loader(ir);
-        }
-        IR::Pipe(ir1, ir2) => {
-            disable_batch_loader(ir1);
-            disable_batch_loader(ir2);
-        }
-        IR::Entity(hash_map) => {
-            for ir in hash_map.values_mut() {
-                disable_batch_loader(ir);
-            }
-        }
-        IR::Map(map) => {
-            disable_batch_loader(&mut map.input);
-        }
-        _ => {}
-    }
-}
-
 fn mark_direct_loader<A>(selection: &mut [Field<A>], is_parent_list: bool) {
     for field in selection.iter_mut() {
         if let Some(ir) = &mut field.ir {
-            if can_ir_use_batch_loader(ir, is_parent_list, true) {
-                field.use_batch_loader = Some(true);
-            } else {
-                // disable nested IR's batch loader.
-                disable_batch_loader(ir);
-                field.use_batch_loader = None;
-            }
+            ir.modify_io(&mut |io| {
+                if let IO::Http { bl_id, .. } = io {
+                    if is_parent_list && bl_id.is_some() {
+                        field.use_batch_loader = Some(true);
+                    }
+                    if !field.use_batch_loader.unwrap_or(false) {
+                        *bl_id = None;
+                    }
+                }
+            });
         }
         mark_direct_loader(&mut field.selection, field.type_of.is_list());
     }
