@@ -1,5 +1,6 @@
 use std::path::Path;
 
+use reqwest::Client;
 use rustls_pemfile;
 use rustls_pki_types::{
     CertificateDer, PrivateKeyDer, PrivatePkcs1KeyDer, PrivatePkcs8KeyDer, PrivateSec1KeyDer,
@@ -10,7 +11,7 @@ use url::Url;
 use super::{ConfigModule, Content, Link, LinkType, PrivateKey};
 use crate::core::config::{Config, ConfigReaderContext, Source};
 use crate::core::proto_reader::ProtoReader;
-use crate::core::resource_reader::{Cached, Resource, ResourceReader};
+use crate::core::resource_reader::{Cached, FileRead, Resource, ResourceReader};
 use crate::core::rest::EndpointSet;
 use crate::core::runtime::TargetRuntime;
 use crate::core::variance::Invariant;
@@ -67,9 +68,19 @@ impl ConfigReader {
 
             match link.type_of {
                 LinkType::Config => {
-                    let source = self.resource_reader.read_file(path).await?;
-                    let content = source.content;
+                    let verify_ssl = link.verify_ssl.unwrap_or(true);
+                    let source = if verify_ssl {
+                        self.resource_reader.read_file(path).await?
+                    } else {
+                        let client = Client::builder()
+                            .danger_accept_invalid_certs(verify_ssl)
+                            .build()
+                            .unwrap();
+                        let response = client.get(path.clone()).send().await?.text().await?;
+                        FileRead { path, content: response }
+                    };
 
+                    let content = source.content;
                     let config = Config::from_source(Source::detect(&source.path)?, &content)?;
                     config_module = config_module.and_then(|config_module| {
                         config_module.unify(ConfigModule::from(config.clone()))
