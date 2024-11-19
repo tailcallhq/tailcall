@@ -64,6 +64,39 @@ pub enum ValueString<'a> {
     String(Cow<'a, str>),
 }
 
+impl<'a> ValueString<'a> {
+    // goes through ValueString and return ValueString without null values.
+    pub fn skip_null(self) -> Option<ValueString<'a>> {
+        match self {
+            ValueString::Value(value) => match value {
+                Cow::Borrowed(async_graphql::Value::List(list)) => {
+                    Some(ValueString::Value(Cow::Owned(async_graphql::Value::List(
+                        list.into_iter()
+                            .filter(|v| !v.is_null())
+                            .map(|v| v.to_owned())
+                            .collect::<Vec<_>>(),
+                    ))))
+                }
+                Cow::Owned(async_graphql::Value::List(list)) => {
+                    Some(ValueString::Value(Cow::Owned(async_graphql::Value::List(
+                        list.into_iter()
+                            .filter(|v| !v.is_null())
+                            .collect::<Vec<_>>(),
+                    ))))
+                }
+                _ => Some(ValueString::Value(value)),
+            },
+            ValueString::String(v) => {
+                if v.is_empty() {
+                    None
+                } else {
+                    Some(ValueString::String(v))
+                }
+            }
+        }
+    }
+}
+
 impl<Ctx: ResolverContextLike> EvalContext<'_, Ctx> {
     fn to_raw_value<T: AsRef<str>>(&self, path: &[T]) -> Option<ValueString<'_>> {
         let ctx = self;
