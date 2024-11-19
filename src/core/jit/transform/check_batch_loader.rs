@@ -13,20 +13,23 @@ impl<A> CheckBatchLoader<A> {
     }
 }
 
-// if parent is list and if we can IR the use batch loader.
-fn mark_direct_loader<A>(selection: &mut [Field<A>], is_parent_list: bool) {
+// if from the root to the current field, there is a group_by and in path there's list ancestor, then set use_batch_loader is true.
+fn mark_direct_loader<A>(selection: &mut [Field<A>], has_list_ancestor: bool) {
     for field in selection.iter_mut() {
         if let Some(ir) = &mut field.ir {
             ir.modify_io(&mut |io| {
                 if let IO::Http { use_batcher, group_by, .. } = io {
-                    if is_parent_list && group_by.is_some() {
+                    if has_list_ancestor && group_by.is_some() {
                         field.use_batch_loader = Some(true);
                         *use_batcher = true;
                     }
                 }
             });
         }
-        mark_direct_loader(&mut field.selection, field.type_of.is_list());
+        mark_direct_loader(
+            &mut field.selection,
+            field.type_of.is_list() || has_list_ancestor,
+        );
     }
 }
 
