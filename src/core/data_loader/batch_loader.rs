@@ -1,13 +1,14 @@
-use crate::core::config::group_by::GroupBy;
-use crate::core::http::Response;
-use crate::core::json::JsonLike;
-use crate::core::runtime::TargetRuntime;
+use std::collections::HashMap;
 
 use anyhow::Ok;
 use async_graphql_value::ConstValue;
 use indexmap::IndexSet;
 use reqwest::Request;
-use std::collections::HashMap;
+
+use crate::core::config::group_by::GroupBy;
+use crate::core::http::Response;
+use crate::core::json::JsonLike;
+use crate::core::runtime::TargetRuntime;
 
 fn get_body_value_single(body_value: &HashMap<String, Vec<&ConstValue>>, id: &str) -> ConstValue {
     body_value
@@ -49,7 +50,7 @@ impl BatchLoader {
             .map(|(_, v)| (v.to_string()))
             .collect::<Vec<_>>();
         let req_wrapper: RequestWrapper = request.into();
-        let request = req_wrapper.to_request();
+        let request = req_wrapper.request();
         let (response_map, response) = self.execute(group_by, is_list, request).await?;
 
         let mut final_result: Vec<ConstValue> = vec![];
@@ -113,7 +114,7 @@ impl From<Request> for RequestWrapper {
 }
 
 impl RequestWrapper {
-    pub fn to_request(mut self) -> Request {
+    pub fn request(mut self) -> Request {
         // retain the original order of query parameters
         let original_query_param_order = self
             .request
@@ -152,9 +153,6 @@ mod test {
         let batch_loader = BatchLoader::new(rt);
         let group_by = GroupBy::new(vec!["id".into()], Some("id".into()));
         let request = Request::new(reqwest::Method::GET, url.parse().unwrap());
-        let _result = batch_loader
-            .load(&group_by, &false, request)
-            .await
-            .unwrap();
+        let _result = batch_loader.load(&group_by, &false, request).await.unwrap();
     }
 }
