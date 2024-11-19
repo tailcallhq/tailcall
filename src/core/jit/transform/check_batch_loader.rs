@@ -13,7 +13,8 @@ impl<A> CheckBatchLoader<A> {
     }
 }
 
-// if from the root to the current field, there is a group_by and in path there's list ancestor, then set use_batch_loader is true.
+// if from the root to the current field, in path there's list ancestor and
+// current IR has group by clause then set use_batch_loader is true.
 fn mark_direct_loader<A>(selection: &mut [Field<A>], has_list_ancestor: bool) {
     for field in selection.iter_mut() {
         if let Some(ir) = &mut field.ir {

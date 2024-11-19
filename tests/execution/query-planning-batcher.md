@@ -40,12 +40,12 @@ type User {
   response:
     status: 200
     body:
-      - post: 
+      - post:
           id: 1
           title: post-1
           body: post-1
           userId: 1
-      - post: 
+      - post:
           id: 2
           title: post-2
           body: post-2
