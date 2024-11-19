@@ -19,13 +19,8 @@ type Post {
   userId: Int
 }
 
-type PostData {
-  meta: String @expr(body: "Data owned by tailcall.")
-  post: Post
-}
-
 type Query {
-  postData: [PostData] @http(url: "http://jsonplaceholder.typicode.com/posts?id=1&id=2")
+  posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts?id=11&id=3&foo=1")
 }
 
 type User {
