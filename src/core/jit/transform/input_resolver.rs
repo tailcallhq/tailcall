@@ -71,13 +71,7 @@ where
 
         // adjust the pre-computed values in selection set like graphql query for
         // @graphql directive.
-        for field in selection.iter_mut() {
-            if let Some(IR::IO(IO::GraphQL { req_template, .. })) = field.ir.as_mut() {
-                if let Some(selection) = req_template.selection.take() {
-                    req_template.selection = Some(selection.resolve(variables));
-                }
-            }
-        }
+        Self::resolve_graphql_selection_set(&mut selection, variables);
 
         Ok(OperationPlan {
             root_name: self.plan.root_name.to_string(),
@@ -90,6 +84,50 @@ where
             min_cache_ttl: self.plan.min_cache_ttl,
             selection,
         })
+    }
+
+    fn resolve_nested_irs(field: &Field<Output>, ir: &mut IR, variables: &Variables<Output>) {
+        match ir {
+            IR::IO(IO::GraphQL { req_template, .. }) => {
+                if let Some(selection) = req_template.selection.take() {
+                    req_template.selection = Some(selection.resolve(variables));
+                }
+            }
+            IR::Cache(cache) => {
+                let io: &mut IO = &mut cache.io;
+                if let IO::GraphQL { req_template, .. } = io {
+                    if let Some(selection) = req_template.selection.take() {
+                        req_template.selection = Some(selection.resolve(variables));
+                    }
+                }
+            }
+            IR::Discriminate(_, ir) | IR::Protect(ir) | IR::Path(ir, _) => {
+                Self::resolve_nested_irs(field, ir, variables);
+            }
+            IR::Pipe(ir1, ir2) => {
+                Self::resolve_nested_irs(field, ir1, variables);
+                Self::resolve_nested_irs(field, ir2, variables);
+            }
+            IR::Entity(hash_map) => {
+                for ir in hash_map.values_mut() {
+                    Self::resolve_nested_irs(field, ir, variables);
+                }
+            }
+            IR::Map(map) => {
+                Self::resolve_nested_irs(field, &mut map.input, variables);
+            }
+            _ => {}
+        }
+    }
+
+    fn resolve_graphql_selection_set(base_field: &mut Vec<Field<Output>>, variables: &Variables<Output>) {
+        for field in base_field.iter_mut() {
+            if let Some(mut ir) = field.ir.clone() {
+                Self::resolve_nested_irs(field, &mut ir, variables);
+                field.ir = Some(ir);
+            }
+            Self::resolve_graphql_selection_set(field.selection.as_mut(), variables);
+        }
     }
 
     fn resolve_field(

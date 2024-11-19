@@ -20,18 +20,27 @@ impl<A> GraphQL<A> {
     }
 }
 
-impl<A: Display + Debug + JsonLikeOwned> Transform for GraphQL<A> {
+fn compute_selection_set<A: Display + Debug + JsonLikeOwned>(base_field: &mut Vec<Field<A>>) {
+    for field in base_field.iter_mut() {
+        if let Some(ir) = field.ir.as_mut() {
+            ir.modify_io(&mut |io| {
+                if let IO::GraphQL { req_template, .. } = io {
+                    if let Some(v) = format_selection_set(field.selection.iter()) {
+                        req_template.selection = Some(Mustache::parse(&v).into());
+                    }
+                }
+            });
+        }
+        compute_selection_set(field.selection.as_mut());
+    }
+}
+
+impl<A: Display + Debug + JsonLikeOwned + Clone> Transform for GraphQL<A> {
     type Value = OperationPlan<A>;
     type Error = Infallible;
 
     fn transform(&self, mut plan: Self::Value) -> Valid<Self::Value, Self::Error> {
-        for field in plan.selection.iter_mut() {
-            if let Some(IR::IO(IO::GraphQL { req_template, .. })) = field.ir.as_mut() {
-                if let Some(v) = format_selection_set(field.selection.iter()) {
-                    req_template.selection = Some(Mustache::parse(&v).into());
-                }
-            }
-        }
+        compute_selection_set(&mut plan.selection);
 
         Valid::succeed(plan)
     }
