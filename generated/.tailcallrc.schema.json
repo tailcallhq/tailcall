@@ -896,6 +896,13 @@
               "$ref": "#/definitions/LinkType"
             }
           ]
+        },
+        "verifySSL": {
+          "description": "A boolean value that determines whether to verify certificates. Setting this as `false` will make tailcall accept self-signed certificates. NOTE: use this *only* during development or testing. It is highly recommended to keep this enabled (`true`) in production.",
+          "type": [
+            "boolean",
+            "null"
+          ]
         }
       },
       "additionalProperties": false

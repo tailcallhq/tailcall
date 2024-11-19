@@ -4,7 +4,6 @@ use tailcall_macros::DirectiveDefinition;
 use crate::core::config::KeyValue;
 use crate::core::{default_verify_ssl, is_default, verify_ssl_is_default};
 
-
 #[derive(
     Default,
     Serialize,
