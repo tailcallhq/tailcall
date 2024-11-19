@@ -57,8 +57,8 @@ impl RequestTemplate {
             let skip = query.skip_empty;
             let parsed_value = mustache_eval.eval(value, ctx);
             let parsed_value = if skip {
-                parsed_value.map(|v| v.skip_null()).flatten()
-            }else{
+                parsed_value.and_then(|v| v.skip_null())
+            } else {
                 parsed_value
             };
             if skip && parsed_value.is_none() {

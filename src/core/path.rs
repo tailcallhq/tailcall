@@ -71,7 +71,7 @@ impl<'a> ValueString<'a> {
             ValueString::Value(value) => match value {
                 Cow::Borrowed(async_graphql::Value::List(list)) => {
                     Some(ValueString::Value(Cow::Owned(async_graphql::Value::List(
-                        list.into_iter()
+                        list.iter()
                             .filter(|v| !v.is_null())
                             .map(|v| v.to_owned())
                             .collect::<Vec<_>>(),
