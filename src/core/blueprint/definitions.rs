@@ -107,14 +107,19 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Ty
     let path_resolver_error_handler = context.path_resolver_error_handler;
 
     if let Some(next_field) = type_info.fields.get(field_name) {
-        if let Some(resolver) = &next_field.resolver {
-            return path_resolver_error_handler(
-                &resolver.directive_name(),
-                field.type_of.name(),
-                field_name,
-                context.original_path,
-            )
-            .and(process_path(ProcessPathContext {
+        let mut valid = Valid::succeed(field.type_of.clone());
+
+        if !field.resolvers.is_empty() {
+            for resolver in &field.resolvers {
+                valid = valid.and(path_resolver_error_handler(
+                    &resolver.directive_name(),
+                    field.type_of.name(),
+                    field_name,
+                    context.original_path,
+                ));
+            }
+
+            return valid.and(process_path(ProcessPathContext {
                 type_info,
                 is_required,
                 config_module,
@@ -424,12 +429,13 @@ fn to_fields(
                 &add_field.name,
             )
             .and_then(|field_definition| {
-                let added_field_path = match source_field.resolver {
-                    Some(_) => add_field.path[1..]
+                let added_field_path = if source_field.resolvers.is_empty() {
+                    add_field.path.clone()
+                } else {
+                    add_field.path[1..]
                         .iter()
                         .map(|s| s.to_owned())
-                        .collect::<Vec<_>>(),
-                    None => add_field.path.clone(),
+                        .collect::<Vec<_>>()
                 };
                 let invalid_path_handler = |field_name: &str,
                                             _added_field_path: &[String],

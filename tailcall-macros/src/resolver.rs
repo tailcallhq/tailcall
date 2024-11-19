@@ -60,15 +60,9 @@ pub fn expand_resolver_derive(input: DeriveInput) -> syn::Result<TokenStream> {
         }
 
         Some(quote! {
-            valid = valid.and(<#ty>::from_directives(directives.iter()).map(|resolver| {
-                if let Some(resolver) = resolver {
-                    let directive_name = <#ty>::trace_name();
-                    if !resolvable_directives.contains(&directive_name) {
-                        resolvable_directives.push(directive_name);
-                    }
-                    result = Some(Self::#variant_name(resolver));
-                }
-            }));
+            if <#ty>::directive_name() == directive.node.name.node {
+                return <#ty>::from_directive(&directive.node).map(|x| Some(Self::#variant_name(x)))
+            }
         })
     });
 
@@ -100,23 +94,15 @@ pub fn expand_resolver_derive(input: DeriveInput) -> syn::Result<TokenStream> {
         impl #name {
             pub fn from_directives(
                 directives: &[Positioned<ConstDirective>],
-            ) -> Valid<Option<Self>, String> {
-                let mut result = None;
-                let mut resolvable_directives = Vec::new();
-                let mut valid = Valid::succeed(());
+            ) -> Valid<Vec<Self>, String> {
+                Valid::from_iter(directives.iter(), |directive| {
+                    #(#variant_parsers)*
 
-                #(#variant_parsers)*
-
-                valid.and_then(|_| {
-                    if resolvable_directives.len() > 1 {
-                        Valid::fail(format!(
-                            "Multiple resolvers detected [{}]",
-                            resolvable_directives.join(", ")
-                        ))
-                    } else {
-                        Valid::succeed(result)
-                    }
+                    Valid::succeed(None)
                 })
+                    .map(|resolvers| {
+                        resolvers.into_iter().filter_map(std::convert::identity).collect()
+                    })
             }
 
             pub fn to_directive(&self) -> Option<ConstDirective> {

@@ -117,7 +117,7 @@ pub struct Type {
     ///
     /// Apollo federation entity resolver.
     #[serde(flatten, default, skip_serializing_if = "is_default")]
-    pub resolver: Option<Resolver>,
+    pub resolvers: Vec<Resolver>,
     ///
     /// Any additional directives
     #[serde(default, skip_serializing_if = "is_default")]
@@ -226,7 +226,7 @@ pub struct Field {
     ///
     /// Resolver for the field
     #[serde(flatten, default, skip_serializing_if = "is_default")]
-    pub resolver: Option<Resolver>,
+    pub resolvers: Vec<Resolver>,
 
     ///
     /// Any additional directives
@@ -243,14 +243,15 @@ impl MergeRight for Field {
 
 impl Field {
     pub fn has_resolver(&self) -> bool {
-        self.resolver.is_some()
+        !self.resolvers.is_empty()
     }
 
     pub fn has_batched_resolver(&self) -> bool {
-        self.resolver
-            .as_ref()
-            .map(Resolver::is_batched)
-            .unwrap_or(false)
+        if self.resolvers.is_empty() {
+            true
+        } else {
+            self.resolvers.iter().all(Resolver::is_batched)
+        }
     }
 
     pub fn int() -> Self {
@@ -700,18 +701,18 @@ mod tests {
         let f1 = Field { ..Default::default() };
 
         let f2 = Field {
-            resolver: Some(Resolver::Http(Http {
+            resolvers: vec![Resolver::Http(Http {
                 batch_key: vec!["id".to_string()],
                 ..Default::default()
-            })),
+            })],
             ..Default::default()
         };
 
         let f3 = Field {
-            resolver: Some(Resolver::Http(Http {
+            resolvers: vec![Resolver::Http(Http {
                 batch_key: vec![],
                 ..Default::default()
-            })),
+            })],
             ..Default::default()
         };
 
