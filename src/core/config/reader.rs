@@ -68,7 +68,7 @@ impl ConfigReader {
 
             match link.type_of {
                 LinkType::Config => {
-                    let verify_ssl = link.verify_ssl.unwrap_or(true);
+                    let verify_ssl = link.verify_ssl();
                     let source = if verify_ssl {
                         self.resource_reader.read_file(path).await?
                     } else {

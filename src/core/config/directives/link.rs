@@ -79,3 +79,10 @@ pub struct Link {
     /// production.
     pub verify_ssl: Option<bool>,
 }
+
+
+impl Link {
+    pub fn verify_ssl(&self) -> bool {
+        self.verify_ssl.unwrap_or(true)
+    }
+}
