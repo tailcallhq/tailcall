@@ -97,7 +97,6 @@ impl Generator {
             type_of: LinkType::Protobuf,
             headers: None,
             meta: None,
-            verify_ssl: None,
         });
         Ok(config)
     }

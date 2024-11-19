@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use tailcall_macros::DirectiveDefinition;
 
 use crate::core::config::KeyValue;
-use crate::core::{default_verify_ssl, is_default, verify_ssl_is_default};
+use crate::core::is_default;
 
 #[derive(
     Default,
@@ -66,22 +66,4 @@ pub struct Link {
     /// Additional metadata pertaining to the linked resource.
     #[serde(default, skip_serializing_if = "is_default")]
     pub meta: Option<serde_json::Value>,
-
-    #[serde(
-        default = "default_verify_ssl",
-        rename = "verifySSL",
-        skip_serializing_if = "verify_ssl_is_default"
-    )]
-    /// A boolean value that determines whether to verify certificates.
-    /// Setting this as `false` will make tailcall accept self-signed
-    /// certificates. NOTE: use this *only* during development or testing.
-    /// It is highly recommended to keep this enabled (`true`) in
-    /// production.
-    pub verify_ssl: Option<bool>,
-}
-
-impl Link {
-    pub fn verify_ssl(&self) -> bool {
-        self.verify_ssl.unwrap_or(true)
-    }
 }
