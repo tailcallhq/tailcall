@@ -28,11 +28,12 @@ fn get_body_value_list(body_value: &HashMap<String, Vec<&ConstValue>>, id: &str)
     )
 }
 
-pub struct BatchLoader {
+/// TODO: add some docs.
+pub struct HttpMerge {
     runtime: TargetRuntime,
 }
 
-impl BatchLoader {
+impl HttpMerge {
     pub fn new(runtime: TargetRuntime) -> Self {
         Self { runtime }
     }

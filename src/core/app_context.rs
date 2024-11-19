@@ -4,7 +4,7 @@ use async_graphql::dynamic::{self, DynamicRequest};
 use async_graphql_value::ConstValue;
 use dashmap::DashMap;
 
-use super::data_loader::BatchLoader;
+use super::data_loader::HttpMerge;
 use super::jit::AnyResponse;
 use crate::core::async_graphql_hyper::OperationId;
 use crate::core::auth::context::GlobalAuthContext;
@@ -27,7 +27,7 @@ pub struct AppContext {
     pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
     pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
     pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
-    pub batch_loader: Arc<BatchLoader>,
+    pub batch_loader: Arc<HttpMerge>,
     pub endpoints: EndpointSet<Checked>,
     pub auth_ctx: Arc<GlobalAuthContext>,
     pub dedupe_handler: Arc<DedupeResult<IoId, ConstValue, Error>>,
@@ -157,7 +157,7 @@ impl AppContext {
             dedupe_operation_handler: DedupeResult::new(false),
             operation_plans: DashMap::new(),
             const_execution_cache: DashMap::default(),
-            batch_loader: Arc::new(BatchLoader::new(runtime)),
+            batch_loader: Arc::new(HttpMerge::new(runtime)),
         }
     }
 

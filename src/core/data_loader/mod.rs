@@ -7,7 +7,7 @@ mod loader;
 mod storage;
 
 // Making public as it is unused and clippy gives warning.
-pub use batch_loader::BatchLoader;
+pub use batch_loader::HttpMerge;
 pub use cache::LruCache;
 pub use data_loader::DataLoader;
 pub use dedupe::DedupeResult;

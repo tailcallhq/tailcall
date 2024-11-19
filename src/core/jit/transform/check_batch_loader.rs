@@ -6,8 +6,8 @@ use crate::core::ir::model::IO;
 use crate::core::jit::{Field, OperationPlan};
 use crate::core::Transform;
 
-pub struct CheckBatchLoader<A>(std::marker::PhantomData<A>);
-impl<A> CheckBatchLoader<A> {
+pub struct CheckHttpMerge<A>(std::marker::PhantomData<A>);
+impl<A> CheckHttpMerge<A> {
     pub fn new() -> Self {
         Self(std::marker::PhantomData)
     }
@@ -34,7 +34,7 @@ fn mark_direct_loader<A>(selection: &mut [Field<A>], has_list_ancestor: bool) {
     }
 }
 
-impl<A> Transform for CheckBatchLoader<A> {
+impl<A> Transform for CheckHttpMerge<A> {
     type Value = OperationPlan<A>;
     type Error = Infallible;
 
