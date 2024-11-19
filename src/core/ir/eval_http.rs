@@ -4,7 +4,7 @@ use async_graphql::from_value;
 use reqwest::Request;
 use tailcall_valid::Validator;
 
-use super::model::LoaderId;
+use super::model::DataLoaderId;
 use super::{EvalContext, ResolverContextLike};
 use crate::core::config::group_by::GroupBy;
 use crate::core::data_loader::{DataLoader, Loader};
@@ -46,7 +46,7 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
     pub fn new(
         evaluation_ctx: &'ctx EvalContext<'a, Context>,
         request_template: &'a RequestTemplate,
-        dl_id: &Option<LoaderId>,
+        dl_id: &Option<DataLoaderId>,
         http_params: HttpParams<'a>,
     ) -> Self {
         let data_loader = if evaluation_ctx.request_ctx.is_batching_enabled() {

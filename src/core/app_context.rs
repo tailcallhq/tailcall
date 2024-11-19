@@ -14,7 +14,7 @@ use crate::core::graphql::GraphqlDataLoader;
 use crate::core::grpc;
 use crate::core::grpc::data_loader::GrpcDataLoader;
 use crate::core::http::{DataLoaderRequest, HttpDataLoader};
-use crate::core::ir::model::{IoId, LoaderId, IO, IR};
+use crate::core::ir::model::{IoId, DataLoaderId, IO, IR};
 use crate::core::ir::Error;
 use crate::core::jit::{OPHash, OperationPlan};
 use crate::core::rest::{Checked, EndpointSet};
@@ -73,7 +73,7 @@ impl AppContext {
                                     let result = Some(IR::IO(IO::Http {
                                         req_template: req_template.clone(),
                                         group_by: group_by.clone(),
-                                        dl_id: Some(LoaderId::new(http_data_loaders.len())),
+                                        dl_id: Some(DataLoaderId::new(http_data_loaders.len())),
                                         use_batcher: false,
                                         http_filter: http_filter.clone(),
                                         is_list,
@@ -97,7 +97,7 @@ impl AppContext {
                                         req_template: req_template.clone(),
                                         field_name: field_name.clone(),
                                         batch: *batch,
-                                        dl_id: Some(LoaderId::new(gql_data_loaders.len())),
+                                        dl_id: Some(DataLoaderId::new(gql_data_loaders.len())),
                                         dedupe,
                                     }));
 
@@ -120,7 +120,7 @@ impl AppContext {
                                     let result = Some(IR::IO(IO::Grpc {
                                         req_template: req_template.clone(),
                                         group_by: group_by.clone(),
-                                        dl_id: Some(LoaderId::new(grpc_data_loaders.len())),
+                                        dl_id: Some(DataLoaderId::new(grpc_data_loaders.len())),
                                         dedupe,
                                     }));
 

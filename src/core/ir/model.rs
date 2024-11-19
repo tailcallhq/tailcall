@@ -44,7 +44,7 @@ pub enum IO {
     Http {
         req_template: http::RequestTemplate,
         group_by: Option<GroupBy>,
-        dl_id: Option<LoaderId>,
+        dl_id: Option<DataLoaderId>,
         http_filter: Option<HttpFilter>,
         is_list: bool,
         use_batcher: bool,
@@ -54,13 +54,13 @@ pub enum IO {
         req_template: graphql::RequestTemplate,
         field_name: String,
         batch: bool,
-        dl_id: Option<LoaderId>,
+        dl_id: Option<DataLoaderId>,
         dedupe: bool,
     },
     Grpc {
         req_template: grpc::RequestTemplate,
         group_by: Option<GroupBy>,
-        dl_id: Option<LoaderId>,
+        dl_id: Option<DataLoaderId>,
         dedupe: bool,
     },
     Js {
@@ -80,9 +80,9 @@ impl IO {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct LoaderId(usize);
+pub struct DataLoaderId(usize);
 
-impl LoaderId {
+impl DataLoaderId {
     pub fn new(id: usize) -> Self {
         Self(id)
     }
