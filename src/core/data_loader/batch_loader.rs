@@ -146,13 +146,19 @@ impl RequestWrapper {
 mod test {
     use super::*;
 
-    #[tokio::test]
-    async fn test_batch_loader() {
+    #[test]
+    fn test_request_wrapper() {
         let url = "http://jsonplaceholder.typicode.com/users?static=12&id=1&id=1&id=1&id=1&id=1&id=1&id=1&id=1&id=1&id=1&id=2&id=2&id=2&id=2&id=2&id=2&id=2&id=2&id=2&id=2&id=3&id=3&id=3&id=3&id=3&id=3&id=3&id=3&id=3&id=3&id=4&id=4&id=4&id=4&id=4&id=4&id=4&id=4&id=4&id=4&id=5&id=5&id=5&id=5&id=5&id=5&id=5&id=5&id=5&id=5&id=6&id=6&id=6&id=6&id=6&id=6&id=6&id=6&id=6&id=6&id=7&id=7&id=7&id=7&id=7&id=7&id=7&id=7&id=7&id=7&id=8&id=8&id=8&id=8&id=8&id=8&id=8&id=8&id=8&id=8&id=9&id=9&id=9&id=9&id=9&id=9&id=9&id=9&id=9&id=9&id=10&id=10&id=10&id=10&id=10&id=10&id=10&id=10&id=10&id=10";
-        let rt = crate::core::runtime::test::init(None);
-        let batch_loader = BatchLoader::new(rt);
-        let group_by = GroupBy::new(vec!["id".into()], Some("id".into()));
-        let request = Request::new(reqwest::Method::GET, url.parse().unwrap());
-        let _result = batch_loader.load(&group_by, &false, request).await.unwrap();
+        let request_wrapper: RequestWrapper = Request::new(reqwest::Method::GET, url.parse().unwrap()).into();
+        let request = request_wrapper.request();
+        assert_eq!(request.url().query(), Some("static=12&id=1&id=2&id=3&id=4&id=5&id=6&id=7&id=8&id=9&id=10"));
+    }
+
+    #[test]
+    fn test_request_wrapper_key_without_value() {
+        let url = "http://jsonplaceholder.typicode.com/users?static=12&id";
+        let request_wrapper: RequestWrapper = Request::new(reqwest::Method::GET, url.parse().unwrap()).into();
+        let request = request_wrapper.request();
+        assert_eq!(request.url().query(), Some("static=12&id"));
     }
 }
