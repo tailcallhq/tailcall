@@ -73,51 +73,49 @@ async fn validate_rc_config_files(runtime: TargetRuntime, file_paths: &[String])
     let tailcallrc = include_str!("../../../generated/.tailcallrc.graphql");
     let tailcallrc_json = include_str!("../../../generated/.tailcallrc.schema.json");
 
+    // Define the config files to check with their base contents
+    let rc_config_files = vec![
+        (TAILCALL_RC, tailcallrc),
+        (TAILCALL_RC_SCHEMA, tailcallrc_json),
+    ];
+
     for path in file_paths {
-        let tailcall_rc_path = Path::new(path).join(TAILCALL_RC).display().to_string();
-        let tailcall_rc_schema_path = Path::new(path)
-            .join(TAILCALL_RC_SCHEMA)
-            .display()
-            .to_string();
+        let parent_dir = match Path::new(path).parent() {
+            Some(dir) => dir,
+            None => continue,
+        };
 
-        // check if rc files already exist or not.
-        if std::fs::metadata(tailcall_rc_path.clone()).is_ok()
-            || std::fs::metadata(tailcall_rc_schema_path.clone()).is_ok()
-        {
-            let mut outdated_files = Vec::with_capacity(2);
-            if let Ok(content) = runtime.file.read(&tailcall_rc_path).await {
-                if content != tailcallrc {
-                    outdated_files.push(".tailcallrc.graphql");
-                }
-            } else {
-                // If unable to read the file, consider it outdated
-                outdated_files.push(".tailcallrc.graphql");
-            }
-            // Check .tailcallrc.schema.json
-            if let Ok(content) = runtime.file.read(&tailcall_rc_schema_path).await {
-                if content != tailcallrc_json {
-                    outdated_files.push(".tailcallrc.schema.json");
-                }
-            } else {
-                // If unable to read the file, consider it outdated
-                outdated_files.push(".tailcallrc.schema.json");
-            }
+        let mut outdated_files = Vec::with_capacity(2);
 
-            if !outdated_files.is_empty() {
-                let message = if outdated_files.len() == 2 {
-                    format!(
-                        "[{}, {}] is outdated, reinitialize using tailcall init.",
-                        outdated_files[0], outdated_files[1]
-                    )
+        for (file_name, base_content) in &rc_config_files {
+            let config_path = parent_dir.join(file_name);
+            if config_path.exists() {
+                if let Ok(content) = runtime.file.read(&config_path.to_string_lossy()).await {
+                    if &content != base_content {
+                        // file content not same.
+                        outdated_files.push(file_name);
+                    }
                 } else {
-                    format!(
-                        "[{}] is outdated, reinitialize using tailcall init.",
-                        outdated_files[0]
-                    )
-                };
-                tracing::warn!(message);
-                return;
+                    // unable to read file.
+                    outdated_files.push(file_name);
+                }
             }
+        }
+
+        if !outdated_files.is_empty() {
+            let message = if outdated_files.len() == 2 {
+                format!(
+                    "[{}, {}] is outdated, reinitialize using tailcall init.",
+                    outdated_files[0], outdated_files[1]
+                )
+            } else {
+                format!(
+                    "[{}] is outdated, reinitialize using tailcall init.",
+                    outdated_files[0]
+                )
+            };
+            tracing::warn!(message);
+            return;
         }
     }
 }
