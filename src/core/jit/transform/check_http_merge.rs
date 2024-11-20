@@ -20,30 +20,30 @@ fn mark_direct_loader<A>(selection: &mut [Field<A>], has_list_ancestor: bool) {
     for field in selection.iter_mut() {
         if let Some(ir) = &mut field.ir {
             ir.modify_io(&mut |io| {
-                if let IO::Http { dl_enabled: use_batcher, group_by, .. } = io {
+                if let IO::Http { dl_enabled, group_by, .. } = io {
                     match (has_list_ancestor, group_by.is_some()) {
                         (true, true) => {
                             // ideal condition
                             // has list ancestor and group by clause
                             field.use_batch_loader = Some(true);
-                            *use_batcher = true;
+                            *dl_enabled = true;
                         }
                         (false, true) => {
                             // has not list ancestor but group by clause
                             field.use_batch_loader = Some(true);
-                            *use_batcher = true;
+                            *dl_enabled = true;
                         }
                         (_, false) => {
                             // has no group by clause means we can't process
                             // it with http merge.
-                            *use_batcher = false;
+                            *dl_enabled = false;
                             field.use_batch_loader = Some(false);
                         }
                     }
 
                     if has_list_ancestor && group_by.is_some() {
                         field.use_batch_loader = Some(true);
-                        *use_batcher = true;
+                        *dl_enabled = true;
                     }
                 }
             });

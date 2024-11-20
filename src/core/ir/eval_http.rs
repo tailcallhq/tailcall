@@ -33,12 +33,12 @@ pub struct EvalHttp<'a, 'ctx, Context: ResolverContextLike + Sync> {
 pub struct HttpParams<'a> {
     group_by: &'a Option<GroupBy>,
     is_list: &'a bool,
-    use_batcher: &'a bool,
+    dl_enabled: &'a bool,
 }
 
 impl<'a> HttpParams<'a> {
-    pub fn new(is_list: &'a bool, group_by: &'a Option<GroupBy>, use_batcher: &'a bool) -> Self {
-        Self { group_by, is_list, use_batcher }
+    pub fn new(is_list: &'a bool, group_by: &'a Option<GroupBy>, dl_enabled: &'a bool) -> Self {
+        Self { group_by, is_list, dl_enabled }
     }
 }
 
@@ -72,7 +72,7 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         let is_get = req.method() == reqwest::Method::GET;
         let dl = &self.data_loader;
 
-        let response = if *self.http_params.use_batcher && self.http_params.group_by.is_some() {
+        let response = if *self.http_params.dl_enabled && self.http_params.group_by.is_some() {
             let group_by = self.http_params.group_by.as_ref().unwrap();
             ctx.request_ctx
                 .batch_loader
