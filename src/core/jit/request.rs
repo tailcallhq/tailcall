@@ -46,10 +46,9 @@ impl Request<ConstValue> {
         let plan = builder.build(self.operation_name.as_deref())?;
 
         transform::CheckConst::new()
-            .pipe(transform::CheckDedupe::new())
-            .pipe(transform::CheckProtected::new())
-            .pipe(transform::CheckCache::new())
             .pipe(transform::AuthPlaner::new(&blueprint.server.auth))
+            .pipe(transform::CheckDedupe::new())
+            .pipe(transform::CheckCache::new())
             .transform(plan)
             .to_result()
             // both transformers are infallible right now

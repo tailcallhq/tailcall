@@ -111,7 +111,7 @@ impl JITExecutor {
             };
 
             let is_const = exec.plan.is_const;
-            let is_protected = exec.plan.is_protected;
+            let is_protected = exec.plan.auth_n.is_some();
 
             let response = if exec.plan.can_dedupe() {
                 self.dedupe_and_exec(exec, jit_request).await
