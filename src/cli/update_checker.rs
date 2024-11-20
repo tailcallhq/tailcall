@@ -39,21 +39,23 @@ impl InstallationMethod {
         InstallationMethod::default()
     }
 
+    fn format_upgrade_message(&self, command: &str) -> String {
+        format!("{} {}", "Please run:".white(), command.yellow())
+    }
+
     /// displays the message to upgrade the tailcall depending on the
     /// installation method used.
-    pub fn display_message(&self) {
+    pub fn display_message(&self) -> String {
         match self {
-            InstallationMethod::Npx => tracing::warn!(
-                "You're running an outdated version, run: npx @tailcallhq/tailcall@latest"
-            ),
+            InstallationMethod::Npx => {
+                self.format_upgrade_message("npx @tailcallhq/tailcall@latest")
+            }
             InstallationMethod::Npm => {
-                tracing::warn!("To upgrade, run: npm update -g @tailcallhq/tailcall")
+                self.format_upgrade_message("npm update -g @tailcallhq/tailcall")
             }
-            InstallationMethod::Brew => {
-                tracing::warn!("To upgrade, run: brew upgrade tailcall")
-            }
+            InstallationMethod::Brew => self.format_upgrade_message("brew upgrade tailcall"),
             InstallationMethod::Direct => {
-                tracing::warn!("Please update by downloading the latest release from GitHub")
+                "Please update by downloading the latest release from GitHub".to_string()
             }
         }
     }
@@ -62,18 +64,14 @@ impl InstallationMethod {
 fn show_update_message(name: &str, latest_version: Version) {
     let github_release_url = format!("https://github.com/{name}/releases/tag/{latest_version}",);
     tracing::warn!(
-        "{}",
-        format!(
-            "A new release of tailcall is available: {} {} {}",
-            VERSION.as_str().cyan(),
-            "➜".white(),
-            latest_version.to_string().cyan()
-        )
-        .yellow()
+        "{} {} {} {}. {}. Release notes: {}",
+        "A new release of tailcall is available:",
+        VERSION.as_str().cyan(),
+        "➜",
+        latest_version.to_string().cyan(),
+        InstallationMethod::get_installation_method().display_message(),
+        github_release_url.yellow()
     );
-
-    InstallationMethod::get_installation_method().display_message();
-    tracing::warn!("{}", github_release_url.yellow());
 }
 
 pub async fn check_for_update() {
