@@ -7,6 +7,13 @@ use crate::core::http::Method;
 use crate::core::is_default;
 use crate::core::json::JsonSchema;
 
+#[derive(Serialize, Deserialize, Clone, Debug, schemars::JsonSchema, PartialEq, Eq)]
+#[serde(untagged)]
+pub enum HttpBody {
+    Single(String),
+    List(Vec<KeyValue>),
+}
+
 #[derive(
     Serialize,
     Deserialize,
@@ -41,7 +48,7 @@ pub struct Http {
     /// The body of the API call. It's used for methods like POST or PUT that
     /// send data to the server. You can pass it as a static object or use a
     /// Mustache template to substitute variables from the GraphQL variables.
-    pub body: Option<String>,
+    pub body: Option<HttpBody>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// The `encoding` parameter specifies the encoding of the request body. It

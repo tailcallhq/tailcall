@@ -7,7 +7,7 @@ use tailcall_hasher::TailcallHasher;
 use url::Url;
 
 use super::query_encoder::QueryEncoder;
-use crate::core::config::Encoding;
+use crate::core::config::{Encoding, HttpBody};
 use crate::core::endpoint::Endpoint;
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
@@ -25,10 +25,75 @@ pub struct RequestTemplate {
     pub query: Vec<Query>,
     pub method: reqwest::Method,
     pub headers: MustacheHeaders,
-    pub body_path: Option<Mustache>,
+    pub body_path: Option<ParsedHttpBody>,
     pub endpoint: Endpoint,
     pub encoding: Encoding,
     pub query_encoder: QueryEncoder,
+}
+
+#[derive(Setters, Debug, Clone)]
+pub struct ParsedKeyValue {
+    key: Mustache,
+    value: Mustache,
+}
+
+#[derive(Debug, Clone)]
+pub enum ParsedHttpBody {
+    Single(Mustache),
+    List(Vec<ParsedKeyValue>),
+}
+
+impl ParsedHttpBody {
+    pub fn is_const(&self) -> bool {
+        match self {
+            ParsedHttpBody::Single(body) => body.is_const(),
+            ParsedHttpBody::List(body) => body
+                .iter()
+                .all(|kv| kv.key.is_const() && kv.value.is_const()),
+        }
+    }
+
+    pub fn render<Ctx: PathString + HasHeaders + PathValue>(&self, ctx: &Ctx) -> String {
+        match self {
+            ParsedHttpBody::Single(body) => body.render(ctx),
+            ParsedHttpBody::List(body_list) => {
+                let body_map = body_list
+                    .iter()
+                    .map(|kv| {
+                        let key = kv.key.render(ctx);
+                        let value = kv.value.render(ctx);
+                        (key, serde_json::Value::String(value))
+                    })
+                    .collect::<serde_json::Map<String, serde_json::Value>>();
+
+                serde_json::to_string(&body_map).unwrap()
+            }
+        }
+    }
+}
+
+impl From<&HttpBody> for ParsedHttpBody {
+    fn from(value: &HttpBody) -> Self {
+        match value {
+            HttpBody::Single(body) => ParsedHttpBody::Single(Mustache::parse(body)),
+            HttpBody::List(body_list) => {
+                let body_list = body_list
+                    .iter()
+                    .map(|kv| ParsedKeyValue {
+                        key: Mustache::parse(kv.key.as_str()),
+                        value: Mustache::parse(kv.value.as_str()),
+                    })
+                    .collect();
+                ParsedHttpBody::List(body_list)
+            }
+        }
+    }
+}
+
+impl From<HttpBody> for ParsedHttpBody {
+    fn from(value: HttpBody) -> Self {
+        ParsedHttpBody::from(&value)
+    }
 }
 
 #[derive(Setters, Debug, Clone)]
@@ -91,7 +156,7 @@ impl RequestTemplate {
     /// Returns true if there are not templates
     pub fn is_const(&self) -> bool {
         self.root_url.is_const()
-            && self.body_path.as_ref().map_or(true, Mustache::is_const)
+            && self.body_path.as_ref().map_or(true, |body| body.is_const())
             && self.query.iter().all(|query| query.value.is_const())
             && self.headers.iter().all(|(_, v)| v.is_const())
     }
@@ -125,7 +190,7 @@ impl RequestTemplate {
     }
 
     /// Sets the body for the request
-    fn set_body<C: PathString + HasHeaders>(
+    fn set_body<C: PathString + HasHeaders + PathValue>(
         &self,
         mut req: reqwest::Request,
         ctx: &C,
@@ -201,7 +266,8 @@ impl RequestTemplate {
     }
 
     pub fn with_body(mut self, body: Mustache) -> Self {
-        self.body_path = Some(body);
+        // TODO: FIXME
+        self.body_path = Some(ParsedHttpBody::Single(body));
         self
     }
 }
@@ -231,7 +297,7 @@ impl TryFrom<Endpoint> for RequestTemplate {
         let body = endpoint
             .body
             .as_ref()
-            .map(|body| Mustache::parse(body.as_str()));
+            .map(|body| ParsedHttpBody::from(body));
         let encoding = endpoint.encoding.clone();
 
         Ok(Self {
@@ -312,7 +378,9 @@ mod tests {
     use serde_json::json;
 
     use super::{Query, RequestTemplate};
+    use crate::core::config::HttpBody;
     use crate::core::has_headers::HasHeaders;
+    use crate::core::http::request_template::ParsedHttpBody;
     use crate::core::json::JsonLike;
     use crate::core::mustache::Mustache;
     use crate::core::path::{PathString, PathValue, ValueString};
@@ -607,9 +675,10 @@ mod tests {
 
     #[test]
     fn test_body() {
+        let body = ParsedHttpBody::from(HttpBody::Single("foo".to_string()));
         let tmpl = RequestTemplate::new("http://localhost:3000")
             .unwrap()
-            .body_path(Some(Mustache::parse("foo")));
+            .body_path(Some(body));
         let ctx = Context::default();
         let body = tmpl.to_body(&ctx).unwrap();
         assert_eq!(body, "foo");
@@ -617,9 +686,10 @@ mod tests {
 
     #[test]
     fn test_body_template() {
+        let body = ParsedHttpBody::from(HttpBody::Single("{{foo.bar}}".to_string()));
         let tmpl = RequestTemplate::new("http://localhost:3000")
             .unwrap()
-            .body_path(Some(Mustache::parse("{{foo.bar}}")));
+            .body_path(Some(body));
         let ctx = Context::default().value(json!({
           "foo": {
             "bar": "baz"
@@ -631,10 +701,11 @@ mod tests {
 
     #[test]
     fn test_body_encoding_application_json() {
+        let body = ParsedHttpBody::from(HttpBody::Single("{{foo.bar}}".to_string()));
         let tmpl = RequestTemplate::new("http://localhost:3000")
             .unwrap()
             .encoding(crate::core::config::Encoding::ApplicationJson)
-            .body_path(Some(Mustache::parse("{{foo.bar}}")));
+            .body_path(Some(body));
         let ctx = Context::default().value(json!({
           "foo": {
             "bar": "baz"
@@ -648,6 +719,7 @@ mod tests {
         use http::header::HeaderMap;
         use serde_json::json;
 
+        use crate::core::config::HttpBody;
         use crate::core::http::request_template::tests::Context;
         use crate::core::http::RequestTemplate;
 
@@ -659,7 +731,7 @@ mod tests {
                 crate::core::endpoint::Endpoint::new("http://localhost:3000/".to_string())
                     .method(crate::core::http::Method::POST)
                     .headers(headers)
-                    .body(Some("foo".into()));
+                    .body(Some(HttpBody::Single("foo".into())));
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
             let ctx = Context::default();
             let req = tmpl.to_request(&ctx).unwrap();
@@ -680,7 +752,7 @@ mod tests {
             .method(crate::core::http::Method::POST)
             .query(vec![("foo".to_string(), "{{foo.bar}}".to_string(), false)])
             .headers(headers)
-            .body(Some("{{foo.bar}}".into()));
+            .body(Some(HttpBody::Single("{{foo.bar}}".into())));
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
             let ctx = Context::default().value(json!({
               "foo": {
@@ -781,15 +853,17 @@ mod tests {
     mod form_encoded_url {
         use serde_json::json;
 
+        use crate::core::config::HttpBody;
         use crate::core::http::request_template::tests::Context;
+        use crate::core::http::request_template::ParsedHttpBody;
         use crate::core::http::RequestTemplate;
-        use crate::core::mustache::Mustache;
 
         #[test]
         fn test_with_string() {
+            let body = ParsedHttpBody::from(HttpBody::Single("{{foo.bar}}".to_string()));
             let tmpl = RequestTemplate::form_encoded_url("http://localhost:3000")
                 .unwrap()
-                .body_path(Some(Mustache::parse("{{foo.bar}}")));
+                .body_path(Some(body));
             let ctx = Context::default().value(json!({"foo": {"bar": "baz"}}));
             let request_body = tmpl.to_body(&ctx);
             let body = request_body.unwrap();
@@ -798,9 +872,10 @@ mod tests {
 
         #[test]
         fn test_with_json_template() {
+            let body = ParsedHttpBody::from(HttpBody::Single(r#"{"foo": "{{baz}}"}"#.to_string()));
             let tmpl = RequestTemplate::form_encoded_url("http://localhost:3000")
                 .unwrap()
-                .body_path(Some(Mustache::parse(r#"{"foo": "{{baz}}"}"#)));
+                .body_path(Some(body));
             let ctx = Context::default().value(json!({"baz": "baz"}));
             let body = tmpl.to_body(&ctx).unwrap();
             assert_eq!(body, "foo=baz");
@@ -808,9 +883,10 @@ mod tests {
 
         #[test]
         fn test_with_json_body() {
+            let body = ParsedHttpBody::from(HttpBody::Single("{{foo}}".to_string()));
             let tmpl = RequestTemplate::form_encoded_url("http://localhost:3000")
                 .unwrap()
-                .body_path(Some(Mustache::parse("{{foo}}")));
+                .body_path(Some(body));
             let ctx = Context::default().value(json!({"foo": {"bar": "baz"}}));
             let body = tmpl.to_body(&ctx).unwrap();
             assert_eq!(body, "bar=baz");
@@ -818,9 +894,10 @@ mod tests {
 
         #[test]
         fn test_with_json_body_nested() {
+            let body = ParsedHttpBody::from(HttpBody::Single("{{a}}".to_string()));
             let tmpl = RequestTemplate::form_encoded_url("http://localhost:3000")
                 .unwrap()
-                .body_path(Some(Mustache::parse("{{a}}")));
+                .body_path(Some(body));
             let ctx = Context::default()
                 .value(json!({"a": {"special chars": "a !@#$%^&*()<>?:{}-=1[];',./"}}));
             let a = tmpl.to_body(&ctx).unwrap();
@@ -830,9 +907,10 @@ mod tests {
 
         #[test]
         fn test_with_mustache_literal() {
+            let body = ParsedHttpBody::from(HttpBody::Single(r#"{"foo": "bar"}"#.to_string()));
             let tmpl = RequestTemplate::form_encoded_url("http://localhost:3000")
                 .unwrap()
-                .body_path(Some(Mustache::parse(r#"{"foo": "bar"}"#)));
+                .body_path(Some(body));
             let ctx = Context::default().value(json!({}));
             let body = tmpl.to_body(&ctx).unwrap();
             assert_eq!(body, r#"foo=bar"#);

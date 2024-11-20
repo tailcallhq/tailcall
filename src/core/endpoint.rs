@@ -5,6 +5,8 @@ use crate::core::config::Encoding;
 use crate::core::http::Method;
 use crate::core::json::JsonSchema;
 
+use super::config::HttpBody;
+
 #[derive(Clone, Debug, Setters)]
 pub struct Endpoint {
     pub path: String,
@@ -13,7 +15,7 @@ pub struct Endpoint {
     pub input: JsonSchema,
     pub output: JsonSchema,
     pub headers: HeaderMap,
-    pub body: Option<String>,
+    pub body: Option<HttpBody>,
     pub description: Option<String>,
     pub encoding: Encoding,
 }
