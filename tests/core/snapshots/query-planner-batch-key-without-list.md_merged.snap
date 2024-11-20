@@ -1,0 +1,35 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server(port: 8000) @upstream(httpCache: 42) {
+  query: Query
+}
+
+type Post {
+  id: Int
+  title: String
+  user: User
+    @http(
+      url: "http://jsonplaceholder.typicode.com/users"
+      batchKey: ["id"]
+      query: [{key: "id", value: "{{.value.userId}}"}]
+    )
+  userId: Int
+}
+
+type Query {
+  posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts")
+  user: User @http(url: "http://jsonplaceholder.typicode.com/users/1")
+}
+
+type User {
+  id: Int
+  name: String
+  post: Post
+    @http(
+      url: "https://jsonplaceholder.typicode.com/posts"
+      batchKey: ["id"]
+      query: [{key: "id", value: "{{.value.id}}"}]
+    )
+}
