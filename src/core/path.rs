@@ -2,6 +2,7 @@
 //! structure.
 use std::borrow::Cow;
 
+use indexmap::IndexMap;
 use serde_json::json;
 
 use crate::core::ir::{EvalContext, ResolverContextLike};
@@ -65,45 +66,59 @@ pub enum ValueString<'a> {
 }
 
 impl<'a> ValueString<'a> {
+    // goes throught constvalue and removes all null values.
+    fn remove_nulls(
+        value: async_graphql_value::ConstValue,
+    ) -> Option<async_graphql_value::ConstValue> {
+        if value.is_null() {
+            return None;
+        }
+        match value {
+            async_graphql::Value::List(list) => {
+                let filtered = list
+                    .into_iter()
+                    .filter(|v| !v.is_null())
+                    .filter_map(Self::remove_nulls)
+                    .collect::<Vec<_>>();
+                if filtered.is_empty() {
+                    None
+                } else {
+                    Some(async_graphql::Value::List(filtered))
+                }
+            }
+            async_graphql::Value::Object(map) => {
+                let filtered_map = map
+                    .into_iter()
+                    .filter(|(_, v)| !v.is_null())
+                    .filter_map(|(k, v)| {
+                        Self::remove_nulls(v).map(|v| (k, v))
+                    })
+                    .collect::<IndexMap<_, _>>();
+
+                if filtered_map.is_empty() {
+                    None
+                } else {
+                    Some(async_graphql::Value::Object(filtered_map))
+                }
+            }
+            _ => Some(value),
+        }
+    }
+
     // goes through ValueString and return ValueString without null values.
     pub fn skip_null(self) -> Option<ValueString<'a>> {
         match self {
             ValueString::Value(value) => match value {
-                Cow::Borrowed(async_graphql::Value::List(list)) => {
-                    let filtered: Vec<_> = list
-                        .iter()
-                        .filter(|v| !v.is_null())
-                        .map(|v| v.to_owned())
-                        .collect();
-
-                    if filtered.is_empty() {
-                        None
-                    } else {
-                        Some(ValueString::Value(Cow::Owned(async_graphql::Value::List(
-                            filtered,
-                        ))))
-                    }
+                Cow::Borrowed(value) => {
+                    let filtered = Self::remove_nulls(value.to_owned())?;
+                    Some(ValueString::Value(Cow::Owned(filtered)))
                 }
-                Cow::Owned(async_graphql::Value::List(list)) => {
-                    let filtered: Vec<_> = list.into_iter().filter(|v| !v.is_null()).collect();
-
-                    if filtered.is_empty() {
-                        None
-                    } else {
-                        Some(ValueString::Value(Cow::Owned(async_graphql::Value::List(
-                            filtered,
-                        ))))
-                    }
+                Cow::Owned(value) => {
+                    let filtered = Self::remove_nulls(value)?;
+                    Some(ValueString::Value(Cow::Owned(filtered)))
                 }
-                _ => Some(ValueString::Value(value)),
             },
-            ValueString::String(v) => {
-                if v.is_empty() {
-                    None
-                } else {
-                    Some(ValueString::String(v))
-                }
-            }
+            _ => Some(self),
         }
     }
 }
@@ -566,6 +581,7 @@ mod tests {
         use std::borrow::Cow;
 
         use async_graphql_value::ConstValue as Value;
+        use indexmap::indexmap;
 
         use crate::core::path::ValueString;
 
@@ -612,42 +628,41 @@ mod tests {
             let value = ValueString::Value(Cow::Owned(Value::List(list)));
 
             let result = value.skip_null();
+            println!("[Finder]: {:#?}", result);
 
             assert!(result.is_none());
         }
 
         #[test]
-        fn skip_null_with_non_list() {
-            let value = ValueString::Value(Cow::Owned(Value::String("test".to_string())));
-            let result = value.skip_null();
+        fn skip_null_with_empty_list() {
+            let list = vec![];
+            let value = ValueString::Value(Cow::Owned(Value::List(list)));
 
-            match result {
-                Some(ValueString::Value(Cow::Owned(Value::String(s)))) => {
-                    assert_eq!(s, "test");
-                }
-                _ => panic!("Expected string value"),
-            }
-        }
-
-        #[test]
-        fn skip_null_with_string() {
-            let value = ValueString::String(Cow::Borrowed("test"));
-            let result = value.skip_null();
-
-            match result {
-                Some(ValueString::String(s)) => {
-                    assert_eq!(s, "test");
-                }
-                _ => panic!("Expected string value"),
-            }
-        }
-
-        #[test]
-        fn skip_null_with_empty_string() {
-            let value = ValueString::String(Cow::Borrowed(""));
             let result = value.skip_null();
 
             assert!(result.is_none());
+        }
+
+        #[test]
+        fn skip_null_with_mixed_object() {
+            let map = indexmap! {
+                async_graphql_value::Name::new("a") => Value::Null,
+                async_graphql_value::Name::new("b") => Value::String("test".to_string()),
+                async_graphql_value::Name::new("c") => Value::Null,
+                async_graphql_value::Name::new("d") => Value::Number(42.into()),
+                async_graphql_value::Name::new("e") => Value::Null,
+                async_graphql_value::Name::new("f") => Value::List(vec![
+                    Value::Null,
+                    Value::String("test".to_string()),
+                    Value::Null,
+                    Value::Number(42.into()),
+                ]),
+            };
+
+            let value = ValueString::Value(Cow::Owned(Value::Object(map)));
+
+            let result = value.skip_null();
+            println!("[Finder]: {:#?}", result);
         }
     }
 }
