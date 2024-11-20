@@ -14,8 +14,8 @@ expression: response
         "message": "Authentication Failure: Invalid Authorization Header",
         "locations": [
           {
-            "line": 2,
-            "column": 3
+            "line": 0,
+            "column": 0
           }
         ]
       }
