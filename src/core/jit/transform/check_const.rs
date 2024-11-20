@@ -25,6 +25,7 @@ pub fn is_const(ir: &IR) -> bool {
         IR::Protect(ir) => is_const(ir),
         IR::Map(map) => is_const(&map.input),
         IR::Pipe(ir, ir1) => is_const(ir) && is_const(ir1),
+        IR::Merge(vec) => vec.iter().all(is_const),
         IR::Discriminate(_, ir) => is_const(ir),
         IR::Entity(hash_map) => hash_map.values().all(is_const),
         IR::Service(_) => true,
