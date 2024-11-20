@@ -187,10 +187,6 @@ impl<'json> JsonLike<'json> for ConstValue {
     fn string(s: Cow<'json, str>) -> Self {
         ConstValue::String(s.to_string())
     }
-
-    fn to_string_value(&'json self) -> String {
-        format!("{}", self)
-    }
 }
 
 impl<'json> JsonLike<'json> for Value {
@@ -319,9 +315,5 @@ impl<'json> JsonLike<'json> for Value {
 
     fn string(s: Cow<'json, str>) -> Self {
         Value::String(s.to_string())
-    }
-
-    fn to_string_value(&'json self) -> String {
-        format!("{}", self)
     }
 }

@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use async_graphql_value::{ConstValue, Value};
 
 use super::super::{Arg, Field, OperationPlan, ResolveInputError, Variables};
@@ -47,7 +49,7 @@ impl<Input> InputResolver<Input> {
 impl<Input, Output> InputResolver<Input>
 where
     Input: Clone + std::fmt::Debug,
-    Output: Clone + JsonLikeOwned + TryFrom<serde_json::Value> + std::fmt::Debug,
+    Output: Clone + JsonLikeOwned + TryFrom<serde_json::Value> + std::fmt::Debug + Display,
     Input: InputResolvable<Output = Output>,
     <Output as TryFrom<serde_json::Value>>::Error: std::fmt::Debug,
 {

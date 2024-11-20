@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::fmt::Display;
 
 use async_graphql::parser::types::*;
 use async_graphql::Positioned;
@@ -421,7 +422,7 @@ impl<'a> From<&'a ConstDirective> for Directive<'a> {
     }
 }
 
-impl<'a, Input: JsonLikeOwned> From<&'a JitDirective<Input>> for Directive<'a> {
+impl<'a, Input: JsonLikeOwned + Display> From<&'a JitDirective<Input>> for Directive<'a> {
     fn from(value: &'a JitDirective<Input>) -> Self {
         let to_mustache = |s: &str| -> String {
             s.strip_prefix('$')
@@ -435,7 +436,7 @@ impl<'a, Input: JsonLikeOwned> From<&'a JitDirective<Input>> for Directive<'a> {
                 .iter()
                 .filter_map(|(k, v)| {
                     if !v.is_null() {
-                        let v_str = to_mustache(&v.to_string_value());
+                        let v_str = to_mustache(&v.to_string());
                         Some(Arg { name: Cow::Borrowed(k), value: Cow::Owned(v_str) })
                     } else {
                         None
