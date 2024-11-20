@@ -241,7 +241,7 @@ where
     Resolver::from_directives(directives)
         .fuse(Cache::from_directives(directives.iter()))
         .fuse(to_fields(fields))
-        .fuse(Protected::from_directives(directives.iter()))
+        .fuse(Protected::from_directives_vec(directives.iter()))
         .fuse(to_add_fields_from_directives(directives))
         .fuse(to_federation_directives(directives))
         .map(
@@ -267,7 +267,7 @@ fn to_input_object(
     directives: &[Positioned<ConstDirective>],
 ) -> Valid<config::Type, String> {
     to_input_object_fields(&input_object_type.fields)
-        .fuse(Protected::from_directives(directives.iter()))
+        .fuse(Protected::from_directives_vec(directives.iter()))
         .map(|(fields, protected)| {
             let doc = description.to_owned().map(|pos| pos.node);
             config::Type { fields, protected, doc, ..Default::default() }
@@ -333,7 +333,7 @@ where
         .fuse(Cache::from_directives(directives.iter()))
         .fuse(Omit::from_directives(directives.iter()))
         .fuse(Modify::from_directives(directives.iter()))
-        .fuse(Protected::from_directives(directives.iter()))
+        .fuse(Protected::from_directives_vec(directives.iter()))
         .fuse(Discriminate::from_directives(directives.iter()))
         .fuse(default_value)
         .fuse(to_federation_directives(directives))

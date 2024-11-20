@@ -11,11 +11,11 @@ pub fn update_protected<'a>(
 {
     TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
         |(config, field, type_, _), mut b_field| {
-            if field.protected.is_some() // check the field itself has marked as protected
-                || type_.protected.is_some() // check the type that contains current field
+            if !field.protected.is_empty() // check the field itself has marked as protected
+                || !type_.protected.is_empty() // check the type that contains current field
                 || config // check that output type of the field is protected
                     .find_type(field.type_of.name())
-                    .and_then(|type_| type_.protected.as_ref())
+                    .and_then(|type_| if type_.protected.is_empty() { None } else { Some(()) })
                     .is_some()
             {
                 if config.input_types().contains(type_name) {
@@ -28,14 +28,10 @@ pub fn update_protected<'a>(
                     );
                 }
 
-                let field_providers = field
-                    .protected
-                    .as_ref()
-                    .and_then(|p| p.providers.clone());
                 Provider::from_config_module(config)
                     .and_then(|config_providers| {
-                        if let Some(local_field_providers) = field_providers {
-                            let providers =
+                        Valid::from_iter(field.protected.iter(), |protected_directive| {
+                            if let Some(local_field_providers) = &protected_directive.providers {
                                 Valid::from_iter(local_field_providers.iter(), |provider_name| {
                                     if let Some(provider) = config_providers.get(provider_name) {
                                         Valid::succeed(Auth::Provider(provider.clone()))
@@ -45,27 +41,34 @@ pub fn update_protected<'a>(
                                             provider_name
                                         ))
                                     }
-                                });
-                            providers
-                        } else {
-                            Valid::succeed(vec![])
-                        }
+                                })
+                                .map(|auth_providers| {
+                                    auth_providers
+                                        .into_iter()
+                                        .reduce(|left, right| left.and(right))
+                                })
+                            } else {
+                                Valid::succeed(None)
+                            }
+                        })
                     })
                     .map(|auth_providers| {
-                        if !auth_providers.is_empty() {
-                            let auth = auth_providers
-                                .into_iter()
-                                .reduce(|left, right| left.and(right));
-
-                            b_field.resolver = Some(IR::Protect(
-                                auth,
-                                Box::new(
-                                    b_field
-                                        .resolver
-                                        .unwrap_or(IR::ContextPath(vec![b_field.name.clone()])),
-                                ),
-                            ));
-                        }
+                        auth_providers
+                            .into_iter()
+                            .collect::<Option<Vec<_>>>()
+                            .and_then(|auths| {
+                                auths.into_iter().reduce(|left, right| left.or(right))
+                            })
+                    })
+                    .map(|auth| {
+                        b_field.resolver = Some(IR::Protect(
+                            auth,
+                            Box::new(
+                                b_field
+                                    .resolver
+                                    .unwrap_or(IR::ContextPath(vec![b_field.name.clone()])),
+                            ),
+                        ));
 
                         b_field
                     })

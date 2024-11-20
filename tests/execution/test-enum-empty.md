@@ -29,10 +29,10 @@ error: true
             "body": "{{.args.val}}"
           },
           "cache": null,
-          "protected": null
+          "protected": []
         }
       },
-      "protected": null
+      "protected": []
     }
   },
   "enums": {

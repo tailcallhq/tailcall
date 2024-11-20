@@ -546,15 +546,11 @@
         },
         "protected": {
           "description": "Marks field as protected by auth provider",
-          "default": null,
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Protected"
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "default": [],
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Protected"
+          }
         },
         "type": {
           "description": "Refers to the type of the value the field can be resolved to.",
@@ -1462,15 +1458,11 @@
         },
         "protected": {
           "description": "Marks field as protected by auth providers",
-          "default": null,
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Protected"
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "default": [],
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Protected"
+          }
         }
       }
     },
