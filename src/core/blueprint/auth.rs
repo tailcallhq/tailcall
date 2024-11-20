@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 use std::fmt::Debug;
 
 use jsonwebtoken::jwk::JwkSet;
@@ -23,6 +23,42 @@ pub struct Jwt {
 pub enum Provider {
     Basic(Basic),
     Jwt(Jwt),
+}
+
+impl Provider {
+    /// Used to collect all auth providers from the config module
+    pub fn from_config_module(config_module: &ConfigModule) -> Valid<BTreeMap<String, Provider>, String> {
+        let mut providers = BTreeMap::new();
+
+        // Add basic auth providers from htpasswd
+        for htpasswd in &config_module.extensions().htpasswd {
+            if let Some(id) = &htpasswd.id {
+                providers.insert(
+                    id.clone(),
+                    Provider::Basic(Basic {
+                        htpasswd: htpasswd.content.clone(),
+                    }),
+                );
+            }
+        }
+
+        // Add JWT providers from jwks
+        for jwks in &config_module.extensions().jwks {
+            if let Some(id) = &jwks.id {
+                providers.insert(
+                    id.clone(),
+                    Provider::Jwt(Jwt {
+                        jwks: jwks.content.clone(),
+                        issuer: None,
+                        audiences: HashSet::new(),
+                        optional_kid: false,
+                    }),
+                );
+            }
+        }
+
+        Valid::succeed(providers)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

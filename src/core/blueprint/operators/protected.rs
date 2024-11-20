@@ -28,7 +28,9 @@ pub fn update_protected<'a>(
                     );
                 }
 
-                b_field.resolver = Some(IR::Protect(Box::new(
+                b_field.resolver = Some(IR::Protect(
+                    field.protected.as_ref().map(|p| p.providers.clone()).flatten(),
+                    Box::new(
                     b_field
                         .resolver
                         .unwrap_or(IR::ContextPath(vec![b_field.name.clone()])),

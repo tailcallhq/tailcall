@@ -14,4 +14,6 @@ use tailcall_macros::{DirectiveDefinition, MergeRight};
     DirectiveDefinition,
 )]
 #[directive_definition(locations = "Object,FieldDefinition")]
-pub struct Protected {}
+pub struct Protected {
+    pub providers: Option<Vec<String>>,
+}

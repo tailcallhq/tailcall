@@ -22,7 +22,7 @@ pub fn is_const(ir: &IR) -> bool {
         IR::Cache(_) => false,
         IR::Path(ir, _) => is_const(ir),
         IR::ContextPath(_) => false,
-        IR::Protect(ir) => is_const(ir),
+        IR::Protect(_providers, ir) => is_const(ir),
         IR::Map(map) => is_const(&map.input),
         IR::Pipe(ir, ir1) => is_const(ir) && is_const(ir1),
         IR::Discriminate(_, ir) => is_const(ir),
