@@ -1,4 +1,8 @@
+use std::path::PathBuf;
+
+use chrono::Utc;
 use colored::Colorize;
+use dirs::cache_dir;
 use tailcall_version::VERSION;
 use update_informer::{registry, Check};
 use which::which;
@@ -8,6 +12,13 @@ enum InstallationMethod {
     Npx,
     Brew,
     Direct,
+}
+
+fn get_state_file_path() -> Option<PathBuf> {
+    let mut config_path = cache_dir()?; // Get the appropriate config directory
+    config_path.push("tailcall"); // Your application name
+    config_path.push(".state");
+    Some(config_path)
 }
 
 fn get_installation_method() -> InstallationMethod {
@@ -35,9 +46,24 @@ fn get_installation_method() -> InstallationMethod {
 }
 
 pub async fn check_for_update() {
-    tokio::task::spawn_blocking(|| {
+    tokio::task::spawn_blocking(move || {
         if VERSION.is_dev() {
             // skip validation if it's not a release
+            return;
+        }
+
+        let state_file_path = get_state_file_path().unwrap();
+        let epoch_time_now = Utc::now().timestamp();
+        let show_update_message = match std::fs::read_to_string(&state_file_path) {
+            Ok(data) => match data.trim().parse::<i64>() {
+                Ok(epoch_time) => (epoch_time_now - epoch_time) < 24 * 60 * 60,
+                Err(_) => true,
+            },
+            Err(_) => true,
+        };
+
+        if !show_update_message {
+            // if it's been less than 24 hours since the last check, don't show or look for the update.
             return;
         }
 
@@ -49,6 +75,9 @@ pub async fn check_for_update() {
             let github_release_url =
                 format!("https://github.com/{name}/releases/tag/{latest_version}",);
             let installation_method = get_installation_method();
+
+            if let Ok(_) = std::fs::write(state_file_path, epoch_time_now.to_string()) {}
+
             tracing::warn!(
                 "{}",
                 format!(
