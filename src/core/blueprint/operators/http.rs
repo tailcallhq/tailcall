@@ -15,7 +15,6 @@ pub fn compile_http(
     is_list: bool,
 ) -> Valid<IR, String> {
     let dedupe = http.dedupe.unwrap_or_default();
-    println!("[Finder]: http: {:#?}", http);
 
     Valid::<(), String>::fail("GroupBy is only supported for GET requests".to_string())
         .when(|| !http.batch_key.is_empty() && http.method != Method::GET)
