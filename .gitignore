@@ -17,3 +17,5 @@ tailcall-/cloudflare/build
 
 *.snap.new
 flamegraph.svg
+perf.data
+perf.data.old

@@ -1,6 +1,7 @@
 ---
 source: tests/core/spec.rs
 expression: response
+snapshot_kind: text
 ---
 {
   "status": 200,
@@ -9,6 +10,11 @@ expression: response
   },
   "body": {
     "data": {
+      "me": {
+        "id": 1,
+        "name": "John Smith",
+        "birthday": "2023-03-08T12:45:26-05:00"
+      },
       "__type": {
         "name": "User",
         "fields": [
@@ -31,11 +37,6 @@ expression: response
             }
           }
         ]
-      },
-      "me": {
-        "id": 1,
-        "name": "John Smith",
-        "birthday": "2023-03-08T12:45:26-05:00"
       }
     }
   }
