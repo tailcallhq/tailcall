@@ -51,7 +51,7 @@ where
             http_filter,
             group_by,
             is_list,
-            use_batcher,
+            dl_enabled: use_batcher,
             ..
         } => {
             let worker = &ctx.request_ctx.runtime.cmd_worker;

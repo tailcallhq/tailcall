@@ -45,9 +45,9 @@ pub enum IO {
         req_template: http::RequestTemplate,
         group_by: Option<GroupBy>,
         dl_id: Option<DataLoaderId>,
+        dl_enabled: bool,
         http_filter: Option<HttpFilter>,
         is_list: bool,
-        use_batcher: bool,
         dedupe: bool,
     },
     GraphQL {

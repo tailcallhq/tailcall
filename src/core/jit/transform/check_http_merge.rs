@@ -20,7 +20,7 @@ fn mark_direct_loader<A>(selection: &mut [Field<A>], has_list_ancestor: bool) {
     for field in selection.iter_mut() {
         if let Some(ir) = &mut field.ir {
             ir.modify_io(&mut |io| {
-                if let IO::Http { use_batcher, group_by, .. } = io {
+                if let IO::Http { dl_enabled: use_batcher, group_by, .. } = io {
                     match (has_list_ancestor, group_by.is_some()) {
                         (true, true) => {
                             // ideal condition

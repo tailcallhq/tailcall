@@ -74,7 +74,7 @@ impl AppContext {
                                         req_template: req_template.clone(),
                                         group_by: group_by.clone(),
                                         dl_id: Some(DataLoaderId::new(http_data_loaders.len())),
-                                        use_batcher: false,
+                                        dl_enabled: false,
                                         http_filter: http_filter.clone(),
                                         is_list,
                                         dedupe,
