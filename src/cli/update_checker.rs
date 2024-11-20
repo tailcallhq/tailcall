@@ -36,7 +36,7 @@ fn get_installation_method() -> InstallationMethod {
 }
 
 pub async fn check_for_update() {
-    tokio::task::spawn_blocking(move || {
+    tokio::task::spawn_blocking(|| {
         if VERSION.is_dev() {
             // skip validation if it's not a release
             return;
