@@ -6,7 +6,6 @@ use tailcall_valid::Validator;
 
 use super::context::Context;
 use super::exec::{Executor, IRExecutor};
-use super::transform::AuthPlaner;
 use super::{
     transform, BuildError, Error, OperationPlan, Pos, Positioned, Request, Response, Result,
 };
@@ -46,16 +45,6 @@ impl ConstValueExecutor {
         // Attempt to skip unnecessary fields
         let Ok(plan) = transform::Skip::new(variables)
             .transform(self.plan)
-            .to_result()
-        else {
-            // this shouldn't actually ever happen
-            return Response::default()
-                .with_errors(vec![Positioned::new(Error::Unknown, Pos::default())]);
-        };
-
-        // Attempt to plan authentication
-        let Ok(plan) = AuthPlaner::new(&req_ctx.server.auth)
-            .transform(plan)
             .to_result()
         else {
             // this shouldn't actually ever happen

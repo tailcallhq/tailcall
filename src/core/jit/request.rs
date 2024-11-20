@@ -49,6 +49,7 @@ impl Request<ConstValue> {
             .pipe(transform::CheckDedupe::new())
             .pipe(transform::CheckProtected::new())
             .pipe(transform::CheckCache::new())
+            .pipe(transform::AuthPlaner::new(&blueprint.server.auth))
             .transform(plan)
             .to_result()
             // both transformers are infallible right now
