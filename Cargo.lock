@@ -5041,8 +5041,7 @@ dependencies = [
 [[package]]
 name = "serde_json_borrow"
 version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "44c8dc27b181f9294b9cd937ae4375414cd0a77f542a34e063ced1e47ed2ceaa"
+source = "git+https://github.com/PSeitz/serde_json_borrow?rev=6ad7127e0fb9c31f6fd927e934a21112e9ac0fdb#6ad7127e0fb9c31f6fd927e934a21112e9ac0fdb"
 dependencies = [
  "serde",
  "serde_json",
