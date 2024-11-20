@@ -28,7 +28,8 @@ fn get_body_value_list(body_value: &HashMap<String, Vec<&ConstValue>>, id: &str)
     )
 }
 
-/// TODO: add some docs.
+/// `HttpMerge` executes HTTP requests immediately (with no batching delay) and
+/// processes the response based on a `group_by` configuration.
 pub struct HttpMerge {
     runtime: TargetRuntime,
 }
@@ -50,8 +51,7 @@ impl HttpMerge {
             .filter(|(k, _)| group_by.key().eq(&k.to_string()))
             .map(|(_, v)| (v.to_string()))
             .collect::<Vec<_>>();
-        let req_wrapper: RequestWrapper = request.into();
-        let request = req_wrapper.request();
+        let request = RequestWrapper::from(request).request();
         let (response_map, response) = self.execute(group_by, is_list, request).await?;
 
         let mut final_result: Vec<ConstValue> = vec![];
@@ -120,6 +120,7 @@ impl From<Request> for RequestWrapper {
 }
 
 impl RequestWrapper {
+    /// removes the duplicate query parameters and retains the original order.
     pub fn request(mut self) -> Request {
         // retain the original order of query parameters
         // note: indexset is slow in some scenarios, if this becomes a bottleneck,
