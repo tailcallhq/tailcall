@@ -4,11 +4,12 @@ use tailcall_version::VERSION;
 use update_informer::{registry, Check, Version};
 use which::which;
 
+#[derive(Default)]
 enum InstallationMethod {
     Npm,
     Npx,
     Brew,
-    // TODO: mark direct default.
+    #[default]
     Direct,
 }
 
@@ -35,10 +36,11 @@ impl InstallationMethod {
             }
         }
 
-        InstallationMethod::Direct
+        InstallationMethod::default()
     }
 
-    /// displays the message to upgrade the tailcall depending on the installation method used.
+    /// displays the message to upgrade the tailcall depending on the
+    /// installation method used.
     pub fn display_message(&self) {
         match self {
             InstallationMethod::Npx => tracing::warn!(
