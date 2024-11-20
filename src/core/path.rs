@@ -70,19 +70,30 @@ impl<'a> ValueString<'a> {
         match self {
             ValueString::Value(value) => match value {
                 Cow::Borrowed(async_graphql::Value::List(list)) => {
-                    Some(ValueString::Value(Cow::Owned(async_graphql::Value::List(
-                        list.iter()
-                            .filter(|v| !v.is_null())
-                            .map(|v| v.to_owned())
-                            .collect::<Vec<_>>(),
-                    ))))
+                    let filtered: Vec<_> = list
+                        .iter()
+                        .filter(|v| !v.is_null())
+                        .map(|v| v.to_owned())
+                        .collect();
+
+                    if filtered.is_empty() {
+                        None
+                    } else {
+                        Some(ValueString::Value(Cow::Owned(async_graphql::Value::List(
+                            filtered,
+                        ))))
+                    }
                 }
                 Cow::Owned(async_graphql::Value::List(list)) => {
-                    Some(ValueString::Value(Cow::Owned(async_graphql::Value::List(
-                        list.into_iter()
-                            .filter(|v| !v.is_null())
-                            .collect::<Vec<_>>(),
-                    ))))
+                    let filtered: Vec<_> = list.into_iter().filter(|v| !v.is_null()).collect();
+
+                    if filtered.is_empty() {
+                        None
+                    } else {
+                        Some(ValueString::Value(Cow::Owned(async_graphql::Value::List(
+                            filtered,
+                        ))))
+                    }
                 }
                 _ => Some(ValueString::Value(value)),
             },
@@ -548,6 +559,95 @@ mod tests {
             assert_eq!(EVAL_CTX.path_graphql(&["foo", "key"]), None);
             assert_eq!(EVAL_CTX.path_graphql(&["bar", "key"]), None);
             assert_eq!(EVAL_CTX.path_graphql(&["baz", "key"]), None);
+        }
+    }
+
+    mod value_string {
+        use std::borrow::Cow;
+
+        use async_graphql_value::ConstValue as Value;
+
+        use crate::core::path::ValueString;
+
+        #[test]
+        fn skip_null_with_borrowed_list() {
+            let list = Value::List(vec![
+                Value::Null,
+                Value::String("test".to_string()),
+                Value::Null,
+                Value::Number(42.into()),
+            ]);
+            let value = ValueString::Value(Cow::Borrowed(&list));
+            let result = value.skip_null();
+
+            match result {
+                Some(ValueString::Value(Cow::Owned(Value::List(filtered)))) => {
+                    assert_eq!(filtered.len(), 2);
+                    assert_eq!(filtered[0], Value::String("test".to_string()));
+                    assert_eq!(filtered[1], Value::Number(42.into()));
+                }
+                _ => panic!("Expected filtered list with 2 items"),
+            }
+        }
+
+        #[test]
+        fn skip_null_with_owned_list() {
+            let list = vec![Value::Null, Value::String("test".to_string()), Value::Null];
+            let value = ValueString::Value(Cow::Owned(Value::List(list)));
+
+            let result = value.skip_null();
+
+            match result {
+                Some(ValueString::Value(Cow::Owned(Value::List(filtered)))) => {
+                    assert_eq!(filtered.len(), 1);
+                    assert_eq!(filtered[0], Value::String("test".to_string()));
+                }
+                _ => panic!("Expected filtered list with 1 item"),
+            }
+        }
+
+        #[test]
+        fn skip_null_with_all_nulls() {
+            let list = vec![Value::Null, Value::Null];
+            let value = ValueString::Value(Cow::Owned(Value::List(list)));
+
+            let result = value.skip_null();
+
+            assert!(result.is_none());
+        }
+
+        #[test]
+        fn skip_null_with_non_list() {
+            let value = ValueString::Value(Cow::Owned(Value::String("test".to_string())));
+            let result = value.skip_null();
+
+            match result {
+                Some(ValueString::Value(Cow::Owned(Value::String(s)))) => {
+                    assert_eq!(s, "test");
+                }
+                _ => panic!("Expected string value"),
+            }
+        }
+
+        #[test]
+        fn skip_null_with_string() {
+            let value = ValueString::String(Cow::Borrowed("test"));
+            let result = value.skip_null();
+
+            match result {
+                Some(ValueString::String(s)) => {
+                    assert_eq!(s, "test");
+                }
+                _ => panic!("Expected string value"),
+            }
+        }
+
+        #[test]
+        fn skip_null_with_empty_string() {
+            let value = ValueString::String(Cow::Borrowed(""));
+            let result = value.skip_null();
+
+            assert!(result.is_none());
         }
     }
 }
