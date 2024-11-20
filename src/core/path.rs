@@ -90,9 +90,7 @@ impl<'a> ValueString<'a> {
                 let filtered_map = map
                     .into_iter()
                     .filter(|(_, v)| !v.is_null())
-                    .filter_map(|(k, v)| {
-                        Self::remove_nulls(v).map(|v| (k, v))
-                    })
+                    .filter_map(|(k, v)| Self::remove_nulls(v).map(|v| (k, v)))
                     .collect::<IndexMap<_, _>>();
 
                 if filtered_map.is_empty() {
@@ -602,7 +600,7 @@ mod tests {
                     assert_eq!(filtered[0], Value::String("test".to_string()));
                     assert_eq!(filtered[1], Value::Number(42.into()));
                 }
-                _ => panic!("Expected filtered list with 2 items"),
+                other => panic!("Expected filtered list with 2 items, got {:?}", other),
             }
         }
 
@@ -618,7 +616,7 @@ mod tests {
                     assert_eq!(filtered.len(), 1);
                     assert_eq!(filtered[0], Value::String("test".to_string()));
                 }
-                _ => panic!("Expected filtered list with 1 item"),
+                other => panic!("Expected filtered list with 1 item, got {:?}", other),
             }
         }
 
@@ -626,10 +624,7 @@ mod tests {
         fn skip_null_with_all_nulls() {
             let list = vec![Value::Null, Value::Null];
             let value = ValueString::Value(Cow::Owned(Value::List(list)));
-
             let result = value.skip_null();
-            println!("[Finder]: {:#?}", result);
-
             assert!(result.is_none());
         }
 
@@ -662,7 +657,28 @@ mod tests {
             let value = ValueString::Value(Cow::Owned(Value::Object(map)));
 
             let result = value.skip_null();
-            println!("[Finder]: {:#?}", result);
+            match result {
+                Some(ValueString::Value(Cow::Owned(Value::Object(filtered_map)))) => {
+                    assert_eq!(filtered_map.len(), 3); // Should only have b, d, and f entries
+
+                    assert_eq!(
+                        filtered_map.get("b"),
+                        Some(&Value::String("test".to_string()))
+                    );
+                    assert_eq!(filtered_map.get("d"), Some(&Value::Number(42.into())));
+
+                    // Check the nested list under 'f'
+                    match filtered_map.get("f") {
+                        Some(Value::List(filtered_list)) => {
+                            assert_eq!(filtered_list.len(), 2);
+                            assert_eq!(filtered_list[0], Value::String("test".to_string()));
+                            assert_eq!(filtered_list[1], Value::Number(42.into()));
+                        }
+                        _ => panic!("Expected filtered list under key 'f'"),
+                    }
+                }
+                other => panic!("Expected filtered object map, got {:?}", other),
+            }
         }
     }
 }
