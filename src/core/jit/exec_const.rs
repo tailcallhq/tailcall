@@ -40,6 +40,14 @@ impl ConstValueExecutor {
         req_ctx: &RequestContext,
         request: &Request<ConstValue>,
     ) -> Response<ConstValue> {
+        // Check if we meet authentication requirements
+        if let Some(_auth_n) = &self.plan.auth_n {
+            if let Err(err) = req_ctx.auth_ctx.validate(req_ctx).await.to_result() {
+                return Response::default()
+                    .with_errors(vec![Positioned::new(Error::from(err), Pos::default())]);
+            }
+        }
+
         let variables = &request.variables;
 
         // Attempt to skip unnecessary fields
@@ -74,13 +82,6 @@ impl ConstValueExecutor {
         let exe = Executor::new(&plan, exec);
         let store = exe.store().await;
         let synth = Synth::new(&plan, store, vars);
-
-        if let Some(_auth_n) = &plan.auth_n {
-            if let Err(err) = req_ctx.auth_ctx.validate(req_ctx).await.to_result() {
-                return Response::default()
-                    .with_errors(vec![Positioned::new(Error::from(err), Pos::default())]);
-            }
-        }
 
         exe.execute(synth).await
     }
