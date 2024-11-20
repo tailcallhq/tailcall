@@ -28,29 +28,27 @@ pub async fn validate_rc_config_files(runtime: TargetRuntime, file_paths: &[Stri
                 if let Ok(content) = runtime.file.read(&config_path.to_string_lossy()).await {
                     if &content != base_content {
                         // file content not same.
-                        outdated_files.push(file_name);
+                        outdated_files.push(file_name.to_owned());
                     }
                 } else {
                     // unable to read file.
-                    outdated_files.push(file_name);
+                    outdated_files.push(file_name.to_owned());
                 }
             }
         }
 
         if !outdated_files.is_empty() {
-            let message = if outdated_files.len() == 2 {
-                format!(
-                    "[{}, {}] is outdated, reinitialize using tailcall init.",
-                    outdated_files[0], outdated_files[1]
-                )
+            let is_are = if outdated_files.len() == 1 {
+                "is"
             } else {
-                format!(
-                    "[{}] is outdated, reinitialize using tailcall init.",
-                    outdated_files[0]
-                )
+                "are"
             };
-            tracing::warn!(message);
-            return;
+            let outdated_files = outdated_files.join(", ");
+            tracing::warn!(
+                "[{}] {} outdated, reinitialize using tailcall init.",
+                outdated_files,
+                is_are
+            );
         }
     }
 }
