@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use chrono::Utc;
 use colored::Colorize;
+use ctrlc::set_handler;
 use dirs::cache_dir;
 use tailcall_version::VERSION;
 use update_informer::{registry, Check};
@@ -83,16 +84,24 @@ pub async fn check_for_update() {
 
             if let Ok(_) = std::fs::write(state_file_path, epoch_time_now.to_string()) {}
 
-            tracing::warn!(
-                "{}",
-                format!(
-                    "A new release of tailcall is available: {} {} {}",
-                    VERSION.as_str().cyan(),
-                    "➜".white(),
-                    latest_version.to_string().cyan()
-                )
-                .yellow()
-            );
+            if true {
+                set_handler(move || {
+                    tracing::warn!(
+                        "{}",
+                        format!(
+                            "A new release of tailcall is available: {} {} {}",
+                            VERSION.as_str().cyan(),
+                            "➜".white(),
+                            latest_version.to_string().cyan()
+                        )
+                        .yellow()
+                    );
+                    std::process::exit(exitcode::CONFIG);
+                })
+                .expect("Error setting Ctrl-C handler");
+                return;
+            }
+
             match installation_method {
                 InstallationMethod::Npx => tracing::warn!(
                     "You're running an outdated version, run: npx @tailcallhq/tailcall@latest"
