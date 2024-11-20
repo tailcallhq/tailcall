@@ -10,7 +10,7 @@ use async_graphql_value::ConstValue;
 use serde::{Deserialize, Serialize};
 
 use super::Error;
-use crate::core::blueprint::Index;
+use crate::core::blueprint::{Auth, Index};
 use crate::core::ir::model::IR;
 use crate::core::ir::TypedValue;
 use crate::core::json::JsonLike;
@@ -290,6 +290,7 @@ pub struct OperationPlan<Input> {
     pub is_protected: bool,
     pub min_cache_ttl: Option<NonZeroU64>,
     pub selection: Vec<Field<Input>>,
+    pub auth_n: Option<Auth>,
 }
 
 impl<Input> std::fmt::Debug for OperationPlan<Input> {
@@ -321,6 +322,7 @@ impl<Input> OperationPlan<Input> {
             is_const: self.is_const,
             min_cache_ttl: self.min_cache_ttl,
             is_protected: self.is_protected,
+            auth_n: self.auth_n,
         })
     }
 }
@@ -347,6 +349,7 @@ impl<Input> OperationPlan<Input> {
             is_const: false,
             min_cache_ttl: None,
             is_protected: false,
+            auth_n: None,
         }
     }
 
