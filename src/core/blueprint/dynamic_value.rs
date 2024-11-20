@@ -1,7 +1,7 @@
 use async_graphql_value::{ConstValue, Name};
 use indexmap::IndexMap;
 use serde_json::Value;
-use tailcall_jq::mustache::{Mustache, Segment};
+use tailcall_template::mustache::{Mustache, Segment};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum DynamicValue<A> {

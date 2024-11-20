@@ -3,7 +3,7 @@
 use std::borrow::Cow;
 
 use serde_json::json;
-use tailcall_jq::mustache::path::{PathGraphql, PathString, PathValue, ValueString};
+use tailcall_template::mustache::path::{PathGraphql, PathString, PathValue, ValueString};
 
 use crate::core::ir::{EvalContext, ResolverContextLike};
 
@@ -99,7 +99,7 @@ mod tests {
         use http::header::{HeaderMap, HeaderValue};
         use indexmap::IndexMap;
         use once_cell::sync::Lazy;
-        use tailcall_jq::mustache::path::{PathString, PathValue, ValueString};
+        use tailcall_template::mustache::path::{PathString, PathValue, ValueString};
 
         use crate::core::http::RequestContext;
         use crate::core::ir::{EvalContext, ResolverContextLike, SelectionField};

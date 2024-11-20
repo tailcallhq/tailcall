@@ -1,4 +1,4 @@
-use tailcall_jq::mustache::Mustache;
+use tailcall_template::mustache::Mustache;
 use tailcall_valid::Valid;
 
 pub fn to_url(url: &str) -> Valid<Mustache, String> {
@@ -7,7 +7,7 @@ pub fn to_url(url: &str) -> Valid<Mustache, String> {
 
 #[cfg(test)]
 mod tests {
-    use tailcall_jq::mustache::Mustache;
+    use tailcall_template::mustache::Mustache;
 
     use super::to_url;
 

@@ -4,7 +4,7 @@ use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
 use indexmap::{indexset, IndexSet};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use tailcall_jq::mustache::Mustache;
+use tailcall_template::mustache::Mustache;
 
 use super::{Error, Result, Wizard};
 use crate::core::config::Config;

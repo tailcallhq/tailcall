@@ -4,7 +4,7 @@ use std::path::Path;
 use http::header::{HeaderMap, HeaderName, HeaderValue};
 use inquire::Confirm;
 use pathdiff::diff_paths;
-use tailcall_jq::mustache::Mustache;
+use tailcall_template::mustache::Mustache;
 use tailcall_valid::{ValidateInto, Validator};
 
 use super::config::{Config, LLMConfig, Resolved, Source};

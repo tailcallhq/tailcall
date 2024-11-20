@@ -4,9 +4,9 @@ use std::hash::{Hash, Hasher};
 use derive_setters::Setters;
 use http::header::{HeaderMap, HeaderValue};
 use tailcall_hasher::TailcallHasher;
-use tailcall_jq::mustache::eval::Eval;
-use tailcall_jq::mustache::path::{PathString, PathValue, ValueString};
-use tailcall_jq::mustache::{Mustache, Segment};
+use tailcall_template::mustache::eval::Eval;
+use tailcall_template::mustache::path::{PathString, PathValue, ValueString};
+use tailcall_template::mustache::{Mustache, Segment};
 use url::Url;
 
 use super::query_encoder::QueryEncoder;
@@ -311,8 +311,8 @@ mod tests {
     use http::header::{HeaderMap, HeaderName};
     use pretty_assertions::assert_eq;
     use serde_json::json;
-    use tailcall_jq::mustache::path::{PathString, PathValue, ValueString};
-    use tailcall_jq::mustache::Mustache;
+    use tailcall_template::mustache::path::{PathString, PathValue, ValueString};
+    use tailcall_template::mustache::Mustache;
 
     use super::{Query, RequestTemplate};
     use crate::core::has_headers::HasHeaders;
@@ -778,7 +778,7 @@ mod tests {
 
     mod form_encoded_url {
         use serde_json::json;
-        use tailcall_jq::mustache::Mustache;
+        use tailcall_template::mustache::Mustache;
 
         use crate::core::http::request_template::tests::Context;
         use crate::core::http::RequestTemplate;
@@ -842,7 +842,7 @@ mod tests {
 
         use http::header::HeaderMap;
         use serde_json::json;
-        use tailcall_jq::mustache::Mustache;
+        use tailcall_template::mustache::Mustache;
 
         use crate::core::http::request_template::tests::Context;
         use crate::core::http::RequestTemplate;

@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use tailcall_jq::mustache::Mustache;
+use tailcall_template::mustache::Mustache;
 
 use crate::core::config::ConfigReaderContext;
 use crate::core::is_default;

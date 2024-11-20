@@ -1,5 +1,5 @@
 use http::header::HeaderName;
-use tailcall_jq::mustache::Mustache;
+use tailcall_template::mustache::Mustache;
 use tailcall_valid::{Valid, ValidationError, Validator};
 
 use crate::core::config::KeyValue;
@@ -25,7 +25,7 @@ pub fn to_mustache_headers(headers: &[KeyValue]) -> Valid<MustacheHeaders, Strin
 mod tests {
     use anyhow::Result;
     use http::header::HeaderName;
-    use tailcall_jq::mustache::Mustache;
+    use tailcall_template::mustache::Mustache;
     use tailcall_valid::Validator;
 
     use super::to_mustache_headers;

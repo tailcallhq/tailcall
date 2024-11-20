@@ -1,6 +1,6 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use tailcall_jq::mustache::Mustache;
+use tailcall_template::mustache::Mustache;
 use tailcall_macros::{DirectiveDefinition, InputDefinition};
 use tailcall_valid::Validator;
 

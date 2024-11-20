@@ -1,4 +1,4 @@
-use tailcall_jq::mustache::Mustache;
+use tailcall_template::mustache::Mustache;
 use tailcall_valid::{Valid, ValidationError, Validator};
 
 use crate::core::blueprint::*;

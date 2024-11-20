@@ -1,5 +1,5 @@
 use serde_json::Value;
-use tailcall_jq::mustache::Mustache;
+use tailcall_template::mustache::Mustache;
 use tailcall_valid::Valid;
 
 use crate::core::grpc::request_template::RequestBody;
@@ -21,7 +21,7 @@ pub fn to_body(body: Option<&Value>) -> Valid<Option<RequestBody>, String> {
 
 #[cfg(test)]
 mod tests {
-    use tailcall_jq::mustache::Mustache;
+    use tailcall_template::mustache::Mustache;
     use tailcall_valid::Valid;
 
     use super::to_body;

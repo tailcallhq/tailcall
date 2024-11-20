@@ -6,8 +6,8 @@ use std::hash::{Hash, Hasher};
 use derive_setters::Setters;
 use http::header::{HeaderMap, HeaderValue};
 use tailcall_hasher::TailcallHasher;
-use tailcall_jq::mustache::path::PathGraphql;
-use tailcall_jq::mustache::Mustache;
+use tailcall_template::mustache::path::PathGraphql;
+use tailcall_template::mustache::Mustache;
 
 use crate::core::config::{GraphQLOperationType, KeyValue};
 use crate::core::has_headers::HasHeaders;
@@ -170,7 +170,7 @@ mod tests {
     use http::header::HeaderMap;
     use pretty_assertions::assert_eq;
     use serde_json::json;
-    use tailcall_jq::mustache::path::PathGraphql;
+    use tailcall_template::mustache::path::PathGraphql;
 
     use crate::core::config::GraphQLOperationType;
     use crate::core::graphql::request_template::RelatedFields;

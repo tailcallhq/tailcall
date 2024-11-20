@@ -4,7 +4,7 @@ use std::convert::identity;
 use std::fmt::{Display, Write};
 use std::ops::Deref;
 
-use tailcall_jq::mustache::{Mustache, Segment};
+use tailcall_template::mustache::{Mustache, Segment};
 use tailcall_macros::MergeRight;
 use tailcall_valid::{Valid, Validator};
 

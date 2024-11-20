@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 
 use http::header::HeaderMap;
-use tailcall_jq::mustache::path::PathString;
+use tailcall_template::mustache::path::PathString;
 
 use crate::core::has_headers::HasHeaders;
 use crate::core::runtime::TargetRuntime;

@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::FieldDescriptor;
-use tailcall_jq::mustache::Mustache;
+use tailcall_template::mustache::Mustache;
 use tailcall_valid::{Valid, ValidationError, Validator};
 
 use super::apply_select;

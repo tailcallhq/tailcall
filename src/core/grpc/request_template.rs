@@ -4,8 +4,8 @@ use anyhow::Result;
 use derive_setters::Setters;
 use http::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
 use tailcall_hasher::TailcallHasher;
-use tailcall_jq::mustache::path::PathString;
-use tailcall_jq::mustache::Mustache;
+use tailcall_template::mustache::path::PathString;
+use tailcall_template::mustache::Mustache;
 use url::Url;
 
 use super::request::create_grpc_request;
@@ -136,8 +136,8 @@ mod tests {
     use http::Method;
     use pretty_assertions::assert_eq;
     use tailcall_fixtures::protobuf;
-    use tailcall_jq::mustache::path::PathString;
-    use tailcall_jq::mustache::Mustache;
+    use tailcall_template::mustache::path::PathString;
+    use tailcall_template::mustache::Mustache;
 
     use super::{RequestBody, RequestTemplate};
     use crate::core::blueprint::GrpcMethod;

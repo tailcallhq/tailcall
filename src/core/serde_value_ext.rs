@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use async_graphql::{Name, Value as GraphQLValue};
 use indexmap::IndexMap;
-use tailcall_jq::mustache::path::PathString;
+use tailcall_template::mustache::path::PathString;
 
 use crate::core::blueprint::DynamicValue;
 

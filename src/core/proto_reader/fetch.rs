@@ -9,7 +9,7 @@ use prost::Message;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use tailcall_jq::mustache::Mustache;
+use tailcall_template::mustache::Mustache;
 
 use crate::core::blueprint::GrpcMethod;
 use crate::core::config::{ConfigReaderContext, KeyValue};

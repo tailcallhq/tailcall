@@ -20,7 +20,7 @@ use tailcall::core::ir::{EvalContext, ResolverContextLike, SelectionField};
 use tailcall::core::runtime::TargetRuntime;
 use tailcall::core::{EnvIO, FileIO, HttpIO};
 use tailcall_http_cache::HttpCacheManager;
-use tailcall_jq::mustache::path::PathString;
+use tailcall_template::mustache::path::PathString;
 
 struct Http {
     client: ClientWithMiddleware,

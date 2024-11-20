@@ -2852,7 +2852,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4979f22fdb869068da03c9f7528f8297c6fd2606bc3a4affe42e6a823fdb8da4"
 dependencies = [
  "cfg-if",
- "windows-targets 0.52.6",
+ "windows-targets 0.48.5",
 ]
 
 [[package]]
@@ -5526,9 +5526,9 @@ dependencies = [
  "tailcall-fixtures",
  "tailcall-hasher",
  "tailcall-http-cache",
- "tailcall-jq",
  "tailcall-macros",
  "tailcall-prettier",
+ "tailcall-template",
  "tailcall-tracker",
  "tailcall-typedefs-common",
  "tailcall-valid",
@@ -5631,20 +5631,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tailcall-jq"
-version = "0.1.0"
-source = "git+https://github.com/tailcallhq/tailcall-jq#53b7d679d657887bee72acfea19cf225e0a52de0"
-dependencies = [
- "anyhow",
- "async-graphql",
- "async-graphql-value",
- "indexmap 2.6.0",
- "nom 8.0.0-alpha2",
- "serde_json",
- "serde_json_borrow",
-]
-
-[[package]]
 name = "tailcall-macros"
 version = "0.1.0"
 dependencies = [
@@ -5661,6 +5647,20 @@ dependencies = [
  "strum_macros",
  "thiserror",
  "tokio",
+]
+
+[[package]]
+name = "tailcall-template"
+version = "0.1.0"
+source = "git+https://github.com/tailcallhq/tailcall-template#5cbe15c9bb9d34ee1674b774965aa7ed90922709"
+dependencies = [
+ "anyhow",
+ "async-graphql",
+ "async-graphql-value",
+ "indexmap 2.6.0",
+ "nom 8.0.0-alpha2",
+ "serde_json",
+ "serde_json_borrow",
 ]
 
 [[package]]
@@ -6750,7 +6750,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
