@@ -54,7 +54,10 @@ impl ConstValueExecutor {
         };
 
         // Attempt to plan authentication
-        let Ok(plan) = AuthPlaner::new(&req_ctx.server.auth).transform(plan).to_result() else {
+        let Ok(plan) = AuthPlaner::new(&req_ctx.server.auth)
+            .transform(plan)
+            .to_result()
+        else {
             // this shouldn't actually ever happen
             return Response::default()
                 .with_errors(vec![Positioned::new(Error::Unknown, Pos::default())]);
@@ -82,6 +85,13 @@ impl ConstValueExecutor {
         let exe = Executor::new(&plan, exec);
         let store = exe.store().await;
         let synth = Synth::new(&plan, store, vars);
+
+        if let Some(_auth_n) = &plan.auth_n {
+            if let Err(err) = req_ctx.auth_ctx.validate(req_ctx).await.to_result() {
+                return Response::default()
+                    .with_errors(vec![Positioned::new(Error::from(err), Pos::default())]);
+            }
+        }
 
         exe.execute(synth).await
     }
