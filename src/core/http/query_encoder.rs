@@ -1,4 +1,4 @@
-use crate::core::path::ValueString;
+use tailcall_template::mustache::path::ValueString;
 
 /// Defines different strategies for encoding query parameters.
 #[derive(Default, Debug, Clone)]
