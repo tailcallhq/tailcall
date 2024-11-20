@@ -56,7 +56,7 @@ pub async fn check_for_update() {
         let epoch_time_now = Utc::now().timestamp();
         let show_update_message = match std::fs::read_to_string(&state_file_path) {
             Ok(data) => match data.trim().parse::<i64>() {
-                Ok(epoch_time) => (epoch_time_now - epoch_time) < 24 * 60 * 60,
+                Ok(epoch_time) => (epoch_time_now - epoch_time) > 24 * 60 * 60,
                 Err(_) => true,
             },
             Err(_) => true,
@@ -75,6 +75,11 @@ pub async fn check_for_update() {
             let github_release_url =
                 format!("https://github.com/{name}/releases/tag/{latest_version}",);
             let installation_method = get_installation_method();
+
+            let path_exists = std::fs::metadata(state_file_path.clone()).is_ok();
+            if !path_exists {
+                std::fs::create_dir_all(state_file_path.parent().unwrap()).unwrap();
+            }
 
             if let Ok(_) = std::fs::write(state_file_path, epoch_time_now.to_string()) {}
 
