@@ -1,6 +1,6 @@
-use tailcall_valid::Valid;
+use tailcall_valid::{Valid, Validator};
 
-use crate::core::blueprint::FieldDefinition;
+use crate::core::blueprint::{Auth, FieldDefinition, Provider};
 use crate::core::config::{self, ConfigModule, Field};
 use crate::core::ir::model::IR;
 use crate::core::try_fold::TryFold;
@@ -28,16 +28,50 @@ pub fn update_protected<'a>(
                     );
                 }
 
-                b_field.resolver = Some(IR::Protect(
-                    field.protected.as_ref().map(|p| p.providers.clone()).flatten(),
-                    Box::new(
-                    b_field
-                        .resolver
-                        .unwrap_or(IR::ContextPath(vec![b_field.name.clone()])),
-                )));
-            }
+                let field_providers = field
+                    .protected
+                    .as_ref()
+                    .and_then(|p| p.providers.clone());
+                Provider::from_config_module(config)
+                    .and_then(|config_providers| {
+                        if let Some(local_field_providers) = field_providers {
+                            let providers =
+                                Valid::from_iter(local_field_providers.iter(), |provider_name| {
+                                    if let Some(provider) = config_providers.get(provider_name) {
+                                        Valid::succeed(Auth::Provider(provider.clone()))
+                                    } else {
+                                        Valid::fail(format!(
+                                            "Auth provider {} not found",
+                                            provider_name
+                                        ))
+                                    }
+                                });
+                            providers
+                        } else {
+                            Valid::succeed(vec![])
+                        }
+                    })
+                    .map(|auth_providers| {
+                        if !auth_providers.is_empty() {
+                            let auth = auth_providers
+                                .into_iter()
+                                .reduce(|left, right| left.and(right));
 
-            Valid::succeed(b_field)
+                            b_field.resolver = Some(IR::Protect(
+                                auth,
+                                Box::new(
+                                    b_field
+                                        .resolver
+                                        .unwrap_or(IR::ContextPath(vec![b_field.name.clone()])),
+                                ),
+                            ));
+                        }
+
+                        b_field
+                    })
+            } else {
+                Valid::succeed(b_field)
+            }
         },
     )
 }

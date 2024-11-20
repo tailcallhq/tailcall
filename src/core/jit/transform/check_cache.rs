@@ -22,7 +22,7 @@ fn check_cache(ir: &IR) -> Option<NonZeroU64> {
         IR::IO(_) => None,
         IR::Cache(cache) => Some(cache.max_age),
         IR::Path(ir, _) => check_cache(ir),
-        IR::Protect(_providers, ir) => check_cache(ir),
+        IR::Protect(_, ir) => check_cache(ir),
         IR::Pipe(ir, ir1) => match (check_cache(ir), check_cache(ir1)) {
             (Some(age1), Some(age2)) => Some(age1.min(age2)),
             _ => None,

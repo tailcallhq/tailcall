@@ -8,7 +8,7 @@ use http::header::{HeaderMap, HeaderName, HeaderValue};
 use rustls_pki_types::CertificateDer;
 use tailcall_valid::{Valid, ValidationError, Validator};
 
-use super::{Auth, Provider};
+use super::Auth;
 use crate::core::blueprint::Cors;
 use crate::core::config::{self, ConfigModule, HttpVersion, PrivateKey, Routes};
 
@@ -35,7 +35,6 @@ pub struct Server {
     pub cors: Option<Cors>,
     pub experimental_headers: HashSet<HeaderName>,
     pub auth: Option<Auth>,
-    pub auth_providers: BTreeMap<String, Provider>,
     pub routes: Routes,
 }
 
@@ -126,9 +125,8 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
                     .and_then(|headers| headers.get_cors()),
             ))
             .fuse(Auth::make(&config_module))
-            .fuse(Provider::from_config_module(&config_module))
             .map(
-                |(hostname, http, response_headers, script, experimental_headers, cors, auth, auth_providers)| {
+                |(hostname, http, response_headers, script, experimental_headers, cors, auth)| {
                     Server {
                         enable_jit: (config_server).enable_jit(),
                         enable_apollo_tracing: (config_server).enable_apollo_tracing(),
@@ -151,7 +149,6 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
                         script,
                         cors,
                         auth,
-                        auth_providers,
                         routes: config_server.get_routes(),
                     }
                 },

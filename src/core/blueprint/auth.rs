@@ -27,7 +27,9 @@ pub enum Provider {
 
 impl Provider {
     /// Used to collect all auth providers from the config module
-    pub fn from_config_module(config_module: &ConfigModule) -> Valid<BTreeMap<String, Provider>, String> {
+    pub fn from_config_module(
+        config_module: &ConfigModule,
+    ) -> Valid<BTreeMap<String, Provider>, String> {
         let mut providers = BTreeMap::new();
 
         // Add basic auth providers from htpasswd
@@ -35,9 +37,7 @@ impl Provider {
             if let Some(id) = &htpasswd.id {
                 providers.insert(
                     id.clone(),
-                    Provider::Basic(Basic {
-                        htpasswd: htpasswd.content.clone(),
-                    }),
+                    Provider::Basic(Basic { htpasswd: htpasswd.content.clone() }),
                 );
             }
         }

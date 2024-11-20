@@ -995,7 +995,18 @@
       ]
     },
     "Protected": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "providers": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        }
+      }
     },
     "Proxy": {
       "type": "object",
