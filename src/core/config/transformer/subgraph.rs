@@ -39,22 +39,24 @@ impl Transform for Subgraph {
             // if federation is disabled don't process the config
             return Valid::succeed(config);
         }
-
+        let config_types = config.types.clone();
         let mut resolver_by_type = BTreeMap::new();
 
         let valid = Valid::from_iter(config.types.iter_mut(), |(type_name, ty)| {
             if let Some(resolver) = &ty.resolver {
                 resolver_by_type.insert(type_name.clone(), resolver.clone());
 
-                KeysExtractor::extract_keys(resolver).and_then(|fields| match fields {
-                    Some(fields) => {
-                        let key = Key { fields };
+                KeysExtractor::validate(&config_types, resolver, type_name).and_then(|_| {
+                    KeysExtractor::extract_keys(resolver).and_then(|fields| match fields {
+                        Some(fields) => {
+                            let key = Key { fields };
 
-                        to_directive(key.to_directive()).map(|directive| {
-                            ty.directives.push(directive);
-                        })
-                    }
-                    None => Valid::succeed(()),
+                            to_directive(key.to_directive()).map(|directive| {
+                                ty.directives.push(directive);
+                            })
+                        }
+                        None => Valid::succeed(()),
+                    })
                 })
             } else {
                 Valid::succeed(())
@@ -192,6 +194,72 @@ fn combine_keys(v: Vec<Keys>) -> Keys {
 struct KeysExtractor;
 
 impl KeysExtractor {
+    fn validate_expressions<'a>(
+        type_name: &str,
+        type_map: &BTreeMap<String, config::Type>,
+        expr_iter: impl Iterator<Item = &'a Segment>,
+    ) -> Valid<(), String> {
+        Valid::from_iter(expr_iter, |segment| {
+            if let Segment::Expression(expr) = segment {
+                if expr.len() > 1 && expr[0].as_str() == "value" {
+                    Self::validate_iter(type_map, type_name, expr.iter().skip(1))
+                } else {
+                    Valid::succeed(())
+                }
+            } else {
+                Valid::succeed(())
+            }
+        })
+        .unit()
+    }
+
+    fn validate_iter<'a>(
+        type_map: &BTreeMap<String, config::Type>,
+        current_type: &str,
+        fields_iter: impl Iterator<Item = &'a String>,
+    ) -> Valid<(), String> {
+        let mut current_type = current_type;
+        Valid::from_iter(fields_iter.enumerate(), |(index, key)| {
+            if let Some(type_def) = type_map.get(current_type) {
+                if !type_def.fields.contains_key(key) {
+                    return Valid::fail(format!(
+                        "Invalid key at index {}: '{}' is not a field of '{}'",
+                        index, key, current_type
+                    ));
+                }
+                current_type = type_def.fields[key].type_of.name();
+            } else {
+                return Valid::fail(format!("Type '{}' not found in config", current_type));
+            }
+            Valid::succeed(())
+        })
+        .unit()
+    }
+
+    fn validate(
+        type_map: &BTreeMap<String, config::Type>,
+        resolver: &Resolver,
+        type_name: &str,
+    ) -> Valid<(), String> {
+        if let Resolver::Http(http) = resolver {
+            Valid::from_iter(http.query.iter(), |q| {
+                Self::validate_expressions(
+                    type_name,
+                    type_map,
+                    Mustache::parse(&q.value).segments().iter(),
+                )
+            })
+            .and(Self::validate_expressions(
+                type_name,
+                type_map,
+                Mustache::parse(&http.url).segments().iter(),
+            ))
+            .unit()
+        } else {
+            Valid::succeed(())
+        }
+    }
+
     fn extract_keys(resolver: &Resolver) -> Valid<Option<String>, String> {
         // TODO: add validation for available fields from the type
         match resolver {
@@ -376,6 +444,7 @@ mod tests {
         }
     }
 
+    #[cfg(test)]
     mod extractor {
         use insta::assert_debug_snapshot;
         use serde_json::json;

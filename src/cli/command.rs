@@ -26,6 +26,12 @@ pub enum Command {
         /// separated by spaces if more than one
         #[arg(required = true)]
         file_paths: Vec<String>,
+
+        /// Controls SSL/TLS certificate verification for remote config files
+        /// Set to false to skip certificate verification (not recommended for
+        /// production)
+        #[arg(short, long, action = clap::ArgAction::Set, default_value_t = true)]
+        verify_ssl: bool,
     },
 
     /// Validate a composition spec
@@ -46,6 +52,12 @@ pub enum Command {
         /// Prints the input config in the provided format
         #[clap(short, long)]
         format: Option<config::Source>,
+
+        /// Controls SSL/TLS certificate verification for remote config files
+        /// Set to false to skip certificate verification (not recommended for
+        /// production)
+        #[arg(short, long, action = clap::ArgAction::Set, default_value_t = true)]
+        verify_ssl: bool,
     },
 
     /// Initialize a new project
