@@ -54,21 +54,25 @@ impl ParsedHttpBody {
     }
 
     pub fn render<Ctx: PathString + HasHeaders + PathValue>(&self, ctx: &Ctx) -> String {
-        match self {
+        let rendered = match self {
             ParsedHttpBody::Single(body) => body.render(ctx),
             ParsedHttpBody::List(body_list) => {
-                let body_map = body_list
+                let body_maps = body_list
                     .iter()
                     .map(|kv| {
                         let key = kv.key.render(ctx);
                         let value = kv.value.render(ctx);
-                        (key, serde_json::Value::String(value))
+                        serde_json::Value::Object(serde_json::Map::from_iter(vec![(
+                            key,
+                            serde_json::Value::String(value),
+                        )]))
                     })
-                    .collect::<serde_json::Map<String, serde_json::Value>>();
+                    .collect::<Vec<_>>();
 
-                serde_json::to_string(&body_map).unwrap()
+                serde_json::to_string(&serde_json::Value::Array(body_maps)).unwrap()
             }
-        }
+        };
+        rendered
     }
 }
 
