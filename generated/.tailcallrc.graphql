@@ -276,7 +276,7 @@ directive @omit on FIELD_DEFINITION
 
 directive @protected(
   providers: [String!]
-) on OBJECT | FIELD_DEFINITION
+) repeatable on OBJECT | FIELD_DEFINITION
 
 """
 The `@server` directive, when applied at the schema level, offers a comprehensive 

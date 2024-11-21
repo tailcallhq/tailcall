@@ -35,11 +35,19 @@ impl From<blueprint::Auth> for AuthVerifier {
     fn from(provider: blueprint::Auth) -> Self {
         match provider {
             blueprint::Auth::Provider(provider) => AuthVerifier::Single(provider.into()),
-            blueprint::Auth::And(left, right) => {
-                AuthVerifier::And(Box::new((*left).into()), Box::new((*right).into()))
+            blueprint::Auth::And(expressions) => {
+                let mut iter = expressions
+                    .into_iter()
+                    .map(|e| e.into())
+                    .collect::<Vec<_>>();
+                AuthVerifier::And(Box::new(iter.remove(0)), Box::new(iter.remove(0)))
             }
-            blueprint::Auth::Or(left, right) => {
-                AuthVerifier::Or(Box::new((*left).into()), Box::new((*right).into()))
+            blueprint::Auth::Or(expressions) => {
+                let mut iter = expressions
+                    .into_iter()
+                    .map(|e| e.into())
+                    .collect::<Vec<_>>();
+                AuthVerifier::Or(Box::new(iter.remove(0)), Box::new(iter.remove(0)))
             }
         }
     }
@@ -147,16 +155,16 @@ mod tests {
     }
 
     fn setup_and_verifier() -> AuthVerifier {
-        AuthVerifier::from(Auth::And(
-            Auth::Provider(Provider::Basic(Basic::test_value())).into(),
-            Auth::Provider(Provider::Basic(Basic::test_value())).into(),
-        ))
+        AuthVerifier::from(Auth::And(vec![
+            Auth::Provider(Provider::Basic(Basic::test_value())),
+            Auth::Provider(Provider::Basic(Basic::test_value())),
+        ]))
     }
 
     fn setup_or_verifier() -> AuthVerifier {
-        AuthVerifier::from(Auth::Or(
-            Auth::Provider(Provider::Basic(Basic::test_value())).into(),
-            Auth::Provider(Provider::Jwt(Jwt::test_value())).into(),
-        ))
+        AuthVerifier::from(Auth::Or(vec![
+            Auth::Provider(Provider::Basic(Basic::test_value())),
+            Auth::Provider(Provider::Jwt(Jwt::test_value())),
+        ]))
     }
 }
