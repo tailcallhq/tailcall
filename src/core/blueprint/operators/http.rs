@@ -4,7 +4,7 @@ use crate::core::blueprint::*;
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::{Field, Resolver};
 use crate::core::endpoint::Endpoint;
-use crate::core::http::{HttpFilter, Method, RequestTemplate};
+use crate::core::http::{HttpFilter,RequestTemplate};
 use crate::core::ir::model::{IO, IR};
 use crate::core::try_fold::TryFold;
 use crate::core::{config, helpers, Mustache};
@@ -16,8 +16,7 @@ pub fn compile_http(
 ) -> Valid<IR, String> {
     let dedupe = http.dedupe.unwrap_or_default();
 
-    Valid::<(), String>::fail("GroupBy is only supported for GET requests".to_string())
-        .when(|| !http.batch_key.is_empty() && http.method != Method::GET)
+    Valid::<(), String>::succeed(())
         .and(
             Valid::<(), String>::fail(
                 "Batching capability was used without enabling it in upstream".to_string(),
@@ -63,7 +62,7 @@ pub fn compile_http(
                 .or(config_module.upstream.on_request.clone())
                 .map(|on_request| HttpFilter { on_request });
 
-            let io = if !http.batch_key.is_empty() && http.method == Method::GET {
+            let io = if !http.batch_key.is_empty() {
                 // Find a query parameter that contains a reference to the {{.value}} key
                 let key = http.query.iter().find_map(|q| {
                     Mustache::parse(&q.value)

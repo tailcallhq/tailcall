@@ -231,7 +231,7 @@ impl TryFrom<Endpoint> for RequestTemplate {
         let body = endpoint
             .body
             .as_ref()
-            .map(|body| Mustache::parse(body.as_str()));
+            .map(|body| Mustache::parse(&body.to_string()));
         let encoding = endpoint.encoding.clone();
 
         Ok(Self {
