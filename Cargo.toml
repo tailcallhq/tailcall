@@ -58,6 +58,7 @@ opentelemetry-system-metrics = { version = "0.2.0", optional = true }
 tailcall-http-cache = { path = "tailcall-http-cache", optional = true }
 tailcall-version = { path = "./tailcall-version", optional = true }
 genai = { git = "https://github.com/laststylebender14/rust-genai.git", rev = "63a542ce20132503c520f4e07108e0d768f243c3", optional = true }
+ctrlc = { version = "3.4.5", optional = true }
 
 # dependencies safe for wasm:
 
@@ -110,7 +111,7 @@ update-informer = { version = "1.1.0", default-features = false, features = [
 lazy_static = { workspace = true }
 which = { version = "6.0.1", optional = true }
 async-recursion = "1.1.1"
-rquickjs = { "version" = "0.5.1", optional = true, features = ["macro"] }
+rquickjs = { "version" = "0.7.0", optional = true, features = ["macro"] }
 strum_macros = "0.26.4"
 # TODO: disable some levels with features?
 tracing = { workspace = true }
@@ -162,7 +163,8 @@ tailcall-typedefs-common = { path = "./tailcall-typedefs-common" }
 tonic-types = "0.12.1"
 base64 = "0.22.1"
 tailcall-hasher = { path = "tailcall-hasher" }
-serde_json_borrow = "0.7.0"
+# TODO: drop git ref when new version is released
+serde_json_borrow = { version = "0.7.0", default-features = false, git = "https://github.com/PSeitz/serde_json_borrow", rev = "6ad7127e0fb9c31f6fd927e934a21112e9ac0fdb" }
 pluralizer = "0.4.0"
 path-clean = "=1.0.1"
 pathdiff = "0.2.1"
@@ -173,6 +175,11 @@ strum = "0.26.2"
 tailcall-valid = { workspace = true }
 dashmap = "6.1.0"
 urlencoding = "2.1.3"
+tailcall-chunk = "0.2.5"
+
+# to build rquickjs bindings on systems without builtin bindings
+[target.'cfg(all(target_os = "windows", target_arch = "x86"))'.dependencies]
+rquickjs = { "version" = "0.7.0", optional = true, features = ["macro", "bindgen"] }
 
 [dev-dependencies]
 datatest-stable = "0.2.9"
@@ -230,6 +237,7 @@ cli = [
     "dep:tailcall-http-cache",
     "dep:tailcall-version",
     "dep:genai",
+    "dep:ctrlc",
 ]
 
 # Feature flag to enable all default features.

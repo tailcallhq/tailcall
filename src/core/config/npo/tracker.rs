@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 
-use super::chunk::Chunk;
+use tailcall_chunk::Chunk;
+
 use crate::core::config::Config;
 
 ///
@@ -141,15 +142,15 @@ impl<'a> PathTracker<'a> {
             chunks.clone()
         } else {
             // set empty value in the cache to prevent infinity recursion
-            self.cache.insert((type_name, is_list), Chunk::new());
+            self.cache.insert((type_name, is_list), Chunk::default());
 
-            let mut chunks = Chunk::new();
+            let mut chunks = Chunk::default();
             if let Some(type_of) = self.config.find_type(type_name.as_str()) {
                 for (name, field) in type_of.fields.iter() {
                     let field_name = Name::Field(FieldName::new(name));
 
                     if is_list && field.has_resolver() && !field.has_batched_resolver() {
-                        chunks = chunks.append(Chunk::new().append(field_name));
+                        chunks = chunks.append(Chunk::new(field_name));
                     } else {
                         let is_list = is_list | field.type_of.is_list();
                         chunks = chunks.concat(self.iter(
@@ -169,7 +170,7 @@ impl<'a> PathTracker<'a> {
         // chunks contains only paths from the current type.
         // Prepend every subpath with parent path
         if let Some(path) = parent_name {
-            chunks.map(&mut |chunk| Chunk::new().append(path).concat(chunk.clone()))
+            chunks.transform(move |chunk| Chunk::new(path).concat(chunk))
         } else {
             chunks
         }
@@ -177,7 +178,7 @@ impl<'a> PathTracker<'a> {
 
     fn find_chunks(&mut self) -> Chunk<Chunk<Name<'a>>> {
         let mut chunks = match &self.config.schema.query {
-            None => Chunk::new(),
+            None => Chunk::default(),
             Some(query) => self.iter(None, TypeName::new(query.as_str()), false),
         };
 
@@ -195,7 +196,7 @@ impl<'a> PathTracker<'a> {
                         true,
                     ));
                 } else {
-                    chunks = chunks.append(Chunk::new().append(parent_path));
+                    chunks = chunks.append(Chunk::new(parent_path));
                 }
             }
         }
