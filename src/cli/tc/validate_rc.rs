@@ -20,7 +20,7 @@ pub async fn validate_rc_config_files(runtime: TargetRuntime, file_paths: &[Stri
             None => continue,
         };
 
-        let mut outdated_files = Vec::with_capacity(2);
+        let mut outdated_files = Vec::with_capacity(rc_config_files.len());
 
         for (file_name, base_content) in &rc_config_files {
             let config_path = parent_dir.join(file_name);
@@ -38,16 +38,11 @@ pub async fn validate_rc_config_files(runtime: TargetRuntime, file_paths: &[Stri
         }
 
         if !outdated_files.is_empty() {
-            let is_are = if outdated_files.len() == 1 {
-                "is"
-            } else {
-                "are"
-            };
             let outdated_files = outdated_files.join(", ");
             tracing::warn!(
                 "[{}] {} outdated, reinitialize using tailcall init.",
                 outdated_files,
-                is_are
+                pluralizer::pluralize("is", outdated_files.len() as isize, false)
             );
         }
     }
