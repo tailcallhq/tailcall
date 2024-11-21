@@ -46,10 +46,8 @@ impl Request<ConstValue> {
         let plan = builder.build(self.operation_name.as_deref())?;
 
         transform::CheckConst::new()
-            .pipe(
-                transform::AuthPlaner::new(&blueprint.server.auth)
-                    .when(blueprint.server.auth.is_some()),
-            )
+            .pipe(transform::CheckProtected::new())
+            .pipe(transform::AuthPlaner::new().when(blueprint.server.auth.is_some()))
             .pipe(transform::CheckDedupe::new())
             .pipe(transform::CheckCache::new())
             .transform(plan)

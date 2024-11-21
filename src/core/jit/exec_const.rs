@@ -12,7 +12,7 @@ use super::{
 use crate::core::app_context::AppContext;
 use crate::core::http::RequestContext;
 use crate::core::ir::model::IR;
-use crate::core::ir::{self, EvalContext};
+use crate::core::ir::{self, EmptyResolverContext, EvalContext};
 use crate::core::jit::synth::Synth;
 use crate::core::jit::transform::InputResolver;
 use crate::core::json::{JsonLike, JsonLikeList};
@@ -40,11 +40,16 @@ impl ConstValueExecutor {
         req_ctx: &RequestContext,
         request: &Request<ConstValue>,
     ) -> Response<ConstValue> {
-        // Check if we meet authentication requirements
-        if let Some(_auth_n) = &self.plan.auth_n {
-            if let Err(err) = req_ctx.auth_ctx.validate(req_ctx).await.to_result() {
-                return Response::default()
-                    .with_errors(vec![Positioned::new(Error::from(err), Pos::default())]);
+        // TODO: collect the results in parallel
+        let mut _results = Vec::new();
+        for ir in &self.plan.before {
+            let mut eval_context = EvalContext::new(req_ctx, &EmptyResolverContext {});
+            match ir.eval(&mut eval_context).await {
+                Ok(result) => _results.push(result),
+                Err(err) => {
+                    return Response::default()
+                        .with_errors(vec![Positioned::new(err.into(), Pos::default())])
+                }
             }
         }
 
