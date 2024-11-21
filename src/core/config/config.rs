@@ -116,7 +116,7 @@ pub struct Type {
     pub protected: Option<Protected>,
     ///
     /// Apollo federation entity resolver.
-    #[serde(flatten, default, skip_serializing_if = "is_default")]
+    #[serde(default, skip_serializing_if = "is_default")]
     pub resolvers: Vec<Resolver>,
     ///
     /// Any additional directives
@@ -225,7 +225,7 @@ pub struct Field {
 
     ///
     /// Resolver for the field
-    #[serde(flatten, default, skip_serializing_if = "is_default")]
+    #[serde(default, skip_serializing_if = "is_default")]
     pub resolvers: Vec<Resolver>,
 
     ///
@@ -248,7 +248,7 @@ impl Field {
 
     pub fn has_batched_resolver(&self) -> bool {
         if self.resolvers.is_empty() {
-            true
+            false
         } else {
             self.resolvers.iter().all(Resolver::is_batched)
         }

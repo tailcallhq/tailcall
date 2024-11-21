@@ -3,26 +3,8 @@ use tailcall_valid::{Valid, ValidationError, Validator};
 
 use crate::core::blueprint::*;
 use crate::core::config;
-use crate::core::config::{Field, GraphQLOperationType, Resolver};
+use crate::core::config::{Field, GraphQLOperationType};
 use crate::core::ir::model::IR;
-use crate::core::try_fold::TryFold;
-
-pub fn update_call<'a>(
-    operation_type: &'a GraphQLOperationType,
-    object_name: &'a str,
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
-        move |(config, field, _, _), b_field| {
-            let Some(Resolver::Call(call)) = &field.resolver else {
-                return Valid::succeed(b_field);
-            };
-
-            compile_call(config, call, operation_type, object_name)
-                .map(|resolver| b_field.resolver(Some(resolver)))
-        },
-    )
-}
 
 pub fn compile_call(
     config_module: &ConfigModule,

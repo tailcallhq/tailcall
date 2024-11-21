@@ -505,13 +505,8 @@ pub fn to_field_definition(
     name: &str,
 ) -> Valid<FieldDefinition, String> {
     update_args()
-        .and(update_http().trace(config::Http::trace_name().as_str()))
-        .and(update_grpc(operation_type).trace(config::Grpc::trace_name().as_str()))
-        .and(update_const_field().trace(config::Expr::trace_name().as_str()))
-        .and(update_js_field().trace(config::JS::trace_name().as_str()))
-        .and(update_graphql(operation_type).trace(config::GraphQL::trace_name().as_str()))
+        .and(update_resolver(operation_type, object_name))
         .and(update_modify().trace(config::Modify::trace_name().as_str()))
-        .and(update_call(operation_type, object_name).trace(config::Call::trace_name().as_str()))
         .and(fix_dangling_resolvers())
         .and(update_cache_resolvers())
         .and(update_protected(object_name).trace(Protected::trace_name().as_str()))

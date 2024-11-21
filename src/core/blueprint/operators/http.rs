@@ -2,11 +2,9 @@ use tailcall_valid::{Valid, ValidationError, Validator};
 
 use crate::core::blueprint::*;
 use crate::core::config::group_by::GroupBy;
-use crate::core::config::{Field, Resolver};
 use crate::core::endpoint::Endpoint;
 use crate::core::http::{HttpFilter, Method, RequestTemplate};
 use crate::core::ir::model::{IO, IR};
-use crate::core::try_fold::TryFold;
 use crate::core::{config, helpers, Mustache};
 
 pub fn compile_http(
@@ -91,24 +89,4 @@ pub fn compile_http(
             (io, &http.select)
         })
         .and_then(apply_select)
-}
-
-pub fn update_http<'a>(
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
-        |(config_module, field, type_of, _), b_field| {
-            let Some(Resolver::Http(http)) = &field.resolver else {
-                return Valid::succeed(b_field);
-            };
-
-            compile_http(config_module, http, field.type_of.is_list())
-                .map(|resolver| b_field.resolver(Some(resolver)))
-                .and_then(|b_field| {
-                    b_field
-                        .validate_field(type_of, config_module)
-                        .map_to(b_field)
-                })
-        },
-    )
 }

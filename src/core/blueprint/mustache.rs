@@ -103,6 +103,7 @@ impl<'a> MustachePartsValidator<'a> {
 }
 
 impl FieldDefinition {
+    // TODO: need validation for multiple resolvers
     pub fn validate_field(&self, type_of: &config::Type, config: &Config) -> Valid<(), String> {
         // XXX we could use `Mustache`'s `render` method with a mock
         // struct implementing the `PathString` trait encapsulating `validation_map`

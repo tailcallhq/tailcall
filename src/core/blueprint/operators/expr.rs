@@ -3,10 +3,9 @@ use tailcall_valid::{Valid, ValidationError, Validator};
 
 use crate::core::blueprint::*;
 use crate::core::config;
-use crate::core::config::{Expr, Field, Resolver};
+use crate::core::config::Expr;
 use crate::core::ir::model::IR;
 use crate::core::ir::model::IR::Dynamic;
-use crate::core::try_fold::TryFold;
 
 fn validate_data_with_schema(
     config: &config::Config,
@@ -57,19 +56,4 @@ pub fn compile_expr(inputs: CompileExpr) -> Valid<IR, String> {
             }
         }
     })
-}
-
-pub fn update_const_field<'a>(
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
-        |(config_module, field, _, _), b_field| {
-            let Some(Resolver::Expr(expr)) = &field.resolver else {
-                return Valid::succeed(b_field);
-            };
-
-            compile_expr(CompileExpr { config_module, field, expr, validate: true })
-                .map(|resolver| b_field.resolver(Some(resolver)))
-        },
-    )
 }

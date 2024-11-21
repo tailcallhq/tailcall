@@ -4,7 +4,7 @@ use std::fmt::Write;
 use async_graphql::parser::types::ServiceDocument;
 use tailcall_valid::{Valid, Validator};
 
-use super::{compile_call, compile_expr, compile_graphql, compile_grpc, compile_http, compile_js};
+use super::{compile_resolver, CompileResolver};
 use crate::core::blueprint::{Blueprint, Definition, TryFoldConfig};
 use crate::core::config::{
     ApolloFederation, ConfigModule, EntityResolver, Field, GraphQLOperationType, Resolver,
@@ -13,8 +13,8 @@ use crate::core::ir::model::IR;
 use crate::core::Type;
 
 pub struct CompileEntityResolver<'a> {
-    config_module: &'a ConfigModule,
-    entity_resolver: &'a EntityResolver,
+    pub config_module: &'a ConfigModule,
+    pub entity_resolver: &'a EntityResolver,
 }
 
 pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, String> {
@@ -31,36 +31,6 @@ pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, S
 
             // TODO: make this code reusable in other operators like call
             let ir = match resolver {
-                // TODO: there are `validate_field` for field, but not for types
-                // implement validation as shared entity and use it for types
-                Resolver::Http(http) => compile_http(
-                    config_module,
-                    http,
-                    // inner resolver should resolve only single instance of type, not a list
-                    false,
-                ),
-                Resolver::Grpc(grpc) => compile_grpc(super::CompileGrpc {
-                    config_module,
-                    operation_type: &GraphQLOperationType::Query,
-                    field,
-                    grpc,
-                    validate_with_schema: true,
-                }),
-                Resolver::Graphql(graphql) => compile_graphql(
-                    config_module,
-                    &GraphQLOperationType::Query,
-                    type_name,
-                    graphql,
-                ),
-                Resolver::Call(call) => {
-                    compile_call(config_module, call, &GraphQLOperationType::Query, type_name)
-                }
-                Resolver::Js(js) => {
-                    compile_js(super::CompileJs { js, script: &config_module.extensions().script })
-                }
-                Resolver::Expr(expr) => {
-                    compile_expr(super::CompileExpr { config_module, field, expr, validate: true })
-                }
                 Resolver::ApolloFederation(federation) => match federation {
                     ApolloFederation::EntityResolver(entity_resolver) => {
                         compile_entity_resolver(CompileEntityResolver { entity_resolver, ..inputs })
@@ -70,6 +40,18 @@ pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, S
                             .to_string(),
                     ),
                 },
+                resolver => {
+                    let inputs = CompileResolver {
+                        config_module,
+                        field,
+                        operation_type: &GraphQLOperationType::Query,
+                        object_name: type_name,
+                    };
+
+                    compile_resolver(&inputs, resolver).and_then(|resolver| {
+                        Valid::from_option(resolver, "Resolver is empty".to_string())
+                    })
+                }
             };
 
             ir.map(|ir| {
@@ -126,7 +108,12 @@ pub fn update_federation<'a>() -> TryFoldConfig<'a, Blueprint> {
                     format!("Cannot find field {name} in the type"),
                 )
                 .and_then(|field| {
-                    let Some(Resolver::ApolloFederation(federation)) = &field.resolver else {
+                    let federation = field
+                        .resolvers
+                        .iter()
+                        .find(|resolver| matches!(resolver, Resolver::ApolloFederation(_)));
+
+                    let Some(Resolver::ApolloFederation(federation)) = federation else {
                         return Valid::succeed(b_field);
                     };
 
