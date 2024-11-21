@@ -1,0 +1,27 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+---
+type Bar {
+  barName: String!
+  id: ID!
+}
+
+type Foo {
+  barId: String!
+  bars: [Bar!]!
+  fooName: String!
+  id: ID!
+}
+
+type FooResponse {
+  foos: [Foo!]!
+}
+
+type Query {
+  foos: FooResponse
+}
+
+schema {
+  query: Query
+}

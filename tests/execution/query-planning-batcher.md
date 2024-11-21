@@ -1,12 +1,17 @@
 # Batching group by
 
 ```graphql @config
-schema @server(port: 8000, queryValidation: false) @upstream(httpCache: 42, batch: {delay: 1, maxSize: 1000}) {
+schema @server(port: 8000, queryValidation: false) {
   query: Query
 }
 
 type Query {
-  posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts?id=11&id=3&foo=1")
+  postData: [PostData] @http(url: "http://jsonplaceholder.typicode.com/posts?id=1&id=2")
+}
+
+type PostData {
+  meta: String @expr(body: "Data owned by tailcall.")
+  post: Post
 }
 
 type Post {
@@ -31,20 +36,24 @@ type User {
 ```yml @mock
 - request:
     method: GET
-    url: http://jsonplaceholder.typicode.com/posts?id=11&id=3&foo=1
+    url: http://jsonplaceholder.typicode.com/posts?id=1&id=2
   response:
     status: 200
     body:
-      - body: bar
-        id: 11
-        title: foo
-        userId: 1
-      - body: bar # no userId for bar
-        id: 3
-        title: foo
+      - post:
+          id: 1
+          title: post-1
+          body: post-1
+          userId: 1
+      - post:
+          id: 2
+          title: post-2
+          body: post-2
+          userId: 2
+
 - request:
     method: GET
-    url: http://jsonplaceholder.typicode.com/users?id&foo=bar&id=1 # query should be id=1&id&foo=bar
+    url: http://jsonplaceholder.typicode.com/users?id=1&id=2&foo=bar
   response:
     status: 200
     body:
@@ -58,5 +67,5 @@ type User {
 - method: POST
   url: http://localhost:8080/graphql
   body:
-    query: query { posts { user { id } userId } }
+    query: query { postData { meta post { id user { id } } userId } }
 ```

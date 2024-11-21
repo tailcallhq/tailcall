@@ -4,7 +4,7 @@ use crate::core::blueprint::*;
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::{Field, Resolver};
 use crate::core::endpoint::Endpoint;
-use crate::core::http::{HttpFilter,RequestTemplate};
+use crate::core::http::{HttpFilter, RequestTemplate};
 use crate::core::ir::model::{IO, IR};
 use crate::core::try_fold::TryFold;
 use crate::core::{config, helpers, Mustache};
@@ -17,16 +17,6 @@ pub fn compile_http(
     let dedupe = http.dedupe.unwrap_or_default();
 
     Valid::<(), String>::succeed(())
-        .and(
-            Valid::<(), String>::fail(
-                "Batching capability was used without enabling it in upstream".to_string(),
-            )
-            .when(|| {
-                (config_module.upstream.get_delay() < 1
-                    || config_module.upstream.get_max_size() < 1)
-                    && !http.batch_key.is_empty()
-            }),
-        )
         .and(Valid::succeed(http.url.as_str()))
         .zip(helpers::headers::to_mustache_headers(&http.headers))
         .and_then(|(base_url, headers)| {
@@ -73,6 +63,7 @@ pub fn compile_http(
                     req_template,
                     group_by: Some(GroupBy::new(http.batch_key.clone(), key)),
                     dl_id: None,
+                    dl_enabled: false,
                     http_filter,
                     is_list,
                     dedupe,
@@ -82,6 +73,7 @@ pub fn compile_http(
                     req_template,
                     group_by: None,
                     dl_id: None,
+                    dl_enabled: false,
                     http_filter,
                     is_list,
                     dedupe,

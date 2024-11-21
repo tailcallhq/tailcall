@@ -2,6 +2,7 @@
 //! structure.
 use std::borrow::Cow;
 
+use indexmap::IndexMap;
 use serde_json::json;
 
 use crate::core::ir::{EvalContext, ResolverContextLike};
@@ -64,6 +65,62 @@ pub enum ValueString<'a> {
     String(Cow<'a, str>),
 }
 
+impl<'a> ValueString<'a> {
+    // goes throught constvalue and removes all null values.
+    fn remove_nulls(
+        value: async_graphql_value::ConstValue,
+    ) -> Option<async_graphql_value::ConstValue> {
+        if value.is_null() {
+            return None;
+        }
+        match value {
+            async_graphql::Value::List(list) => {
+                let filtered = list
+                    .into_iter()
+                    .filter(|v| !v.is_null())
+                    .filter_map(Self::remove_nulls)
+                    .collect::<Vec<_>>();
+                if filtered.is_empty() {
+                    None
+                } else {
+                    Some(async_graphql::Value::List(filtered))
+                }
+            }
+            async_graphql::Value::Object(map) => {
+                let filtered_map = map
+                    .into_iter()
+                    .filter(|(_, v)| !v.is_null())
+                    .filter_map(|(k, v)| Self::remove_nulls(v).map(|v| (k, v)))
+                    .collect::<IndexMap<_, _>>();
+
+                if filtered_map.is_empty() {
+                    None
+                } else {
+                    Some(async_graphql::Value::Object(filtered_map))
+                }
+            }
+            _ => Some(value),
+        }
+    }
+
+    // goes through ValueString and return ValueString without null values.
+    pub fn skip_null(self) -> Option<ValueString<'a>> {
+        match self {
+            ValueString::Value(value) => match value {
+                Cow::Borrowed(value) => {
+                    let filtered = Self::remove_nulls(value.to_owned())?;
+                    Some(ValueString::Value(Cow::Owned(filtered)))
+                }
+                Cow::Owned(value) => {
+                    let filtered = Self::remove_nulls(value)?;
+                    Some(ValueString::Value(Cow::Owned(filtered)))
+                }
+            },
+            _ => Some(self),
+        }
+    }
+}
+
 impl<Ctx: ResolverContextLike> EvalContext<'_, Ctx> {
     fn to_raw_value<T: AsRef<str>>(&self, path: &[T]) -> Option<ValueString<'_>> {
         let ctx = self;
@@ -85,7 +142,7 @@ impl<Ctx: ResolverContextLike> EvalContext<'_, Ctx> {
 
         path.split_first()
             .and_then(move |(head, tail)| match head.as_ref() {
-                "value" => Some(ValueString::Value(ctx.path_value(tail)?)),
+                "value" => Some(ValueString::Value(ctx.path_value_list(tail)?)),
                 "args" => Some(ValueString::Value(ctx.path_arg(tail)?)),
                 "headers" => Some(ValueString::String(Cow::Borrowed(
                     ctx.header(tail[0].as_ref())?,
@@ -515,6 +572,113 @@ mod tests {
             assert_eq!(EVAL_CTX.path_graphql(&["foo", "key"]), None);
             assert_eq!(EVAL_CTX.path_graphql(&["bar", "key"]), None);
             assert_eq!(EVAL_CTX.path_graphql(&["baz", "key"]), None);
+        }
+    }
+
+    mod value_string {
+        use std::borrow::Cow;
+
+        use async_graphql_value::ConstValue as Value;
+        use indexmap::indexmap;
+
+        use crate::core::path::ValueString;
+
+        #[test]
+        fn skip_null_with_borrowed_list() {
+            let list = Value::List(vec![
+                Value::Null,
+                Value::String("test".to_string()),
+                Value::Null,
+                Value::Number(42.into()),
+            ]);
+            let value = ValueString::Value(Cow::Borrowed(&list));
+            let result = value.skip_null();
+
+            match result {
+                Some(ValueString::Value(Cow::Owned(Value::List(filtered)))) => {
+                    assert_eq!(filtered.len(), 2);
+                    assert_eq!(filtered[0], Value::String("test".to_string()));
+                    assert_eq!(filtered[1], Value::Number(42.into()));
+                }
+                other => panic!("Expected filtered list with 2 items, got {:?}", other),
+            }
+        }
+
+        #[test]
+        fn skip_null_with_owned_list() {
+            let list = vec![Value::Null, Value::String("test".to_string()), Value::Null];
+            let value = ValueString::Value(Cow::Owned(Value::List(list)));
+
+            let result = value.skip_null();
+
+            match result {
+                Some(ValueString::Value(Cow::Owned(Value::List(filtered)))) => {
+                    assert_eq!(filtered.len(), 1);
+                    assert_eq!(filtered[0], Value::String("test".to_string()));
+                }
+                other => panic!("Expected filtered list with 1 item, got {:?}", other),
+            }
+        }
+
+        #[test]
+        fn skip_null_with_all_nulls() {
+            let list = vec![Value::Null, Value::Null];
+            let value = ValueString::Value(Cow::Owned(Value::List(list)));
+            let result = value.skip_null();
+            assert!(result.is_none());
+        }
+
+        #[test]
+        fn skip_null_with_empty_list() {
+            let list = vec![];
+            let value = ValueString::Value(Cow::Owned(Value::List(list)));
+
+            let result = value.skip_null();
+
+            assert!(result.is_none());
+        }
+
+        #[test]
+        fn skip_null_with_mixed_object() {
+            let map = indexmap! {
+                async_graphql_value::Name::new("a") => Value::Null,
+                async_graphql_value::Name::new("b") => Value::String("test".to_string()),
+                async_graphql_value::Name::new("c") => Value::Null,
+                async_graphql_value::Name::new("d") => Value::Number(42.into()),
+                async_graphql_value::Name::new("e") => Value::Null,
+                async_graphql_value::Name::new("f") => Value::List(vec![
+                    Value::Null,
+                    Value::String("test".to_string()),
+                    Value::Null,
+                    Value::Number(42.into()),
+                ]),
+            };
+
+            let value = ValueString::Value(Cow::Owned(Value::Object(map)));
+
+            let result = value.skip_null();
+            match result {
+                Some(ValueString::Value(Cow::Owned(Value::Object(filtered_map)))) => {
+                    assert_eq!(filtered_map.len(), 3); // Should only have b, d, and f entries
+
+                    assert_eq!(
+                        filtered_map.get("b"),
+                        Some(&Value::String("test".to_string()))
+                    );
+                    assert_eq!(filtered_map.get("d"), Some(&Value::Number(42.into())));
+
+                    // Check the nested list under 'f'
+                    match filtered_map.get("f") {
+                        Some(Value::List(filtered_list)) => {
+                            assert_eq!(filtered_list.len(), 2);
+                            assert_eq!(filtered_list[0], Value::String("test".to_string()));
+                            assert_eq!(filtered_list[1], Value::Number(42.into()));
+                        }
+                        _ => panic!("Expected filtered list under key 'f'"),
+                    }
+                }
+                other => panic!("Expected filtered object map, got {:?}", other),
+            }
         }
     }
 }

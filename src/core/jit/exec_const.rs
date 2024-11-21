@@ -140,6 +140,11 @@ impl<'ctx> IRExecutor for ConstValueExec<'ctx> {
     ) -> Result<Self::Output> {
         let field = ctx.field();
 
+        if field.use_batch_loader.unwrap_or(false) {
+            let response = self.call(ctx, ir).await;
+            return response;
+        }
+
         match ctx.value() {
             // TODO: check that field is expected list and it's a list of the required deepness
             Some(value) if value.as_array().is_some() => {

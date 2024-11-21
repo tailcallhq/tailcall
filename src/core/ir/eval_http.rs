@@ -6,6 +6,7 @@ use tailcall_valid::Validator;
 
 use super::model::DataLoaderId;
 use super::{EvalContext, ResolverContextLike};
+use crate::core::config::group_by::GroupBy;
 use crate::core::data_loader::{DataLoader, Loader};
 use crate::core::grpc::protobuf::ProtobufOperation;
 use crate::core::grpc::request::execute_grpc_request;
@@ -26,16 +27,30 @@ pub struct EvalHttp<'a, 'ctx, Context: ResolverContextLike + Sync> {
     evaluation_ctx: &'ctx EvalContext<'a, Context>,
     data_loader: Option<&'a DataLoader<DataLoaderRequest, HttpDataLoader>>,
     request_template: &'a http::RequestTemplate,
+    http_params: HttpParams<'a>,
+}
+
+pub struct HttpParams<'a> {
+    group_by: &'a Option<GroupBy>,
+    is_list: &'a bool,
+    dl_enabled: &'a bool,
+}
+
+impl<'a> HttpParams<'a> {
+    pub fn new(is_list: &'a bool, group_by: &'a Option<GroupBy>, dl_enabled: &'a bool) -> Self {
+        Self { group_by, is_list, dl_enabled }
+    }
 }
 
 impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> {
     pub fn new(
         evaluation_ctx: &'ctx EvalContext<'a, Context>,
         request_template: &'a RequestTemplate,
-        id: &Option<DataLoaderId>,
+        dl_id: &Option<DataLoaderId>,
+        http_params: HttpParams<'a>,
     ) -> Self {
         let data_loader = if evaluation_ctx.request_ctx.is_batching_enabled() {
-            id.and_then(|id| {
+            dl_id.and_then(|id| {
                 evaluation_ctx
                     .request_ctx
                     .http_data_loaders
@@ -45,7 +60,7 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
             None
         };
 
-        Self { evaluation_ctx, data_loader, request_template }
+        Self { evaluation_ctx, data_loader, request_template, http_params }
     }
 
     pub fn init_request(&self) -> Result<Request, Error> {
@@ -56,7 +71,14 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         let ctx = &self.evaluation_ctx;
         let is_get = req.method() == reqwest::Method::GET;
         let dl = &self.data_loader;
-        let response = if is_get && dl.is_some() {
+
+        let response = if *self.http_params.dl_enabled && self.http_params.group_by.is_some() {
+            let group_by = self.http_params.group_by.as_ref().unwrap();
+            ctx.request_ctx
+                .batch_loader
+                .load(group_by, self.http_params.is_list, req)
+                .await?
+        } else if is_get && dl.is_some() {
             execute_request_with_dl(ctx, req, self.data_loader).await?
         } else {
             execute_raw_request(ctx, req).await?

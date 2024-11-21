@@ -10,7 +10,7 @@ use http::header::{HeaderMap, HeaderName, HeaderValue};
 use crate::core::app_context::AppContext;
 use crate::core::auth::context::AuthContext;
 use crate::core::blueprint::{Server, Upstream};
-use crate::core::data_loader::{DataLoader, DedupeResult};
+use crate::core::data_loader::{DataLoader, DedupeResult, HttpMerge};
 use crate::core::graphql::GraphqlDataLoader;
 use crate::core::grpc::data_loader::GrpcDataLoader;
 use crate::core::http::{DataLoaderRequest, HttpDataLoader};
@@ -30,6 +30,7 @@ pub struct RequestContext {
     pub allowed_headers: HeaderMap,
     pub auth_ctx: AuthContext,
     pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
+    pub batch_loader: Arc<HttpMerge>,
     pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
     pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
     pub min_max_age: Arc<Mutex<Option<i32>>>,
@@ -49,6 +50,7 @@ impl RequestContext {
             http_data_loaders: Arc::new(vec![]),
             gql_data_loaders: Arc::new(vec![]),
             grpc_data_loaders: Arc::new(vec![]),
+            batch_loader: Arc::new(HttpMerge::new(target_runtime.clone())),
             min_max_age: Arc::new(Mutex::new(None)),
             cache_public: Arc::new(Mutex::new(None)),
             runtime: target_runtime,
@@ -205,6 +207,7 @@ impl From<&AppContext> for RequestContext {
             runtime: app_ctx.runtime.clone(),
             cache: DedupeResult::new(true),
             dedupe_handler: app_ctx.dedupe_handler.clone(),
+            batch_loader: app_ctx.batch_loader.clone(),
         }
     }
 }

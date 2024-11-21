@@ -2,7 +2,7 @@ use async_graphql_value::ConstValue;
 
 use super::eval_http::{
     execute_grpc_request_with_dl, execute_raw_grpc_request, execute_raw_request,
-    execute_request_with_dl, parse_graphql_response, set_headers, EvalHttp,
+    execute_request_with_dl, parse_graphql_response, set_headers, EvalHttp, HttpParams,
 };
 use super::model::{CacheKey, IO};
 use super::{EvalContext, ResolverContextLike};
@@ -45,9 +45,22 @@ where
     Ctx: ResolverContextLike + Sync,
 {
     match io {
-        IO::Http { req_template, dl_id, http_filter, .. } => {
+        IO::Http {
+            req_template,
+            dl_id,
+            http_filter,
+            group_by,
+            is_list,
+            dl_enabled,
+            ..
+        } => {
             let worker = &ctx.request_ctx.runtime.cmd_worker;
-            let eval_http = EvalHttp::new(ctx, req_template, dl_id);
+            let eval_http = EvalHttp::new(
+                ctx,
+                req_template,
+                dl_id,
+                HttpParams::new(is_list, group_by, dl_enabled),
+            );
             let request = eval_http.init_request()?;
             let response = match (&worker, http_filter) {
                 (Some(worker), Some(http_filter)) => {

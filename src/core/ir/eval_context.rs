@@ -8,6 +8,7 @@ use http::header::HeaderMap;
 use super::{GraphQLOperationContext, RelatedFields, ResolverContextLike, SelectionField};
 use crate::core::document::print_directives;
 use crate::core::http::RequestContext;
+use crate::core::json::JsonLike;
 
 // TODO: rename to ResolverContext
 #[derive(Clone)]
@@ -76,6 +77,38 @@ impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
             get_path_value(value.as_ref(), path).map(|a| Cow::Owned(a.clone()))
         } else {
             get_path_value(self.graphql_ctx.value()?, path).map(Cow::Borrowed)
+        }
+    }
+
+    pub fn path_value_list<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'a, Value>> {
+        let value = if let Some(value) = self.graphql_ctx_value.as_ref() {
+            value
+        } else {
+            self.graphql_ctx.value()?
+        };
+
+        if let Some(arr) = value.as_array() {
+            let mut indexed_path = Vec::with_capacity(path.len() + 1);
+            indexed_path.push("0".into()); // added dummy value to occupy the space and later replaced with actual value.
+            indexed_path.extend(path.iter().map(|p| p.as_ref().to_owned()));
+
+            let values: Vec<Value> = arr
+                .iter()
+                .enumerate()
+                .filter_map(|(idx, _)| {
+                    indexed_path[0] = idx.to_string();
+                    self.path_value(&indexed_path)
+                        .map(|v| match v {
+                            Cow::Borrowed(v) => v.clone(),
+                            Cow::Owned(v) => v,
+                        })
+                        .or(Some(Default::default()))
+                })
+                .collect();
+
+            Some(Cow::Owned(Value::List(values)))
+        } else {
+            self.path_value(path)
         }
     }
 
