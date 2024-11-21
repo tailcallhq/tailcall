@@ -33,9 +33,17 @@ impl<A> Transform for AuthPlaner<A> {
     }
 }
 
+/// Used to recursively update the field ands its selections to remove
+/// IR::Protected
 fn extract_ir_protect<A>(before: &mut Vec<IR>, mut field: Field<A>) -> Field<A> {
     if let Some(ir) = field.ir {
         let (new_ir, is_protected) = detect_and_remove_ir_protect(ir);
+
+        field.selection = field
+            .selection
+            .into_iter()
+            .map(|selection_field| extract_ir_protect(before, selection_field))
+            .collect();
 
         if is_protected {
             before.push(IR::Protect(Box::new(IR::ContextPath(vec![
@@ -48,7 +56,9 @@ fn extract_ir_protect<A>(before: &mut Vec<IR>, mut field: Field<A>) -> Field<A> 
     field
 }
 
-/// Used to modify an IR pipe chain and remove IR::Protect from the chain
+/// This function modifies an IR pipe chain by detecting and removing any
+/// instances of IR::Protect from the chain. Returns `true` when it modifies the
+/// IR.
 pub fn detect_and_remove_ir_protect(ir: IR) -> (IR, bool) {
     match ir {
         IR::Dynamic(dynamic_value) => (IR::Dynamic(dynamic_value), false),

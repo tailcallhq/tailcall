@@ -48,8 +48,6 @@ pub enum Error {
     ParseError(#[from] async_graphql::parser::Error),
     #[error(transparent)]
     IR(#[from] crate::core::ir::Error),
-    #[error("Authentication Failure: {0}")]
-    Authentication(#[from] crate::core::auth::error::Error),
     #[error(transparent)]
     Validation(#[from] ValidationError),
     #[error("{0}")]
@@ -64,7 +62,6 @@ impl ErrorExtensions for Error {
             Error::BuildError(error) => error.extend(),
             Error::ParseError(error) => error.extend(),
             Error::IR(error) => error.extend(),
-            Error::Authentication(error) => error.extend(),
             Error::Validation(error) => error.extend(),
             Error::ServerError(error) => error.extend(),
             Error::Unknown => super::graphql_error::Error::new(self.to_string()),
