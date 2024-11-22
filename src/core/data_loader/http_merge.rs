@@ -45,28 +45,45 @@ impl HttpMerge {
         is_list: &bool,
         request: Request,
     ) -> async_graphql::Result<Response<ConstValue>, anyhow::Error> {
-        let query_pairs = request
-            .url()
-            .query_pairs()
-            .filter(|(k, _)| group_by.key().eq(&k.to_string()))
-            .map(|(_, v)| (v.to_string()))
-            .collect::<Vec<_>>();
-        let request = RequestWrapper::from(request).request();
-        let (response_map, response) = self.execute(group_by, is_list, request).await?;
+        if request.method() == reqwest::Method::GET {
+            let query_pairs = request
+                .url()
+                .query_pairs()
+                .filter(|(k, _)| group_by.key().eq(&k.to_string()))
+                .map(|(_, v)| (v.to_string()))
+                .collect::<Vec<_>>();
+            let request = RequestWrapper::from(request).request();
+            let (response_map, response) = self.execute(group_by, is_list, request).await?;
 
-        let mut final_result: Vec<ConstValue> = vec![];
-        for v in query_pairs {
-            if let Some(res) = response_map.get(&v) {
-                final_result.push(res.body.clone());
+            let mut final_result: Vec<ConstValue> = vec![];
+            for v in query_pairs {
+                if let Some(res) = response_map.get(&v) {
+                    final_result.push(res.body.clone());
+                }
             }
-        }
 
-        let merged_response = if final_result.len() > 1 {
-            ConstValue::List(final_result)
+            let merged_response = if final_result.len() > 1 {
+                ConstValue::List(final_result)
+            } else {
+                final_result.remove(0)
+            };
+            Ok(response.body(merged_response))
         } else {
-            final_result.remove(0)
-        };
-        Ok(response.body(merged_response))
+            let (map, response) = self.execute(group_by, is_list, request).await?;
+            println!("[Finder]: map = {:#?} ", map);
+        
+            let mut merged_response = map.into_values().map(|res| res.body).collect::<Vec<_>>();
+            let v = match merged_response.len() {
+                0 => Ok(response),
+                1 => Ok(response.body(merged_response.remove(0))),
+                2.. => Ok(response.body(ConstValue::List(merged_response)))
+            };
+
+            println!("[Finder]: group_by = {:#?} and is_list: {:#?}", group_by, is_list);
+            println!("[Finder]: v = {:#?}", v);
+
+            v
+        }
     }
 
     async fn execute(
@@ -98,7 +115,8 @@ impl HttpMerge {
             .to_json::<ConstValue>()?;
 
         let response_map = response.body.group_by(&group_by.path());
-        let mut map = HashMap::new();
+        let mut map = HashMap::with_capacity(query_set.len());
+        println!("[Finder]: map = {:#?} ", response_map);
         for id in query_set {
             let body = (body)(&response_map, &id);
             let res = response.clone().body(body);

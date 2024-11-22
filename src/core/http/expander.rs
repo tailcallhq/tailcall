@@ -1,107 +1,101 @@
 use serde_json::Value;
 
-struct Context<'a> {
-    value: &'a Value,
-}
+pub struct Expand;
 
-impl<'a> Context<'a> {
-    pub fn new(value: &'a Value) -> Self {
-        Self { value }
-    }
-
-    pub fn len(&self) -> usize {
-        match self.value {
-            Value::Array(list) => list.len(),
-            _ => 0,
-        }
-    }
-}
-
-struct Expand<'a> {
-    context: &'a Context<'a>,
-}
-
-impl<'a> Expand<'a> {
-    pub fn new(context: &'a Context) -> Self {
-        Self { context }
-    }
-
-    // whenever we find the list, we expand the list to match the context length.
-    pub fn expand(&self, value: &mut Value) {
+impl Expand {
+    // Takes ownership of the request body and returns the expanded Value.
+    pub fn expand(value: Value, batch_size: usize) -> Value {
         match value {
             Value::Object(map) => {
-                map.values_mut().for_each(|v| self.expand(v));
+                let expanded_map = map
+                    .into_iter()
+                    .map(|(k, v)| (k, Self::expand(v, batch_size)))
+                    .collect();
+                Value::Object(expanded_map)
             }
             Value::Array(list) => {
-                let length = self.context.len();
-                let mut final_ans = Vec::with_capacity(length);
-                for _ in 0..length {
-                    final_ans.extend(list.clone());
+                let expanded_list: Vec<Value> = list
+                    .into_iter()
+                    .map(|v| Self::expand(v, batch_size))
+                    .collect();
+
+                let mut final_ans = Vec::with_capacity(expanded_list.len());
+
+                for index in 0..batch_size {
+                    let expanded_batch: Vec<Value> = expanded_list
+                        .iter()
+                        .cloned()
+                        .map(|v| Self::update_mustache_expr(v, index))
+                        .collect();
+                    final_ans.extend(expanded_batch);
                 }
-                *list = final_ans
+                Value::Array(final_ans)
             }
-            _ => {} // do nothing in other variants.
+            other => other, // Return as is for other variants.
+        }
+    }
+
+    fn update_mustache_expr(value: Value, index: usize) -> Value {
+        match value {
+            Value::Object(map) => {
+                let updated_map = map
+                    .into_iter()
+                    .map(|(k, v)| (k, Self::update_mustache_expr(v, index)))
+                    .collect();
+                Value::Object(updated_map)
+            }
+            Value::Array(list) => {
+                let updated_list = list
+                    .into_iter()
+                    .map(|v| Self::update_mustache_expr(v, index))
+                    .collect();
+                Value::Array(updated_list)
+            }
+            Value::String(s) => {
+                if s.contains("{{.value.") || s.contains("{{value.") {
+                    let updated_string = s
+                        .replace("{{.value.", &format!("{{{{.value.{}.", index))
+                        .replace("{{value.", &format!("{{{{value.{}.", index));
+                    Value::String(updated_string)
+                } else {
+                    Value::String(s)
+                }
+            }
+            other => other, // Return as is for other variants.
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::core::Mustache;
+
     use super::*;
     use serde_json::json;
 
     #[test]
-    fn main() {
-        // Option 1:
-        let values = Value::Array(vec![
-            "1".into(),
-            "2".into(),
-            "3".into(),
-            "4".into(),
-            "5".into(),
-        ]);
-
+    fn test_expander() {
         // Test Option 1
-        let mut input1 = json!({
+        let input1 = json!({
             "a": { "b": { "c": { "d": ["{{.value.userId}}"] } } }
         });
-        let ctx = Context::new(&values);
-        Expand::new(&ctx).expand(&mut input1);
-        println!("[Finder]: expanded: {:#?}", input1);
-        println!("[Finder]: context: {:#?}", values);
 
-        // Option 2:
-        let values = Value::Array(vec![
-            json!({
-                "id": 1,
-                "name": "John Doe",
-                "email": "john@doe.com"
-            }),
-            json!({
-                "id": 2,
-                "name": "Jane Doe",
-                "email": "jane@doe.com"
-            }),
-        ]);
-        let mut input1 = json!([{ "userId": "{{.value.id}}", "title": "{{.value.name}}","content": "Hello World" }]);
-        let ctx = Context::new(&values);
-        Expand::new(&ctx).expand(&mut input1);
-        println!("[Finder]: expanded: {:#?}", input1);
-        println!("[Finder]: context: {:#?}", values);
+        let expanded1 = Expand::expand(input1, 2);
+        println!("expanded: {:#?}", Mustache::parse(&expanded1.to_string()));
+
+        let input2 = json!([{ "userId": "{{.value.id}}", "title": "{{.value.name}}","content": "Hello World" }]);
+        let expanded2 = Expand::expand(input2, 2);
+        println!("expanded: {:#?}", Mustache::parse(&expanded2.to_string()));
 
         // Option 3:
-        let mut input1 = json!([{ "metadata": "xyz", "items": "{{.value.userId}}" }]);
-        let ctx = Context::new(&values);
-        Expand::new(&ctx).expand(&mut input1);
-        println!("[Finder]: expanded: {:#?}", input1);
-        println!("[Finder]: context: {:#?}", values);
+        let input3 = json!([{ "metadata": "xyz", "items": "{{.value.userId}}" }]);
+        let expanded3 = Expand::expand(input3, 2);
+        println!("expanded: {:#?}", Mustache::parse(&expanded3.to_string()));
 
         // Option 4:
-        let mut input1 =
+        let input4 =
             json!({ "metadata": "xyz", "items": [{"key": "id", "value": "{{.value.userId}}" }]} );
-        let ctx = Context::new(&values);
-        Expand::new(&ctx).expand(&mut input1);
-        println!("[Finder]: expanded: {:#?}", input1);
-        println!("[Finder]: context: {:#?}", values);
+        let expanded4 = Expand::expand(input4, 2);
+        println!("expanded: {:#?}", Mustache::parse(&expanded4.to_string()));
     }
 }

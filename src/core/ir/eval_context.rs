@@ -80,6 +80,14 @@ impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
         }
     }
 
+    pub fn value_length(&self) -> usize {
+        if let Some(Some(arr)) = self.value().map(|v| v.as_array()) {
+            arr.len()
+        } else {
+            0
+        }
+    }
+
     pub fn path_value_list<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'a, Value>> {
         let value = if let Some(value) = self.graphql_ctx_value.as_ref() {
             value
@@ -88,25 +96,29 @@ impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
         };
 
         if let Some(arr) = value.as_array() {
-            let mut indexed_path = Vec::with_capacity(path.len() + 1);
-            indexed_path.push("0".into()); // added dummy value to occupy the space and later replaced with actual value.
-            indexed_path.extend(path.iter().map(|p| p.as_ref().to_owned()));
+            if let Some(_) = path.get(0).and_then(|v| v.as_ref().parse::<usize>().ok()) {
+                self.path_value(path)
+            } else {
+                let mut indexed_path = Vec::with_capacity(path.len() + 1);
+                indexed_path.push("0".into()); // added dummy value to occupy the space and later replaced with actual value.
+                indexed_path.extend(path.iter().map(|p| p.as_ref().to_owned()));
 
-            let values: Vec<Value> = arr
-                .iter()
-                .enumerate()
-                .filter_map(|(idx, _)| {
-                    indexed_path[0] = idx.to_string();
-                    self.path_value(&indexed_path)
-                        .map(|v| match v {
-                            Cow::Borrowed(v) => v.clone(),
-                            Cow::Owned(v) => v,
-                        })
-                        .or(Some(Default::default()))
-                })
-                .collect();
+                let values: Vec<Value> = arr
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(idx, _)| {
+                        indexed_path[0] = idx.to_string();
+                        self.path_value(&indexed_path)
+                            .map(|v| match v {
+                                Cow::Borrowed(v) => v.clone(),
+                                Cow::Owned(v) => v,
+                            })
+                            .or(Some(Default::default()))
+                    })
+                    .collect();
 
-            Some(Cow::Owned(Value::List(values)))
+                Some(Cow::Owned(Value::List(values)))
+            }
         } else {
             self.path_value(path)
         }
