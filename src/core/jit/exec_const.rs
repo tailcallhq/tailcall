@@ -49,12 +49,14 @@ impl ConstValueExecutor {
             match ir.eval(&mut eval_context).await {
                 Ok(result) => _results.push(result),
                 Err(err) => {
-                    return Response::default()
+                    let resp: Response<ConstValue> = Response::default();
+                    return resp
                         .with_errors(vec![Positioned::new(err.into(), Pos::default())])
+                        .into(); // Ensure the return type matches AnyResponse<Vec<u8>>
                 }
             }
         }
-      
+
         let is_introspection_query =
             req_ctx.server.get_enable_introspection() && self.plan.is_introspection_query;
         let variables = &request.variables;
