@@ -9,6 +9,8 @@ use crate::core::Mustache;
 
 const PREFIXES: [&str; 5] = ["value", "headers", "vars", "env", "args"];
 
+/// `Expander` processes `DynamicValue<A>` to expand list types based on `batch_size`,
+/// incorporating list indices into mustache expressions.
 pub struct Expander<A>(PhantomData<A>);
 
 impl Expander<serde_json::Value> {
