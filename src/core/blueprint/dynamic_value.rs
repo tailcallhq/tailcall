@@ -2,7 +2,7 @@ use async_graphql_value::{ConstValue, Name};
 use indexmap::IndexMap;
 use serde_json::Value;
 
-use crate::core::mustache::Mustache;
+use crate::core::{mustache::Mustache, path::PathString};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum DynamicValue<A> {
@@ -42,6 +42,37 @@ impl<A> DynamicValue<A> {
             DynamicValue::Array(vec) => {
                 let vec = vec.into_iter().map(|val| val.prepend(name)).collect();
                 DynamicValue::Array(vec)
+            }
+        }
+    }
+}
+
+impl DynamicValue<serde_json::Value> {
+    /// This function is used to inject a value into a Mustache expression.
+    pub fn render<P>(&self, ctx: &P) -> anyhow::Result<String>
+    where
+        P: PathString,
+    {
+        match self {
+            DynamicValue::Value(value) => {
+                let str_value = serde_json::to_string(value).unwrap();
+                let template = Mustache::parse(&str_value);
+                Ok(template.render(ctx))
+            }
+            DynamicValue::Mustache(mustache) => Ok(mustache.render(ctx)),
+            DynamicValue::Object(obj) => {
+                let mut out = IndexMap::new();
+                for (k, v) in obj {
+                    out.insert(k.clone(), v.render(ctx)?);
+                }
+                serde_json::to_string(&out).map_err(|e| anyhow::anyhow!(e))
+            }
+            DynamicValue::Array(arr) => {
+                let out = arr
+                    .iter()
+                    .map(|v| v.render(ctx))
+                    .collect::<anyhow::Result<Vec<_>>>()?;
+                serde_json::to_string(&out).map_err(|e| anyhow::anyhow!(e))
             }
         }
     }

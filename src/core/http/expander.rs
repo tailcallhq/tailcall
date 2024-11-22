@@ -1,8 +1,8 @@
 use serde_json::Value;
 
-pub struct Expand;
+pub struct Expander;
 
-impl Expand {
+impl Expander {
     // Takes ownership of the request body and returns the expanded Value.
     pub fn expand(value: Value, batch_size: usize) -> Value {
         match value {
@@ -80,22 +80,22 @@ mod tests {
             "a": { "b": { "c": { "d": ["{{.value.userId}}"] } } }
         });
 
-        let expanded1 = Expand::expand(input1, 2);
+        let expanded1 = Expander::expand(input1, 2);
         println!("expanded: {:#?}", Mustache::parse(&expanded1.to_string()));
 
         let input2 = json!([{ "userId": "{{.value.id}}", "title": "{{.value.name}}","content": "Hello World" }]);
-        let expanded2 = Expand::expand(input2, 2);
+        let expanded2 = Expander::expand(input2, 2);
         println!("expanded: {:#?}", Mustache::parse(&expanded2.to_string()));
 
         // Option 3:
         let input3 = json!([{ "metadata": "xyz", "items": "{{.value.userId}}" }]);
-        let expanded3 = Expand::expand(input3, 2);
+        let expanded3 = Expander::expand(input3, 2);
         println!("expanded: {:#?}", Mustache::parse(&expanded3.to_string()));
 
         // Option 4:
         let input4 =
             json!({ "metadata": "xyz", "items": [{"key": "id", "value": "{{.value.userId}}" }]} );
-        let expanded4 = Expand::expand(input4, 2);
+        let expanded4 = Expander::expand(input4, 2);
         println!("expanded: {:#?}", Mustache::parse(&expanded4.to_string()));
     }
 }

@@ -7,11 +7,11 @@ use tailcall_hasher::TailcallHasher;
 use url::Url;
 
 use super::query_encoder::QueryEncoder;
+use crate::core::blueprint::DynamicValue;
 use crate::core::config::Encoding;
 use crate::core::endpoint::Endpoint;
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
-use crate::core::http::Expand;
 use crate::core::ir::model::{CacheKey, IoId};
 use crate::core::mustache::{Eval, Mustache, Segment};
 use crate::core::path::{PathString, PathValue, ValueString};
@@ -26,7 +26,7 @@ pub struct RequestTemplate {
     pub query: Vec<Query>,
     pub method: reqwest::Method,
     pub headers: MustacheHeaders,
-    pub body_path: Option<Mustache>,
+    pub body_path: Option<DynamicValue<serde_json::Value>>,
     pub endpoint: Endpoint,
     pub encoding: Encoding,
     pub query_encoder: QueryEncoder,
@@ -97,7 +97,7 @@ impl RequestTemplate {
     /// Returns true if there are not templates
     pub fn is_const(&self) -> bool {
         self.root_url.is_const()
-            && self.body_path.as_ref().map_or(true, Mustache::is_const)
+            && self.body_path.as_ref().map_or(true, |b| b.is_const())
             && self.query.iter().all(|query| query.value.is_const())
             && self.headers.iter().all(|(_, v)| v.is_const())
     }
@@ -142,22 +142,20 @@ impl RequestTemplate {
             match &self.encoding {
                 Encoding::ApplicationJson => {
                     let rendered_body = if batch_size > 0 {
-                        // takes care of very special case in TC.
-                        let value = Expand::expand(
-                            serde_json::from_str(&body_path.to_string())?,
-                            batch_size,
-                        );
-                        let template = Mustache::parse(&value.to_string());
-                        template.render(ctx)
+                        // TODO: this is very expensive operation, think about better way to do this.
+                        // 1. we convert the avail value into serde_json::Value and then expand it with expander
+                        // 2. then we convert it back to string and then to mustache template
+                        // 3. then we render it with context.
+                        body_path.render(ctx)?
                     } else {
-                        body_path.render(ctx)
+                        body_path.render(ctx)?
                     };
                     req.body_mut().replace(rendered_body.into());
                 }
                 Encoding::ApplicationXWwwFormUrlencoded => {
                     // TODO: this is a performance bottleneck
                     // We first encode everything to string and then back to form-urlencoded
-                    let body: String = body_path.render(ctx);
+                    let body: String = body_path.render(ctx)?;
                     let form_data = match serde_json::from_str::<serde_json::Value>(&body) {
                         Ok(deserialized_data) => serde_urlencoded::to_string(deserialized_data)?,
                         Err(_) => body,
@@ -220,7 +218,7 @@ impl RequestTemplate {
     }
 
     pub fn with_body(mut self, body: Mustache) -> Self {
-        self.body_path = Some(body);
+        self.body_path = Some(DynamicValue::Mustache(body));
         self
     }
 }
@@ -250,7 +248,7 @@ impl TryFrom<Endpoint> for RequestTemplate {
         let body = endpoint
             .body
             .as_ref()
-            .map(|body| Mustache::parse(&body.to_string()));
+            .map(|body| DynamicValue::Mustache(Mustache::parse(&body.to_string())));
         let encoding = endpoint.encoding.clone();
 
         Ok(Self {
@@ -284,7 +282,9 @@ impl<Ctx: PathString + HasHeaders + PathValue> CacheKey<Ctx> for RequestTemplate
         }
 
         if let Some(body) = self.body_path.as_ref() {
-            body.render(ctx).hash(state)
+            if let Ok(body) = body.render(ctx) {
+                body.hash(state);
+            }
         }
 
         let url = self.create_url(ctx).unwrap();
