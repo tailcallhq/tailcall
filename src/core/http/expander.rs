@@ -82,7 +82,6 @@ mod tests {
     use serde_json::json;
 
     use super::*;
-    use crate::core::Mustache;
 
     #[test]
     fn test_expander() {
@@ -91,22 +90,79 @@ mod tests {
             "a": { "b": { "c": { "d": ["{{.value.userId}}"] } } }
         });
 
-        let expanded1 = Expander::expand_inner(input1, 2);
-        println!("expanded: {:#?}", Mustache::parse(&expanded1.to_string()));
+        let actual = Expander::expand_inner(input1, 2);
+        let expected = json!({
+            "a": { "b": { "c": { "d": ["{{.value.0.userId}}", "{{.value.1.userId}}"] } } }
+        });
+        assert_eq!(actual, expected);
 
-        let input2 = json!([{ "userId": "{{.value.id}}", "title": "{{.value.name}}","content": "Hello World" }]);
-        let expanded2 = Expander::expand_inner(input2, 2);
-        println!("expanded: {:#?}", Mustache::parse(&expanded2.to_string()));
+        // Test Option 2
+        let input2 = json!([
+            { 
+                "userId": "{{.value.id}}", 
+                "title": "{{.value.name}}",
+                "content": "Hello World" 
+            }
+        ]);
+        let actual = Expander::expand_inner(input2, 2);
+        let expected = json!([
+            { 
+                "userId": "{{.value.0.id}}", 
+                "title": "{{.value.0.name}}",
+                "content": "Hello World" 
+            },
+            { 
+                "userId": "{{.value.1.id}}", 
+                "title": "{{.value.1.name}}",
+                "content": "Hello World" 
+            }
+        ]);
+        assert_eq!(actual, expected);
 
-        // Option 3:
-        let input3 = json!([{ "metadata": "xyz", "items": "{{.value.userId}}" }]);
-        let expanded3 = Expander::expand_inner(input3, 2);
-        println!("expanded: {:#?}", Mustache::parse(&expanded3.to_string()));
+        // Test Option 3
+        let input3 = json!([
+            { 
+                "metadata": "xyz", 
+                "items": "{{.value.userId}}" 
+            }
+        ]);
+        let actual = Expander::expand_inner(input3, 2);
+        let expected = json!([
+            { 
+                "metadata": "xyz", 
+                "items": "{{.value.0.userId}}" 
+            },
+            { 
+                "metadata": "xyz", 
+                "items": "{{.value.1.userId}}" 
+            }
+        ]);
+        assert_eq!(actual, expected);
 
-        // Option 4:
-        let input4 =
-            json!({ "metadata": "xyz", "items": [{"key": "id", "value": "{{.value.userId}}" }]} );
-        let expanded4 = Expander::expand_inner(input4, 2);
-        println!("expanded: {:#?}", Mustache::parse(&expanded4.to_string()));
+        // Test Option 4
+        let input4 = json!({ 
+            "metadata": "xyz", 
+            "items": [
+                { 
+                    "key": "id", 
+                    "value": "{{.value.userId}}" 
+                }
+            ] 
+        });
+        let actual = Expander::expand_inner(input4, 2);
+        let expected = json!({
+            "metadata": "xyz",
+            "items": [
+                { 
+                    "key": "id", 
+                    "value": "{{.value.0.userId}}" 
+                },
+                { 
+                    "key": "id", 
+                    "value": "{{.value.1.userId}}" 
+                }
+            ]
+        });
+        assert_eq!(actual, expected);
     }
 }
