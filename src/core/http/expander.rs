@@ -1,3 +1,4 @@
+use anyhow::Ok;
 use serde_json::Value;
 
 use crate::core::blueprint::DynamicValue;
@@ -10,9 +11,13 @@ impl Expander {
         dynamic_value: &DynamicValue<serde_json::Value>,
         batch_size: usize,
     ) -> anyhow::Result<DynamicValue<serde_json::Value>> {
-        let str_value = dynamic_value.to_string()?;
-        let value: serde_json::Value = serde_json::from_str(&str_value)?;
-        Ok(DynamicValue::Value(Self::expand_inner(value, batch_size)))
+        if batch_size > 0 {
+            let str_value = dynamic_value.to_string()?;
+            let value: serde_json::Value = serde_json::from_str(&str_value)?;
+            Ok(DynamicValue::Value(Self::expand_inner(value, batch_size)))
+        } else {
+            Ok(dynamic_value.to_owned())
+        }
     }
 
     fn expand_inner(value: Value, batch_size: usize) -> Value {
@@ -63,14 +68,18 @@ impl Expander {
                 Value::Array(updated_list)
             }
             Value::String(s) => {
-                if s.contains("{{.value.") || s.contains("{{value.") {
-                    let updated_string = s
-                        .replace("{{.value.", &format!("{{{{.value.{}.", index))
-                        .replace("{{value.", &format!("{{{{value.{}.", index));
-                    Value::String(updated_string)
-                } else {
-                    Value::String(s)
-                }
+                let updated_string = s
+                    .replace("{{.value.", &format!("{{{{.value.{}.", index))
+                    .replace("{{value.", &format!("{{{{value.{}.", index))
+                    .replace("{{.headers.", &format!("{{{{.headers.{}.", index))
+                    .replace("{{headers.", &format!("{{{{headers.{}.", index))
+                    .replace("{{.vars.", &format!("{{{{.vars.{}.", index))
+                    .replace("{{vars.", &format!("{{{{vars.{}.", index))
+                    .replace("{{.env.", &format!("{{{{.env.{}.", index))
+                    .replace("{{env.", &format!("{{{{env.{}.", index))
+                    .replace("{{.args.", &format!("{{{{.args.{}.", index))
+                    .replace("{{args.", &format!("{{{{args.{}.", index));
+                Value::String(updated_string)
             }
             other => other, // Return as is for other variants.
         }
@@ -84,85 +93,100 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_expander() {
-        // Test Option 1
-        let input1 = json!({
-            "a": { "b": { "c": { "d": ["{{.value.userId}}"] } } }
-        });
+    fn test_value_expander() {
+        let supported_ext = ["value", "headers", "vars", "env", "args"];
+        for ext in supported_ext {
+            // Test Option 1
+            let input1 = json!({
+                "a": { "b": { "c": { "d": [format!("{{{{.{}.userId}}}}", ext)] } } }
+            });
 
-        let actual = Expander::expand_inner(input1, 2);
-        let expected = json!({
-            "a": { "b": { "c": { "d": ["{{.value.0.userId}}", "{{.value.1.userId}}"] } } }
-        });
-        assert_eq!(actual, expected);
-
-        // Test Option 2
-        let input2 = json!([
-            { 
-                "userId": "{{.value.id}}", 
-                "title": "{{.value.name}}",
-                "content": "Hello World" 
-            }
-        ]);
-        let actual = Expander::expand_inner(input2, 2);
-        let expected = json!([
-            { 
-                "userId": "{{.value.0.id}}", 
-                "title": "{{.value.0.name}}",
-                "content": "Hello World" 
-            },
-            { 
-                "userId": "{{.value.1.id}}", 
-                "title": "{{.value.1.name}}",
-                "content": "Hello World" 
-            }
-        ]);
-        assert_eq!(actual, expected);
-
-        // Test Option 3
-        let input3 = json!([
-            { 
-                "metadata": "xyz", 
-                "items": "{{.value.userId}}" 
-            }
-        ]);
-        let actual = Expander::expand_inner(input3, 2);
-        let expected = json!([
-            { 
-                "metadata": "xyz", 
-                "items": "{{.value.0.userId}}" 
-            },
-            { 
-                "metadata": "xyz", 
-                "items": "{{.value.1.userId}}" 
-            }
-        ]);
-        assert_eq!(actual, expected);
-
-        // Test Option 4
-        let input4 = json!({ 
-            "metadata": "xyz", 
-            "items": [
-                { 
-                    "key": "id", 
-                    "value": "{{.value.userId}}" 
+            let actual = Expander::expand_inner(input1, 2);
+            let expected = json!({
+                "a": { 
+                    "b": { 
+                        "c": { 
+                            "d": [
+                                format!("{{{{.{}.0.userId}}}}", ext), 
+                                format!("{{{{.{}.1.userId}}}}", ext)
+                            ] 
+                        } 
+                    } 
                 }
-            ] 
-        });
-        let actual = Expander::expand_inner(input4, 2);
-        let expected = json!({
-            "metadata": "xyz",
-            "items": [
-                { 
-                    "key": "id", 
-                    "value": "{{.value.0.userId}}" 
+            });
+            assert_eq!(actual, expected);
+
+            // Test Option 2
+            let input2 = json!([
+                {
+                    "userId": format!("{{{{.{}.id}}}}", ext),
+                    "title": format!("{{{{.{}.name}}}}", ext),
+                    "content": "Hello World"
+                }
+            ]);
+
+            let actual = Expander::expand_inner(input2, 2);
+            let expected = json!([
+                {
+                    "userId": format!("{{{{.{}.0.id}}}}", ext),
+                    "title": format!("{{{{.{}.0.name}}}}", ext),
+                    "content": "Hello World"
                 },
-                { 
-                    "key": "id", 
-                    "value": "{{.value.1.userId}}" 
+                {
+                    "userId": format!("{{{{.{}.1.id}}}}", ext),
+                    "title": format!("{{{{.{}.1.name}}}}", ext),
+                    "content": "Hello World"
                 }
-            ]
-        });
-        assert_eq!(actual, expected);
+            ]);
+            assert_eq!(actual, expected);
+
+            // Test Option 3
+            let input3 = json!([
+                {
+                    "metadata": "xyz",
+                    "items": format!("{{{{.{}.userId}}}}", ext)
+                }
+            ]);
+
+            let actual = Expander::expand_inner(input3, 2);
+            let expected = json!([
+                {
+                    "metadata": "xyz",
+                    "items": format!("{{{{.{}.0.userId}}}}", ext)
+                },
+                {
+                    "metadata": "xyz",
+                    "items": format!("{{{{.{}.1.userId}}}}", ext)
+                }
+            ]);
+            assert_eq!(actual, expected);
+
+            // Test Option 4
+            let input4 = json!({
+                "metadata": "xyz",
+                "items": [
+                    {
+                        "key": "id",
+                        "value": format!("{{{{.{}.userId}}}}", ext)
+                    }
+                ]
+            });
+
+            let actual = Expander::expand_inner(input4, 2);
+            let expected = json!({
+                "metadata": "xyz",
+                "items": [
+                    {
+                        "key": "id",
+                        "value": format!("{{{{.{}.0.userId}}}}", ext)
+                    },
+                    {
+                        "key": "id",
+                        "value": format!("{{{{.{}.1.userId}}}}", ext)
+                    }
+                ]
+            });
+            assert_eq!(actual, expected);
+        }
     }
 }
