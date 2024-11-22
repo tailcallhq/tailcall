@@ -3,6 +3,7 @@ use clap::Parser;
 use dotenvy::dotenv;
 
 use super::helpers::TRACKER;
+use super::validate_rc::validate_rc_config_files;
 use super::{check, gen, init, start};
 use crate::cli::command::{Cli, Command};
 use crate::cli::{self, update_checker};
@@ -41,11 +42,13 @@ fn get_runtime_and_config_reader(verify_ssl: bool) -> (TargetRuntime, ConfigRead
 async fn run_command(cli: Cli) -> Result<()> {
     match cli.command {
         Command::Start { file_paths, verify_ssl } => {
-            let (_, config_reader) = get_runtime_and_config_reader(verify_ssl);
+            let (runtime, config_reader) = get_runtime_and_config_reader(verify_ssl);
+            validate_rc_config_files(runtime, &file_paths).await;
             start::start_command(file_paths, &config_reader).await?;
         }
         Command::Check { file_paths, n_plus_one_queries, schema, format, verify_ssl } => {
             let (runtime, config_reader) = get_runtime_and_config_reader(verify_ssl);
+            validate_rc_config_files(runtime.clone(), &file_paths).await;
             check::check_command(
                 check::CheckParams { file_paths, n_plus_one_queries, schema, format, runtime },
                 &config_reader,
