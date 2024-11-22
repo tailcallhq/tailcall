@@ -1,0 +1,19 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "c_and_a": "data",
+      "a_or_b": "data",
+      "b_or_c": "data",
+      "c_or_a": "data",
+      "default": "data"
+    }
+  }
+}

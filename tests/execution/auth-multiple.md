@@ -217,6 +217,7 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
       query {
         c_or_a
       }
+
 # TEST: 18 [a,c]
 - method: POST
   url: http://localhost:8080/graphql
@@ -245,6 +246,49 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
   body:
     query: |
       query {
+        default
+      }
+
+# TEST: 21 [a,c]
+- method: POST
+  url: http://localhost:8080/graphql
+  headers:
+    Authorization: Basic dGVzdHVzZXIxOnBhc3N3b3JkMTIz # testuser1:password123
+  body:
+    query: |
+      query {
+        c_and_a
+        a_or_b
+        b_or_c
+        c_or_a
+        default
+      }
+# TEST: 22 [a,b]
+- method: POST
+  url: http://localhost:8080/graphql
+  headers:
+    Authorization: Basic dGVzdHVzZXIyOm15cGFzc3dvcmQ= # testuser2:mypassword
+  body:
+    query: |
+      query {
+        a_and_b
+        a_or_b
+        b_or_c
+        c_or_a
+        default
+      }
+# TEST: 23 [b,c]
+- method: POST
+  url: http://localhost:8080/graphql
+  headers:
+    Authorization: Basic dGVzdHVzZXIzOmFiYzEyMw== # testuser3:abc123
+  body:
+    query: |
+      query {
+        b_and_c
+        a_or_b
+        b_or_c
+        c_or_a
         default
       }
 ```
