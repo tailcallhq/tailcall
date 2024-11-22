@@ -62,7 +62,7 @@ type Query {
 ```
 
 ```yml @test
-# Should fail - object in query param
+# Should fail - object in query param (criteria)
 - method: POST
   url: http://localhost:8080/graphql
   body:
@@ -75,7 +75,7 @@ type Query {
       }
   expectedError: "Invalid query parameter type for 'nested'. Expected a Scalar but received an Object."
 
-# Should succeed - scalar in query param  
+# Should succeed - scalar in query param (status) 
 - method: POST
   url: http://localhost:8080/graphql
   body:
