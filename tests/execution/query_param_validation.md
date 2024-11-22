@@ -1,4 +1,5 @@
 # Query Parameter Validation Test
+# Query Parameter Validation Test
 
 ```graphql @config
 schema @server {
@@ -28,18 +29,14 @@ type Query {
   findEmployees(criteria: Nested): [Employee!]!
     @http(
       url: "http://localhost:8081/employees"
-      query: [
-        { key: "nested", value: "{{.args.criteria}}" }
-      ]
+      query: [{ key: "nested", value: "{{.args.criteria}}" }]
     )
-  
+
   # This should pass validation since we're using a scalar field
   findEmployeesByStatus(status: MaritalStatus): [Employee!]!
     @http(
       url: "http://localhost:8081/employees"
-      query: [
-        { key: "status", value: "{{.args.status}}" }
-      ]
+      query: [{ key: "status", value: "{{.args.status}}" }]
     )
 }
 ```
@@ -75,7 +72,7 @@ type Query {
       }
   expectedError: "Invalid query parameter type for 'nested'. Expected a Scalar but received an Object."
 
-# Should succeed - scalar in query param (status) 
+# Should succeed - scalar in query param (status)
 - method: POST
   url: http://localhost:8080/graphql
   body:
