@@ -56,7 +56,7 @@ impl DynamicValue<serde_json::Value> {
             DynamicValue::Object(obj) => {
                 let mut out = IndexMap::new();
                 for (k, v) in obj {
-                    out.insert(k.clone(), v.to_string()?);
+                    out.insert(k, v.to_string()?);
                 }
                 serde_json::to_string(&out).map_err(|e| anyhow::anyhow!(e))
             }
@@ -77,7 +77,7 @@ impl DynamicValue<serde_json::Value> {
             DynamicValue::Object(obj) => {
                 let mut out = IndexMap::new();
                 for (k, v) in obj {
-                    out.insert(k.clone(), v.to_string()?);
+                    out.insert(k, v.to_string()?);
                 }
                 let str_value = serde_json::to_string(&out).map_err(|e| anyhow::anyhow!(e))?;
                 Ok(Mustache::parse(&str_value))
