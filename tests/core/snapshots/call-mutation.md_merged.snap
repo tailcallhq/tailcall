@@ -25,7 +25,7 @@ type Mutation {
   attachPostToUser(userId: Int!, postId: Int!): User
     @http(
       url: "http://jsonplaceholder.typicode.com/users/{{.args.userId}}"
-      body: "{\"postId\":{{.args.postId}}}"
+      body: {postId: "{{.args.postId}}"}
       method: "PATCH"
     )
   insertMockedPost: Post

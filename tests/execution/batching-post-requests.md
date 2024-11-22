@@ -123,6 +123,7 @@ type Post {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/foo
+  expectedHits: 2
   response:
     status: 200
     body:

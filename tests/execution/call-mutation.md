@@ -23,7 +23,7 @@ type Mutation {
     @call(steps: [{mutation: "attachPostToUser", args: {postId: "{{.args.postId}}", userId: 1}}])
   attachPostToUser(userId: Int!, postId: Int!): User
     @http(
-      body: "{\"postId\":{{.args.postId}}}"
+      body: {postId: "{{.args.postId}}"}
       method: "PATCH"
       url: "http://jsonplaceholder.typicode.com/users/{{.args.userId}}"
     )
@@ -83,7 +83,7 @@ type User {
 - request:
     method: PATCH
     url: http://jsonplaceholder.typicode.com/users/1
-    body: {"postId": 1}
+    body: {"postId": "1"}
   response:
     status: 200
     body:
