@@ -12,7 +12,12 @@ type Query {
 type PostData {
   id: Int!
   meta: String @expr(body: "Data owned by tailcall.")
-  post: Post @http(url: "http://jsonplaceholder.typicode.com/nested-posts", query: [{key: "id", value: "{{.value.id}}"}], batchKey: ["id"])
+  post: Post
+    @http(
+      url: "http://jsonplaceholder.typicode.com/nested-posts"
+      query: [{key: "id", value: "{{.value.id}}"}]
+      batchKey: ["id"]
+    )
 }
 
 type Post {
