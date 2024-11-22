@@ -65,7 +65,9 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
 
     pub fn init_request(&self) -> Result<Request, Error> {
         let value_length = self.evaluation_ctx.value_length();
-        Ok(self.request_template.to_request(self.evaluation_ctx,value_length)?)
+        Ok(self
+            .request_template
+            .to_request(self.evaluation_ctx, value_length)?)
     }
 
     pub async fn execute(&self, req: Request) -> Result<Response<async_graphql::Value>, Error> {

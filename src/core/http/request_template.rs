@@ -142,8 +142,10 @@ impl RequestTemplate {
             match &self.encoding {
                 Encoding::ApplicationJson => {
                     let rendered_body = if batch_size > 0 {
-                        // TODO: this is very expensive operation, think about better way to do this.
-                        // 1. we convert the avail value into serde_json::Value and then expand it with expander
+                        // TODO: this is very expensive operation, think about better way to do
+                        // this.
+                        // 1. we convert the avail value into serde_json::Value and then expand it
+                        //    with expander
                         // 2. then we convert it back to string and then to mustache template
                         // 3. then we render it with context.
                         body_path.render(ctx)?
@@ -346,29 +348,28 @@ impl<'a, A: PathValue> Eval<'a> for TestEval<A> {
 
         if v.is_empty() {
             None
+        } else if v.len() == 1 {
+            // make it compile time safe.
+            Some(v[0].clone())
         } else {
-            if v.len() == 1 {
-                // make it compile time safe.
-                Some(v[0].clone())
-            } else {
-                Some(ValueString::Value(Cow::Owned(
-                    async_graphql_value::ConstValue::List(
-                        v.into_iter()
-                            .map(|a| match a {
-                                ValueString::Value(v) => v.into_owned(),
-                                ValueString::String(s) => {
-                                    async_graphql_value::ConstValue::String(s.to_string())
-                                }
-                            })
-                            .collect(),
-                    ),
-                )))
-            }
+            Some(ValueString::Value(Cow::Owned(
+                async_graphql_value::ConstValue::List(
+                    v.into_iter()
+                        .map(|a| match a {
+                            ValueString::Value(v) => v.into_owned(),
+                            ValueString::String(s) => {
+                                async_graphql_value::ConstValue::String(s.to_string())
+                            }
+                        })
+                        .collect(),
+                ),
+            )))
         }
     }
 }
 
-// adds expression indexes in path to retrive the appropriate value from context.
+// adds expression indexes in path to retrive the appropriate value from
+// context.
 struct ListMustacheEval<A>(std::marker::PhantomData<A>);
 impl<A> Default for ListMustacheEval<A> {
     fn default() -> Self {
@@ -387,7 +388,7 @@ impl<A: PathString> Eval<'_> for ListMustacheEval<A> {
                 Segment::Literal(text) => text.clone(),
                 Segment::Expression(parts) => {
                     let value = in_value
-                        .path_string(&parts)
+                        .path_string(parts)
                         .map(|a| a.to_string())
                         .unwrap_or_default();
                     value
@@ -422,8 +423,8 @@ impl<A: PathString> Eval<'_> for ListMustacheEval<A> {
 
 //     impl Default for Context {
 //         fn default() -> Self {
-//             Self { value: serde_json::Value::Null, headers: HeaderMap::new() }
-//         }
+//             Self { value: serde_json::Value::Null, headers: HeaderMap::new()
+// }         }
 //     }
 
 //     impl PathValue for Context {
@@ -440,8 +441,8 @@ impl<A: PathString> Eval<'_> for ListMustacheEval<A> {
 //     }
 
 //     impl crate::core::path::PathString for Context {
-//         fn path_string<'a, T: AsRef<str>>(&'a self, parts: &'a [T]) -> Option<Cow<'a, str>> {
-//             self.value.path_string(parts)
+//         fn path_string<'a, T: AsRef<str>>(&'a self, parts: &'a [T]) ->
+// Option<Cow<'a, str>> {             self.value.path_string(parts)
 //         }
 //     }
 
@@ -683,7 +684,8 @@ impl<A: PathString> Eval<'_> for ListMustacheEval<A> {
 //         let tmpl = RequestTemplate::new("http://localhost:3000")
 //             .unwrap()
 //             .method(reqwest::Method::POST)
-//             .encoding(crate::core::config::Encoding::ApplicationXWwwFormUrlencoded);
+//             
+// .encoding(crate::core::config::Encoding::ApplicationXWwwFormUrlencoded);
 //         let ctx = Context::default();
 //         let req = tmpl.to_request(&ctx).unwrap();
 //         assert_eq!(
@@ -775,8 +777,8 @@ impl<A: PathString> Eval<'_> for ListMustacheEval<A> {
 //                 "http://localhost:3000/{{foo.bar}}".to_string(),
 //             )
 //             .method(crate::core::http::Method::POST)
-//             .query(vec![("foo".to_string(), "{{foo.bar}}".to_string(), false)])
-//             .headers(headers)
+//             .query(vec![("foo".to_string(), "{{foo.bar}}".to_string(),
+// false)])             .headers(headers)
 //             .body(Some("{{foo.bar}}".into()));
 //             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
 //             let ctx = Context::default().value(json!({
@@ -887,8 +889,8 @@ impl<A: PathString> Eval<'_> for ListMustacheEval<A> {
 //             let tmpl = RequestTemplate::form_encoded_url("http://localhost:3000")
 //                 .unwrap()
 //                 .body_path(Some(Mustache::parse("{{foo.bar}}")));
-//             let ctx = Context::default().value(json!({"foo": {"bar": "baz"}}));
-//             let request_body = tmpl.to_body(&ctx);
+//             let ctx = Context::default().value(json!({"foo": {"bar":
+// "baz"}}));             let request_body = tmpl.to_body(&ctx);
 //             let body = request_body.unwrap();
 //             assert_eq!(body, "baz");
 //         }
@@ -908,8 +910,8 @@ impl<A: PathString> Eval<'_> for ListMustacheEval<A> {
 //             let tmpl = RequestTemplate::form_encoded_url("http://localhost:3000")
 //                 .unwrap()
 //                 .body_path(Some(Mustache::parse("{{foo}}")));
-//             let ctx = Context::default().value(json!({"foo": {"bar": "baz"}}));
-//             let body = tmpl.to_body(&ctx).unwrap();
+//             let ctx = Context::default().value(json!({"foo": {"bar":
+// "baz"}}));             let body = tmpl.to_body(&ctx).unwrap();
 //             assert_eq!(body, "bar=baz");
 //         }
 
@@ -919,10 +921,11 @@ impl<A: PathString> Eval<'_> for ListMustacheEval<A> {
 //                 .unwrap()
 //                 .body_path(Some(Mustache::parse("{{a}}")));
 //             let ctx = Context::default()
-//                 .value(json!({"a": {"special chars": "a !@#$%^&*()<>?:{}-=1[];',./"}}));
-//             let a = tmpl.to_body(&ctx).unwrap();
-//             let e = "special+chars=a+%21%40%23%24%25%5E%26*%28%29%3C%3E%3F%3A%7B%7D-%3D1%5B%5D%3B%27%2C.%2F";
-//             assert_eq!(a, e);
+//                 .value(json!({"a": {"special chars": "a
+// !@#$%^&*()<>?:{}-=1[];',./"}}));             let a =
+// tmpl.to_body(&ctx).unwrap();             let e =
+// "special+chars=a+%21%40%23%24%25%5E%26*%28%29%3C%3E%3F%3A%7B%7D-%3D1%5B%5D%
+// 3B%27%2C.%2F";             assert_eq!(a, e);
 //         }
 
 //         #[test]
@@ -983,17 +986,17 @@ impl<A: PathString> Eval<'_> for ListMustacheEval<A> {
 //             assert_no_duplicate([
 //                 RequestTemplate::form_encoded_url("http://localhost:3000")
 //                     .unwrap()
-//                     .cache_key(&auth_header_ctx("Authorization", "abc".parse().unwrap())),
-//                 RequestTemplate::form_encoded_url("http://localhost:3000")
+//                     .cache_key(&auth_header_ctx("Authorization",
+// "abc".parse().unwrap())),                 RequestTemplate::form_encoded_url("http://localhost:3000")
 //                     .unwrap()
-//                     .cache_key(&auth_header_ctx("Authorization", "bcd".parse().unwrap())),
-//                 RequestTemplate::form_encoded_url("http://localhost:3000")
+//                     .cache_key(&auth_header_ctx("Authorization",
+// "bcd".parse().unwrap())),                 RequestTemplate::form_encoded_url("http://localhost:3000")
 //                     .unwrap()
-//                     .cache_key(&auth_header_ctx("Range", "bytes=0-100".parse().unwrap())),
-//                 RequestTemplate::form_encoded_url("http://localhost:3000")
+//                     .cache_key(&auth_header_ctx("Range",
+// "bytes=0-100".parse().unwrap())),                 RequestTemplate::form_encoded_url("http://localhost:3000")
 //                     .unwrap()
-//                     .cache_key(&auth_header_ctx("Range", "bytes=0-".parse().unwrap())),
-//             ]);
+//                     .cache_key(&auth_header_ctx("Range",
+// "bytes=0-".parse().unwrap())),             ]);
 //         }
 
 //         #[test]
@@ -1003,12 +1006,14 @@ impl<A: PathString> Eval<'_> for ListMustacheEval<A> {
 //             let key_123_1 = RequestTemplate::form_encoded_url("http://localhost:3000")
 //                 .unwrap()
 //                 .with_body(Mustache::parse("{{args.value}}"))
-//                 .cache_key(&ctx_with_body(json!({"args": {"value": "123"}})));
+//                 .cache_key(&ctx_with_body(json!({"args": {"value":
+// "123"}})));
 
 //             let key_234_1 = RequestTemplate::form_encoded_url("http://localhost:3000")
 //                 .unwrap()
 //                 .with_body(Mustache::parse("{{args.value}}"))
-//                 .cache_key(&ctx_with_body(json!({"args": {"value": "234"}})));
+//                 .cache_key(&ctx_with_body(json!({"args": {"value":
+// "234"}})));
 
 //             let key_123_2 = RequestTemplate::form_encoded_url("http://localhost:3000")
 //                 .unwrap()

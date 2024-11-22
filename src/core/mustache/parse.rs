@@ -261,10 +261,14 @@ mod tests {
     }
 
     #[test]
-    fn test_number(){
-        let s = r"{{.foo[1].bar}}";
+    fn test_number() {
+        let s = r"{{.foo.1.bar}}";
         let mustache: Mustache = Mustache::parse(s);
-        println!("[Finder]: {:#?}", mustache);
+        assert_eq!(mustache, Mustache::from(vec![Segment::Expression(vec![
+            "foo".to_string(),
+            "1".to_string(),
+            "bar".to_string(),
+        ])]));
     }
 
     #[test]

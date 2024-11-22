@@ -96,7 +96,7 @@ impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
         };
 
         if let Some(arr) = value.as_array() {
-            if let Some(_) = path.get(0).and_then(|v| v.as_ref().parse::<usize>().ok()) {
+            if path.first().and_then(|v| v.as_ref().parse::<usize>().ok()).is_some() {
                 self.path_value(path)
             } else {
                 let mut indexed_path = Vec::with_capacity(path.len() + 1);

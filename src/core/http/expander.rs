@@ -68,10 +68,10 @@ impl Expander {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::Mustache;
+    use serde_json::json;
 
     use super::*;
-    use serde_json::json;
+    use crate::core::Mustache;
 
     #[test]
     fn test_expander() {

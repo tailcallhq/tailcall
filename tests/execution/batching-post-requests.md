@@ -14,7 +14,13 @@ type User {
   id: Int!
   name: String!
   email: String!
-  post: Post @http(url: "http://jsonplaceholder.typicode.com/posts", method: POST, body: [{userId: "{{.value.id}}", title: "{{.value.name}}", body: "{{.value.email}}"}], batchKey: ["id"])
+  post: Post
+    @http(
+      url: "http://jsonplaceholder.typicode.com/posts"
+      method: POST
+      body: [{userId: "{{.value.id}}", title: "{{.value.name}}", body: "{{.value.email}}"}]
+      batchKey: ["id"]
+    )
 }
 
 type Post {
@@ -41,7 +47,11 @@ type Post {
 - request:
     method: POST
     url: http://jsonplaceholder.typicode.com/posts
-    body: [{"userId": "1", "title": "user-1", "body": "user-1@gmail.com"},{"userId": "2", "title": "user-2", "body": "user-2@gmail.com"}]
+    body:
+      [
+        {"userId": "1", "title": "user-1", "body": "user-1@gmail.com"},
+        {"userId": "2", "title": "user-2", "body": "user-2@gmail.com"},
+      ]
   response:
     status: 200
     body:
