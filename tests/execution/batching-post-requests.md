@@ -15,18 +15,9 @@ type Query {
 type Foo {
   a: Int
   b: Int
-  bar: Bar @http(
-      url: "http://jsonplaceholder.typicode.com/bar"
-      method: POST
-      body: [{id: "{{.value.a}}"}]
-      batchKey: ["id"]
-    )
-  tar: Tar @http(
-      url: "http://jsonplaceholder.typicode.com/tar"
-      method: POST
-      body: ["{{.value.b}}"]
-      batchKey: ["id"]
-    )
+  bar: Bar
+    @http(url: "http://jsonplaceholder.typicode.com/bar", method: POST, body: [{id: "{{.value.a}}"}], batchKey: ["id"])
+  tar: Tar @http(url: "http://jsonplaceholder.typicode.com/tar", method: POST, body: ["{{.value.b}}"], batchKey: ["id"])
 }
 
 type Tar {
@@ -59,7 +50,7 @@ type Post {
   user: User
     @http(
       url: "http://jsonplaceholder.typicode.com/users"
-      method: POST,
+      method: POST
       body: [{key: "id", value: "{{.value.userId}}"}]
       batchKey: ["id"]
     )
@@ -117,11 +108,7 @@ type Post {
 - request:
     method: POST
     url: http://jsonplaceholder.typicode.com/users
-    body:
-      [
-        {"key": "id", value: "1"},
-        {"key": "id", value: "2"},
-      ]
+    body: [{"key": "id", value: "1"}, {"key": "id", value: "2"}]
   response:
     status: 200
     body:
@@ -147,11 +134,7 @@ type Post {
 - request:
     method: POST
     url: http://jsonplaceholder.typicode.com/bar
-    body:
-      [
-        {"id": "11"},
-        {"id": "21"},
-      ]
+    body: [{"id": "11"}, {"id": "21"}]
   response:
     status: 200
     body:
@@ -160,12 +143,10 @@ type Post {
       - a: 21
         b: 22
 
-
 - request:
     method: POST
     url: http://jsonplaceholder.typicode.com/tar
-    body:
-      ["12","22"]
+    body: ["12", "22"]
   response:
     status: 200
     body:
