@@ -1,5 +1,5 @@
 ---
-error: true
+error: false
 ---
 
 # test-batch-operator-post

@@ -36,14 +36,16 @@ Index {
                                             headers: [],
                                             body_path: Some(
                                                 Mustache(
-                                                    [
-                                                        Expression(
-                                                            [
-                                                                "args",
-                                                                "input",
-                                                            ],
-                                                        ),
-                                                    ],
+                                                    Mustache(
+                                                        [
+                                                            Expression(
+                                                                [
+                                                                    "args",
+                                                                    "input",
+                                                                ],
+                                                            ),
+                                                        ],
+                                                    ),
                                                 ),
                                             ),
                                             endpoint: Endpoint {
@@ -58,7 +60,7 @@ Index {
                                                 ),
                                                 headers: {},
                                                 body: Some(
-                                                    "{{.args.input}}",
+                                                    String("{{.args.input}}"),
                                                 ),
                                                 description: None,
                                                 encoding: ApplicationJson,
@@ -68,9 +70,9 @@ Index {
                                         },
                                         group_by: None,
                                         dl_id: None,
+                                        dl_enabled: false,
                                         http_filter: None,
                                         is_list: false,
-                                        dl_enabled: false,
                                         dedupe: false,
                                     },
                                 ),
@@ -106,14 +108,16 @@ Index {
                                             headers: [],
                                             body_path: Some(
                                                 Mustache(
-                                                    [
-                                                        Expression(
-                                                            [
-                                                                "args",
-                                                                "input",
-                                                            ],
-                                                        ),
-                                                    ],
+                                                    Mustache(
+                                                        [
+                                                            Expression(
+                                                                [
+                                                                    "args",
+                                                                    "input",
+                                                                ],
+                                                            ),
+                                                        ],
+                                                    ),
                                                 ),
                                             ),
                                             endpoint: Endpoint {
@@ -128,7 +132,7 @@ Index {
                                                 ),
                                                 headers: {},
                                                 body: Some(
-                                                    "{{.args.input}}",
+                                                    String("{{.args.input}}"),
                                                 ),
                                                 description: None,
                                                 encoding: ApplicationJson,
@@ -138,9 +142,9 @@ Index {
                                         },
                                         group_by: None,
                                         dl_id: None,
+                                        dl_enabled: false,
                                         http_filter: None,
                                         is_list: false,
-                                        dl_enabled: false,
                                         dedupe: false,
                                     },
                                 ),
@@ -185,14 +189,16 @@ Index {
                                             headers: [],
                                             body_path: Some(
                                                 Mustache(
-                                                    [
-                                                        Expression(
-                                                            [
-                                                                "args",
-                                                                "input",
-                                                            ],
-                                                        ),
-                                                    ],
+                                                    Mustache(
+                                                        [
+                                                            Expression(
+                                                                [
+                                                                    "args",
+                                                                    "input",
+                                                                ],
+                                                            ),
+                                                        ],
+                                                    ),
                                                 ),
                                             ),
                                             endpoint: Endpoint {
@@ -207,7 +213,7 @@ Index {
                                                 ),
                                                 headers: {},
                                                 body: Some(
-                                                    "{{.args.input}}",
+                                                    String("{{.args.input}}"),
                                                 ),
                                                 description: None,
                                                 encoding: ApplicationJson,
@@ -217,9 +223,9 @@ Index {
                                         },
                                         group_by: None,
                                         dl_id: None,
+                                        dl_enabled: false,
                                         http_filter: None,
                                         is_list: false,
-                                        dl_enabled: false,
                                         dedupe: false,
                                     },
                                 ),
@@ -267,14 +273,16 @@ Index {
                                             headers: [],
                                             body_path: Some(
                                                 Mustache(
-                                                    [
-                                                        Expression(
-                                                            [
-                                                                "args",
-                                                                "input",
-                                                            ],
-                                                        ),
-                                                    ],
+                                                    Mustache(
+                                                        [
+                                                            Expression(
+                                                                [
+                                                                    "args",
+                                                                    "input",
+                                                                ],
+                                                            ),
+                                                        ],
+                                                    ),
                                                 ),
                                             ),
                                             endpoint: Endpoint {
@@ -289,7 +297,7 @@ Index {
                                                 ),
                                                 headers: {},
                                                 body: Some(
-                                                    "{{.args.input}}",
+                                                    String("{{.args.input}}"),
                                                 ),
                                                 description: None,
                                                 encoding: ApplicationJson,
@@ -299,9 +307,9 @@ Index {
                                         },
                                         group_by: None,
                                         dl_id: None,
+                                        dl_enabled: false,
                                         http_filter: None,
                                         is_list: false,
-                                        dl_enabled: false,
                                         dedupe: false,
                                     },
                                 ),
@@ -696,9 +704,9 @@ Index {
                                             },
                                             group_by: None,
                                             dl_id: None,
+                                            dl_enabled: false,
                                             http_filter: None,
                                             is_list: true,
-                                            dl_enabled: false,
                                             dedupe: false,
                                         },
                                     ),
@@ -760,9 +768,9 @@ Index {
                                         },
                                         group_by: None,
                                         dl_id: None,
+                                        dl_enabled: false,
                                         http_filter: None,
                                         is_list: false,
-                                        dl_enabled: false,
                                         dedupe: false,
                                     },
                                 ),
@@ -857,9 +865,9 @@ Index {
                                             },
                                             group_by: None,
                                             dl_id: None,
+                                            dl_enabled: false,
                                             http_filter: None,
                                             is_list: true,
-                                            dl_enabled: false,
                                             dedupe: false,
                                         },
                                     ),
@@ -933,9 +941,9 @@ Index {
                                         },
                                         group_by: None,
                                         dl_id: None,
+                                        dl_enabled: false,
                                         http_filter: None,
                                         is_list: false,
-                                        dl_enabled: false,
                                         dedupe: false,
                                     },
                                 ),

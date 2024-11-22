@@ -61,13 +61,13 @@ pub fn benchmark_to_request(c: &mut Criterion) {
 
     c.bench_function("with_mustache_literal", |b| {
         b.iter(|| {
-            black_box(tmpl_literal.to_request(&ctx).unwrap());
+            black_box(tmpl_literal.to_request(&ctx, 0).unwrap());
         })
     });
 
     c.bench_function("with_mustache_expressions", |b| {
         b.iter(|| {
-            black_box(tmpl_mustache.to_request(&ctx).unwrap());
+            black_box(tmpl_mustache.to_request(&ctx, 0).unwrap());
         })
     });
 }

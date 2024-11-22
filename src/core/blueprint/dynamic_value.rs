@@ -3,6 +3,7 @@ use indexmap::IndexMap;
 use serde_json::Value;
 
 use crate::core::mustache::Mustache;
+use crate::core::path::PathString;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum DynamicValue<A> {
@@ -44,6 +45,60 @@ impl<A> DynamicValue<A> {
                 DynamicValue::Array(vec)
             }
         }
+    }
+}
+
+impl DynamicValue<serde_json::Value> {
+    pub fn to_string(&self) -> anyhow::Result<String> {
+        match self {
+            DynamicValue::Value(value) => Ok(value.to_string()),
+            DynamicValue::Mustache(mustache) => Ok(mustache.to_string()),
+            DynamicValue::Object(obj) => {
+                let mut out = IndexMap::new();
+                for (k, v) in obj {
+                    out.insert(k, v.to_string()?);
+                }
+                serde_json::to_string(&out).map_err(|e| anyhow::anyhow!(e))
+            }
+            DynamicValue::Array(arr) => {
+                let out = arr
+                    .iter()
+                    .map(|v| v.to_string())
+                    .collect::<anyhow::Result<Vec<_>>>()?;
+                serde_json::to_string(&out).map_err(|e| anyhow::anyhow!(e))
+            }
+        }
+    }
+
+    pub fn to_mustache(&self) -> anyhow::Result<Mustache> {
+        match self {
+            DynamicValue::Value(value) => Ok(Mustache::parse(&value.to_string())),
+            DynamicValue::Mustache(mustache) => Ok(mustache.to_owned()),
+            DynamicValue::Object(obj) => {
+                let mut out = IndexMap::new();
+                for (k, v) in obj {
+                    out.insert(k, v.to_string()?);
+                }
+                let str_value = serde_json::to_string(&out).map_err(|e| anyhow::anyhow!(e))?;
+                Ok(Mustache::parse(&str_value))
+            }
+            DynamicValue::Array(arr) => {
+                let out = arr
+                    .iter()
+                    .map(|v| v.to_string())
+                    .collect::<anyhow::Result<Vec<_>>>()?;
+                let str_value = serde_json::to_string(&out).map_err(|e| anyhow::anyhow!(e))?;
+                Ok(Mustache::parse(&str_value))
+            }
+        }
+    }
+
+    /// This function is used to inject a value into a Mustache expression.
+    pub fn render<P>(&self, ctx: &P) -> anyhow::Result<String>
+    where
+        P: PathString,
+    {
+        Ok(self.to_mustache()?.render(ctx))
     }
 }
 

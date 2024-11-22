@@ -20,20 +20,23 @@ impl Mustache {
 
 fn parse_name(input: &str) -> IResult<&str, String> {
     let spaces = nom::character::complete::multispace0;
-    let alpha = nom::character::complete::alpha1;
+    // Allow either alphabetic or numeric characters as the first character
+    let first_char = nom::branch::alt((
+        nom::character::complete::alpha1,
+        nom::character::complete::digit1,
+    ));
     let alphanumeric_or_underscore = nom::multi::many0(nom::branch::alt((
         nom::character::complete::alphanumeric1,
         nom::bytes::complete::tag("_"),
     )));
 
-    let parser = nom::sequence::tuple((spaces, alpha, alphanumeric_or_underscore, spaces));
+    let parser = nom::sequence::tuple((spaces, first_char, alphanumeric_or_underscore, spaces));
 
     nom::combinator::map(parser, |(_, a, b, _)| {
         let b: String = b.into_iter().collect();
         format!("{}{}", a, b)
     })(input)
 }
-
 fn parse_expression(input: &str) -> IResult<&str, Segment> {
     delimited(
         tag("{{"),
@@ -254,6 +257,20 @@ mod tests {
         assert_eq!(
             result,
             Mustache::from(vec![Segment::Literal("test:{SHA}string".to_string())])
+        );
+    }
+
+    #[test]
+    fn test_number() {
+        let s = r"{{.foo.1.bar}}";
+        let mustache: Mustache = Mustache::parse(s);
+        assert_eq!(
+            mustache,
+            Mustache::from(vec![Segment::Expression(vec![
+                "foo".to_string(),
+                "1".to_string(),
+                "bar".to_string(),
+            ])])
         );
     }
 

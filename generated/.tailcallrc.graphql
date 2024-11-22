@@ -170,7 +170,7 @@ directive @http(
   the server. You can pass it as a static object or use a Mustache template to substitute 
   variables from the GraphQL variables.
   """
-  body: String
+  body: JSON
   """
   Enables deduplication of IO operations to enhance performance.This flag prevents 
   duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
@@ -888,7 +888,7 @@ input Http {
   the server. You can pass it as a static object or use a Mustache template to substitute 
   variables from the GraphQL variables.
   """
-  body: String
+  body: JSON
   """
   Enables deduplication of IO operations to enhance performance.This flag prevents 
   duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
