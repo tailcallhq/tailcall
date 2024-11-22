@@ -55,10 +55,7 @@ fn extract_ir_protect<A>(
             })
             .collect();
 
-        let auth_requirement = auth_requirements
-            .into_iter()
-            .reduce(|a, b| a.or(b))
-            .map(|a| a.simplify());
+        let auth_requirement = auth_requirements.into_iter().reduce(|a, b| a.or(b));
 
         if auth_requirement.is_some() {
             before.push(IR::Protect(
@@ -100,12 +97,7 @@ pub fn detect_and_remove_ir_protect(
                 auth_requirements.push(auth.clone());
             }
 
-            
-            detect_and_remove_ir_protect(
-                *inner_ir,
-                global_auth_requirements,
-                auth_requirements,
-            )
+            detect_and_remove_ir_protect(*inner_ir, global_auth_requirements, auth_requirements)
         }
         IR::Map(map) => IR::Map(map),
         IR::Pipe(ir1, ir2) => {

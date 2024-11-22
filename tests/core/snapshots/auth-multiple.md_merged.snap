@@ -13,10 +13,7 @@ schema
 
 type Query {
   a_and_b: String @expr(body: "data") @protected(providers: ["a", "b"])
-  a_or_b: String @expr(body: "data") @protected(providers: ["a"]) @protected(providers: ["b"])
   b_and_c: String @expr(body: "data") @protected(providers: ["b", "c"])
-  b_or_c: String @expr(body: "data") @protected(providers: ["b"]) @protected(providers: ["c"])
   c_and_a: String @expr(body: "data") @protected(providers: ["c", "a"])
-  c_or_a: String @expr(body: "data") @protected(providers: ["c"]) @protected(providers: ["a"])
   default: String @expr(body: "data") @protected
 }

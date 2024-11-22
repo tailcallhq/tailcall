@@ -9,7 +9,7 @@ expression: response
   },
   "body": {
     "data": {
-      "a_or_b": "data"
+      "default": "data"
     }
   }
 }

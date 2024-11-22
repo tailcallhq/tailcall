@@ -113,7 +113,7 @@ pub struct Type {
     ///
     /// Marks field as protected by auth providers
     #[serde(default)]
-    pub protected: Vec<Protected>,
+    pub protected: Option<Protected>,
     ///
     /// Apollo federation entity resolver.
     #[serde(flatten, default, skip_serializing_if = "is_default")]
@@ -217,7 +217,7 @@ pub struct Field {
     ///
     /// Marks field as protected by auth provider
     #[serde(default)]
-    pub protected: Vec<Protected>,
+    pub protected: Option<Protected>,
 
     ///
     /// Used to overwrite the default discrimination strategy

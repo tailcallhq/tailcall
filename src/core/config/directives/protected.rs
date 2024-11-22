@@ -13,7 +13,7 @@ use tailcall_macros::{DirectiveDefinition, MergeRight};
     MergeRight,
     DirectiveDefinition,
 )]
-#[directive_definition(locations = "Object,FieldDefinition", repeatable)]
+#[directive_definition(locations = "Object,FieldDefinition")]
 pub struct Protected {
     pub providers: Option<Vec<String>>,
 }

@@ -15,9 +15,6 @@ type Query {
   a_and_b: String @expr(body: "data") @protected(providers: ["a", "b"])
   b_and_c: String @expr(body: "data") @protected(providers: ["b", "c"])
   c_and_a: String @expr(body: "data") @protected(providers: ["c", "a"])
-  a_or_b: String @expr(body: "data") @protected(providers: ["a"]) @protected(providers: ["b"])
-  b_or_c: String @expr(body: "data") @protected(providers: ["b"]) @protected(providers: ["c"])
-  c_or_a: String @expr(body: "data") @protected(providers: ["c"]) @protected(providers: ["a"])
 }
 ```
 
@@ -127,6 +124,7 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
       query {
         c_and_a
       }
+
 # TEST: 9 [a,c]
 - method: POST
   url: http://localhost:8080/graphql
@@ -135,7 +133,7 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
   body:
     query: |
       query {
-        a_or_b
+        default
       }
 # TEST: 10 [a,b]
 - method: POST
@@ -145,7 +143,7 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
   body:
     query: |
       query {
-        a_or_b
+        default
       }
 # TEST: 11 [b,c]
 - method: POST
@@ -155,101 +153,10 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
   body:
     query: |
       query {
-        a_or_b
+        default
       }
+
 # TEST: 12 [a,c]
-- method: POST
-  url: http://localhost:8080/graphql
-  headers:
-    Authorization: Basic dGVzdHVzZXIxOnBhc3N3b3JkMTIz
-  body:
-    query: |
-      query {
-        b_or_c
-      }
-# TEST: 13 [a,b]
-- method: POST
-  url: http://localhost:8080/graphql
-  headers:
-    Authorization: Basic dGVzdHVzZXIyOm15cGFzc3dvcmQ=
-  body:
-    query: |
-      query {
-        b_or_c
-      }
-# TEST: 14 [b,c]
-- method: POST
-  url: http://localhost:8080/graphql
-  headers:
-    Authorization: Basic dGVzdHVzZXIzOmFiYzEyMw==
-  body:
-    query: |
-      query {
-        b_or_c
-      }
-# TEST: 15 [a,c]
-- method: POST
-  url: http://localhost:8080/graphql
-  headers:
-    Authorization: Basic dGVzdHVzZXIxOnBhc3N3b3JkMTIz
-  body:
-    query: |
-      query {
-        c_or_a
-      }
-# TEST: 16 [a,b]
-- method: POST
-  url: http://localhost:8080/graphql
-  headers:
-    Authorization: Basic dGVzdHVzZXIyOm15cGFzc3dvcmQ=
-  body:
-    query: |
-      query {
-        c_or_a
-      }
-# TEST: 17 [b,c]
-- method: POST
-  url: http://localhost:8080/graphql
-  headers:
-    Authorization: Basic dGVzdHVzZXIzOmFiYzEyMw==
-  body:
-    query: |
-      query {
-        c_or_a
-      }
-
-# TEST: 18 [a,c]
-- method: POST
-  url: http://localhost:8080/graphql
-  headers:
-    Authorization: Basic dGVzdHVzZXIxOnBhc3N3b3JkMTIz
-  body:
-    query: |
-      query {
-        default
-      }
-# TEST: 19 [a,b]
-- method: POST
-  url: http://localhost:8080/graphql
-  headers:
-    Authorization: Basic dGVzdHVzZXIyOm15cGFzc3dvcmQ=
-  body:
-    query: |
-      query {
-        default
-      }
-# TEST: 20 [b,c]
-- method: POST
-  url: http://localhost:8080/graphql
-  headers:
-    Authorization: Basic dGVzdHVzZXIzOmFiYzEyMw==
-  body:
-    query: |
-      query {
-        default
-      }
-
-# TEST: 21 [a,c]
 - method: POST
   url: http://localhost:8080/graphql
   headers:
@@ -258,12 +165,9 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
     query: |
       query {
         c_and_a
-        a_or_b
-        b_or_c
-        c_or_a
         default
       }
-# TEST: 22 [a,b]
+# TEST: 13 [a,b]
 - method: POST
   url: http://localhost:8080/graphql
   headers:
@@ -272,12 +176,9 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
     query: |
       query {
         a_and_b
-        a_or_b
-        b_or_c
-        c_or_a
         default
       }
-# TEST: 23 [b,c]
+# TEST: 14 [b,c]
 - method: POST
   url: http://localhost:8080/graphql
   headers:
@@ -286,9 +187,6 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
     query: |
       query {
         b_and_c
-        a_or_b
-        b_or_c
-        c_or_a
         default
       }
 ```

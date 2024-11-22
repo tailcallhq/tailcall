@@ -23,17 +23,17 @@ pub struct Executor<'a, IRExec, Input> {
     exec: IRExec,
 }
 
-impl<'a, Input, Output, Exec> Executor<'a, Exec, Input>
+impl<'a, Input, Value, Exec> Executor<'a, Exec, Input>
 where
-    Output: for<'b> JsonLike<'b> + Debug + Clone + Default,
+    Value: for<'b> JsonLike<'b> + Debug + Clone + Default,
     Input: Clone + Debug,
-    Exec: IRExecutor<Input = Input, Output = Output, Error = jit::Error>,
+    Exec: IRExecutor<Input = Input, Output = Value, Error = jit::Error>,
 {
     pub fn new(plan: &'a OperationPlan<Input>, exec: Exec) -> Self {
         Self { exec, ctx: RequestContext::new(plan) }
     }
 
-    pub async fn store(&self) -> Store<Result<Output, Positioned<jit::Error>>> {
+    pub async fn store(&self) -> Store<Result<Value, Positioned<jit::Error>>> {
         let store = Arc::new(Mutex::new(Store::new()));
         let mut ctx = ExecutorInner::new(store.clone(), &self.exec, &self.ctx);
         ctx.init().await;
@@ -42,7 +42,10 @@ where
         store
     }
 
-    pub async fn execute(self, synth: Synth<'a, Output>) -> Response<Output> {
+    pub async fn execute<Output>(self, synth: &'a Synth<'a, Value>) -> Response<Output>
+    where
+        Output: JsonLike<'a> + Default,
+    {
         let mut response = Response::new(synth.synthesize());
         response.add_errors(self.ctx.errors().clone());
         response

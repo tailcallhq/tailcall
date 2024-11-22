@@ -11,11 +11,11 @@ pub fn update_protected<'a>(
 {
     TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
         |(config, field, type_, _), mut b_field| {
-            if !field.protected.is_empty() // check the field itself has marked as protected
-                || !type_.protected.is_empty() // check the type that contains current field
+            if field.protected.is_some() // check the field itself has marked as protected
+                || type_.protected.is_some() // check the type that contains current field
                 || config // check that output type of the field is protected
                     .find_type(field.type_of.name())
-                    .and_then(|type_| if type_.protected.is_empty() { None } else { Some(()) })
+                    .and_then(|type_| type_.protected.as_ref())
                     .is_some()
             {
                 if config.input_types().contains(type_name) {
@@ -28,6 +28,7 @@ pub fn update_protected<'a>(
                     );
                 }
 
+                // Used to collect the providers that are used in the field
                 Provider::from_config_module(config)
                     .and_then(|config_providers| {
                         Valid::from_iter(field.protected.iter(), |protected_directive| {

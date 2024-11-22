@@ -24,19 +24,6 @@ pub trait DirectiveCodec: Sized {
         }
         Valid::succeed(None)
     }
-
-    fn from_directives_vec<'a>(
-        directives: impl Iterator<Item = &'a Positioned<ConstDirective>>,
-    ) -> Valid<Vec<Self>, String> {
-        Valid::from_iter(directives, |directive| {
-            if directive.node.name.node == Self::directive_name() {
-                Self::from_directive(&directive.node).map(|v| Some(v))
-            } else {
-                Valid::succeed(None)
-            }
-        })
-        .map(|items| items.into_iter().flatten().collect())
-    }
 }
 fn lower_case_first_letter(s: &str) -> String {
     if s.len() <= 2 {

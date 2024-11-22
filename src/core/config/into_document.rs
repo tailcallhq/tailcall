@@ -213,7 +213,7 @@ fn into_directives(
 }
 
 fn field_directives(field: &crate::core::config::Field) -> Vec<Positioned<ConstDirective>> {
-    let mut directives = vec![
+    let directives = vec![
         field
             .resolver
             .as_ref()
@@ -222,9 +222,8 @@ fn field_directives(field: &crate::core::config::Field) -> Vec<Positioned<ConstD
         field.modify.as_ref().map(|d| pos(d.to_directive())),
         field.omit.as_ref().map(|d| pos(d.to_directive())),
         field.cache.as_ref().map(|d| pos(d.to_directive())),
+        field.protected.as_ref().map(|d| pos(d.to_directive())),
     ];
-
-    directives.extend(field.protected.iter().map(|d| Some(pos(d.to_directive()))));
 
     directives
         .into_iter()
@@ -247,7 +246,7 @@ fn type_directives(type_def: &crate::core::config::Type) -> Vec<Positioned<Const
         .chain(
             type_def
                 .protected
-                .iter()
+                .as_ref()
                 .map(|protected| pos(protected.to_directive())),
         )
         .chain(

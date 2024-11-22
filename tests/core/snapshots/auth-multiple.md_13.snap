@@ -9,7 +9,8 @@ expression: response
   },
   "body": {
     "data": {
-      "b_or_c": "data"
+      "a_and_b": "data",
+      "default": "data"
     }
   }
 }
