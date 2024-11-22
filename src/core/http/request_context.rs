@@ -207,7 +207,7 @@ impl From<&AppContext> for RequestContext {
             runtime: app_ctx.runtime.clone(),
             cache: DedupeResult::new(true),
             dedupe_handler: app_ctx.dedupe_handler.clone(),
-            batch_loader: app_ctx.batch_loader.clone(),
+            batch_loader: app_ctx.http_merge.clone(),
         }
     }
 }

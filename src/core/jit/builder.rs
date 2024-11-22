@@ -236,7 +236,7 @@ impl Builder {
                             pos: selection.pos.into(),
                             directives,
                             scalar,
-                            use_batch_loader: None,
+                            dl_enabled: None,
                         };
 
                         fields.push(field);
@@ -256,7 +256,7 @@ impl Builder {
                             directives,
                             is_enum: false,
                             scalar: Some(scalar::Scalar::Empty),
-                            use_batch_loader: None,
+                            dl_enabled: None,
                         };
 
                         fields.push(typename_field);

@@ -87,6 +87,7 @@ impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
             self.graphql_ctx.value()?
         };
 
+        // [i'th,userId]
         if let Some(arr) = value.as_array() {
             let mut indexed_path = Vec::with_capacity(path.len() + 1);
             indexed_path.push("0".into()); // added dummy value to occupy the space and later replaced with actual value.

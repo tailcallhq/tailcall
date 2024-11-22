@@ -140,7 +140,7 @@ impl<'ctx> IRExecutor for ConstValueExec<'ctx> {
     ) -> Result<Self::Output> {
         let field = ctx.field();
 
-        if field.use_batch_loader.unwrap_or(false) {
+        if field.dl_enabled.unwrap_or(false) {
             let response = self.call(ctx, ir).await;
             return response;
         }

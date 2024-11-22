@@ -25,24 +25,24 @@ fn mark_direct_loader<A>(selection: &mut [Field<A>], has_list_ancestor: bool) {
                         (true, true) => {
                             // ideal condition
                             // has list ancestor and group by clause
-                            field.use_batch_loader = Some(true);
+                            field.dl_enabled = Some(true);
                             *dl_enabled = true;
                         }
                         (false, true) => {
                             // has not list ancestor but group by clause
-                            field.use_batch_loader = Some(true);
+                            field.dl_enabled = Some(true);
                             *dl_enabled = true;
                         }
                         (_, false) => {
                             // has no group by clause means we can't process
                             // it with http merge.
                             *dl_enabled = false;
-                            field.use_batch_loader = Some(false);
+                            field.dl_enabled = Some(false);
                         }
                     }
 
                     if has_list_ancestor && group_by.is_some() {
-                        field.use_batch_loader = Some(true);
+                        field.dl_enabled = Some(true);
                         *dl_enabled = true;
                     }
                 }

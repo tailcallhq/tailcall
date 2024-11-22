@@ -27,7 +27,7 @@ pub struct AppContext {
     pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
     pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
     pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
-    pub batch_loader: Arc<HttpMerge>,
+    pub http_merge: Arc<HttpMerge>,
     pub endpoints: EndpointSet<Checked>,
     pub auth_ctx: Arc<GlobalAuthContext>,
     pub dedupe_handler: Arc<DedupeResult<IoId, ConstValue, Error>>,
@@ -157,7 +157,7 @@ impl AppContext {
             dedupe_operation_handler: DedupeResult::new(false),
             operation_plans: DashMap::new(),
             const_execution_cache: DashMap::default(),
-            batch_loader: Arc::new(HttpMerge::new(runtime)),
+            http_merge: Arc::new(HttpMerge::new(runtime)),
         }
     }
 

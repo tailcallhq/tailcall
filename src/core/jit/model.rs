@@ -167,7 +167,7 @@ pub struct Field<Input> {
     pub directives: Vec<Directive<Input>>,
     pub is_enum: bool,
     pub scalar: Option<Scalar>,
-    pub use_batch_loader: Option<bool>,
+    pub dl_enabled: Option<bool>,
 }
 
 pub struct DFS<'a, Input> {
@@ -237,7 +237,7 @@ impl<Input> Field<Input> {
                 .collect::<Result<_, _>>()?,
             is_enum: self.is_enum,
             scalar: self.scalar,
-            use_batch_loader: self.use_batch_loader,
+            dl_enabled: self.dl_enabled,
         })
     }
 }
