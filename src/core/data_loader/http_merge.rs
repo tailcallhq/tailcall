@@ -76,7 +76,7 @@ impl HttpMerge {
             let (map, response) = self.execute(group_by, is_list, request).await?;
 
             let mut merged_response = map.into_values().map(|res| res.body).collect::<Vec<_>>();
-            
+
             match merged_response.len() {
                 0 => Ok(response),
                 1 => Ok(response.body(merged_response.remove(0))),

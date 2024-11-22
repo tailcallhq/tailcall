@@ -2,16 +2,35 @@
 source: tests/core/spec.rs
 expression: formatted
 ---
+type Bar {
+  a: Int
+  b: Int
+}
+
+type Foo {
+  a: Int
+  b: Int
+  bar: Bar
+  tar: Tar
+}
+
 type Post {
   body: String!
   id: Int!
   title: String!
+  user: User
   userId: Int!
 }
 
 type Query {
+  foo: [Foo]
+  posts: [Post]
   user: User
   users: [User]
+}
+
+type Tar {
+  a: Int
 }
 
 type User {
