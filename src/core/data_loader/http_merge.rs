@@ -62,24 +62,31 @@ impl HttpMerge {
                 }
             }
 
-            let merged_response = if final_result.len() > 1 {
-                ConstValue::List(final_result)
-            } else {
-                final_result.remove(0)
+            let merged_response = match final_result.len() {
+                0 => {
+                    return Err(anyhow::anyhow!(
+                        "Batching failed: no results found. Please check your batch key."
+                    ))
+                }
+                1 => final_result.remove(0),
+                2.. => ConstValue::List(final_result),
             };
             Ok(response.body(merged_response))
         } else {
             let (map, response) = self.execute(group_by, is_list, request).await?;
             println!("[Finder]: map = {:#?} ", map);
-        
+
             let mut merged_response = map.into_values().map(|res| res.body).collect::<Vec<_>>();
             let v = match merged_response.len() {
                 0 => Ok(response),
                 1 => Ok(response.body(merged_response.remove(0))),
-                2.. => Ok(response.body(ConstValue::List(merged_response)))
+                2.. => Ok(response.body(ConstValue::List(merged_response))),
             };
 
-            println!("[Finder]: group_by = {:#?} and is_list: {:#?}", group_by, is_list);
+            println!(
+                "[Finder]: group_by = {:#?} and is_list: {:#?}",
+                group_by, is_list
+            );
             println!("[Finder]: v = {:#?}", v);
 
             v
