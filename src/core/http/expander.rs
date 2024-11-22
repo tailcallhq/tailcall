@@ -3,7 +3,9 @@ use std::marker::PhantomData;
 use anyhow::Ok;
 use serde_json::Value;
 
-use crate::core::{blueprint::DynamicValue, mustache::Segment, Mustache};
+use crate::core::blueprint::DynamicValue;
+use crate::core::mustache::Segment;
+use crate::core::Mustache;
 
 const PREFIXES: [&str; 5] = ["value", "headers", "vars", "env", "args"];
 
@@ -130,7 +132,8 @@ impl Expander<DynamicValue<async_graphql_value::ConstValue>> {
                     .map(|v| Self::expand_inner(v, batch_size))
                     .collect::<Vec<_>>();
 
-                // copy the list `batch_size` times with replacing the expression with the index.
+                // copy the list `batch_size` times with replacing the expression with the
+                // index.
                 let mut ans = Vec::with_capacity(expanded_list.len());
 
                 for index in 0..batch_size {
@@ -204,10 +207,9 @@ mod tests {
         let expander = |input: serde_json::Value, sz: usize| {
             let dyn_value =
                 DynamicValue::<async_graphql_value::ConstValue>::try_from(&input).unwrap();
-            let v =
-                Expander::<DynamicValue<async_graphql_value::ConstValue>>::expand(dyn_value, sz)
-                    .unwrap();
-            v
+            
+            Expander::<DynamicValue<async_graphql_value::ConstValue>>::expand(dyn_value, sz)
+                    .unwrap()
         };
 
         for ext in PREFIXES {

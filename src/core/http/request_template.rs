@@ -251,7 +251,7 @@ impl TryFrom<Endpoint> for RequestTemplate {
         let body = endpoint
             .body
             .as_ref()
-            .map(|body| DynamicValue::try_from(body))
+            .map(DynamicValue::try_from)
             .transpose()?;
         let encoding = endpoint.encoding.clone();
 
@@ -424,8 +424,8 @@ impl<A: PathString> Eval<'_> for ListMustacheEval<A> {
 
 //     impl Default for Context {
 //         fn default() -> Self {
-//             Self { value: serde_json::Value::Null, headers: HeaderMap::new() }
-//         }
+//             Self { value: serde_json::Value::Null, headers: HeaderMap::new()
+// }         }
 //     }
 
 //     impl PathValue for Context {
@@ -442,8 +442,8 @@ impl<A: PathString> Eval<'_> for ListMustacheEval<A> {
 //     }
 
 //     impl crate::core::path::PathString for Context {
-//         fn path_string<'a, T: AsRef<str>>(&'a self, parts: &'a [T]) -> Option<Cow<'a, str>> {
-//             self.value.path_string(parts)
+//         fn path_string<'a, T: AsRef<str>>(&'a self, parts: &'a [T]) ->
+// Option<Cow<'a, str>> {             self.value.path_string(parts)
 //         }
 //     }
 
@@ -685,7 +685,8 @@ impl<A: PathString> Eval<'_> for ListMustacheEval<A> {
 //         let tmpl = RequestTemplate::new("http://localhost:3000")
 //             .unwrap()
 //             .method(reqwest::Method::POST)
-//             .encoding(crate::core::config::Encoding::ApplicationXWwwFormUrlencoded);
+//             
+// .encoding(crate::core::config::Encoding::ApplicationXWwwFormUrlencoded);
 //         let ctx = Context::default();
 //         let req = tmpl.to_request(&ctx, 0).unwrap();
 //         assert_eq!(
@@ -718,7 +719,8 @@ impl<A: PathString> Eval<'_> for ListMustacheEval<A> {
 //     fn test_body_template() {
 //         let tmpl = RequestTemplate::new("http://localhost:3000")
 //             .unwrap()
-//             .body_path(Some(DynamicValue::Mustache(Mustache::parse("{{foo.bar}}"))));
+//             
+// .body_path(Some(DynamicValue::Mustache(Mustache::parse("{{foo.bar}}"))));
 //         let ctx = Context::default().value(json!({
 //           "foo": {
 //             "bar": "baz"
@@ -733,7 +735,8 @@ impl<A: PathString> Eval<'_> for ListMustacheEval<A> {
 //         let tmpl = RequestTemplate::new("http://localhost:3000")
 //             .unwrap()
 //             .encoding(crate::core::config::Encoding::ApplicationJson)
-//             .body_path(Some(DynamicValue::Mustache(Mustache::parse("{{foo.bar}}"))));
+//             
+// .body_path(Some(DynamicValue::Mustache(Mustache::parse("{{foo.bar}}"))));
 //         let ctx = Context::default().value(json!({
 //           "foo": {
 //             "bar": "baz"
@@ -777,8 +780,8 @@ impl<A: PathString> Eval<'_> for ListMustacheEval<A> {
 //                 "http://localhost:3000/{{foo.bar}}".to_string(),
 //             )
 //             .method(crate::core::http::Method::POST)
-//             .query(vec![("foo".to_string(), "{{foo.bar}}".to_string(), false)])
-//             .headers(headers)
+//             .query(vec![("foo".to_string(), "{{foo.bar}}".to_string(),
+// false)])             .headers(headers)
 //             .body(Some("{{foo.bar}}".into()));
 //             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
 //             let ctx = Context::default().value(json!({
@@ -889,7 +892,8 @@ impl<A: PathString> Eval<'_> for ListMustacheEval<A> {
 //         fn test_with_string() {
 //             let tmpl = RequestTemplate::form_encoded_url("http://localhost:3000")
 //                 .unwrap()
-//                 .body_path(Some(DynamicValue::Mustache(Mustache::parse("{{foo.bar}}"))));
+//                 
+// .body_path(Some(DynamicValue::Mustache(Mustache::parse("{{foo.bar}}"))));
 //             let ctx = Context::default().value(json!({"foo": {"bar":
 // "baz"}}));
 //             let request_body = tmpl.to_body(&ctx);
@@ -913,7 +917,8 @@ impl<A: PathString> Eval<'_> for ListMustacheEval<A> {
 //         fn test_with_json_body() {
 //             let tmpl = RequestTemplate::form_encoded_url("http://localhost:3000")
 //                 .unwrap()
-//                 .body_path(Some(DynamicValue::Mustache(Mustache::parse("{{foo}}"))));
+//                 
+// .body_path(Some(DynamicValue::Mustache(Mustache::parse("{{foo}}"))));
 //             let ctx = Context::default().value(json!({"foo": {"bar":
 // "baz"}}));
 //             let body = tmpl.to_body(&ctx).unwrap();
@@ -924,12 +929,13 @@ impl<A: PathString> Eval<'_> for ListMustacheEval<A> {
 //         //         fn test_with_json_body_nested() {
 //         //             let tmpl = RequestTemplate::form_encoded_url("http://localhost:3000")
 //         //                 .unwrap()
-//         //                 .body_path(Some(DynamicValue::Mustache(Mustache::parse("{{a}}"))));
-//         //             let ctx = Context::default()
-//         //                 .value(json!({"a": {"special chars": "a
-//         // !@#$%^&*()<>?:{}-=1[];',./"}}));             let a =
-//         // tmpl.to_body(&ctx).unwrap();             let e =
-//         // "special+chars=a+%21%40%23%24%25%5E%26*%28%29%3C%3E%3F%3A%7B%7D-%3D1%5B%5D%
+//         //
+// .body_path(Some(DynamicValue::Mustache(Mustache::parse("{{a}}"))));         //
+// let ctx = Context::default()         //                 .value(json!({"a":
+// {"special chars": "a         // !@#$%^&*()<>?:{}-=1[];',./"}}));
+// let a =         // tmpl.to_body(&ctx).unwrap();             let e =
+//         //
+// "special+chars=a+%21%40%23%24%25%5E%26*%28%29%3C%3E%3F%3A%7B%7D-%3D1%5B%5D%
 //         // 3B%27%2C.%2F";             assert_eq!(a, e);
 //         //         }
 
@@ -993,17 +999,17 @@ impl<A: PathString> Eval<'_> for ListMustacheEval<A> {
 //             assert_no_duplicate([
 //                 RequestTemplate::form_encoded_url("http://localhost:3000")
 //                     .unwrap()
-//                     .cache_key(&auth_header_ctx("Authorization", "abc".parse().unwrap())),
-//                 RequestTemplate::form_encoded_url("http://localhost:3000")
+//                     .cache_key(&auth_header_ctx("Authorization",
+// "abc".parse().unwrap())),                 RequestTemplate::form_encoded_url("http://localhost:3000")
 //                     .unwrap()
-//                     .cache_key(&auth_header_ctx("Authorization", "bcd".parse().unwrap())),
-//                 RequestTemplate::form_encoded_url("http://localhost:3000")
+//                     .cache_key(&auth_header_ctx("Authorization",
+// "bcd".parse().unwrap())),                 RequestTemplate::form_encoded_url("http://localhost:3000")
 //                     .unwrap()
-//                     .cache_key(&auth_header_ctx("Range", "bytes=0-100".parse().unwrap())),
-//                 RequestTemplate::form_encoded_url("http://localhost:3000")
+//                     .cache_key(&auth_header_ctx("Range",
+// "bytes=0-100".parse().unwrap())),                 RequestTemplate::form_encoded_url("http://localhost:3000")
 //                     .unwrap()
-//                     .cache_key(&auth_header_ctx("Range", "bytes=0-".parse().unwrap())),
-//             ]);
+//                     .cache_key(&auth_header_ctx("Range",
+// "bytes=0-".parse().unwrap())),             ]);
 //         }
 
 //         #[test]
