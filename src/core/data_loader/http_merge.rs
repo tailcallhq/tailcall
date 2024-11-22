@@ -74,22 +74,18 @@ impl HttpMerge {
             Ok(response.body(merged_response))
         } else {
             let (map, response) = self.execute(group_by, is_list, request).await?;
-            println!("[Finder]: map = {:#?} ", map);
 
             let mut merged_response = map.into_values().map(|res| res.body).collect::<Vec<_>>();
-            let v = match merged_response.len() {
-                0 => Ok(response),
+            let response = match merged_response.len() {
+                0 => {
+                    return Err(anyhow::anyhow!(
+                        "Batching failed: no results found. Please check your batch key."
+                    ))
+                }
                 1 => Ok(response.body(merged_response.remove(0))),
                 2.. => Ok(response.body(ConstValue::List(merged_response))),
             };
-
-            println!(
-                "[Finder]: group_by = {:#?} and is_list: {:#?}",
-                group_by, is_list
-            );
-            println!("[Finder]: v = {:#?}", v);
-
-            v
+            response
         }
     }
 
@@ -123,7 +119,6 @@ impl HttpMerge {
 
         let response_map = response.body.group_by(&group_by.path());
         let mut map = HashMap::with_capacity(query_set.len());
-        println!("[Finder]: map = {:#?} ", response_map);
         for id in query_set {
             let body = (body)(&response_map, &id);
             let res = response.clone().body(body);
