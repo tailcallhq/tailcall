@@ -3,9 +3,9 @@ use serde_json::Value;
 use tailcall_macros::{DirectiveDefinition, InputDefinition};
 
 use crate::core::config::{Encoding, KeyValue, URLQuery};
-use crate::core::http::Method;
+use crate::core::http::Method; 
 use crate::core::is_default;
-use crate::core::json::JsonSchema;
+use crate::core::json::JsonSchema; 
 
 #[derive(
     Serialize,
@@ -78,6 +78,7 @@ impl Http {
         Ok(())
     }
 }
+
 
 #[cfg(test)]
 mod tests {
