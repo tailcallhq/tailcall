@@ -52,7 +52,8 @@ impl ConstValueExecutor {
                     let resp: Response<ConstValue> = Response::default();
                     return resp
                         .with_errors(vec![Positioned::new(err.into(), Pos::default())])
-                        .into(); // Ensure the return type matches AnyResponse<Vec<u8>>
+                        .into(); // Ensure the return type matches
+                                 // AnyResponse<Vec<u8>>
                 }
             }
         }
