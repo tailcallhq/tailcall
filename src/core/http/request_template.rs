@@ -7,6 +7,7 @@ use tailcall_hasher::TailcallHasher;
 use url::Url;
 
 use super::query_encoder::QueryEncoder;
+use super::Expander;
 use crate::core::blueprint::DynamicValue;
 use crate::core::config::Encoding;
 use crate::core::endpoint::Endpoint;
@@ -148,7 +149,7 @@ impl RequestTemplate {
                         //    with expander
                         // 2. then we convert it back to string and then to mustache template
                         // 3. then we render it with context.
-                        body_path.render(ctx)?
+                        Expander::expand(body_path, batch_size)?.render(ctx)?
                     } else {
                         body_path.render(ctx)?
                     };
@@ -684,7 +685,7 @@ impl<A: PathString> Eval<'_> for ListMustacheEval<A> {
 //         let tmpl = RequestTemplate::new("http://localhost:3000")
 //             .unwrap()
 //             .method(reqwest::Method::POST)
-//             
+//
 // .encoding(crate::core::config::Encoding::ApplicationXWwwFormUrlencoded);
 //         let ctx = Context::default();
 //         let req = tmpl.to_request(&ctx).unwrap();

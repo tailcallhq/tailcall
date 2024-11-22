@@ -77,11 +77,7 @@ impl HttpMerge {
 
             let mut merged_response = map.into_values().map(|res| res.body).collect::<Vec<_>>();
             let response = match merged_response.len() {
-                0 => {
-                    return Err(anyhow::anyhow!(
-                        "Batching failed: no results found. Please check your batch key."
-                    ))
-                }
+                0 => Ok(response),
                 1 => Ok(response.body(merged_response.remove(0))),
                 2.. => Ok(response.body(ConstValue::List(merged_response))),
             };
