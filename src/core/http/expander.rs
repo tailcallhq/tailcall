@@ -1,7 +1,9 @@
 use anyhow::Ok;
 use serde_json::Value;
 
-use crate::core::blueprint::DynamicValue;
+use crate::core::{blueprint::DynamicValue, mustache::Segment, Mustache};
+
+const PREFIXES: [&str; 5] = ["value", "headers", "vars", "env", "args"];
 
 pub struct Expander;
 
@@ -68,18 +70,26 @@ impl Expander {
                 Value::Array(updated_list)
             }
             Value::String(s) => {
-                let updated_string = s
-                    .replace("{{.value.", &format!("{{{{.value.{}.", index))
-                    .replace("{{value.", &format!("{{{{value.{}.", index))
-                    .replace("{{.headers.", &format!("{{{{.headers.{}.", index))
-                    .replace("{{headers.", &format!("{{{{headers.{}.", index))
-                    .replace("{{.vars.", &format!("{{{{.vars.{}.", index))
-                    .replace("{{vars.", &format!("{{{{vars.{}.", index))
-                    .replace("{{.env.", &format!("{{{{.env.{}.", index))
-                    .replace("{{env.", &format!("{{{{env.{}.", index))
-                    .replace("{{.args.", &format!("{{{{.args.{}.", index))
-                    .replace("{{args.", &format!("{{{{args.{}.", index));
-                Value::String(updated_string)
+                let mut template = Mustache::parse(s.as_str());
+                if template.is_const() {
+                    Value::String(s)
+                } else {
+                    template.segments_mut().iter_mut().for_each(|segment| {
+                        if let Segment::Expression(parts) = segment {
+                            let mut modified_pars = Vec::with_capacity(parts.len() + 1);
+                            for part in parts.iter() {
+                                if PREFIXES.contains(&part.as_str()) {
+                                    modified_pars.push(part.to_string());
+                                    modified_pars.push(index.to_string());
+                                } else {
+                                    modified_pars.push(part.to_string());
+                                }
+                            }
+                            *parts = modified_pars;
+                        }
+                    });
+                    Value::String(template.to_string())
+                }
             }
             other => other, // Return as is for other variants.
         }
@@ -103,15 +113,15 @@ mod tests {
 
             let actual = Expander::expand_inner(input1, 2);
             let expected = json!({
-                "a": { 
-                    "b": { 
-                        "c": { 
+                "a": {
+                    "b": {
+                        "c": {
                             "d": [
-                                format!("{{{{.{}.0.userId}}}}", ext), 
-                                format!("{{{{.{}.1.userId}}}}", ext)
-                            ] 
-                        } 
-                    } 
+                                format!("{{{{{}.0.userId}}}}", ext),
+                                format!("{{{{{}.1.userId}}}}", ext)
+                            ]
+                        }
+                    }
                 }
             });
             assert_eq!(actual, expected);
@@ -128,13 +138,13 @@ mod tests {
             let actual = Expander::expand_inner(input2, 2);
             let expected = json!([
                 {
-                    "userId": format!("{{{{.{}.0.id}}}}", ext),
-                    "title": format!("{{{{.{}.0.name}}}}", ext),
+                    "userId": format!("{{{{{}.0.id}}}}", ext),
+                    "title": format!("{{{{{}.0.name}}}}", ext),
                     "content": "Hello World"
                 },
                 {
-                    "userId": format!("{{{{.{}.1.id}}}}", ext),
-                    "title": format!("{{{{.{}.1.name}}}}", ext),
+                    "userId": format!("{{{{{}.1.id}}}}", ext),
+                    "title": format!("{{{{{}.1.name}}}}", ext),
                     "content": "Hello World"
                 }
             ]);
@@ -152,11 +162,11 @@ mod tests {
             let expected = json!([
                 {
                     "metadata": "xyz",
-                    "items": format!("{{{{.{}.0.userId}}}}", ext)
+                    "items": format!("{{{{{}.0.userId}}}}", ext)
                 },
                 {
                     "metadata": "xyz",
-                    "items": format!("{{{{.{}.1.userId}}}}", ext)
+                    "items": format!("{{{{{}.1.userId}}}}", ext)
                 }
             ]);
             assert_eq!(actual, expected);
@@ -167,7 +177,7 @@ mod tests {
                 "items": [
                     {
                         "key": "id",
-                        "value": format!("{{{{.{}.userId}}}}", ext)
+                        "value": format!("{{{{{}.userId}}}}", ext)
                     }
                 ]
             });
@@ -178,11 +188,11 @@ mod tests {
                 "items": [
                     {
                         "key": "id",
-                        "value": format!("{{{{.{}.0.userId}}}}", ext)
+                        "value": format!("{{{{{}.0.userId}}}}", ext)
                     },
                     {
                         "key": "id",
-                        "value": format!("{{{{.{}.1.userId}}}}", ext)
+                        "value": format!("{{{{{}.1.userId}}}}", ext)
                     }
                 ]
             });
