@@ -82,6 +82,7 @@ pub struct Http {
     /// first parameter referencing a field in the current value using mustache
     /// syntax is automatically selected as the batching parameter.
     pub query: Vec<URLQuery>,
+
     #[serde(default, skip_serializing_if = "is_default")]
     /// Enables deduplication of IO operations to enhance performance.
     ///
@@ -101,4 +102,65 @@ pub struct Http {
     ///   "buzz": "eggs", ... }, ... }` we can use { foo: "{{.foo}}", buzz:
     ///   "{{.fizz.buzz}}" }`
     pub select: Option<Value>,
+}
+
+impl Http {
+    /// Validates that query parameters don't contain objects
+    pub fn validate_query_params(&self) -> Result<(), String> {
+        for query in &self.query {
+            // Check if value contains mustache template with object access
+            if let Some(value) = &query.value {
+                if value.contains("{{.args.") {
+                    // Extract the argument name from the template
+                    if let Some(arg_name) = value
+                        .split("{{.args.")
+                        .nth(1)
+                        .and_then(|s| s.split("}}").next())
+                    {
+                        // Check if the argument refers to an input object type
+                        if arg_name.contains('.') {
+                            return Err(format!(
+                                "Invalid query parameter type for '{}'. Expected a Scalar but received an Object.",
+                                query.key
+                            ));
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_validate_query_params_with_scalar() {
+        let http = Http {
+            url: "test".to_string(),
+            query: vec![URLQuery {
+                key: "id".to_string(),
+                value: Some("{{.args.id}}".to_string()),
+                ..Default::default()
+            }],
+            ..Default::default()
+        };
+        assert!(http.validate_query_params().is_ok());
+    }
+
+    #[test]
+    fn test_validate_query_params_with_object() {
+        let http = Http {
+            url: "test".to_string(),
+            query: vec![URLQuery {
+                key: "nested".to_string(),
+                value: Some("{{.args.criteria.maritalStatus}}".to_string()),
+                ..Default::default()
+            }],
+            ..Default::default()
+        };
+        assert!(http.validate_query_params().is_err());
+    }
 }
