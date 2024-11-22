@@ -140,28 +140,28 @@ impl RequestTemplate {
         batch_size: usize,
     ) -> anyhow::Result<reqwest::Request> {
         if let Some(body_path) = &self.body_path {
+            let rendered_body = if batch_size > 0 {
+                // TODO: this is very expensive operation, think about better way to do
+                // this.
+                // 1. we convert the avail value into serde_json::Value and then expand it
+                //    with expander
+                // 2. then we convert it back to string and then to mustache template
+                // 3. then we render it with context.
+                Expander::expand(body_path, batch_size)?.render(ctx)?
+            } else {
+                body_path.render(ctx)?
+            };
+            
             match &self.encoding {
                 Encoding::ApplicationJson => {
-                    let rendered_body = if batch_size > 0 {
-                        // TODO: this is very expensive operation, think about better way to do
-                        // this.
-                        // 1. we convert the avail value into serde_json::Value and then expand it
-                        //    with expander
-                        // 2. then we convert it back to string and then to mustache template
-                        // 3. then we render it with context.
-                        Expander::expand(body_path, batch_size)?.render(ctx)?
-                    } else {
-                        body_path.render(ctx)?
-                    };
                     req.body_mut().replace(rendered_body.into());
                 }
                 Encoding::ApplicationXWwwFormUrlencoded => {
                     // TODO: this is a performance bottleneck
                     // We first encode everything to string and then back to form-urlencoded
-                    let body: String = body_path.render(ctx)?;
-                    let form_data = match serde_json::from_str::<serde_json::Value>(&body) {
+                    let form_data = match serde_json::from_str::<serde_json::Value>(&rendered_body) {
                         Ok(deserialized_data) => serde_urlencoded::to_string(deserialized_data)?,
-                        Err(_) => body,
+                        Err(_) => rendered_body,
                     };
 
                     req.body_mut().replace(form_data.into());
