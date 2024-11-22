@@ -1,0 +1,16 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server @upstream(batch: {delay: 1, headers: []}) {
+  query: Query
+}
+
+type Query {
+  user: User @http(url: "http://localhost:3000/posts/1", batchKey: ["id"], method: "POST")
+}
+
+type User {
+  age: Int
+  name: String
+}
