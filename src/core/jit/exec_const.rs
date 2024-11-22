@@ -7,7 +7,8 @@ use tailcall_valid::Validator;
 use super::context::Context;
 use super::exec::{Executor, IRExecutor};
 use super::{
-    transform, BuildError, Error, OperationPlan, Pos, Positioned, Request, Response, Result,
+    transform, AnyResponse, BuildError, Error, OperationPlan, Pos, Positioned, Request, Response,
+    Result,
 };
 use crate::core::app_context::AppContext;
 use crate::core::http::RequestContext;
@@ -35,11 +36,12 @@ impl ConstValueExecutor {
         Ok(Self::from(plan))
     }
 
-    pub async fn execute(
+    pub async fn execute<'a>(
         self,
+        app_ctx: &Arc<AppContext>,
         req_ctx: &RequestContext,
-        request: &Request<ConstValue>,
-    ) -> Response<ConstValue> {
+        request: Request<ConstValue>,
+    ) -> AnyResponse<Vec<u8>> {
         // TODO: collect the results in parallel
         let mut _results = Vec::new();
         for ir in &self.plan.before {
@@ -52,7 +54,9 @@ impl ConstValueExecutor {
                 }
             }
         }
-
+      
+        let is_introspection_query =
+            req_ctx.server.get_enable_introspection() && self.plan.is_introspection_query;
         let variables = &request.variables;
 
         // Attempt to skip unnecessary fields
@@ -60,9 +64,11 @@ impl ConstValueExecutor {
             .transform(self.plan)
             .to_result()
         else {
+            let resp: Response<ConstValue> = Response::default();
             // this shouldn't actually ever happen
-            return Response::default()
-                .with_errors(vec![Positioned::new(Error::Unknown, Pos::default())]);
+            return resp
+                .with_errors(vec![Positioned::new(Error::Unknown, Pos::default())])
+                .into();
         };
 
         // Attempt to replace variables in the plan with the actual values
@@ -74,10 +80,13 @@ impl ConstValueExecutor {
         let plan = match result {
             Ok(plan) => plan,
             Err(err) => {
-                return Response::default().with_errors(vec![Positioned::new(
-                    BuildError::from(err).into(),
-                    Pos::default(),
-                )]);
+                let resp: Response<ConstValue> = Response::default();
+                return resp
+                    .with_errors(vec![Positioned::new(
+                        BuildError::from(err).into(),
+                        Pos::default(),
+                    )])
+                    .into();
             }
         };
 
@@ -88,7 +97,16 @@ impl ConstValueExecutor {
         let store = exe.store().await;
         let synth = Synth::new(&plan, store, vars);
 
-        exe.execute(synth).await
+        let resp: Response<serde_json_borrow::Value> = exe.execute(&synth).await;
+
+        if is_introspection_query {
+            let async_req = async_graphql::Request::from(request).only_introspection();
+            let async_resp = app_ctx.execute(async_req).await;
+
+            resp.merge_with(&async_resp).into()
+        } else {
+            resp.into()
+        }
     }
 }
 

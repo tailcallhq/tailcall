@@ -134,6 +134,7 @@ impl GraphQLRequestLike for GraphQLRequest {
     }
 }
 
+// TODO: drop this type since we can use jit::response?
 #[derive(Debug, Serialize)]
 pub struct GraphQLResponse(pub async_graphql::BatchResponse);
 impl From<async_graphql::BatchResponse> for GraphQLResponse {
