@@ -351,7 +351,7 @@ impl<Input> OperationPlan<Input> {
             is_const: false,
             is_protected: false,
             min_cache_ttl: None,
-            before: Vec::new(),
+            before: Default::default(),
         }
     }
 

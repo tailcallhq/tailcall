@@ -2,6 +2,7 @@ use std::convert::Infallible;
 
 use tailcall_valid::Valid;
 
+use crate::core::blueprint::DynamicValue;
 use crate::core::ir::model::IR;
 use crate::core::jit::{Field, OperationPlan};
 use crate::core::Transform;
@@ -35,7 +36,7 @@ impl<A> Transform for AuthPlaner<A> {
 
 /// Used to recursively update the field ands its selections to remove
 /// IR::Protected
-fn extract_ir_protect<A>(before: &mut Vec<IR>, mut field: Field<A>) -> Field<A> {
+fn extract_ir_protect<A>(before: &mut Option<IR>, mut field: Field<A>) -> Field<A> {
     if let Some(ir) = field.ir {
         let (new_ir, is_protected) = detect_and_remove_ir_protect(ir);
 
@@ -46,9 +47,8 @@ fn extract_ir_protect<A>(before: &mut Vec<IR>, mut field: Field<A>) -> Field<A> 
             .collect();
 
         if is_protected {
-            before.push(IR::Protect(Box::new(IR::ContextPath(vec![
-                "data".to_string()
-            ]))));
+            let ir = IR::Protect(Box::new(IR::Dynamic(DynamicValue::Value(Default::default()))));
+            *before = Some(ir);
         }
 
         field.ir = Some(new_ir);
