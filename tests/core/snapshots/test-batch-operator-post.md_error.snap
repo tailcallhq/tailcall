@@ -4,7 +4,7 @@ expression: errors
 ---
 [
   {
-    "message": "GroupBy is only supported for GET requests",
+    "message": "Batching capability enabled on POST request without bodyKey",
     "trace": [
       "Query",
       "user",
