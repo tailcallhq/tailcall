@@ -1,0 +1,11 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server @upstream @link(id: "htpasswd", src: ".htpasswd", type: Htpasswd) {
+  query: Query
+}
+
+type Query {
+  data: String @http(url: "http://upstream/data") @protected
+}

@@ -78,6 +78,7 @@ where
             is_protected: self.plan.is_protected,
             min_cache_ttl: self.plan.min_cache_ttl,
             selection,
+            before: self.plan.before,
         })
     }
 
