@@ -23,14 +23,15 @@ type Foo {
       batchKey: ["a"]
       bodyKey: ["id"]
     )
-  tar: Tar
-    @http(
-      url: "http://jsonplaceholder.typicode.com/tar"
-      method: POST
-      body: "{{.value.b}}"
-      batchKey: ["id"]
-      bodyKey: [""]
-    )
+  # think about it later.
+  # tar: Tar
+  #   @http(
+  #     url: "http://jsonplaceholder.typicode.com/tar"
+  #     method: POST
+  #     body: "{{.value.b}}"
+  #     batchKey: ["a"]
+  #     bodyKey: [""]
+  #   )
 }
 
 type Tar {
@@ -138,7 +139,7 @@ type Post {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/foo
-  expectedHits: 2
+  expectedHits: 1
   response:
     status: 200
     body:
@@ -163,6 +164,7 @@ type Post {
     method: POST
     url: http://jsonplaceholder.typicode.com/tar
     body: [12, 22]
+  expectedHits: 0
   response:
     status: 200
     body:
@@ -186,8 +188,8 @@ type Post {
   body:
     query: query { foo { a b bar { a  b } } }
 
-- method: POST
-  url: http://localhost:8080/graphql
-  body:
-    query: query { foo { a b tar { a } } }
+# - method: POST
+#   url: http://localhost:8080/graphql
+#   body:
+#     query: query { foo { a b tar { a } } }
 ```

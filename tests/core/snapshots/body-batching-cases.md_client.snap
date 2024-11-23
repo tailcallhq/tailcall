@@ -11,7 +11,6 @@ type Foo {
   a: Int
   b: Int
   bar: Bar
-  tar: Tar
 }
 
 type Post {
@@ -27,10 +26,6 @@ type Query {
   posts: [Post]
   user: User
   users: [User]
-}
-
-type Tar {
-  a: Int
 }
 
 type User {

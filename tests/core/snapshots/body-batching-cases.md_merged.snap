@@ -22,14 +22,6 @@ type Foo {
       bodyKey: ["id"]
       method: "POST"
     )
-  tar: Tar
-    @http(
-      url: "http://jsonplaceholder.typicode.com/tar"
-      body: "{{.value.b}}"
-      batchKey: ["id"]
-      bodyKey: [""]
-      method: "POST"
-    )
 }
 
 type Post {
