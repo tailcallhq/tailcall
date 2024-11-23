@@ -103,45 +103,37 @@ impl<'a> MustachePartsValidator<'a> {
 
         Valid::succeed(())
     }
-}
 
-impl FieldDefinition {
-    // TODO: need validation for multiple resolvers
-    pub fn validate_field(&self, type_of: &config::Type, config: &Config) -> Valid<(), String> {
-        // XXX we could use `Mustache`'s `render` method with a mock
-        // struct implementing the `PathString` trait encapsulating `validation_map`
-        // but `render` simply falls back to the default value for a given
-        // type if it doesn't exist, so we wouldn't be able to get enough
-        // context from that method alone
-        // So we must duplicate some of that logic here :(
-        let parts_validator = MustachePartsValidator::new(type_of, config, self);
-
-        match &self.resolver {
-            Some(IR::IO(IO::Http { req_template, .. })) => {
+    fn validate_resolver(&self, resolver: &IR) -> Valid<(), String> {
+        match resolver {
+            IR::Merge(resolvers) => {
+                Valid::from_iter(resolvers, |resolver| self.validate_resolver(resolver)).unit()
+            }
+            IR::IO(IO::Http { req_template, .. }) => {
                 Valid::from_iter(req_template.root_url.expression_segments(), |parts| {
-                    parts_validator.validate(parts, false).trace("path")
+                    self.validate(parts, false).trace("path")
                 })
                 .and(Valid::from_iter(req_template.query.clone(), |query| {
                     let mustache = &query.value;
 
                     Valid::from_iter(mustache.expression_segments(), |parts| {
-                        parts_validator.validate(parts, true).trace("query")
+                        self.validate(parts, true).trace("query")
                     })
                 }))
                 .unit()
                 .trace(config::Http::trace_name().as_str())
             }
-            Some(IR::IO(IO::GraphQL { req_template, .. })) => {
+            IR::IO(IO::GraphQL { req_template, .. }) => {
                 Valid::from_iter(req_template.headers.clone(), |(_, mustache)| {
                     Valid::from_iter(mustache.expression_segments(), |parts| {
-                        parts_validator.validate(parts, true).trace("headers")
+                        self.validate(parts, true).trace("headers")
                     })
                 })
                 .and_then(|_| {
                     if let Some(args) = &req_template.operation_arguments {
                         Valid::from_iter(args, |(_, mustache)| {
                             Valid::from_iter(mustache.expression_segments(), |parts| {
-                                parts_validator.validate(parts, true).trace("args")
+                                self.validate(parts, true).trace("args")
                             })
                         })
                     } else {
@@ -151,14 +143,14 @@ impl FieldDefinition {
                 .unit()
                 .trace(config::GraphQL::trace_name().as_str())
             }
-            Some(IR::IO(IO::Grpc { req_template, .. })) => {
+            IR::IO(IO::Grpc { req_template, .. }) => {
                 Valid::from_iter(req_template.url.expression_segments(), |parts| {
-                    parts_validator.validate(parts, false).trace("path")
+                    self.validate(parts, false).trace("path")
                 })
                 .and(
                     Valid::from_iter(req_template.headers.clone(), |(_, mustache)| {
                         Valid::from_iter(mustache.expression_segments(), |parts| {
-                            parts_validator.validate(parts, true).trace("headers")
+                            self.validate(parts, true).trace("headers")
                         })
                     })
                     .unit(),
@@ -167,7 +159,7 @@ impl FieldDefinition {
                     if let Some(body) = &req_template.body {
                         if let Some(mustache) = &body.mustache {
                             Valid::from_iter(mustache.expression_segments(), |parts| {
-                                parts_validator.validate(parts, true).trace("body")
+                                self.validate(parts, true).trace("body")
                             })
                         } else {
                             // TODO: needs review
@@ -180,7 +172,25 @@ impl FieldDefinition {
                 .unit()
                 .trace(config::Grpc::trace_name().as_str())
             }
+            // TODO: add validation for @expr
             _ => Valid::succeed(()),
+        }
+    }
+}
+
+impl FieldDefinition {
+    pub fn validate_field(&self, type_of: &config::Type, config: &Config) -> Valid<(), String> {
+        // XXX we could use `Mustache`'s `render` method with a mock
+        // struct implementing the `PathString` trait encapsulating `validation_map`
+        // but `render` simply falls back to the default value for a given
+        // type if it doesn't exist, so we wouldn't be able to get enough
+        // context from that method alone
+        // So we must duplicate some of that logic here :(
+        let parts_validator = MustachePartsValidator::new(type_of, config, self);
+
+        match &self.resolver {
+            Some(resolver) => parts_validator.validate_resolver(resolver),
+            None => Valid::succeed(()),
         }
     }
 }

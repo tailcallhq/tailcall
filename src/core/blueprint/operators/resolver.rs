@@ -78,7 +78,6 @@ pub fn update_resolver<'a>(
             })
             .map(|resolver| b_field.resolver(resolver))
             .and_then(|b_field| {
-                // TODO: handle multiple resolvers in validation
                 b_field
                     // TODO: there are `validate_field` for field, but not for types
                     // when we use federations's entities
