@@ -79,34 +79,44 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
 
             // Create base request
             let mut base_request = dl_requests[0].to_request();
+            // TODO: add the body as is in the DalaLoaderRequest.
             let mut body_mapping = HashMap::with_capacity(dl_requests.len());
 
             if dl_requests[0].method() == reqwest::Method::POST {
                 // run only for POST requests.
+                let mut arr = Vec::with_capacity(dl_requests.len());
                 for req in dl_requests.iter() {
                     if let Some(body) = req.body().and_then(|b| b.as_bytes()) {
                         let value = serde_json::from_slice::<serde_json::Value>(body)
                             .map_err(|e| anyhow::anyhow!("Unable to deserialize body: {}", e))?;
                         body_mapping.insert(req, value);
+                        arr.push(body);
                     }
                 }
 
-                if !body_mapping.is_empty() {
-                    // note: sort body only in test and execution_spec env.
-                    let mut bodies = body_mapping.values().collect::<Vec<_>>();
-
+                if !arr.is_empty() {
                     if cfg!(feature = "integration_test") || cfg!(test) {
-                        bodies.sort_by_key(|a| a.to_string());
+                        arr.sort();
                     }
 
-                    let serialized_bodies = serde_json::to_vec(&bodies).map_err(|e| {
-                        anyhow::anyhow!(
-                            "Unable to serialize for batch post request: '{}', with error {}",
-                            base_request.url().as_str(),
-                            e
-                        )
-                    })?;
-                    base_request.body_mut().replace(serialized_bodies.into());
+                    // construct serialization manually.
+                    let arr = arr.iter().fold(
+                        Vec::with_capacity(arr.iter().map(|i| i.len()).sum::<usize>() + arr.len()),
+                        |mut acc, item| {
+                            if !acc.is_empty() {
+                                acc.extend_from_slice(b",");
+                            }
+                            acc.extend_from_slice(item);
+                            acc
+                        },
+                    );
+
+                    // add list brackets to the serialized body.
+                    let mut serialized_arr = Vec::with_capacity(arr.len() + 2);
+                    serialized_arr.extend_from_slice(b"[");
+                    serialized_arr.extend_from_slice(&arr);
+                    serialized_arr.extend_from_slice(b"]");
+                    base_request.body_mut().replace(serialized_arr.into());
                 }
             }
 
