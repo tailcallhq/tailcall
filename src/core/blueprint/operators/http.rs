@@ -16,7 +16,11 @@ pub fn compile_http(
 ) -> Valid<IR, String> {
     let dedupe = http.dedupe.unwrap_or_default();
 
-    Valid::<(), String>::succeed(())
+    Valid::<(), String>::fail("GroupBy is only supported for GET/POST requests".to_string())
+        .when(|| {
+            !http.batch_key.is_empty()
+                && (http.method != Method::GET || http.method != Method::POST)
+        })
         .and(
             Valid::<(), String>::fail(
                 "Batching capability was used without enabling it in upstream".to_string(),
