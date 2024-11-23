@@ -74,7 +74,8 @@ pub fn compile_http(
                 .or(config_module.upstream.on_request.clone())
                 .map(|on_request| HttpFilter { on_request });
 
-            let io = if !http.batch_key.is_empty() {
+            let group_by_clause_check = !http.batch_key.is_empty() && (http.method == Method::POST && !http.body_key.is_empty() || http.method != Method::POST);
+            let io = if group_by_clause_check {
                 // Find a query parameter that contains a reference to the {{.value}} key
                 let key = http.query.iter().find_map(|q| {
                     Mustache::parse(&q.value)
