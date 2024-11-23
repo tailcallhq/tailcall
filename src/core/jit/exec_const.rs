@@ -140,7 +140,7 @@ impl<'a> ConstValueExec<'a> {
     }
 }
 
-impl<'ctx> IRExecutor for ConstValueExec<'ctx> {
+impl IRExecutor for ConstValueExec<'_> {
     type Input = ConstValue;
     type Output = ConstValue;
     type Error = Error;
