@@ -54,9 +54,8 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
 
     pub async fn execute(&self, req: Request) -> Result<Response<async_graphql::Value>, Error> {
         let ctx = &self.evaluation_ctx;
-        let is_get = req.method() == reqwest::Method::GET;
         let dl = &self.data_loader;
-        let response = if is_get && dl.is_some() {
+        let response = if dl.is_some() {
             execute_request_with_dl(ctx, req, self.data_loader).await?
         } else {
             execute_raw_request(ctx, req).await?
