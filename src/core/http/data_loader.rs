@@ -83,11 +83,13 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
             let mut body_mapping = HashMap::with_capacity(dl_requests.len());
 
             if dl_requests[0].method() == reqwest::Method::POST {
+                // TODO: what if underlying body isn't encoded with JSON??
+
                 // run only for POST requests.
                 let mut arr = Vec::with_capacity(dl_requests.len());
                 for req in dl_requests.iter() {
                     if let Some(body) = req.body().and_then(|b| b.as_bytes()) {
-                        let value = serde_json::from_slice::<serde_json::Value>(body)
+                        let value = serde_json::from_slice::<serde_json_borrow::Value>(body)
                             .map_err(|e| anyhow::anyhow!("Unable to deserialize body: {}", e))?;
                         body_mapping.insert(req, value);
                         arr.push(body);
