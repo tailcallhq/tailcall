@@ -27,6 +27,7 @@ type User {
       url: "https://jsonplaceholder.typicode.com/posts"
       body: "{\"userId\": \"{{.value.id}}\", \"title\": \"foo\", \"body\": \"bar\"}"
       batchKey: ["userId"]
+      bodyKey: ["userId"]
       method: "POST"
     )
 }
