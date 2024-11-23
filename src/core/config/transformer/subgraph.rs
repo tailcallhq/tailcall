@@ -50,7 +50,7 @@ impl Transform for Subgraph {
                 );
             }
 
-            if let Some(resolver) = ty.resolvers.get(0) {
+            if let Some(resolver) = ty.resolvers.first() {
                 resolver_by_type.insert(type_name.clone(), resolver.clone());
 
                 KeysExtractor::validate(&config_types, resolver, type_name).and_then(|_| {

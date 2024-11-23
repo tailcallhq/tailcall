@@ -14,10 +14,10 @@ use tailcall_typedefs_common::ServiceDocumentBuilder;
 use tailcall_valid::{Valid, Validator};
 
 use super::directive::Directive;
-use super::{from_document::from_document, Resolver, Resolvers};
+use super::from_document::from_document;
 use super::{
     AddField, Alias, Cache, Call, Discriminate, Expr, GraphQL, Grpc, Http, Link, Modify, Omit,
-    Protected, Server, Telemetry, Upstream, JS,
+    Protected, Resolver, Resolvers, Server, Telemetry, Upstream, JS,
 };
 use crate::core::config::npo::QueryPath;
 use crate::core::config::source::Source;
@@ -694,7 +694,8 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     use super::*;
-    use crate::core::{config::Resolver, directive::DirectiveCodec};
+    use crate::core::config::Resolver;
+    use crate::core::directive::DirectiveCodec;
 
     #[test]
     fn test_field_has_or_not_batch_resolver() {

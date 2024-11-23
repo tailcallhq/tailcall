@@ -175,13 +175,10 @@ mod tests {
     mod merge {
         use serde_json::json;
 
-        use crate::core::{
-            blueprint::{Blueprint, DynamicValue},
-            http::RequestContext,
-            ir::EmptyResolverContext,
-        };
-
         use super::*;
+        use crate::core::blueprint::{Blueprint, DynamicValue};
+        use crate::core::http::RequestContext;
+        use crate::core::ir::EmptyResolverContext;
 
         #[tokio::test]
         async fn test_const_values() {

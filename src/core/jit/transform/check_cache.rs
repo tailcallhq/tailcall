@@ -27,17 +27,9 @@ fn check_cache(ir: &IR) -> Option<NonZeroU64> {
             (Some(age1), Some(age2)) => Some(age1.min(age2)),
             _ => None,
         },
-        IR::Merge(vec) => vec
-            .iter()
-            .map(|ir| check_cache(ir))
-            .min()
-            .unwrap_or_default(),
+        IR::Merge(vec) => vec.iter().map(check_cache).min().unwrap_or_default(),
         IR::Discriminate(_, ir) => check_cache(ir),
-        IR::Entity(hash_map) => hash_map
-            .values()
-            .map(|ir| check_cache(ir))
-            .min()
-            .unwrap_or_default(),
+        IR::Entity(hash_map) => hash_map.values().map(check_cache).min().unwrap_or_default(),
         IR::Dynamic(_) | IR::ContextPath(_) | IR::Map(_) | IR::Service(_) => None,
     }
 }

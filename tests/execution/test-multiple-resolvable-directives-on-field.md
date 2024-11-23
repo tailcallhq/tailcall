@@ -18,8 +18,10 @@ type Address {
 
 type Query {
   user1: User @expr(body: {name: "name expr 1"}) @http(url: "http://jsonplaceholder.typicode.com/users/1")
-  user2: User @http(url: "http://jsonplaceholder.typicode.com/users/2") @expr(body: {name: "name expr 2" })
-  user3: User @http(url: "http://jsonplaceholder.typicode.com/users/3") @graphQL(args: [{key: "id", value: "3"}], url: "http://upstream/graphql", name: "user")
+  user2: User @http(url: "http://jsonplaceholder.typicode.com/users/2") @expr(body: {name: "name expr 2"})
+  user3: User
+    @http(url: "http://jsonplaceholder.typicode.com/users/3")
+    @graphQL(args: [{key: "id", value: "3"}], url: "http://upstream/graphql", name: "user")
 }
 ```
 

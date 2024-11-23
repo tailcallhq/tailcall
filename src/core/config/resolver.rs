@@ -60,10 +60,11 @@ impl Resolver {
 #[derive(Default, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 pub struct Resolvers(pub Vec<Resolver>);
 
-// Implement custom serializer to provide backward compatibility for JSON/YAML formats
-// when converting config to config file. In case the only one resolver is defined
-// serialize it as flatten structure instead of `resolvers: []`
-// TODO: this is not required in case Tailcall drop defining type schema in json/yaml files
+// Implement custom serializer to provide backward compatibility for JSON/YAML
+// formats when converting config to config file. In case the only one resolver
+// is defined serialize it as flatten structure instead of `resolvers: []`
+// TODO: this is not required in case Tailcall drop defining type schema in
+// json/yaml files
 impl Serialize for Resolvers {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -72,17 +73,18 @@ impl Serialize for Resolvers {
         let resolvers = &self.0;
 
         if resolvers.len() == 1 {
-            resolvers.get(0).unwrap().serialize(serializer)
+            resolvers.first().unwrap().serialize(serializer)
         } else {
             resolvers.serialize(serializer)
         }
     }
 }
 
-// Implement custom deserializer to provide backward compatibility for JSON/YAML formats
-// when parsing config files. In case the `resolvers` field is defined in config
-// parse it as vec of [Resolver] and otherwise try to parse it as single [Resolver]
-// TODO: this is not required in case Tailcall drop defining type schema in json/yaml files
+// Implement custom deserializer to provide backward compatibility for JSON/YAML
+// formats when parsing config files. In case the `resolvers` field is defined
+// in config parse it as vec of [Resolver] and otherwise try to parse it as
+// single [Resolver] TODO: this is not required in case Tailcall drop defining
+// type schema in json/yaml files
 impl<'de> Deserialize<'de> for Resolvers {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -94,7 +96,7 @@ impl<'de> Deserialize<'de> for Resolvers {
         let mut value = Value::deserialize(deserializer)?;
 
         if let Value::Object(obj) = &mut value {
-            if obj.len() == 0 {
+            if obj.is_empty() {
                 return Ok(Resolvers::default());
             }
 

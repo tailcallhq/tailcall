@@ -1,12 +1,10 @@
 use tailcall_valid::{Valid, Validator};
 
 use super::FieldDefinition;
+use crate::core::config::{self, Config};
+use crate::core::directive::DirectiveCodec;
 use crate::core::ir::model::{IO, IR};
 use crate::core::scalar;
-use crate::core::{
-    config::{self, Config},
-    directive::DirectiveCodec,
-};
 
 struct MustachePartsValidator<'a> {
     type_of: &'a config::Type,

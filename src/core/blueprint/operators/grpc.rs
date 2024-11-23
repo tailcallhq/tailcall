@@ -9,10 +9,10 @@ use crate::core::config::group_by::GroupBy;
 use crate::core::config::{Config, ConfigModule, Field, GraphQLOperationType, Grpc};
 use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
 use crate::core::grpc::request_template::RequestTemplate;
+use crate::core::helpers;
 use crate::core::ir::model::{IO, IR};
 use crate::core::json::JsonSchema;
 use crate::core::mustache::Mustache;
-use crate::core::helpers;
 
 fn to_url(grpc: &Grpc, method: &GrpcMethod) -> Valid<Mustache, String> {
     Valid::succeed(grpc.url.as_str()).and_then(|base_url| {
