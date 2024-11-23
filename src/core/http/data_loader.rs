@@ -82,18 +82,17 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
 
             if dl_requests[0].method() == reqwest::Method::POST {
                 // run only for POST requests.
-                let mut bodies = vec![];
                 for req in dl_requests.iter() {
                     if let Some(body) = req.body().and_then(|b| b.as_bytes()) {
                         let value = serde_json::from_slice::<serde_json::Value>(body)
                             .map_err(|e| anyhow::anyhow!("Unable to deserialize body: {}", e))?;
-                        bodies.push(value.clone());
                         body_mapping.insert(req, value);
                     }
                 }
 
-                if !bodies.is_empty() {
+                if !body_mapping.is_empty() {
                     // note: sort body only in test env.
+                    let mut bodies = body_mapping.values().collect::<Vec<_>>();
                     bodies.sort_by_key(|a| a.to_string());
 
                     let serialized_bodies = serde_json::to_vec(&bodies).map_err(|e| {
