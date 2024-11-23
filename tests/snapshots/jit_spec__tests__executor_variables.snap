@@ -7,13 +7,7 @@ snapshot_kind: text
   "data": null,
   "errors": [
     {
-      "message": "Build error: ResolveInputError: Variable `id` is not defined",
-      "locations": [
-        {
-          "line": 0,
-          "column": 0
-        }
-      ]
+      "message": "ResolveInputError: Variable `id` is not defined"
     }
   ]
 }
