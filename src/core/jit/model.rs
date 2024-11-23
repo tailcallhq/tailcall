@@ -290,7 +290,9 @@ pub struct OperationPlan<Input> {
     pub is_protected: bool,
     pub min_cache_ttl: Option<NonZeroU64>,
     pub selection: Vec<Field<Input>>,
-    pub before: Vec<IR>,
+
+    /// An IR that should be executed before the operation starts executing
+    pub before: Option<IR>,
 }
 
 impl<Input> std::fmt::Debug for OperationPlan<Input> {
