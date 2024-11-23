@@ -79,6 +79,7 @@ pub fn drop_protect_ir(ir: &mut IR) -> bool {
         }
         IR::Map(_) => false,
         IR::Pipe(ir1, ir2) => drop_protect_ir(ir1) || drop_protect_ir(ir2),
+        IR::Merge(_) => false,
         IR::Discriminate(_, ir) => drop_protect_ir(ir),
         IR::Entity(_) => false,
         IR::Service(_) => false,
