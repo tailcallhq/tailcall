@@ -50,19 +50,13 @@ impl HttpDataLoader {
 }
 
 fn get_key<'a>(value: &'a serde_json::Value, path: &[String]) -> anyhow::Result<&'a str> {
-    if path.is_empty() {
-        value
-            .as_str()
-            .ok_or(anyhow::anyhow!("Unable to find key in body"))
-    } else {
-        value
-            .get_path(&path)
-            .and_then(|k| k.as_str())
-            .ok_or(anyhow::anyhow!(
-                "Unable to find key {} in body",
-                path.join(" ")
-            ))
-    }
+    value
+        .get_path(path)
+        .and_then(|k| k.as_str())
+        .ok_or(anyhow::anyhow!(
+            "Unable to find key {} in body",
+            path.join(" ")
+        ))
 }
 
 #[async_trait::async_trait]

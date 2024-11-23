@@ -187,7 +187,6 @@ type Post {
   url: http://localhost:8080/graphql
   body:
     query: query { foo { a b bar { a  b } } }
-
 # - method: POST
 #   url: http://localhost:8080/graphql
 #   body:
