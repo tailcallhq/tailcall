@@ -87,7 +87,7 @@ async fn confirm_and_write_yml(
 fn main_config() -> Config {
     let field = Field {
         type_of: Type::from("String".to_owned()).into_required(),
-        resolvers: vec![Resolver::Expr(Expr { body: "Hello, World!".into() })],
+        resolvers: Resolver::Expr(Expr { body: "Hello, World!".into() }).into(),
         ..Default::default()
     };
 

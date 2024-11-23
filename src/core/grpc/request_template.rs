@@ -171,7 +171,7 @@ mod tests {
             "foo".to_string(),
             Type::default().fields(vec![(
                 "bar",
-                Field::default().resolvers(vec![Resolver::Grpc(grpc)]),
+                Field::default().resolvers(Resolver::Grpc(grpc).into()),
             )]),
         );
 

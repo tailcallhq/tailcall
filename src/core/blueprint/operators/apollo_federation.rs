@@ -111,7 +111,7 @@ pub fn update_federation<'a>() -> TryFoldConfig<'a, Blueprint> {
                     let federation = field
                         .resolvers
                         .iter()
-                        .find(|resolver| matches!(resolver, Resolver::ApolloFederation(_)));
+                        .find(|&resolver| matches!(resolver, Resolver::ApolloFederation(_)));
 
                     let Some(Resolver::ApolloFederation(federation)) = federation else {
                         return Valid::succeed(b_field);

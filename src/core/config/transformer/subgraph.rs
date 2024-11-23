@@ -102,7 +102,7 @@ impl Transform for Subgraph {
             Field {
                 type_of: Type::from(SERVICE_TYPE_NAME.to_owned()).into_required(),
                 doc: Some("Apollo federation Query._service resolver".to_string()),
-                resolvers: vec![Resolver::ApolloFederation(ApolloFederation::Service)],
+                resolvers: Resolver::ApolloFederation(ApolloFederation::Service).into(),
                 ..Default::default()
             },
         );
@@ -142,9 +142,10 @@ impl Transform for Subgraph {
                         .into_required(),
                     args: [(ENTITIES_ARG_NAME.to_owned(), arg)].into_iter().collect(),
                     doc: Some("Apollo federation Query._entities resolver".to_string()),
-                    resolvers: vec![Resolver::ApolloFederation(
-                        ApolloFederation::EntityResolver(entity_resolver),
-                    )],
+                    resolvers: Resolver::ApolloFederation(ApolloFederation::EntityResolver(
+                        entity_resolver,
+                    ))
+                    .into(),
                     ..Default::default()
                 },
             );

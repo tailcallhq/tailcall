@@ -107,10 +107,10 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Ty
     let path_resolver_error_handler = context.path_resolver_error_handler;
 
     if let Some(next_field) = type_info.fields.get(field_name) {
-        let mut valid = Valid::succeed(field.type_of.clone());
+        if !next_field.resolvers.is_empty() {
+            let mut valid = Valid::succeed(field.type_of.clone());
 
-        if !field.resolvers.is_empty() {
-            for resolver in &field.resolvers {
+            for resolver in next_field.resolvers.iter() {
                 valid = valid.and(path_resolver_error_handler(
                     &resolver.directive_name(),
                     field.type_of.name(),

@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use async_graphql::parser::types::ConstDirective;
 use async_graphql::Positioned;
 use serde::{Deserialize, Serialize};
@@ -6,6 +8,7 @@ use tailcall_valid::{Valid, Validator};
 
 use super::{Call, EntityResolver, Expr, GraphQL, Grpc, Http, JS};
 use crate::core::directive::DirectiveCodec;
+use crate::core::merge_right::MergeRight;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ApolloFederation {
@@ -50,6 +53,88 @@ impl Resolver {
                     .any(Resolver::is_batched)
             }
             _ => false,
+        }
+    }
+}
+
+#[derive(Default, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+pub struct Resolvers(pub Vec<Resolver>);
+
+// Implement custom serializer to provide backward compatibility for JSON/YAML formats
+// when converting config to config file. In case the only one resolver is defined
+// serialize it as flatten structure instead of `resolvers: []`
+// TODO: this is not required in case Tailcall drop defining type schema in json/yaml files
+impl Serialize for Resolvers {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let resolvers = &self.0;
+
+        if resolvers.len() == 1 {
+            resolvers.get(0).unwrap().serialize(serializer)
+        } else {
+            resolvers.serialize(serializer)
+        }
+    }
+}
+
+// Implement custom deserializer to provide backward compatibility for JSON/YAML formats
+// when parsing config files. In case the `resolvers` field is defined in config
+// parse it as vec of [Resolver] and otherwise try to parse it as single [Resolver]
+// TODO: this is not required in case Tailcall drop defining type schema in json/yaml files
+impl<'de> Deserialize<'de> for Resolvers {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        use serde::de::Error;
+        use serde_json::Value;
+
+        let mut value = Value::deserialize(deserializer)?;
+
+        if let Value::Object(obj) = &mut value {
+            if obj.len() == 0 {
+                return Ok(Resolvers::default());
+            }
+
+            if let Some(value) = obj.remove("resolvers") {
+                let resolvers = serde_json::from_value(value).map_err(Error::custom)?;
+
+                return Ok(Self(resolvers));
+            }
+        }
+
+        let resolver: Resolver = serde_json::from_value(value).map_err(Error::custom)?;
+
+        Ok(Resolvers::from(resolver))
+    }
+}
+
+impl From<Resolver> for Resolvers {
+    fn from(value: Resolver) -> Self {
+        Self(vec![value])
+    }
+}
+
+impl Deref for Resolvers {
+    type Target = Vec<Resolver>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+// Custom implementation for MergeRight in order
+// to provide compatibility with old tests where
+// the same resolver could be defined in multiple configs
+// leading to duplicated resolver in such tests
+impl MergeRight for Resolvers {
+    fn merge_right(self, other: Self) -> Self {
+        if other.is_empty() {
+            self
+        } else {
+            other
         }
     }
 }

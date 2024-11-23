@@ -1,9 +1,12 @@
 use tailcall_valid::{Valid, Validator};
 
 use super::FieldDefinition;
-use crate::core::config::{self, Config};
 use crate::core::ir::model::{IO, IR};
 use crate::core::scalar;
+use crate::core::{
+    config::{self, Config},
+    directive::DirectiveCodec,
+};
 
 struct MustachePartsValidator<'a> {
     type_of: &'a config::Type,
@@ -126,6 +129,7 @@ impl FieldDefinition {
                     })
                 }))
                 .unit()
+                .trace(config::Http::trace_name().as_str())
             }
             Some(IR::IO(IO::GraphQL { req_template, .. })) => {
                 Valid::from_iter(req_template.headers.clone(), |(_, mustache)| {
@@ -145,6 +149,7 @@ impl FieldDefinition {
                     }
                 })
                 .unit()
+                .trace(config::GraphQL::trace_name().as_str())
             }
             Some(IR::IO(IO::Grpc { req_template, .. })) => {
                 Valid::from_iter(req_template.url.expression_segments(), |parts| {
@@ -173,6 +178,7 @@ impl FieldDefinition {
                     }
                 })
                 .unit()
+                .trace(config::Grpc::trace_name().as_str())
             }
             _ => Valid::succeed(()),
         }

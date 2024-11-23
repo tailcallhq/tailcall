@@ -14,10 +14,10 @@ use tailcall_typedefs_common::ServiceDocumentBuilder;
 use tailcall_valid::{Valid, Validator};
 
 use super::directive::Directive;
-use super::from_document::from_document;
+use super::{from_document::from_document, Resolver, Resolvers};
 use super::{
     AddField, Alias, Cache, Call, Discriminate, Expr, GraphQL, Grpc, Http, Link, Modify, Omit,
-    Protected, Resolver, Server, Telemetry, Upstream, JS,
+    Protected, Server, Telemetry, Upstream, JS,
 };
 use crate::core::config::npo::QueryPath;
 use crate::core::config::source::Source;
@@ -116,8 +116,8 @@ pub struct Type {
     pub protected: Option<Protected>,
     ///
     /// Apollo federation entity resolver.
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub resolvers: Vec<Resolver>,
+    #[serde(flatten, default, skip_serializing_if = "is_default")]
+    pub resolvers: Resolvers,
     ///
     /// Any additional directives
     #[serde(default, skip_serializing_if = "is_default")]
@@ -225,8 +225,8 @@ pub struct Field {
 
     ///
     /// Resolver for the field
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub resolvers: Vec<Resolver>,
+    #[serde(flatten, default, skip_serializing_if = "is_default")]
+    pub resolvers: Resolvers,
 
     ///
     /// Any additional directives
@@ -694,25 +694,23 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     use super::*;
-    use crate::core::directive::DirectiveCodec;
+    use crate::core::{config::Resolver, directive::DirectiveCodec};
 
     #[test]
     fn test_field_has_or_not_batch_resolver() {
         let f1 = Field { ..Default::default() };
 
         let f2 = Field {
-            resolvers: vec![Resolver::Http(Http {
+            resolvers: Resolver::Http(Http {
                 batch_key: vec!["id".to_string()],
                 ..Default::default()
-            })],
+            })
+            .into(),
             ..Default::default()
         };
 
         let f3 = Field {
-            resolvers: vec![Resolver::Http(Http {
-                batch_key: vec![],
-                ..Default::default()
-            })],
+            resolvers: Resolver::Http(Http { batch_key: vec![], ..Default::default() }).into(),
             ..Default::default()
         };
 

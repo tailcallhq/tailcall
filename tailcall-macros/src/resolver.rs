@@ -94,14 +94,14 @@ pub fn expand_resolver_derive(input: DeriveInput) -> syn::Result<TokenStream> {
         impl #name {
             pub fn from_directives(
                 directives: &[Positioned<ConstDirective>],
-            ) -> Valid<Vec<Self>, String> {
+            ) -> Valid<crate::core::config::Resolvers, String> {
                 Valid::from_iter(directives.iter(), |directive| {
                     #(#variant_parsers)*
 
                     Valid::succeed(None)
                 })
                     .map(|resolvers| {
-                        resolvers.into_iter().filter_map(std::convert::identity).collect()
+                        crate::core::config::Resolvers(resolvers.into_iter().flatten().collect())
                     })
             }
 
