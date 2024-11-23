@@ -4,7 +4,7 @@ use crate::core::blueprint::*;
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::{Field, Resolver};
 use crate::core::endpoint::Endpoint;
-use crate::core::http::{HttpFilter, RequestTemplate};
+use crate::core::http::{HttpFilter, Method, RequestTemplate};
 use crate::core::ir::model::{IO, IR};
 use crate::core::try_fold::TryFold;
 use crate::core::{config, helpers, Mustache};
@@ -25,6 +25,16 @@ pub fn compile_http(
                 (config_module.upstream.get_delay() < 1
                     || config_module.upstream.get_max_size() < 1)
                     && !http.batch_key.is_empty()
+            }),
+        )
+        .and(
+            Valid::<(), String>::fail(
+                "Batching capability enabled on POST request without bodyKey".to_string(),
+            )
+            .when(|| {
+                http.method == Method::POST
+                    && !http.batch_key.is_empty()
+                    && http.body_key.is_empty()
             }),
         )
         .and(Valid::succeed(http.url.as_str()))
@@ -71,7 +81,10 @@ pub fn compile_http(
                 });
                 IR::IO(IO::Http {
                     req_template,
-                    group_by: Some(GroupBy::new(http.batch_key.clone(), key)),
+                    group_by: Some(
+                        GroupBy::new(http.batch_key.clone(), key)
+                            .with_body_key(http.body_key.clone()),
+                    ),
                     dl_id: None,
                     http_filter,
                     is_list,

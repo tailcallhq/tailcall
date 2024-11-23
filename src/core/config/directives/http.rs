@@ -53,6 +53,10 @@ pub struct Http {
     /// The `batchKey` dictates the path Tailcall will follow to group the returned items from the batch request. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
     pub batch_key: Vec<String>,
 
+    #[serde(rename = "bodyKey", default, skip_serializing_if = "is_default")]
+    /// when response data is grouped by `batchKey`, `bodyKey` is used to define the association between grouped data and the request body.
+    pub body_key: Vec<String>,
+
     #[serde(default, skip_serializing_if = "is_default")]
     /// The `headers` parameter allows you to customize the headers of the HTTP
     /// request made by the `@http` operator. It is used by specifying a

@@ -152,13 +152,13 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
                     hashmap.insert(dl_req.clone(), res);
                 }
             } else {
-                let body_key = "userId"; // note: we've to define the key in DSL.
+                let path = group_by.body_key();
                 for (dl_req, body) in body_mapping.into_iter() {
                     // retrive the key from body
                     let key = body
-                        .get_path(&[body_key])
+                        .get_path(&path)
                         .and_then(|k| k.as_str())
-                        .ok_or(anyhow::anyhow!("Unable to find key {} in body", body_key))?;
+                        .ok_or(anyhow::anyhow!("Unable to find key {} in body", path.join(" ")))?;
 
                     let extracted_value = data_extractor(&response_map, key);
                     let res = res.clone().body(extracted_value);
