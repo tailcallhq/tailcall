@@ -25,7 +25,7 @@ type User {
     @http(
       url: "https://jsonplaceholder.typicode.com/posts"
       method: POST
-      body: "{\"userId\": \"{{.value.id}}\", \"title\": \"foo\", \"body\": \"bar\"}"
+      body: "{\"userId\":\"{{.value.id}}\",\"title\":\"foo\",\"body\":\"bar\"}"
       batchKey: ["userId"]
       bodyKey: ["userId"]
     )
@@ -50,9 +50,9 @@ type User {
     url: https://jsonplaceholder.typicode.com/posts
     body:
       [
-        {"userId": "1", "title": "foo", "body": "bar"},
-        {"userId": "2", "title": "foo", "body": "bar"},
-        {"userId": "3", "title": "foo", "body": "bar"},
+        {"userId":"1","title":"foo","body":"bar"},
+        {"userId":"2","title":"foo","body":"bar"},
+        {"userId":"3","title":"foo","body":"bar"},
       ]
   response:
     status: 200

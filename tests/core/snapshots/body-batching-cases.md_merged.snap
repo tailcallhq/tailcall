@@ -17,7 +17,7 @@ type Foo {
   bar: Bar
     @http(
       url: "http://jsonplaceholder.typicode.com/bar"
-      body: "{\"id\": \"{{.value.a}}\"}"
+      body: "{\"id\":\"{{.value.a}}\"}"
       batchKey: ["a"]
       bodyKey: ["id"]
       method: "POST"
@@ -31,7 +31,7 @@ type Post {
   user: User
     @http(
       url: "http://jsonplaceholder.typicode.com/users"
-      body: "{\"key\": \"id\", \"value\": \"{{.value.userId}}\"}"
+      body: "{\"key\":\"id\",\"value\":\"{{.value.userId}}\"}"
       batchKey: ["id"]
       bodyKey: ["value"]
       method: "POST"
@@ -57,7 +57,7 @@ type User {
   post: Post
     @http(
       url: "http://jsonplaceholder.typicode.com/posts"
-      body: "{\"userId\": \"{{.value.id}}\", \"title\": \"{{.value.name}}\", \"body\": \"{{.value.email}}\"}"
+      body: "{\"userId\":\"{{.value.id}}\",\"title\":\"{{.value.name}}\",\"body\":\"{{.value.email}}\"}"
       batchKey: ["userId"]
       bodyKey: ["userId"]
       method: "POST"
