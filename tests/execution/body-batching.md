@@ -27,6 +27,7 @@ type User {
       method: POST
       body: "{\"userId\": \"{{.value.id}}\", \"title\": \"foo\", \"body\": \"bar\"}"
       batchKey: ["userId"]
+      bodyKey: ["userId"]
     )
 }
 ```
