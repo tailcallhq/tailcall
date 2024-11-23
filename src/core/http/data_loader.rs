@@ -73,8 +73,9 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
             let mut dl_requests = keys.to_vec();
 
             // Sort keys to build consistent URLs
-            // TODO: enable in tests only
-            dl_requests.sort_by(|a, b| a.to_request().url().cmp(b.to_request().url()));
+            if cfg!(feature = "integration_test") || cfg!(test) { 
+                dl_requests.sort_by(|a, b| a.to_request().url().cmp(b.to_request().url()));
+            }
 
             // Create base request
             let mut base_request = dl_requests[0].to_request();
@@ -91,9 +92,12 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
                 }
 
                 if !body_mapping.is_empty() {
-                    // note: sort body only in test env.
+                    // note: sort body only in test and execution_spec env.
                     let mut bodies = body_mapping.values().collect::<Vec<_>>();
-                    bodies.sort_by_key(|a| a.to_string());
+
+                    if cfg!(feature = "integration_test") || cfg!(test) {
+                        bodies.sort_by_key(|a| a.to_string());
+                    }
 
                     let serialized_bodies = serde_json::to_vec(&bodies).map_err(|e| {
                         anyhow::anyhow!(
