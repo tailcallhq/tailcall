@@ -73,7 +73,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
             let mut dl_requests = keys.to_vec();
 
             // Sort keys to build consistent URLs
-            if cfg!(feature = "integration_test") || cfg!(test) { 
+            if cfg!(feature = "integration_test") || cfg!(test) {
                 dl_requests.sort_by(|a, b| a.to_request().url().cmp(b.to_request().url()));
             }
 
