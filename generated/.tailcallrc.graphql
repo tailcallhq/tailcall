@@ -172,6 +172,11 @@ directive @http(
   """
   body: String
   """
+  when response data is grouped by `batchKey`, `bodyKey` is used to define the association 
+  between grouped data and the request body.
+  """
+  bodyKey: [String!]
+  """
   Enables deduplication of IO operations to enhance performance.This flag prevents 
   duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
   May lead to issues with APIs that expect unique results for identical inputs, such 
@@ -889,6 +894,11 @@ input Http {
   variables from the GraphQL variables.
   """
   body: String
+  """
+  when response data is grouped by `batchKey`, `bodyKey` is used to define the association 
+  between grouped data and the request body.
+  """
+  bodyKey: [String!]
   """
   Enables deduplication of IO operations to enhance performance.This flag prevents 
   duplicate IO requests from being executed concurrently, reducing resource load. Caution: 

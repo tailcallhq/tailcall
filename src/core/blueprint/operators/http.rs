@@ -16,10 +16,11 @@ pub fn compile_http(
 ) -> Valid<IR, String> {
     let dedupe = http.dedupe.unwrap_or_default();
 
+    // batch key is defined, and method is not GET or POST.
     Valid::<(), String>::fail("GroupBy is only supported for GET/POST requests".to_string())
         .when(|| {
             !http.batch_key.is_empty()
-                && (http.method != Method::GET || http.method != Method::POST)
+                && !(http.method == Method::GET || http.method == Method::POST)
         })
         .and(
             Valid::<(), String>::fail(

@@ -49,6 +49,22 @@ impl HttpDataLoader {
     }
 }
 
+fn get_key<'a>(value: &'a serde_json::Value, path: &[String]) -> anyhow::Result<&'a str> {
+    if path.is_empty() {
+        value
+            .as_str()
+            .ok_or(anyhow::anyhow!("Unable to find key in body"))
+    } else {
+        value
+            .get_path(&path)
+            .and_then(|k| k.as_str())
+            .ok_or(anyhow::anyhow!(
+                "Unable to find key {} in body",
+                path.join(" ")
+            ))
+    }
+}
+
 #[async_trait::async_trait]
 impl Loader<DataLoaderRequest> for HttpDataLoader {
     type Value = Response<async_graphql::Value>;
@@ -84,7 +100,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
 
                 if !bodies.is_empty() {
                     // note: sort body only in test env.
-                    bodies.sort_by(|a, b| a.to_string().cmp(&b.to_string()));
+                    bodies.sort_by_key(|a| a.to_string());
 
                     let serialized_bodies = serde_json::to_vec(&bodies).map_err(|e| {
                         anyhow::anyhow!(
@@ -153,14 +169,10 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
                 }
             } else {
                 let path = group_by.body_key();
+
                 for (dl_req, body) in body_mapping.into_iter() {
                     // retrive the key from body
-                    let key = body
-                        .get_path(&path)
-                        .and_then(|k| k.as_str())
-                        .ok_or(anyhow::anyhow!("Unable to find key {} in body", path.join(" ")))?;
-
-                    let extracted_value = data_extractor(&response_map, key);
+                    let extracted_value = data_extractor(&response_map, get_key(&body, &path)?);
                     let res = res.clone().body(extracted_value);
                     hashmap.insert(dl_req.clone(), res);
                 }

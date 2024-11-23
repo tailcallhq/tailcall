@@ -22,7 +22,7 @@ impl GroupBy {
         self.body_key = body_key;
         self
     }
-    
+
     pub fn body_key(&self) -> Vec<String> {
         self.body_key.clone()
     }

@@ -16,8 +16,21 @@ type Foo {
   a: Int
   b: Int
   bar: Bar
-    @http(url: "http://jsonplaceholder.typicode.com/bar", method: POST, body: "{\"id\": \"{{.value.a}}\"}", batchKey: ["a"], bodyKey: ["id"])
-  tar: Tar @http(url: "http://jsonplaceholder.typicode.com/tar", method: POST, body: "{{.value.b}}", batchKey: ["id"], bodyKey: [""])
+    @http(
+      url: "http://jsonplaceholder.typicode.com/bar"
+      method: POST
+      body: "{\"id\": \"{{.value.a}}\"}"
+      batchKey: ["a"]
+      bodyKey: ["id"]
+    )
+  tar: Tar
+    @http(
+      url: "http://jsonplaceholder.typicode.com/tar"
+      method: POST
+      body: "{{.value.b}}"
+      batchKey: ["id"]
+      bodyKey: [""]
+    )
 }
 
 type Tar {

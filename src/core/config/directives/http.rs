@@ -54,7 +54,8 @@ pub struct Http {
     pub batch_key: Vec<String>,
 
     #[serde(rename = "bodyKey", default, skip_serializing_if = "is_default")]
-    /// when response data is grouped by `batchKey`, `bodyKey` is used to define the association between grouped data and the request body.
+    /// when response data is grouped by `batchKey`, `bodyKey` is used to define
+    /// the association between grouped data and the request body.
     pub body_key: Vec<String>,
 
     #[serde(default, skip_serializing_if = "is_default")]
