@@ -1,0 +1,17 @@
+---
+source: tests/core/spec.rs
+expression: errors
+---
+[
+  {
+    "message": "Type 'Nested' is not a scalar type.",
+    "trace": [
+      "Query",
+      "findEmployees",
+      "@http",
+      "query",
+      "criteria"
+    ],
+    "description": null
+  }
+]

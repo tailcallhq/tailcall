@@ -36,8 +36,9 @@ pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, S
                 Resolver::Http(http) => compile_http(
                     config_module,
                     http,
+                    field,
                     // inner resolver should resolve only single instance of type, not a list
-                    false,
+                    None,
                 ),
                 Resolver::Grpc(grpc) => compile_grpc(super::CompileGrpc {
                     config_module,
