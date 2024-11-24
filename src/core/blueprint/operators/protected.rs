@@ -32,7 +32,7 @@ pub fn update_protected<'a>(
                 Provider::from_config_module(config)
                     .and_then(|config_providers| {
                         Valid::from_iter(field.protected.iter(), |protected_directive| {
-                            if let Some(local_field_providers) = &protected_directive.providers {
+                            if let Some(local_field_providers) = &protected_directive.id {
                                 Valid::from_iter(local_field_providers.iter(), |provider_name| {
                                     if let Some(provider) = config_providers.get(provider_name) {
                                         Valid::succeed(Auth::Provider(provider.clone()))
