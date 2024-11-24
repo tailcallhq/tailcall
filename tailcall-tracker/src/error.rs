@@ -20,6 +20,9 @@ pub enum Error {
 
     #[debug(fmt = "Tokio Join Error: {}", _0)]
     TokioJoin(tokio::task::JoinError),
+
+    #[debug(fmt = "IO Error: {}", _0)]
+    IO(std::io::Error),
 }
 
 pub type Result<A> = std::result::Result<A, Error>;
