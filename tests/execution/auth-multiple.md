@@ -38,7 +38,7 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
 - method: POST
   url: http://localhost:8080/graphql
   headers:
-    Authorization: Basic dGVzdHVzZXIxOnBhc3N3b3JkMTIz # testuser1:password123
+    Authorization: Basic dGVzdHVzZXIxOnBhc3N3b3JkMTIz # testuser1:password123 this should give error
   body:
     query: |
       query {
@@ -48,7 +48,7 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
 - method: POST
   url: http://localhost:8080/graphql
   headers:
-    Authorization: Basic dGVzdHVzZXIyOm15cGFzc3dvcmQ= # testuser2:mypassword
+    Authorization: Basic dGVzdHVzZXIyOm15cGFzc3dvcmQ= # testuser2:mypassword this should give data
   body:
     query: |
       query {
@@ -58,7 +58,7 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
 - method: POST
   url: http://localhost:8080/graphql
   headers:
-    Authorization: Basic dGVzdHVzZXIzOmFiYzEyMw== # testuser3:abc123
+    Authorization: Basic dGVzdHVzZXIzOmFiYzEyMw== # testuser3:abc123 this should give data
   body:
     query: |
       query {

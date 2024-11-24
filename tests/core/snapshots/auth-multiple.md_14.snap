@@ -8,9 +8,11 @@ expression: response
     "content-type": "application/json"
   },
   "body": {
-    "data": {
-      "b_and_c": "data",
-      "default": "data"
-    }
+    "data": null,
+    "errors": [
+      {
+        "message": "Authentication Failure: Invalid Authorization Header"
+      }
+    ]
   }
 }
