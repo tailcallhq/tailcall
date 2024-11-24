@@ -290,7 +290,7 @@ pub struct OperationPlan<Input> {
     pub is_protected: bool,
     pub min_cache_ttl: Option<NonZeroU64>,
     pub selection: Vec<Field<Input>>,
-    pub before: Vec<IR>,
+    pub before: Option<IR>,
 }
 
 impl<Input> std::fmt::Debug for OperationPlan<Input> {
@@ -349,7 +349,7 @@ impl<Input> OperationPlan<Input> {
             is_const: false,
             is_protected: false,
             min_cache_ttl: None,
-            before: Vec::new(),
+            before: Default::default(),
         }
     }
 

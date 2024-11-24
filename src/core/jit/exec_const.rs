@@ -6,10 +6,8 @@ use tailcall_valid::Validator;
 
 use super::context::Context;
 use super::exec::{Executor, IRExecutor};
-use super::{
-    transform, AnyResponse, BuildError, Error, OperationPlan, Pos, Positioned, Request, Response,
-    Result,
-};
+use super::graphql_error::GraphQLError;
+use super::{transform, AnyResponse, BuildError, Error, OperationPlan, Request, Response, Result};
 use crate::core::app_context::AppContext;
 use crate::core::http::RequestContext;
 use crate::core::ir::model::IR;
@@ -42,18 +40,16 @@ impl ConstValueExecutor {
         req_ctx: &RequestContext,
         request: Request<ConstValue>,
     ) -> AnyResponse<Vec<u8>> {
-        // TODO: collect the results in parallel
-        let mut _results = Vec::new();
-        for ir in &self.plan.before {
+        // Run all the IRs in the before chain
+        if let Some(ir) = &self.plan.before {
             let mut eval_context = EvalContext::new(req_ctx, &EmptyResolverContext {});
             match ir.eval(&mut eval_context).await {
-                Ok(result) => _results.push(result),
+                Ok(_) => (),
                 Err(err) => {
                     let resp: Response<ConstValue> = Response::default();
                     return resp
-                        .with_errors(vec![Positioned::new(err.into(), Pos::default())])
-                        .into(); // Ensure the return type matches
-                                 // AnyResponse<Vec<u8>>
+                        .with_errors(vec![GraphQLError::new(err.to_string(), None)])
+                        .into();
                 }
             }
         }
@@ -70,7 +66,7 @@ impl ConstValueExecutor {
             let resp: Response<ConstValue> = Response::default();
             // this shouldn't actually ever happen
             return resp
-                .with_errors(vec![Positioned::new(Error::Unknown, Pos::default())])
+                .with_errors(vec![GraphQLError::new(Error::Unknown.to_string(), None)])
                 .into();
         };
 
@@ -85,9 +81,9 @@ impl ConstValueExecutor {
             Err(err) => {
                 let resp: Response<ConstValue> = Response::default();
                 return resp
-                    .with_errors(vec![Positioned::new(
-                        BuildError::from(err).into(),
-                        Pos::default(),
+                    .with_errors(vec![GraphQLError::new(
+                        BuildError::from(err).to_string(),
+                        None,
                     )])
                     .into();
             }
@@ -144,7 +140,7 @@ impl<'a> ConstValueExec<'a> {
     }
 }
 
-impl<'ctx> IRExecutor for ConstValueExec<'ctx> {
+impl IRExecutor for ConstValueExec<'_> {
     type Input = ConstValue;
     type Output = ConstValue;
     type Error = Error;
