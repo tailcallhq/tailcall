@@ -1,6 +1,7 @@
 ---
 source: tests/core/spec.rs
 expression: formatter
+snapshot_kind: text
 ---
 schema
   @server
@@ -14,15 +15,15 @@ schema
 union Animal = Bird | Cat | Dog
 
 type Bird {
-  tweet: String @protected(providers: ["c"])
+  tweet: String @protected(id: ["c"])
 }
 
 type Cat {
-  meow: String @protected(providers: ["b"])
+  meow: String @protected(id: ["b"])
 }
 
 type Dog {
-  bark: String @protected(providers: ["a"])
+  bark: String @protected(id: ["a"])
 }
 
 type Query {

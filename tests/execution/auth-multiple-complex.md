@@ -17,15 +17,15 @@ type Query {
 union Animal = Dog | Cat | Bird
 
 type Dog {
-  bark: String @protected(providers: ["a"])
+  bark: String @protected(id: ["a"])
 }
 
 type Cat {
-  meow: String @protected(providers: ["b"])
+  meow: String @protected(id: ["b"])
 }
 
 type Bird {
-  tweet: String @protected(providers: ["c"])
+  tweet: String @protected(id: ["c"])
 }
 ```
 

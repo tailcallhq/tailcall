@@ -12,9 +12,9 @@ schema
 
 type Query {
   default: String @expr(body: "data") @protected
-  a_and_b: String @expr(body: "data") @protected(providers: ["a", "b"])
-  b_and_c: String @expr(body: "data") @protected(providers: ["b", "c"])
-  c_and_a: String @expr(body: "data") @protected(providers: ["c", "a"])
+  a_and_b: String @expr(body: "data") @protected(id: ["a", "b"])
+  b_and_c: String @expr(body: "data") @protected(id: ["b", "c"])
+  c_and_a: String @expr(body: "data") @protected(id: ["c", "a"])
 }
 ```
 
