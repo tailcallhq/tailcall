@@ -1,0 +1,31 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+snapshot_kind: text
+---
+schema
+  @server
+  @upstream
+  @link(id: "a", src: ".htpasswd_a", type: Htpasswd)
+  @link(id: "b", src: ".htpasswd_b", type: Htpasswd)
+  @link(id: "c", src: ".htpasswd_c", type: Htpasswd) {
+  query: Query
+}
+
+union Animal = Bird | Cat | Dog
+
+type Bird {
+  tweet: String @protected(id: ["c"])
+}
+
+type Cat {
+  meow: String @protected(id: ["b"])
+}
+
+type Dog {
+  bark: String @protected(id: ["a"])
+}
+
+type Query {
+  animals: [Animal!]! @expr(body: [{Dog: {bark: "woof"}}, {Cat: {meow: "meow"}}, {Bird: {tweet: "tweet"}}])
+}

@@ -1,0 +1,25 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+---
+union Animal = Bird | Cat | Dog
+
+type Bird {
+  tweet: String
+}
+
+type Cat {
+  meow: String
+}
+
+type Dog {
+  bark: String
+}
+
+type Query {
+  animals: [Animal!]!
+}
+
+schema {
+  query: Query
+}
