@@ -69,6 +69,8 @@ pub enum Auth {
 }
 
 impl Auth {
+
+    // FIXME: do we need this?
     pub fn make(config_module: &ConfigModule) -> Valid<Option<Auth>, String> {
         let htpasswd = config_module.extensions().htpasswd.iter().map(|htpasswd| {
             Auth::Provider(Provider::Basic(Basic {
