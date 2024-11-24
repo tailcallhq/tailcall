@@ -1,8 +1,9 @@
 use std::collections::HashSet;
 use std::fmt::Debug;
 
-use crate::core::config::{ConfigModule, Content};
 use jsonwebtoken::jwk::JwkSet;
+
+use crate::core::config::{ConfigModule, Content};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Basic {
