@@ -22,7 +22,7 @@ pub enum IR {
     // TODO: Path can be implement using Pipe
     Path(Box<IR>, Vec<String>),
     ContextPath(Vec<String>),
-    Protect(Option<Auth>, Box<IR>),
+    Protect(Auth, Box<IR>),
     Map(Map),
     Pipe(Box<IR>, Box<IR>),
     Discriminate(Discriminator, Box<IR>),
@@ -161,9 +161,7 @@ impl IR {
                         }
                     }
                     IR::Path(expr, path) => IR::Path(expr.modify_box(modifier), path),
-                    IR::Protect(auth_provider, expr) => {
-                        IR::Protect(auth_provider, expr.modify_box(modifier))
-                    }
+                    IR::Protect(auth, expr) => IR::Protect(auth, expr.modify_box(modifier)),
                     IR::Map(Map { input, map }) => {
                         IR::Map(Map { input: input.modify_box(modifier), map })
                     }

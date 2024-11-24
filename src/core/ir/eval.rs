@@ -36,17 +36,10 @@ impl IR {
                         .clone())
                 }
                 IR::Dynamic(value) => Ok(value.render_value(ctx)),
-                IR::Protect(auth_provider, expr) => {
-                    if let Some(auth) = auth_provider {
-                        let verifier = AuthVerifier::from(auth.clone());
-                        verifier.verify(ctx.request_ctx).await.to_result()?;
-                    } else {
-                        ctx.request_ctx
-                            .auth_ctx
-                            .validate(ctx.request_ctx)
-                            .await
-                            .to_result()?;
-                    }
+                IR::Protect(auth, expr) => {
+                    let verifier = AuthVerifier::from(auth.clone());
+                    verifier.verify(ctx.request_ctx).await.to_result()?;
+
                     expr.eval(ctx).await
                 }
                 IR::IO(io) => eval_io(io, ctx).await,

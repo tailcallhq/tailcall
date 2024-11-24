@@ -27,11 +27,11 @@ impl<A> Transform for AuthPlaner<A> {
             .iter_mut()
             .for_each(|field| update_field(&mut auth, field));
 
-        let protect = IR::Protect(
-            auth.into_iter().reduce(|a, b| a.and(b)),
-            Box::new(IR::Dynamic(DynamicValue::default())),
-        );
-        plan.before = Some(protect);
+        plan.before = auth
+            .into_iter()
+            .reduce(|a, b| a.and(b))
+            .map(|auth| IR::Protect(auth, Box::new(IR::Dynamic(DynamicValue::default()))));
+        
         Valid::succeed(plan)
     }
 }
@@ -65,9 +65,7 @@ pub fn update_ir(ir: &mut IR, vec: &mut Vec<Auth>) {
             update_ir(ir, vec);
         }
         IR::Protect(auth, ir_0) => {
-            if let Some(auth) = auth.take() {
-                vec.push(auth);
-            }
+            vec.push(auth.clone());
 
             update_ir(ir_0, vec);
             *ir = *ir_0.clone();
