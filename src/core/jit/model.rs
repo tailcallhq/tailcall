@@ -278,7 +278,7 @@ impl OPHash {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct OperationPlan<Input> {
     pub root_name: String,
     pub operation_type: OperationType,
@@ -291,14 +291,6 @@ pub struct OperationPlan<Input> {
     pub min_cache_ttl: Option<NonZeroU64>,
     pub selection: Vec<Field<Input>>,
     pub before: Option<IR>,
-}
-
-impl<Input> std::fmt::Debug for OperationPlan<Input> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("OperationPlan")
-            .field("operation_type", &self.operation_type)
-            .finish()
-    }
 }
 
 impl<Input> OperationPlan<Input> {

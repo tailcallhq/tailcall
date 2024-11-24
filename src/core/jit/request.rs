@@ -47,7 +47,7 @@ impl Request<ConstValue> {
 
         transform::CheckConst::new()
             .pipe(transform::CheckProtected::new())
-            .pipe(transform::AuthPlaner::new())
+            .pipe(transform::AuthPlanner::new())
             .pipe(transform::CheckDedupe::new())
             .pipe(transform::CheckCache::new())
             .transform(plan)

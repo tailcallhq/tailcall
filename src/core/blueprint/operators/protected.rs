@@ -29,47 +29,55 @@ pub fn update_protected<'a>(
                 }
 
                 // Used to collect the providers that are used in the field
-                Provider::from_config_module(config)
-                    .and_then(|auth_providers| {
-                        // FIXME: add trace information in the error
-                        let mut field_protection = field
-                            .protected
-                            .clone()
-                            .and_then(|protect| protect.id)
-                            .unwrap_or_default();
+                let auth_providers = Provider::from_config_module(config);
 
-                        let type_protection = type_
-                            .protected
-                            .clone()
-                            .and_then(|protect| protect.id)
-                            .unwrap_or_default();
+                // FIXME: add trace information in the error
 
-                        field_protection.extend(type_protection);
+                let mut protection = Vec::new();
 
-                        let mut protection = field_protection;
+                protection.extend(
+                    type_
+                        .protected
+                        .clone()
+                        .and_then(|protect| protect.id)
+                        .unwrap_or_default(),
+                );
 
-                        if protection.is_empty() {
-                            // If no protection is defined, use all providers
-                            protection = auth_providers.keys().cloned().collect::<Vec<_>>();
+                protection.extend(
+                    field
+                        .protected
+                        .clone()
+                        .and_then(|protect| protect.id)
+                        .unwrap_or_default(),
+                );
+
+                Valid::from_iter(protection.iter(), |id| {
+                    if let Some(provider) = auth_providers.get(id) {
+                        Valid::succeed(Auth::Provider(provider.clone()))
+                    } else {
+                        Valid::fail(format!("Auth provider {} not found", id))
+                    }
+                })
+                .map(|provider| {
+                    let mut auth = provider.into_iter().reduce(|left, right| left.and(right));
+
+                    // If no protection is defined, use all providers
+                    if auth.is_none() {
+                        auth = Auth::make(config);
+                    }
+
+                    if let Some(auth) = auth {
+                        b_field.resolver = match &b_field.resolver {
+                            None => Some(IR::Protect(
+                                auth,
+                                Box::new(IR::ContextPath(vec![b_field.name.clone()])),
+                            )),
+                            Some(resolver) => Some(IR::Protect(auth, Box::new(resolver.clone()))),
                         }
+                    }
 
-                        Valid::from_iter(protection.iter(), |id| {
-                            if let Some(provider) = auth_providers.get(id) {
-                                Valid::succeed(Auth::Provider(provider.clone()))
-                            } else {
-                                Valid::fail(format!("Auth provider {} not found", id))
-                            }
-                        })
-                    })
-                    .map(|provider| {
-                        let auth = provider.into_iter().reduce(|left, right| left.and(right));
-
-                        if let (Some(auth), Some(resolver)) = (auth, b_field.resolver.clone()) {
-                            b_field.resolver = Some(IR::Protect(auth, Box::new(resolver)));
-                        }
-
-                        b_field
-                    })
+                    b_field
+                })
             } else {
                 Valid::succeed(b_field)
             }

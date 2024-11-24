@@ -1,4 +1,5 @@
 use std::convert::Infallible;
+use std::fmt::Debug;
 
 use tailcall_valid::Valid;
 
@@ -7,17 +8,17 @@ use crate::core::ir::model::IR;
 use crate::core::jit::{Field, OperationPlan};
 use crate::core::Transform;
 
-pub struct AuthPlaner<A> {
+pub struct AuthPlanner<A> {
     marker: std::marker::PhantomData<A>,
 }
 
-impl<A> AuthPlaner<A> {
+impl<A> AuthPlanner<A> {
     pub fn new() -> Self {
         Self { marker: std::marker::PhantomData }
     }
 }
 
-impl<A> Transform for AuthPlaner<A> {
+impl<A: Debug> Transform for AuthPlanner<A> {
     type Value = OperationPlan<A>;
     type Error = Infallible;
 

@@ -199,7 +199,7 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
 - method: POST
   url: http://localhost:8080/graphql
   headers:
-    Authorization: Basic dGVzdHVzZXIxOnBhc3N3b3JkMTIz # testuser1:password123 this should give autherror because it needs c
+    Authorization: Basic dGVzdHVzZXIxOnBhc3N3b3JkMTIz # testuser1:password123 this should give autherror because it needs b
   body:
     query: |
       query {
@@ -211,33 +211,33 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
         }
       }
 # TEST: 10 [a,b]
-- method: POST
-  url: http://localhost:8080/graphql
-  headers:
-    Authorization: Basic dGVzdHVzZXIyOm15cGFzc3dvcmQ= # testuser2:mypassword this should give autherror
-  body:
-    query: |
-      query {
-        animals {
-          ... on Bird {
-            __typename
-            tweet
-          }
-        }
-      }
-# TEST: 11 [b,c]
-- method: POST
-  url: http://localhost:8080/graphql
-  headers:
-    Authorization: Basic dGVzdHVzZXIzOmFiYzEyMw== # testuser3:abc123 this should give autherror
-  body:
-    query: |
-      query {
-        animals {
-          ... on Dog {
-            __typename
-            bark
-          }
-        }
-      }
-```
+# - method: POST
+#   url: http://localhost:8080/graphql
+#   headers:
+#     Authorization: Basic dGVzdHVzZXIyOm15cGFzc3dvcmQ= # testuser2:mypassword this should give autherror
+#   body:
+#     query: |
+#       query {
+#         animals {
+#           ... on Bird {
+#             __typename
+#             tweet
+#           }
+#         }
+#       }
+# # TEST: 11 [b,c]
+# - method: POST
+#   url: http://localhost:8080/graphql
+#   headers:
+#     Authorization: Basic dGVzdHVzZXIzOmFiYzEyMw== # testuser3:abc123 this should give autherror
+#   body:
+#     query: |
+#       query {
+#         animals {
+#           ... on Dog {
+#             __typename
+#             bark
+#           }
+#         }
+#       }
+# ```

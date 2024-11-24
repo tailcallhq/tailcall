@@ -1,10 +1,8 @@
 use std::collections::{BTreeMap, HashSet};
 use std::fmt::Debug;
 
-use jsonwebtoken::jwk::JwkSet;
-use tailcall_valid::Valid;
-
 use crate::core::config::ConfigModule;
+use jsonwebtoken::jwk::JwkSet;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Basic {
@@ -27,9 +25,7 @@ pub enum Provider {
 
 impl Provider {
     /// Used to collect all auth providers from the config module
-    pub fn from_config_module(
-        config_module: &ConfigModule,
-    ) -> Valid<BTreeMap<String, Provider>, String> {
+    pub fn from_config_module(config_module: &ConfigModule) -> BTreeMap<String, Provider> {
         let mut providers = BTreeMap::new();
 
         // Add basic auth providers from htpasswd
@@ -57,7 +53,7 @@ impl Provider {
             }
         }
 
-        Valid::succeed(providers)
+        providers
     }
 }
 
@@ -69,8 +65,7 @@ pub enum Auth {
 }
 
 impl Auth {
-    // FIXME: do we need this?
-    pub fn make(config_module: &ConfigModule) -> Valid<Option<Auth>, String> {
+    pub fn make(config_module: &ConfigModule) -> Option<Auth> {
         let htpasswd = config_module.extensions().htpasswd.iter().map(|htpasswd| {
             Auth::Provider(Provider::Basic(Basic {
                 htpasswd: htpasswd.content.clone(),
@@ -87,9 +82,9 @@ impl Auth {
             }))
         });
 
-        let auth = htpasswd.chain(jwks).reduce(|left, right| left.or(right));
+        let auth = htpasswd.chain(jwks).reduce(|left, right| left.and(right));
 
-        Valid::succeed(auth)
+        auth
     }
 
     pub fn and(self, other: Self) -> Self {
