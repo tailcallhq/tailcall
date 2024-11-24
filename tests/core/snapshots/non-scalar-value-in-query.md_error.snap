@@ -4,10 +4,53 @@ expression: errors
 ---
 [
   {
+    "message": "Invalid Argument defined in field 'invalidArgument'.",
+    "trace": [
+      "Query",
+      "invalidArgument",
+      "@http",
+      "query"
+    ],
+    "description": null
+  },
+  {
     "message": "Type 'Nested' is not a scalar type.",
     "trace": [
       "Query",
-      "findEmployees",
+      "invalidArgumentType",
+      "@http",
+      "query",
+      "criteria"
+    ],
+    "description": null
+  },
+  {
+    "message": "Argument 'criterias' not found in field 'unknownArgument'.",
+    "trace": [
+      "Query",
+      "unknownArgument",
+      "@http",
+      "query",
+      "criterias"
+    ],
+    "description": null
+  },
+  {
+    "message": "Type 'Criteria' not found in config.",
+    "trace": [
+      "Query",
+      "unknownArgumentType",
+      "@http",
+      "query",
+      "criteria"
+    ],
+    "description": null
+  },
+  {
+    "message": "Field 'unknown_field' not found in type 'Nested'.",
+    "trace": [
+      "Query",
+      "unknownField",
       "@http",
       "query",
       "criteria"
