@@ -1,7 +1,7 @@
-use std::collections::{BTreeMap, HashSet};
+use std::collections::HashSet;
 use std::fmt::Debug;
 
-use crate::core::config::ConfigModule;
+use crate::core::config::{ConfigModule, Content};
 use jsonwebtoken::jwk::JwkSet;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -23,37 +23,45 @@ pub enum Provider {
     Jwt(Jwt),
 }
 
+impl From<Content<String>> for Content<Provider> {
+    fn from(content: Content<String>) -> Self {
+        Content {
+            id: content.id,
+            content: Provider::Basic(Basic { htpasswd: content.content }),
+        }
+    }
+}
+
+impl From<Content<JwkSet>> for Content<Provider> {
+    fn from(content: Content<JwkSet>) -> Self {
+        Content {
+            id: content.id,
+            content: Provider::Jwt(Jwt {
+                jwks: content.content,
+                issuer: None,
+                audiences: HashSet::new(),
+                optional_kid: false,
+            }),
+        }
+    }
+}
+
 impl Provider {
     /// Used to collect all auth providers from the config module
-    pub fn from_config_module(config_module: &ConfigModule) -> BTreeMap<String, Provider> {
-        let mut providers = BTreeMap::new();
-
-        // Add basic auth providers from htpasswd
-        for htpasswd in &config_module.extensions().htpasswd {
-            if let Some(id) = &htpasswd.id {
-                providers.insert(
-                    id.clone(),
-                    Provider::Basic(Basic { htpasswd: htpasswd.content.clone() }),
-                );
-            }
-        }
-
-        // Add JWT providers from jwks
-        for jwks in &config_module.extensions().jwks {
-            if let Some(id) = &jwks.id {
-                providers.insert(
-                    id.clone(),
-                    Provider::Jwt(Jwt {
-                        jwks: jwks.content.clone(),
-                        issuer: None,
-                        audiences: HashSet::new(),
-                        optional_kid: false,
-                    }),
-                );
-            }
-        }
-
-        providers
+    pub fn from_config(config_module: &ConfigModule) -> Vec<Content<Provider>> {
+        config_module
+            .extensions()
+            .htpasswd
+            .iter()
+            .map(|htpasswd| htpasswd.clone().into())
+            .chain(
+                config_module
+                    .extensions()
+                    .jwks
+                    .iter()
+                    .map(|jwks| jwks.clone().into()),
+            )
+            .collect()
     }
 }
 
@@ -65,26 +73,11 @@ pub enum Auth {
 }
 
 impl Auth {
-    pub fn make(config_module: &ConfigModule) -> Option<Auth> {
-        let htpasswd = config_module.extensions().htpasswd.iter().map(|htpasswd| {
-            Auth::Provider(Provider::Basic(Basic {
-                htpasswd: htpasswd.content.clone(),
-            }))
-        });
-
-        let jwks = config_module.extensions().jwks.iter().map(|jwks| {
-            Auth::Provider(Provider::Jwt(Jwt {
-                jwks: jwks.content.clone(),
-                // TODO: read those options from link instead of using defaults
-                issuer: Default::default(),
-                audiences: Default::default(),
-                optional_kid: Default::default(),
-            }))
-        });
-
-        let auth = htpasswd.chain(jwks).reduce(|left, right| left.and(right));
-
-        auth
+    pub fn from_config(config_module: &ConfigModule) -> Option<Auth> {
+        Provider::from_config(config_module)
+            .into_iter()
+            .map(|c| Auth::Provider(c.content))
+            .reduce(|left, right| left.and(right))
     }
 
     pub fn and(self, other: Self) -> Self {

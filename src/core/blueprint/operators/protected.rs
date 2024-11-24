@@ -29,7 +29,10 @@ pub fn update_protected<'a>(
                 }
 
                 // Used to collect the providers that are used in the field
-                let auth_providers = Provider::from_config_module(config);
+                let providers: std::collections::HashMap<_, _> = Provider::from_config(config)
+                    .into_iter()
+                    .filter_map(|provider| provider.id.clone().map(|id| (id, provider.content)))
+                    .collect();
 
                 // FIXME: add trace information in the error
 
@@ -52,7 +55,7 @@ pub fn update_protected<'a>(
                 );
 
                 Valid::from_iter(protection.iter(), |id| {
-                    if let Some(provider) = auth_providers.get(id) {
+                    if let Some(provider) = providers.get(id) {
                         Valid::succeed(Auth::Provider(provider.clone()))
                     } else {
                         Valid::fail(format!("Auth provider {} not found", id))
@@ -63,7 +66,7 @@ pub fn update_protected<'a>(
 
                     // If no protection is defined, use all providers
                     if auth.is_none() {
-                        auth = Auth::make(config);
+                        auth = Auth::from_config(config);
                     }
 
                     if let Some(auth) = auth {
