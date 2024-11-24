@@ -31,7 +31,7 @@ impl<A> Transform for AuthPlaner<A> {
             .into_iter()
             .reduce(|a, b| a.and(b))
             .map(|auth| IR::Protect(auth, Box::new(IR::Dynamic(DynamicValue::default()))));
-        
+
         Valid::succeed(plan)
     }
 }

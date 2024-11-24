@@ -31,5 +31,6 @@ pub struct Protected {
     /// List of authentication provider IDs that can access this field or type.
     /// - Leave empty to require authorization from all providers.
     /// - Include multiple IDs to require authorization from each one.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<Vec<String>>,
 }
