@@ -1,0 +1,14 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+---
+type Query {
+  a_and_b: String
+  b_and_c: String
+  c_and_a: String
+  default: String
+}
+
+schema {
+  query: Query
+}

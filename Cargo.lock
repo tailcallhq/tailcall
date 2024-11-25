@@ -5679,6 +5679,7 @@ dependencies = [
  "lazy_static",
  "machineid-rs",
  "posthog-rs",
+ "regex",
  "reqwest 0.11.27",
  "serde",
  "serde_json",
