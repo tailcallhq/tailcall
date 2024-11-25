@@ -106,7 +106,9 @@ impl IR {
                     .into_iter()
                     .collect::<Result<_, _>>()?;
 
-                    // TODO: This is a very opinionated merge. We should allow users to customize how they would like to merge the values. In future we should support more merging capabilities by adding an additional parameter to `Merge`.
+                    // TODO: This is a very opinionated merge. We should allow users to customize
+                    // how they would like to merge the values. In future we should support more
+                    // merging capabilities by adding an additional parameter to `Merge`.
                     Ok(results
                         .into_iter()
                         .reduce(|acc, result| acc.merge_right(result))

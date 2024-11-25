@@ -17,7 +17,7 @@ use super::directive::Directive;
 use super::from_document::from_document;
 use super::{
     AddField, Alias, Cache, Call, Discriminate, Expr, GraphQL, Grpc, Http, Link, Modify, Omit,
-    Protected, Resolver, Resolvers, Server, Telemetry, Upstream, JS,
+    Protected, Resolver, ResolverSet, Server, Telemetry, Upstream, JS,
 };
 use crate::core::config::npo::QueryPath;
 use crate::core::config::source::Source;
@@ -117,7 +117,7 @@ pub struct Type {
     ///
     /// Apollo federation entity resolver.
     #[serde(flatten, default, skip_serializing_if = "is_default")]
-    pub resolvers: Resolvers,
+    pub resolvers: ResolverSet,
     ///
     /// Any additional directives
     #[serde(default, skip_serializing_if = "is_default")]
@@ -226,7 +226,7 @@ pub struct Field {
     ///
     /// Resolver for the field
     #[serde(flatten, default, skip_serializing_if = "is_default")]
-    pub resolvers: Resolvers,
+    pub resolvers: ResolverSet,
 
     ///
     /// Any additional directives

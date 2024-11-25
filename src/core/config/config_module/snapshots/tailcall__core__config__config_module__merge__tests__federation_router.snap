@@ -1,6 +1,7 @@
 ---
 source: src/core/config/config_module/merge.rs
 expression: merged.to_sdl()
+snapshot_kind: text
 ---
 schema @server(port: 8000) @upstream(batch: {delay: 100, headers: []}, httpCache: 42) {
   query: Query
@@ -34,7 +35,7 @@ type Comment {
 }
 
 type Query {
-  addComment(postId: Int!, comment: CommentInput!): Boolean @http(url: "http://jsonplaceholder.typicode.com/add-comment") @http(url: "http://jsonplaceholder.typicode.com/add-comment", method: "POST")
+  addComment(postId: Int!, comment: CommentInput!): Boolean @http(url: "http://jsonplaceholder.typicode.com/add-comment", method: "POST")
   posts: [UserPost] @http(url: "http://jsonplaceholder.typicode.com/posts")
   searchComments(type: CommentSearch): [Comment] @http(url: "http://jsonplaceholder.typicode.com/comment")
   user(id: Int!): User @http(url: "http://jsonplaceholder.typicode.com/users/{{.args.id}}")

@@ -58,14 +58,14 @@ impl Resolver {
 }
 
 #[derive(Default, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
-pub struct Resolvers(pub Vec<Resolver>);
+pub struct ResolverSet(pub Vec<Resolver>);
 
 // Implement custom serializer to provide backward compatibility for JSON/YAML
 // formats when converting config to config file. In case the only one resolver
 // is defined serialize it as flatten structure instead of `resolvers: []`
 // TODO: this is not required in case Tailcall drop defining type schema in
 // json/yaml files
-impl Serialize for Resolvers {
+impl Serialize for ResolverSet {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -85,7 +85,7 @@ impl Serialize for Resolvers {
 // in config parse it as vec of [Resolver] and otherwise try to parse it as
 // single [Resolver] TODO: this is not required in case Tailcall drop defining
 // type schema in json/yaml files
-impl<'de> Deserialize<'de> for Resolvers {
+impl<'de> Deserialize<'de> for ResolverSet {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
@@ -97,7 +97,7 @@ impl<'de> Deserialize<'de> for Resolvers {
 
         if let Value::Object(obj) = &mut value {
             if obj.is_empty() {
-                return Ok(Resolvers::default());
+                return Ok(ResolverSet::default());
             }
 
             if let Some(value) = obj.remove("resolvers") {
@@ -109,17 +109,17 @@ impl<'de> Deserialize<'de> for Resolvers {
 
         let resolver: Resolver = serde_json::from_value(value).map_err(Error::custom)?;
 
-        Ok(Resolvers::from(resolver))
+        Ok(ResolverSet::from(resolver))
     }
 }
 
-impl From<Resolver> for Resolvers {
+impl From<Resolver> for ResolverSet {
     fn from(value: Resolver) -> Self {
         Self(vec![value])
     }
 }
 
-impl Deref for Resolvers {
+impl Deref for ResolverSet {
     type Target = Vec<Resolver>;
 
     fn deref(&self) -> &Self::Target {
@@ -127,7 +127,7 @@ impl Deref for Resolvers {
     }
 }
 
-impl MergeRight for Resolvers {
+impl MergeRight for ResolverSet {
     fn merge_right(mut self, other: Self) -> Self {
         for resolver in other.0.into_iter() {
             if !self.0.contains(&resolver) {
