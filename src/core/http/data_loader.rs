@@ -77,30 +77,31 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
             // Create base request
             let mut base_request = dl_requests[0].to_request();
             // TODO: add the body as is in the DalaLoaderRequest.
-            let mut body_mapping = HashMap::with_capacity(dl_requests.len());
+            let mut request_to_body_map = HashMap::with_capacity(dl_requests.len());
 
             if dl_requests[0].method() == reqwest::Method::POST {
                 // TODO: what if underlying body isn't encoded with JSON??
 
                 // run only for POST requests.
-                let mut arr = Vec::with_capacity(dl_requests.len());
+                let mut merged_body = Vec::with_capacity(dl_requests.len());
                 for req in dl_requests.iter() {
                     if let Some(body) = req.body().and_then(|b| b.as_bytes()) {
                         let value = serde_json::from_slice::<serde_json_borrow::Value>(body)
                             .map_err(|e| anyhow::anyhow!("Unable to deserialize body: {}", e))?;
-                        body_mapping.insert(req, value);
-                        arr.push(body);
+                        request_to_body_map.insert(req, value);
+                        merged_body.push(body);
                     }
                 }
 
-                if !arr.is_empty() {
+                if !merged_body.is_empty() {
                     if cfg!(feature = "integration_test") || cfg!(test) {
-                        arr.sort();
+                        // sort the body to make it consistent for testing env.
+                        merged_body.sort();
                     }
 
                     // construct serialization manually.
-                    let arr = arr.iter().fold(
-                        Vec::with_capacity(arr.iter().map(|i| i.len()).sum::<usize>() + arr.len()),
+                    let arr = merged_body.iter().fold(
+                        Vec::with_capacity(merged_body.iter().map(|i| i.len()).sum::<usize>() + merged_body.len()),
                         |mut acc, item| {
                             if !acc.is_empty() {
                                 acc.extend_from_slice(b",");
@@ -111,11 +112,11 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
                     );
 
                     // add list brackets to the serialized body.
-                    let mut serialized_arr = Vec::with_capacity(arr.len() + 2);
-                    serialized_arr.extend_from_slice(b"[");
-                    serialized_arr.extend_from_slice(&arr);
-                    serialized_arr.extend_from_slice(b"]");
-                    base_request.body_mut().replace(serialized_arr.into());
+                    let mut serialized_body = Vec::with_capacity(arr.len() + 2);
+                    serialized_body.extend_from_slice(b"[");
+                    serialized_body.extend_from_slice(&arr);
+                    serialized_body.extend_from_slice(b"]");
+                    base_request.body_mut().replace(serialized_body.into());
                 }
             }
 
@@ -128,6 +129,8 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
                     .filter(|(key, _)| group_by.key().eq(&key.to_string()))
                     .collect();
                 if !pairs.is_empty() {
+                    // if pair's are empty then don't extend the query params else it ends 
+                    // up appending '?' to the url.
                     base_request.url_mut().query_pairs_mut().extend_pairs(pairs);
                 }
             }
@@ -175,7 +178,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
                 }
             } else {
                 let path = group_by.key();
-                for (dl_req, body) in body_mapping.into_iter() {
+                for (dl_req, body) in request_to_body_map.into_iter() {
                     // retrive the key from body
                     let extracted_value = data_extractor(&response_map, get_key(&body, path)?);
                     let res = res.clone().body(extracted_value);
