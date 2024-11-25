@@ -16,6 +16,7 @@ snapshot_kind: text
     "message": "Auth provider b not found",
     "trace": [
       "Query",
+      "default",
       "@protected"
     ],
     "description": null
@@ -24,6 +25,7 @@ snapshot_kind: text
     "message": "Auth provider c not found",
     "trace": [
       "Query",
+      "default",
       "@protected"
     ],
     "description": null

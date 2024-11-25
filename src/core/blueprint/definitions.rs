@@ -388,14 +388,34 @@ fn to_fields(
         GraphQLOperationType::Query
     };
     // Process fields that are not marked as `omit`
+
+    let protected_id = type_of
+        .protected
+        .as_ref()
+        .and_then(|protected| protected.id.as_ref());
+    let fields_with_mismatched_protected_ids = type_of
+        .fields
+        .iter()
+        .filter_map(|(field_name, field_value)| {
+            if let Some(protected) = &field_value.protected {
+                if protected.id.as_ref() != protected_id {
+                    Some(field_name)
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        })
+        .collect::<HashSet<_>>();
+
     let fields = Valid::from_iter(
         type_of
             .fields
             .iter()
             .filter(|(_, field)| !field.is_omitted()),
         |(name, field)| {
-            let is_protected = name == "car" || name == "default";
-            let validation =
+            let mut validation =
                 validate_field_type_exist(config_module, field).and(to_field_definition(
                     field,
                     &operation_type,
@@ -404,12 +424,11 @@ fn to_fields(
                     type_of,
                     name,
                 ));
-
-            if is_protected {
-                validation
-            } else {
-                validation.trace(name)
+            if fields_with_mismatched_protected_ids.contains(name) || protected_id.is_none() {
+                validation = validation.trace(name);
             }
+
+            validation
         },
     );
 
