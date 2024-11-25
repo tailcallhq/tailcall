@@ -1,11 +1,10 @@
 # Js Customize the Response with onResponseBody.
 
 ```js @file:test.js
-function onResponse({response}) {
-  let body = JSON.parse(response.body)
-  body.name = body.name + " - Changed by JS"
-  response.body = JSON.stringify(body)
-  return {response}
+function onResponse(data) {
+  const body = JSON.parse(data);
+  body.name += " - Changed by JS";
+  return JSON.stringify(body)
 }
 ```
 
