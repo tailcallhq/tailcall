@@ -302,7 +302,7 @@ impl OPHash {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct OperationPlan<Input> {
     pub root_name: String,
     pub operation_type: OperationType,
@@ -314,14 +314,7 @@ pub struct OperationPlan<Input> {
     pub is_protected: bool,
     pub min_cache_ttl: Option<NonZeroU64>,
     pub selection: Vec<Field<Input>>,
-}
-
-impl<Input> std::fmt::Debug for OperationPlan<Input> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("OperationPlan")
-            .field("operation_type", &self.operation_type)
-            .finish()
-    }
+    pub before: Option<IR>,
 }
 
 impl<Input> OperationPlan<Input> {
@@ -336,15 +329,16 @@ impl<Input> OperationPlan<Input> {
         }
 
         Ok(OperationPlan {
+            selection,
             root_name: self.root_name,
             operation_type: self.operation_type,
-            selection,
             index: self.index,
             is_introspection_query: self.is_introspection_query,
             is_dedupe: self.is_dedupe,
             is_const: self.is_const,
-            min_cache_ttl: self.min_cache_ttl,
             is_protected: self.is_protected,
+            min_cache_ttl: self.min_cache_ttl,
+            before: self.before,
         })
     }
 }
@@ -369,8 +363,9 @@ impl<Input> OperationPlan<Input> {
             is_introspection_query,
             is_dedupe: false,
             is_const: false,
-            min_cache_ttl: None,
             is_protected: false,
+            min_cache_ttl: None,
+            before: Default::default(),
         }
     }
 

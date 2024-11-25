@@ -15,7 +15,7 @@ pub struct PartialRequest<'a> {
     pub path: &'a Path,
 }
 
-impl<'a> PartialRequest<'a> {
+impl PartialRequest<'_> {
     pub async fn into_request(self, request: Request) -> Result<GraphQLRequest> {
         let mut variables = self.variables;
         if let Some(key) = self.body {

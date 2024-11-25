@@ -1,6 +1,13 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 
+pub enum JsonPrimitive<'a> {
+    Null,
+    Bool(bool),
+    Str(&'a str),
+    Number(serde_json::Number),
+}
+
 pub trait JsonLikeOwned: for<'json> JsonLike<'json> {}
 impl<T> JsonLikeOwned for T where T: for<'json> JsonLike<'json> {}
 
@@ -13,8 +20,32 @@ pub trait JsonLike<'json>: Sized {
     fn object(obj: Self::JsonObject) -> Self;
     fn array(arr: Vec<Self>) -> Self;
     fn string(s: Cow<'json, str>) -> Self;
+    fn from_primitive(x: JsonPrimitive<'json>) -> Self;
+    fn clone_from<T>(other: &'json T) -> Self
+    where
+        T: JsonLike<'json>,
+        T::JsonObject: JsonObjectLike<'json, Value = T>,
+    {
+        if let Some(obj) = other.as_object() {
+            let mut fields = Vec::new();
+            for (k, v) in obj.iter() {
+                fields.push((k, Self::clone_from(v)));
+            }
+
+            Self::object(Self::JsonObject::from_vec(fields))
+        } else if let Some(arr) = other.as_array() {
+            let v = arr.iter().map(Self::clone_from).collect();
+
+            Self::array(v)
+        } else if let Some(primitive) = other.as_primitive() {
+            Self::from_primitive(primitive)
+        } else {
+            unreachable!()
+        }
+    }
 
     // Operators
+    fn as_primitive(&self) -> Option<JsonPrimitive>;
     fn as_array(&self) -> Option<&Vec<Self>>;
     fn as_array_mut(&mut self) -> Option<&mut Vec<Self>>;
     fn into_array(self) -> Option<Vec<Self>>;
@@ -38,8 +69,16 @@ pub trait JsonObjectLike<'obj>: Sized {
     type Value;
     fn new() -> Self;
     fn with_capacity(n: usize) -> Self;
+    fn from_vec(v: Vec<(&'obj str, Self::Value)>) -> Self;
     fn get_key(&self, key: &str) -> Option<&Self::Value>;
     fn insert_key(&mut self, key: &'obj str, value: Self::Value);
+    fn iter<'slf>(&'slf self) -> impl Iterator<Item = (&'slf str, &'slf Self::Value)>
+    where
+        Self::Value: 'slf,
+        'obj: 'slf,
+    {
+        std::iter::empty()
+    }
 }
 
 #[cfg(test)]
@@ -85,6 +124,24 @@ mod tests {
         if value.as_object().is_some() {
             return Value::object(Value::JsonObject::new());
         }
+
+        value
+    }
+
+    #[allow(dead_code)]
+    fn test_json_object_like_lifetime<'a, Value: JsonObjectLike<'a, Value = bool> + Clone + 'a>(
+    ) -> Value {
+        let mut value = Value::new();
+
+        value.insert_key("test_key", true);
+        let _key = value.get_key("test_key");
+
+        let it1 = value.iter();
+        let it2 = value.iter();
+
+        for _val in it1 {}
+
+        for _val in it2 {}
 
         value
     }

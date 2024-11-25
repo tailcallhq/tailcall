@@ -1,0 +1,11 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+---
+type Query {
+  data: String
+}
+
+schema {
+  query: Query
+}

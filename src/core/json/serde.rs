@@ -1,10 +1,12 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 
-use super::{JsonLike, JsonObjectLike};
+use serde_json::{Map, Value};
 
-impl<'obj> JsonObjectLike<'obj> for serde_json::Map<String, serde_json::Value> {
-    type Value = serde_json::Value;
+use super::{JsonLike, JsonObjectLike, JsonPrimitive};
+
+impl<'obj> JsonObjectLike<'obj> for serde_json::Map<String, Value> {
+    type Value = Value;
 
     fn new() -> Self {
         serde_json::Map::new()
@@ -14,17 +16,50 @@ impl<'obj> JsonObjectLike<'obj> for serde_json::Map<String, serde_json::Value> {
         serde_json::Map::with_capacity(n)
     }
 
-    fn get_key(&self, key: &str) -> Option<&serde_json::Value> {
+    fn from_vec(v: Vec<(&'obj str, Self::Value)>) -> Self {
+        Map::from_iter(v.into_iter().map(|(k, v)| (k.to_string(), v)))
+    }
+
+    fn get_key(&self, key: &str) -> Option<&Value> {
         self.get(key)
     }
 
     fn insert_key(&mut self, key: &'obj str, value: Self::Value) {
         self.insert(key.to_owned(), value);
     }
+
+    fn iter<'slf>(&'slf self) -> impl Iterator<Item = (&'slf str, &'slf Self::Value)>
+    where
+        Self::Value: 'obj,
+        'obj: 'slf,
+    {
+        self.iter().map(|(k, v)| (k.as_str(), v))
+    }
 }
 
-impl<'json> JsonLike<'json> for serde_json::Value {
-    type JsonObject = serde_json::Map<String, serde_json::Value>;
+impl<'json> JsonLike<'json> for Value {
+    type JsonObject = serde_json::Map<String, Value>;
+
+    fn from_primitive(x: JsonPrimitive<'json>) -> Self {
+        match x {
+            JsonPrimitive::Null => Value::Null,
+            JsonPrimitive::Bool(x) => Value::Bool(x),
+            JsonPrimitive::Str(s) => Value::String(s.to_string()),
+            JsonPrimitive::Number(number) => Value::Number(number),
+        }
+    }
+
+    fn as_primitive(&self) -> Option<JsonPrimitive> {
+        let val = match self {
+            Value::Null => JsonPrimitive::Null,
+            Value::Bool(x) => JsonPrimitive::Bool(*x),
+            Value::Number(number) => JsonPrimitive::Number(number.clone()),
+            Value::String(s) => JsonPrimitive::Str(s.as_ref()),
+            _ => return None,
+        };
+
+        Some(val)
+    }
 
     fn as_array(&self) -> Option<&Vec<Self>> {
         self.as_array()
@@ -70,11 +105,11 @@ impl<'json> JsonLike<'json> for serde_json::Value {
         let mut val = self;
         for token in path {
             val = match val {
-                serde_json::Value::Array(arr) => {
+                Value::Array(arr) => {
                     let index = token.as_ref().parse::<usize>().ok()?;
                     arr.get(index)?
                 }
-                serde_json::Value::Object(map) => map.get(token.as_ref())?,
+                Value::Object(map) => map.get(token.as_ref())?,
                 _ => return None,
             };
         }
@@ -83,7 +118,7 @@ impl<'json> JsonLike<'json> for serde_json::Value {
 
     fn get_key(&self, path: &str) -> Option<&Self> {
         match self {
-            serde_json::Value::Object(map) => map.get(path),
+            Value::Object(map) => map.get(path),
             _ => None,
         }
     }
@@ -114,15 +149,15 @@ impl<'json> JsonLike<'json> for serde_json::Value {
     }
 
     fn object(obj: Self::JsonObject) -> Self {
-        serde_json::Value::Object(obj)
+        Value::Object(obj)
     }
 
     fn array(arr: Vec<Self>) -> Self {
-        serde_json::Value::Array(arr)
+        Value::Array(arr)
     }
 
     fn string(s: Cow<'json, str>) -> Self {
-        serde_json::Value::String(s.to_string())
+        Value::String(s.to_string())
     }
 
     fn to_string_value(&'json self) -> String {
