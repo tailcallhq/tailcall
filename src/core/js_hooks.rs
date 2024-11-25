@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use super::ir::Error;
-use super::WorkerIO;
+use super::worker::WorkerRequest;
+use super::{worker, WorkerIO};
 use crate::core::http::Response;
 
 #[derive(Clone, Debug)]
@@ -24,21 +25,25 @@ impl JsHooks {
         }
     }
 
-    // pub async fn on_request(
-    //     &self,
-    //     worker: &Arc<dyn WorkerIO<worker::Event, worker::Command>>,
-    //     request: &reqwest::Request,
-    // ) -> Result<Option<worker::Command>, Error> {
-    //     match &self.on_request {
-    //         Some(on_request) => {
-    //             let js_request = WorkerRequest::try_from(request)?;
-    //             let event = worker::Event::Request(js_request);
-    //             worker.call(on_request, event).await.map_err(|e| e.into())
-    //         }
-    //         None => Ok(None),
-    //     }
-    // }
+    /// on request hook called before the request is sent and it sends the
+    /// request to the worker for modification.
+    pub async fn on_request(
+        &self,
+        worker: &Arc<dyn WorkerIO<worker::Event, worker::Command>>,
+        request: &reqwest::Request,
+    ) -> Result<Option<worker::Command>, Error> {
+        match &self.on_request {
+            Some(on_request) => {
+                let js_request = WorkerRequest::try_from(request)?;
+                let event = worker::Event::Request(js_request);
+                worker.call(on_request, event).await.map_err(|e| e.into())
+            }
+            None => Ok(None),
+        }
+    }
 
+    /// on response hook called after the response is received and it sends the
+    /// response body to the worker and returns the response.
     pub async fn on_response(
         &self,
         worker: &Arc<

@@ -107,16 +107,7 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         let worker = worker_ctx.worker;
         let js_worker = worker_ctx.js_worker;
 
-        let js_request = worker::WorkerRequest::try_from(&request)?;
-        let event = worker::Event::Request(js_request);
-
-        let command = if let Some(on_request) = js_hooks.on_request.as_ref() {
-            worker.call(on_request, event).await?
-        } else {
-            None
-        };
-
-        let resp = match command {
+        let response = match js_hooks.on_request(worker, &request).await? {
             Some(command) => match command {
                 worker::Command::Request(w_request) => {
                     let response = self.execute(w_request.into()).await?;
@@ -139,11 +130,11 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
             None => self.execute(request).await,
         };
 
-        // send the final response to JS script to futher evaluation.
-        if let Ok(resp) = resp {
+        // send the final response to JS script for futher evaluation.
+        if let Ok(resp) = response {
             js_hooks.on_response(js_worker, resp).await
         } else {
-            resp
+            response
         }
     }
 }
