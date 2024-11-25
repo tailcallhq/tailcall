@@ -192,6 +192,28 @@ impl<'json> JsonLike<'json> for ConstValue {
 impl<'json> JsonLike<'json> for Value {
     type JsonObject = IndexMap<Name, Value>;
 
+    fn from_primitive(x: JsonPrimitive<'json>) -> Self {
+        match x {
+            JsonPrimitive::Null => Value::Null,
+            JsonPrimitive::Bool(x) => Value::Boolean(x),
+            JsonPrimitive::Str(s) => Value::String(s.to_string()),
+            JsonPrimitive::Number(number) => Value::Number(number),
+        }
+    }
+
+    fn as_primitive(&self) -> Option<JsonPrimitive> {
+        let val = match self {
+            Value::Null => JsonPrimitive::Null,
+            Value::Boolean(x) => JsonPrimitive::Bool(*x),
+            Value::Number(number) => JsonPrimitive::Number(number.clone()),
+            Value::String(s) => JsonPrimitive::Str(s.as_ref()),
+            Value::Enum(e) => JsonPrimitive::Str(e.as_str()),
+            _ => return None,
+        };
+
+        Some(val)
+    }
+
     fn as_array(&self) -> Option<&Vec<Self>> {
         match self {
             Value::List(seq) => Some(seq),
@@ -216,7 +238,6 @@ impl<'json> JsonLike<'json> for Value {
     fn as_str(&self) -> Option<&str> {
         match self {
             Value::String(s) => Some(s),
-            Value::Variable(map) => Some(map.as_str()),
             _ => None,
         }
     }

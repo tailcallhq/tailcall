@@ -133,7 +133,7 @@ impl IR {
         match self {
             IR::IO(io) => io_modifier(io),
             IR::Cache(cache) => io_modifier(&mut cache.io),
-            IR::Discriminate(_, ir) | IR::Protect(ir) | IR::Path(ir, _) => {
+            IR::Discriminate(_, ir) | IR::Protect(_, ir) | IR::Path(ir, _) => {
                 ir.modify_io(io_modifier)
             }
             IR::Pipe(ir1, ir2) => {
