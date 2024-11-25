@@ -394,7 +394,8 @@ fn to_fields(
             .iter()
             .filter(|(_, field)| !field.is_omitted()),
         |(name, field)| {
-            validate_field_type_exist(config_module, field)
+            let is_protected = name == "car"|| name == "default";
+            let validation = validate_field_type_exist(config_module, field)
                 .and(to_field_definition(
                     field,
                     &operation_type,
@@ -402,10 +403,16 @@ fn to_fields(
                     config_module,
                     type_of,
                     name,
-                ))
-                .trace(name)
+                ));
+            
+            if is_protected {
+                validation
+            } else {
+                validation.trace(name)
+            }
         },
     );
+    
 
     let to_added_field = |add_field: &config::AddField,
                           type_of: &config::Type|

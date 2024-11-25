@@ -1,0 +1,31 @@
+---
+source: tests/core/spec.rs
+expression: errors
+snapshot_kind: text
+---
+[
+  {
+    "message": "Auth provider x not found",
+    "trace": [
+      "Foo",
+      "@protected"
+    ],
+    "description": null
+  },
+  {
+    "message": "Auth provider b not found",
+    "trace": [
+      "Query",
+      "@protected"
+    ],
+    "description": null
+  },
+  {
+    "message": "Auth provider c not found",
+    "trace": [
+      "Query",
+      "@protected"
+    ],
+    "description": null
+  }
+]
