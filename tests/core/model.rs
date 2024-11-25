@@ -28,7 +28,7 @@ mod default {
         1
     }
 
-    pub fn concurrent() -> usize {
+    pub fn concurrency() -> usize {
         1
     }
 
@@ -63,7 +63,7 @@ pub struct APIRequest {
     pub test_traces: bool,
     #[serde(default)]
     pub test_metrics: bool,
-    #[serde(default = "default::concurrent")]
+    #[serde(default = "default::concurrency")]
     pub concurrency: usize,
 }
 
