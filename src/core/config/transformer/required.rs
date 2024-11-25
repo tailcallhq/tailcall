@@ -10,11 +10,9 @@ impl Transform for Required {
     type Value = Config;
     type Error = String;
 
-    fn transform(
-        &self,
-        config: Self::Value,
-    ) -> crate::core::valid::Valid<Self::Value, Self::Error> {
+    fn transform(&self, config: Self::Value) -> tailcall_valid::Valid<Self::Value, Self::Error> {
         transform::default()
+            .pipe(super::Subgraph)
             .pipe(super::NestedUnions)
             .pipe(super::UnionInputType)
             .pipe(super::AmbiguousType::default())

@@ -6,24 +6,24 @@ schema @server @upstream {
   query: Query
 }
 
-type Query {
-  nestedSameProperties: T4 @http(baseURL: "https://example.com", path: "/")
-}
-
-type T1 {
+type GEN__1 {
   age: Int
 }
 
-type T2 {
-  container: T1
+type GEN__2 {
+  container: GEN__1
   name: String
 }
 
-type T3 {
-  container: T2
+type GEN__3 {
+  container: GEN__2
   name: String
 }
 
-type T4 {
-  container: T3
+type GEN__4 {
+  container: GEN__3
+}
+
+type Query {
+  nestedSameProperties: GEN__4 @http(url: "https://example.com/")
 }

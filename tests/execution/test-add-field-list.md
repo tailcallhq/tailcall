@@ -5,7 +5,7 @@ identity: true
 # test-add-field-list
 
 ```graphql @config
-schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+schema @server @upstream {
   query: Query
 }
 
@@ -22,6 +22,6 @@ type Foo {
 }
 
 type Query @addField(name: "b", path: ["foo", "a", "0", "b"]) {
-  foo: [Foo] @http(path: "/foo")
+  foo: [Foo] @http(url: "http://jsonplaceholder.typicode.com/foo")
 }
 ```

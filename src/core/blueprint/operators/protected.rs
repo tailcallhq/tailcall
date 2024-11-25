@@ -1,8 +1,9 @@
-use crate::core::blueprint::FieldDefinition;
+use tailcall_valid::{Valid, Validator};
+
+use crate::core::blueprint::{Auth, FieldDefinition, Provider};
 use crate::core::config::{self, ConfigModule, Field};
 use crate::core::ir::model::IR;
 use crate::core::try_fold::TryFold;
-use crate::core::valid::Valid;
 
 pub fn update_protected<'a>(
     type_name: &'a str,
@@ -27,14 +28,62 @@ pub fn update_protected<'a>(
                     );
                 }
 
-                b_field.resolver = Some(IR::Protect(Box::new(
-                    b_field
-                        .resolver
-                        .unwrap_or(IR::ContextPath(vec![b_field.name.clone()])),
-                )));
-            }
+                // Used to collect the providers that are used in the field
+                let providers: std::collections::HashMap<_, _> = Provider::from_config(config)
+                    .into_iter()
+                    .filter_map(|provider| provider.id.clone().map(|id| (id, provider.content)))
+                    .collect();
 
-            Valid::succeed(b_field)
+                // FIXME: add trace information in the error
+
+                let mut protection = Vec::new();
+
+                protection.extend(
+                    type_
+                        .protected
+                        .clone()
+                        .and_then(|protect| protect.id)
+                        .unwrap_or_default(),
+                );
+
+                protection.extend(
+                    field
+                        .protected
+                        .clone()
+                        .and_then(|protect| protect.id)
+                        .unwrap_or_default(),
+                );
+
+                Valid::from_iter(protection.iter(), |id| {
+                    if let Some(provider) = providers.get(id) {
+                        Valid::succeed(Auth::Provider(provider.clone()))
+                    } else {
+                        Valid::fail(format!("Auth provider {} not found", id))
+                    }
+                })
+                .map(|provider| {
+                    let mut auth = provider.into_iter().reduce(|left, right| left.and(right));
+
+                    // If no protection is defined, use all providers
+                    if auth.is_none() {
+                        auth = Auth::from_config(config);
+                    }
+
+                    if let Some(auth) = auth {
+                        b_field.resolver = match &b_field.resolver {
+                            None => Some(IR::Protect(
+                                auth,
+                                Box::new(IR::ContextPath(vec![b_field.name.clone()])),
+                            )),
+                            Some(resolver) => Some(IR::Protect(auth, Box::new(resolver.clone()))),
+                        }
+                    }
+
+                    b_field
+                })
+            } else {
+                Valid::succeed(b_field)
+            }
         },
     )
 }

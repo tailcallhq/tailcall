@@ -2,20 +2,22 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema
-  @server(hostname: "0.0.0.0", port: 8001, queryValidation: false)
-  @upstream(baseURL: "http://upstream/", httpCache: 42) {
+schema @server(hostname: "0.0.0.0", port: 8001, queryValidation: false) @upstream(httpCache: 42) {
   query: Query
 }
 
+input Foo {
+  bar: String! = "BUZZ"
+}
+
 input VideoSize {
-  hdr: Boolean
+  hdr: Boolean = true
   height: Int!
   width: Int!
 }
 
 type Query {
-  user(id: ID!): User! @http(path: "/user", query: [{key: "id", value: "{{.args.id}}"}])
+  user(id: ID!): User! @http(url: "http://upstream/user", query: [{key: "id", value: "{{.args.id}}"}])
 }
 
 type User {
@@ -28,4 +30,5 @@ type User {
   profilePic(size: Int! = 100, width: Int, height: Int = 100): String!
     @expr(body: "{{.value.id}}_{{.args.size}}_{{.args.width}}_{{.args.height}}")
   searchComments(query: [[String!]!]! = [["today"]]): String! @expr(body: "video_{{.value.id}}_{{.args.query}}")
+  spam(foo: [Foo!]!): String! @expr(body: "FIZZ: {{.args.foo}}")
 }

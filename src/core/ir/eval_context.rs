@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use async_graphql::{ServerError, Value};
-use reqwest::header::HeaderMap;
+use http::header::HeaderMap;
 
 use super::{GraphQLOperationContext, RelatedFields, ResolverContextLike, SelectionField};
 use crate::core::document::print_directives;
@@ -108,7 +108,7 @@ impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
     }
 }
 
-impl<'a, Ctx: ResolverContextLike> GraphQLOperationContext for EvalContext<'a, Ctx> {
+impl<Ctx: ResolverContextLike> GraphQLOperationContext for EvalContext<'_, Ctx> {
     fn directives(&self) -> Option<String> {
         let selection_field = self.graphql_ctx.field()?;
         selection_field
@@ -130,9 +130,9 @@ fn format_selection_set<'a>(
     let set = selection_set
         .filter_map(|field| {
             // add to set only related fields that should be resolved with current resolver
-            related_fields
-                .get(field.name())
-                .map(|related_fields| format_selection_field(field, related_fields))
+            related_fields.get(field.name()).map(|related_fields| {
+                format_selection_field(field, &related_fields.0, &related_fields.1)
+            })
         })
         .collect::<Vec<_>>();
 
@@ -143,8 +143,11 @@ fn format_selection_set<'a>(
     Some(format!("{{ {} }}", set.join(" ")))
 }
 
-fn format_selection_field(field: &SelectionField, related_fields: &RelatedFields) -> String {
-    let name = field.name();
+fn format_selection_field(
+    field: &SelectionField,
+    name: &str,
+    related_fields: &RelatedFields,
+) -> String {
     let arguments = format_selection_field_arguments(field);
     let selection_set = format_selection_set(field.selection_set(), related_fields);
 

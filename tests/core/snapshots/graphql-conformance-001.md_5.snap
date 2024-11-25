@@ -1,0 +1,19 @@
+---
+source: tests/core/spec.rs
+expression: response
+snapshot_kind: text
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": null,
+    "errors": [
+      {
+        "message": "ResolveInputError: Argument `id` for field `user` is required"
+      }
+    ]
+  }
+}

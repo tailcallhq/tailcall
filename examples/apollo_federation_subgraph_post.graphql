@@ -1,0 +1,29 @@
+schema @server(port: 8001, enableFederation: true) @upstream(httpCache: 42, batch: {delay: 100}) {
+  query: Query
+}
+
+type Query {
+  posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts")
+}
+
+type User
+  @http(
+    url: "http://jsonplaceholder.typicode.com/users"
+    query: [{key: "id", value: "{{.value.id}}"}]
+    batchKey: ["id"]
+  ) {
+  id: Int!
+}
+
+type Post
+  @http(
+    url: "http://jsonplaceholder.typicode.com/posts"
+    query: [{key: "id", value: "{{.value.id}}"}]
+    batchKey: ["id"]
+  ) {
+  id: Int!
+  userId: Int!
+  title: String!
+  body: String!
+  user: User @expr(body: {id: "{{.value.userId}}"})
+}

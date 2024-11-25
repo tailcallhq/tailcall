@@ -7,6 +7,8 @@ use tailcall::core::config::ConfigModule;
 use tailcall::core::merge_right::MergeRight;
 use tailcall::core::rest::EndpointSet;
 use tailcall::core::runtime::TargetRuntime;
+use tailcall::core::variance::Invariant;
+use tailcall_valid::Validator;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
 
@@ -40,7 +42,10 @@ impl TailcallBuilder {
 
     async fn with_config_inner(mut self, url: String) -> anyhow::Result<TailcallBuilder> {
         if url::Url::parse(&url).is_ok() {
-            self.module = self.module.merge_right(self.reader.read(url).await?);
+            self.module = self
+                .module
+                .unify(self.reader.read(url).await?)
+                .to_result()?;
         } else {
             return Err(anyhow::anyhow!("Config can only be loaded over URL"));
         }

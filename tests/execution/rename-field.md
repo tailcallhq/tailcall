@@ -9,8 +9,8 @@ type User {
   name: String
 }
 type Query {
-  person1: User @http(path: "/users/1", baseURL: "http://jsonplaceholder.typicode.com") @modify(name: "user1")
-  person2: User @modify(name: "user2") @http(path: "/users/2", baseURL: "http://jsonplaceholder.typicode.com")
+  person1: User @http(url: "http://jsonplaceholder.typicode.com/users/1") @modify(name: "user1")
+  person2: User @modify(name: "user2") @http(url: "http://jsonplaceholder.typicode.com/users/2")
 }
 ```
 

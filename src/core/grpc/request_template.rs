@@ -2,9 +2,7 @@ use std::hash::{Hash, Hasher};
 
 use anyhow::Result;
 use derive_setters::Setters;
-use hyper::header::CONTENT_TYPE;
-use hyper::HeaderMap;
-use reqwest::header::HeaderValue;
+use http::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
 use tailcall_hasher::TailcallHasher;
 use url::Url;
 
@@ -134,8 +132,8 @@ mod tests {
     use std::collections::HashSet;
 
     use derive_setters::Setters;
-    use hyper::header::{HeaderName, HeaderValue};
-    use hyper::{HeaderMap, Method};
+    use http::header::{HeaderMap, HeaderName, HeaderValue};
+    use http::Method;
     use pretty_assertions::assert_eq;
     use tailcall_fixtures::protobuf;
 
@@ -160,6 +158,7 @@ mod tests {
             id: Some(id.clone()),
             src: test_file.to_string(),
             type_of: LinkType::Protobuf,
+            headers: None,
             meta: None,
         }]);
         let method = GrpcMethod {
@@ -205,7 +204,7 @@ mod tests {
     }
 
     impl crate::core::path::PathString for Context {
-        fn path_string<'a, T: AsRef<str>>(&'a self, parts: &'a [T]) -> Option<Cow<'_, str>> {
+        fn path_string<'a, T: AsRef<str>>(&'a self, parts: &'a [T]) -> Option<Cow<'a, str>> {
             self.value.path_string(parts)
         }
     }

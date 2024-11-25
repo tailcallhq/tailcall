@@ -1,33 +1,30 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::fmt::{self, Display};
-use std::num::NonZeroU64;
 
 use anyhow::Result;
-use async_graphql::parser::types::{ConstDirective, ServiceDocument};
-use async_graphql::Positioned;
+use async_graphql::parser::types::ServiceDocument;
 use derive_setters::Setters;
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tailcall_macros::{CustomResolver, DirectiveDefinition, InputDefinition};
+use strum::IntoEnumIterator;
 use tailcall_typedefs_common::directive_definition::DirectiveDefinition;
 use tailcall_typedefs_common::input_definition::InputDefinition;
 use tailcall_typedefs_common::ServiceDocumentBuilder;
+use tailcall_valid::{Valid, Validator};
 
-use super::telemetry::Telemetry;
-use super::{KeyValue, Link, Server, Upstream};
-use crate::core::config::from_document::from_document;
+use super::directive::Directive;
+use super::from_document::from_document;
+use super::{
+    AddField, Alias, Cache, Call, Discriminate, Expr, GraphQL, Grpc, Http, Link, Modify, Omit,
+    Protected, Resolver, Server, Telemetry, Upstream, JS,
+};
 use crate::core::config::npo::QueryPath;
 use crate::core::config::source::Source;
-use crate::core::config::url_query::URLQuery;
-use crate::core::directive::DirectiveCodec;
-use crate::core::http::Method;
 use crate::core::is_default;
-use crate::core::json::JsonSchema;
 use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
 use crate::core::scalar::Scalar;
-use crate::core::valid::{Valid, Validator};
 
 #[derive(
     Serialize,
@@ -81,8 +78,9 @@ pub struct Config {
     /// A list of all links in the schema.
     #[serde(default, skip_serializing_if = "is_default")]
     pub links: Vec<Link>,
-    #[serde(default, skip_serializing_if = "is_default")]
+
     /// Enable [opentelemetry](https://opentelemetry.io) support
+    #[serde(default, skip_serializing_if = "is_default")]
     pub telemetry: Telemetry,
 }
 
@@ -116,6 +114,14 @@ pub struct Type {
     /// Marks field as protected by auth providers
     #[serde(default)]
     pub protected: Option<Protected>,
+    ///
+    /// Apollo federation entity resolver.
+    #[serde(flatten, default, skip_serializing_if = "is_default")]
+    pub resolver: Option<Resolver>,
+    ///
+    /// Any additional directives
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub directives: Vec<Directive>,
 }
 
 impl Display for Type {
@@ -145,44 +151,6 @@ impl Type {
 }
 
 #[derive(
-    Clone,
-    Debug,
-    PartialEq,
-    Deserialize,
-    Serialize,
-    Eq,
-    schemars::JsonSchema,
-    MergeRight,
-    DirectiveDefinition,
-    InputDefinition,
-)]
-#[directive_definition(locations = "Object,FieldDefinition")]
-/// The @cache operator enables caching for the query, field or type it is
-/// applied to.
-#[serde(rename_all = "camelCase")]
-#[serde(deny_unknown_fields)]
-pub struct Cache {
-    /// Specifies the duration, in milliseconds, of how long the value has to be
-    /// stored in the cache.
-    pub max_age: NonZeroU64,
-}
-
-#[derive(
-    Clone,
-    Debug,
-    Deserialize,
-    Serialize,
-    PartialEq,
-    Eq,
-    Default,
-    schemars::JsonSchema,
-    MergeRight,
-    DirectiveDefinition,
-)]
-#[directive_definition(locations = "Object,FieldDefinition")]
-pub struct Protected {}
-
-#[derive(
     Serialize,
     Deserialize,
     Clone,
@@ -201,27 +169,6 @@ pub struct RootSchema {
     pub mutation: Option<String>,
     #[serde(default, skip_serializing_if = "is_default")]
     pub subscription: Option<String>,
-}
-
-#[derive(
-    Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, DirectiveDefinition,
-)]
-#[directive_definition(locations = "FieldDefinition")]
-#[serde(deny_unknown_fields)]
-/// Used to omit a field from public consumption.
-pub struct Omit {}
-
-#[derive(
-    Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, CustomResolver,
-)]
-#[serde(rename_all = "camelCase")]
-pub enum Resolver {
-    Http(Http),
-    Grpc(Grpc),
-    Graphql(GraphQL),
-    Call(Call),
-    Js(JS),
-    Expr(Expr),
 }
 
 ///
@@ -273,9 +220,18 @@ pub struct Field {
     pub protected: Option<Protected>,
 
     ///
+    /// Used to overwrite the default discrimination strategy
+    pub discriminate: Option<Discriminate>,
+
+    ///
     /// Resolver for the field
     #[serde(flatten, default, skip_serializing_if = "is_default")]
     pub resolver: Option<Resolver>,
+
+    ///
+    /// Any additional directives
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub directives: Vec<Directive>,
 }
 
 // It's a terminal implementation of MergeRight
@@ -289,19 +245,12 @@ impl Field {
     pub fn has_resolver(&self) -> bool {
         self.resolver.is_some()
     }
+
     pub fn has_batched_resolver(&self) -> bool {
-        if let Some(resolver) = &self.resolver {
-            match resolver {
-                Resolver::Http(http) => !http.batch_key.is_empty(),
-                Resolver::Grpc(grpc) => !grpc.batch_key.is_empty(),
-                Resolver::Graphql(graphql) => graphql.batch,
-                Resolver::Call(_) => false,
-                Resolver::Js(_) => false,
-                Resolver::Expr(_) => false,
-            }
-        } else {
-            false
-        }
+        self.resolver
+            .as_ref()
+            .map(Resolver::is_batched)
+            .unwrap_or(false)
     }
 
     pub fn int() -> Self {
@@ -332,42 +281,6 @@ impl Field {
                 .and_then(|m| m.omit)
                 .unwrap_or_default()
     }
-}
-
-#[derive(
-    Serialize,
-    Deserialize,
-    Clone,
-    Debug,
-    PartialEq,
-    Eq,
-    schemars::JsonSchema,
-    DirectiveDefinition,
-    InputDefinition,
-)]
-#[directive_definition(locations = "FieldDefinition", lowercase_name)]
-pub struct JS {
-    pub name: String,
-}
-
-#[derive(
-    Serialize,
-    Deserialize,
-    Clone,
-    Debug,
-    PartialEq,
-    Eq,
-    schemars::JsonSchema,
-    DirectiveDefinition,
-    InputDefinition,
-)]
-#[directive_definition(locations = "FieldDefinition")]
-#[serde(deny_unknown_fields)]
-pub struct Modify {
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub name: Option<String>,
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub omit: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -421,259 +334,6 @@ pub struct Variant {
     pub alias: Option<Alias>,
 }
 
-/// The @alias directive indicates that aliases of one enum value.
-#[derive(
-    Serialize,
-    Deserialize,
-    Clone,
-    Debug,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    schemars::JsonSchema,
-    MergeRight,
-    DirectiveDefinition,
-)]
-#[directive_definition(locations = "EnumValue")]
-pub struct Alias {
-    pub options: BTreeSet<String>,
-}
-
-#[derive(
-    Serialize,
-    Deserialize,
-    Clone,
-    Debug,
-    Default,
-    PartialEq,
-    Eq,
-    schemars::JsonSchema,
-    DirectiveDefinition,
-    InputDefinition,
-)]
-#[directive_definition(locations = "FieldDefinition")]
-#[serde(deny_unknown_fields)]
-/// The @http operator indicates that a field or node is backed by a REST API.
-///
-/// For instance, if you add the @http operator to the `users` field of the
-/// Query type with a path argument of `"/users"`, it signifies that the `users`
-/// field is backed by a REST API. The path argument specifies the path of the
-/// REST API. In this scenario, the GraphQL server will make a GET request to
-/// the API endpoint specified when the `users` field is queried.
-pub struct Http {
-    #[serde(rename = "onRequest", default, skip_serializing_if = "is_default")]
-    /// onRequest field in @http directive gives the ability to specify the
-    /// request interception handler.
-    pub on_request: Option<String>,
-
-    #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
-    /// This refers to the base URL of the API. If not specified, the default
-    /// base URL is the one specified in the `@upstream` operator.
-    pub base_url: Option<String>,
-
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// The body of the API call. It's used for methods like POST or PUT that
-    /// send data to the server. You can pass it as a static object or use a
-    /// Mustache template to substitute variables from the GraphQL variables.
-    pub body: Option<String>,
-
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// The `encoding` parameter specifies the encoding of the request body. It
-    /// can be `ApplicationJson` or `ApplicationXWwwFormUrlEncoded`. @default
-    /// `ApplicationJson`.
-    pub encoding: Encoding,
-
-    #[serde(rename = "batchKey", default, skip_serializing_if = "is_default")]
-    /// The `batchKey` dictates the path Tailcall will follow to group the returned items from the batch request. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
-    pub batch_key: Vec<String>,
-
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// The `headers` parameter allows you to customize the headers of the HTTP
-    /// request made by the `@http` operator. It is used by specifying a
-    /// key-value map of header names and their values.
-    pub headers: Vec<KeyValue>,
-
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// Schema of the input of the API call. It is automatically inferred in
-    /// most cases.
-    pub input: Option<JsonSchema>,
-
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// This refers to the HTTP method of the API call. Commonly used methods
-    /// include `GET`, `POST`, `PUT`, `DELETE` etc. @default `GET`.
-    pub method: Method,
-
-    /// This refers to the API endpoint you're going to call. For instance `https://jsonplaceholder.typicode.com/users`.
-    ///
-    /// For dynamic segments in your API endpoint, use Mustache templates for
-    /// variable substitution. For instance, to fetch a specific user, use
-    /// `/users/{{args.id}}`.
-    pub path: String,
-
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// Schema of the output of the API call. It is automatically inferred in
-    /// most cases.
-    pub output: Option<JsonSchema>,
-
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// This represents the query parameters of your API call. You can pass it
-    /// as a static object or use Mustache template for dynamic parameters.
-    /// These parameters will be added to the URL.
-    /// NOTE: Query parameter order is critical for batching in Tailcall. The
-    /// first parameter referencing a field in the current value using mustache
-    /// syntax is automatically selected as the batching parameter.
-    pub query: Vec<URLQuery>,
-
-    /// Specifies a JavaScript function to be executed after receiving the
-    /// response body. This function can modify or transform the response
-    /// body before it's sent back to the client.
-    #[serde(rename = "onResponseBody", default, skip_serializing_if = "is_default")]
-    pub on_response_body: Option<String>,
-}
-
-///
-/// Provides the ability to refer to multiple fields in the Query or
-/// Mutation root.
-#[derive(
-    Serialize,
-    Deserialize,
-    Clone,
-    Debug,
-    Default,
-    PartialEq,
-    Eq,
-    schemars::JsonSchema,
-    DirectiveDefinition,
-)]
-#[directive_definition(locations = "FieldDefinition")]
-pub struct Call {
-    /// Steps are composed together to form a call.
-    /// If you have multiple steps, the output of the previous step is passed as
-    /// input to the next step.
-    pub steps: Vec<Step>,
-}
-
-///
-/// Provides the ability to refer to a field defined in the root Query or
-/// Mutation.
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
-pub struct Step {
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// The name of the field on the `Query` type that you want to call.
-    pub query: Option<String>,
-
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// The name of the field on the `Mutation` type that you want to call.
-    pub mutation: Option<String>,
-
-    /// The arguments that will override the actual arguments of the field.
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub args: BTreeMap<String, Value>,
-}
-
-#[derive(
-    Serialize,
-    Deserialize,
-    Clone,
-    Debug,
-    Default,
-    PartialEq,
-    Eq,
-    schemars::JsonSchema,
-    InputDefinition,
-    DirectiveDefinition,
-)]
-#[directive_definition(locations = "FieldDefinition")]
-#[serde(rename_all = "camelCase")]
-#[serde(deny_unknown_fields)]
-/// The @grpc operator indicates that a field or node is backed by a gRPC API.
-///
-/// For instance, if you add the @grpc operator to the `users` field of the
-/// Query type with a service argument of `NewsService` and method argument of
-/// `GetAllNews`, it signifies that the `users` field is backed by a gRPC API.
-/// The `service` argument specifies the name of the gRPC service.
-/// The `method` argument specifies the name of the gRPC method.
-/// In this scenario, the GraphQL server will make a gRPC request to the gRPC
-/// endpoint specified when the `users` field is queried.
-pub struct Grpc {
-    #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
-    /// This refers to the base URL of the API. If not specified, the default
-    /// base URL is the one specified in the `@upstream` operator.
-    pub base_url: Option<String>,
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// This refers to the arguments of your gRPC call. You can pass it as a
-    /// static object or use Mustache template for dynamic parameters. These
-    /// parameters will be added in the body in `protobuf` format.
-    pub body: Option<Value>,
-    #[serde(rename = "batchKey", default, skip_serializing_if = "is_default")]
-    /// The `batchKey` dictates the path Tailcall will follow to group the returned items from the batch request. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
-    pub batch_key: Vec<String>,
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// The `headers` parameter allows you to customize the headers of the HTTP
-    /// request made by the `@grpc` operator. It is used by specifying a
-    /// key-value map of header names and their values. Note: content-type is
-    /// automatically set to application/grpc
-    pub headers: Vec<KeyValue>,
-    /// This refers to the gRPC method you're going to call. For instance
-    /// `GetAllNews`.
-    pub method: String,
-
-    /// Specifies a JavaScript function to be executed after receiving the
-    /// response body. This function can modify or transform the response
-    /// body before it's sent back to the client.
-    #[serde(rename = "onResponseBody", default, skip_serializing_if = "is_default")]
-    pub on_response_body: Option<String>,
-}
-
-#[derive(
-    Serialize,
-    Deserialize,
-    Clone,
-    Debug,
-    Default,
-    PartialEq,
-    Eq,
-    schemars::JsonSchema,
-    DirectiveDefinition,
-    InputDefinition,
-)]
-#[directive_definition(locations = "FieldDefinition")]
-#[serde(deny_unknown_fields)]
-/// The @graphQL operator allows to specify GraphQL API server request to fetch
-/// data from.
-pub struct GraphQL {
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// Named arguments for the requested field. More info [here](https://tailcall.run/docs/guides/operators/#args)
-    pub args: Option<Vec<KeyValue>>,
-
-    #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
-    /// This refers to the base URL of the API. If not specified, the default
-    /// base URL is the one specified in the `@upstream` operator.
-    pub base_url: Option<String>,
-
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// If the upstream GraphQL server supports request batching, you can
-    /// specify the 'batch' argument to batch several requests into a single
-    /// batch request.
-    ///
-    /// Make sure you have also specified batch settings to the `@upstream` and
-    /// to the `@graphQL` operator.
-    pub batch: bool,
-
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// The headers parameter allows you to customize the headers of the GraphQL
-    /// request made by the `@graphQL` operator. It is used by specifying a
-    /// key-value map of header names and their values.
-    pub headers: Vec<KeyValue>,
-
-    /// Specifies the root field on the upstream to request data from. This maps
-    /// a field in your schema to a field in the upstream schema. When a query
-    /// is received for this field, Tailcall requests data from the
-    /// corresponding upstream field.
-    pub name: String,
-}
-
 #[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum GraphQLOperationType {
@@ -689,39 +349,6 @@ impl Display for GraphQLOperationType {
             Self::Mutation => "mutation",
         })
     }
-}
-
-#[derive(
-    Serialize,
-    Deserialize,
-    Clone,
-    Debug,
-    PartialEq,
-    Eq,
-    schemars::JsonSchema,
-    DirectiveDefinition,
-    InputDefinition,
-)]
-#[directive_definition(locations = "FieldDefinition")]
-#[serde(deny_unknown_fields)]
-/// The `@expr` operators allows you to specify an expression that can evaluate
-/// to a value. The expression can be a static value or built form a Mustache
-/// template. schema.
-pub struct Expr {
-    pub body: Value,
-}
-
-#[derive(
-    Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, DirectiveDefinition,
-)]
-#[directive_definition(repeatable, locations = "Object")]
-#[serde(deny_unknown_fields)]
-/// The @addField operator simplifies data structures and queries by adding a field that inlines or flattens a nested field or node within your schema. more info [here](https://tailcall.run/docs/guides/operators/#addfield)
-pub struct AddField {
-    /// Name of the new field to be added
-    pub name: String,
-    /// Path of the data where the field should point to
-    pub path: Vec<String>,
 }
 
 impl Config {
@@ -836,6 +463,8 @@ impl Config {
                     types = self.find_connections(field.type_of.name(), types);
                 }
             }
+        } else if self.find_enum(type_of).is_some() {
+            types.insert(type_of.into());
         }
         types
     }
@@ -884,17 +513,63 @@ impl Config {
         types
     }
 
-    /// Returns a list of all the types that are used as interface
-    pub fn interface_types(&self) -> HashSet<String> {
-        let mut types = HashSet::new();
+    pub fn interfaces_types_map(&self) -> BTreeMap<String, BTreeSet<String>> {
+        let mut interfaces_types: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
 
-        for ty in self.types.values() {
-            for interface in ty.implements.iter() {
-                types.insert(interface.clone());
+        for (type_name, type_definition) in self.types.iter() {
+            for implement_name in type_definition.implements.clone() {
+                interfaces_types
+                    .entry(implement_name)
+                    .or_default()
+                    .insert(type_name.clone());
             }
         }
 
-        types
+        fn recursive_interface_type_merging(
+            types_set: &BTreeSet<String>,
+            interfaces_types: &BTreeMap<String, BTreeSet<String>>,
+            temp_interface_types: &mut BTreeMap<String, BTreeSet<String>>,
+        ) -> BTreeSet<String> {
+            let mut types_set_local = BTreeSet::new();
+
+            for type_name in types_set.iter() {
+                match (
+                    interfaces_types.get(type_name),
+                    temp_interface_types.get(type_name),
+                ) {
+                    (Some(types_set_inner), None) => {
+                        let types_set_inner = recursive_interface_type_merging(
+                            types_set_inner,
+                            interfaces_types,
+                            temp_interface_types,
+                        );
+                        temp_interface_types.insert(type_name.to_string(), types_set_inner.clone());
+                        types_set_local = types_set_local.merge_right(types_set_inner);
+                    }
+                    (Some(_), Some(types_set_inner)) => {
+                        types_set_local = types_set_local.merge_right(types_set_inner.clone());
+                    }
+                    _ => {
+                        types_set_local.insert(type_name.to_string());
+                    }
+                }
+            }
+
+            types_set_local
+        }
+
+        let mut interfaces_types_map: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+        let mut temp_interface_types: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+        for (interface_name, types_set) in interfaces_types.iter() {
+            let types_set = recursive_interface_type_merging(
+                types_set,
+                &interfaces_types,
+                &mut temp_interface_types,
+            );
+            interfaces_types_map.insert(interface_name.clone(), types_set);
+        }
+
+        interfaces_types_map
     }
 
     /// Returns a list of all the arguments in the configuration
@@ -969,7 +644,7 @@ impl Config {
         let generated_types = &mut generated_types;
 
         let builder = ServiceDocumentBuilder::new();
-        builder
+        let mut builder = builder
             .add_directive(AddField::directive_definition(generated_types))
             .add_directive(Alias::directive_definition(generated_types))
             .add_directive(Cache::directive_definition(generated_types))
@@ -986,6 +661,7 @@ impl Config {
             .add_directive(Server::directive_definition(generated_types))
             .add_directive(Telemetry::directive_definition(generated_types))
             .add_directive(Upstream::directive_definition(generated_types))
+            .add_directive(Discriminate::directive_definition(generated_types))
             .add_input(GraphQL::input_definition())
             .add_input(Grpc::input_definition())
             .add_input(Http::input_definition())
@@ -993,25 +669,13 @@ impl Config {
             .add_input(JS::input_definition())
             .add_input(Modify::input_definition())
             .add_input(Cache::input_definition())
-            .add_input(Telemetry::input_definition())
-            .add_scalar(Scalar::Bytes.scalar_definition())
-            .add_scalar(Scalar::Date.scalar_definition())
-            .add_scalar(Scalar::Email.scalar_definition())
-            .add_scalar(Scalar::Empty.scalar_definition())
-            .add_scalar(Scalar::Int128.scalar_definition())
-            .add_scalar(Scalar::Int16.scalar_definition())
-            .add_scalar(Scalar::Int32.scalar_definition())
-            .add_scalar(Scalar::Int64.scalar_definition())
-            .add_scalar(Scalar::Int8.scalar_definition())
-            .add_scalar(Scalar::JSON.scalar_definition())
-            .add_scalar(Scalar::PhoneNumber.scalar_definition())
-            .add_scalar(Scalar::UInt128.scalar_definition())
-            .add_scalar(Scalar::UInt16.scalar_definition())
-            .add_scalar(Scalar::UInt32.scalar_definition())
-            .add_scalar(Scalar::UInt64.scalar_definition())
-            .add_scalar(Scalar::UInt8.scalar_definition())
-            .add_scalar(Scalar::Url.scalar_definition())
-            .build()
+            .add_input(Telemetry::input_definition());
+
+        for scalar in Scalar::iter() {
+            builder = builder.add_scalar(scalar.scalar_definition());
+        }
+
+        builder.build()
     }
 }
 
@@ -1029,6 +693,7 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     use super::*;
+    use crate::core::directive::DirectiveCodec;
 
     #[test]
     fn test_field_has_or_not_batch_resolver() {
@@ -1147,5 +812,55 @@ mod tests {
             .map(String::from)
             .collect();
         assert_eq!(union_types, expected_union_types);
+    }
+
+    #[test]
+    fn test_interfaces_types_map() {
+        let sdl = std::fs::read_to_string(tailcall_fixtures::configs::INTERFACE_CONFIG).unwrap();
+        let config = Config::from_sdl(&sdl).to_result().unwrap();
+        let interfaces_types_map = config.interfaces_types_map();
+
+        let mut expected_union_types = BTreeMap::new();
+
+        {
+            let mut set = BTreeSet::new();
+            set.insert("E".to_string());
+            set.insert("F".to_string());
+            expected_union_types.insert("T0".to_string(), set);
+        }
+
+        {
+            let mut set = BTreeSet::new();
+            set.insert("A".to_string());
+            set.insert("E".to_string());
+            set.insert("B".to_string());
+            set.insert("C".to_string());
+            set.insert("D".to_string());
+            expected_union_types.insert("T1".to_string(), set);
+        }
+
+        {
+            let mut set = BTreeSet::new();
+            set.insert("B".to_string());
+            set.insert("E".to_string());
+            set.insert("D".to_string());
+            expected_union_types.insert("T2".to_string(), set);
+        }
+
+        {
+            let mut set = BTreeSet::new();
+            set.insert("C".to_string());
+            set.insert("E".to_string());
+            set.insert("D".to_string());
+            expected_union_types.insert("T3".to_string(), set);
+        }
+
+        {
+            let mut set = BTreeSet::new();
+            set.insert("D".to_string());
+            expected_union_types.insert("T4".to_string(), set);
+        }
+
+        assert_eq!(interfaces_types_map, expected_union_types);
     }
 }

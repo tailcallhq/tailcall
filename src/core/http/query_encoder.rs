@@ -64,6 +64,7 @@ pub fn convert_value(value: &async_graphql::Value) -> Option<String> {
         async_graphql::Value::String(s) => Some(s.to_string()),
         async_graphql::Value::Number(n) => Some(n.to_string()),
         async_graphql::Value::Boolean(b) => Some(b.to_string()),
+        async_graphql::Value::Enum(e) => Some(e.to_string()),
         _ => None,
     }
 }

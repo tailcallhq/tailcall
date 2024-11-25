@@ -1,9 +1,9 @@
 use std::collections::BTreeSet;
 
 use derive_setters::Setters;
+use tailcall_valid::{Valid, ValidationError, Validator};
 
 use crate::core::config::{self, Batch, ConfigModule};
-use crate::core::valid::{Valid, ValidationError, Validator};
 
 #[derive(PartialEq, Eq, Clone, Debug, schemars::JsonSchema)]
 pub struct Proxy {
@@ -23,11 +23,11 @@ pub struct Upstream {
     pub tcp_keep_alive: u64,
     pub user_agent: String,
     pub allowed_headers: BTreeSet<String>,
-    pub base_url: Option<String>,
     pub http_cache: u64,
     pub batch: Option<Batch>,
     pub http2_only: bool,
     pub on_request: Option<String>,
+    pub verify_ssl: bool,
 }
 
 impl Upstream {
@@ -59,13 +59,12 @@ impl TryFrom<&ConfigModule> for Upstream {
 
         if config_module.extensions().has_auth() {
             // force add auth specific headers to use it to make actual validation
-            allowed_headers.insert(hyper::header::AUTHORIZATION.to_string());
+            allowed_headers.insert(http::header::AUTHORIZATION.to_string());
         }
 
         get_batch(&config_upstream)
-            .fuse(get_base_url(&config_upstream))
             .fuse(get_proxy(&config_upstream))
-            .map(|(batch, base_url, proxy)| Upstream {
+            .map(|(batch, proxy)| Upstream {
                 pool_idle_timeout: (config_upstream).get_pool_idle_timeout(),
                 pool_max_idle_per_host: (config_upstream).get_pool_max_idle_per_host(),
                 keep_alive_interval: (config_upstream).get_keep_alive_interval(),
@@ -77,11 +76,11 @@ impl TryFrom<&ConfigModule> for Upstream {
                 tcp_keep_alive: (config_upstream).get_tcp_keep_alive(),
                 user_agent: (config_upstream).get_user_agent(),
                 allowed_headers,
-                base_url,
                 http_cache: (config_upstream).get_http_cache_size(),
                 batch,
                 http2_only: (config_upstream).get_http_2_only(),
                 on_request: (config_upstream).get_on_request(),
+                verify_ssl: (config_upstream).get_verify_ssl(),
             })
             .to_result()
     }
@@ -98,15 +97,6 @@ fn get_batch(upstream: &config::Upstream) -> Valid<Option<Batch>, String> {
             }))
         },
     )
-}
-
-fn get_base_url(upstream: &config::Upstream) -> Valid<Option<String>, String> {
-    if let Some(ref base_url) = upstream.base_url {
-        Valid::from(reqwest::Url::parse(base_url).map_err(|e| ValidationError::new(e.to_string())))
-            .map_to(Some(base_url.clone()))
-    } else {
-        Valid::succeed(None)
-    }
 }
 
 fn get_proxy(upstream: &config::Upstream) -> Valid<Option<Proxy>, String> {

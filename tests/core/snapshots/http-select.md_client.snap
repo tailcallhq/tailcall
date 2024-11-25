@@ -1,0 +1,23 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+---
+type Company {
+  catchPhrase: String!
+  name: String!
+}
+
+type Query {
+  userCompany(id: Int!): Company
+  userDetails(id: Int!): UserDetails
+}
+
+type UserDetails {
+  city: String!
+  id: Int!
+  phone: String!
+}
+
+schema {
+  query: Query
+}

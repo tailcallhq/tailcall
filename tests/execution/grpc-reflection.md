@@ -1,15 +1,12 @@
 # Grpc datasource
 
 ```graphql @config
-schema
-  @server(port: 8000)
-  @upstream(httpCache: 42, baseURL: "http://localhost:50051")
-  @link(src: "http://localhost:50051", type: Grpc) {
+schema @server(port: 8000) @upstream(httpCache: 42) @link(src: "http://localhost:50051", type: Grpc) {
   query: Query
 }
 
 type Query {
-  news: NewsData! @grpc(method: "news.NewsService.GetAllNews")
+  news: NewsData! @grpc(url: "http://localhost:50051", method: "news.NewsService.GetAllNews")
 }
 
 type NewsData {

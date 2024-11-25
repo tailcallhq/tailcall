@@ -1,0 +1,20 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+snapshot_kind: text
+---
+schema
+  @server
+  @upstream
+  @link(id: "a", src: ".htpasswd_a", type: Htpasswd)
+  @link(id: "b", src: ".htpasswd_b", type: Htpasswd)
+  @link(id: "c", src: ".htpasswd_c", type: Htpasswd) {
+  query: Query
+}
+
+type Query {
+  a_and_b: String @expr(body: "data") @protected(id: ["a", "b"])
+  b_and_c: String @expr(body: "data") @protected(id: ["b", "c"])
+  c_and_a: String @expr(body: "data") @protected(id: ["c", "a"])
+  default: String @expr(body: "data") @protected
+}

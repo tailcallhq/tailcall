@@ -1,0 +1,17 @@
+schema {
+  query: Query
+}
+
+type Query {
+  b: B
+}
+
+type A {
+  a: String
+}
+
+type B {
+  b: String
+}
+
+union Union = A | B

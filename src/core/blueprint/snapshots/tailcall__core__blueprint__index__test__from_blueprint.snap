@@ -69,6 +69,8 @@ Index {
                                         group_by: None,
                                         dl_id: None,
                                         http_filter: None,
+                                        is_list: false,
+                                        dedupe: false,
                                     },
                                 ),
                             ),
@@ -136,6 +138,8 @@ Index {
                                         group_by: None,
                                         dl_id: None,
                                         http_filter: None,
+                                        is_list: false,
+                                        dedupe: false,
                                     },
                                 ),
                             ),
@@ -146,6 +150,7 @@ Index {
                     ],
                     description: None,
                     implements: {},
+                    directives: [],
                 },
             ),
             {
@@ -211,6 +216,8 @@ Index {
                                         group_by: None,
                                         dl_id: None,
                                         http_filter: None,
+                                        is_list: false,
+                                        dedupe: false,
                                     },
                                 ),
                             ),
@@ -290,6 +297,8 @@ Index {
                                         group_by: None,
                                         dl_id: None,
                                         http_filter: None,
+                                        is_list: false,
+                                        dedupe: false,
                                     },
                                 ),
                             ),
@@ -343,6 +352,8 @@ Index {
                         },
                     ],
                     description: None,
+                    implements: {},
+                    directives: [],
                 },
             ),
             {
@@ -454,6 +465,7 @@ Index {
                     implements: {
                         "Node",
                     },
+                    directives: [],
                 },
             ),
             {
@@ -568,6 +580,7 @@ Index {
                         },
                     ],
                     description: None,
+                    directives: [],
                 },
             ),
             {
@@ -615,20 +628,15 @@ Index {
                             of_type: [SearchResult!],
                             resolver: Some(
                                 Discriminate(
-                                    Discriminator {
-                                    types: ["Post", "User"]
-                                    fields_info:
-                                        author:
-                                            presented_in: ["Post"]
-                                            required_in: ["Post"]
-                                        email:
-                                            presented_in: ["User"]
-                                            required_in: ["User"]
-                                        status:
-                                            presented_in: ["User"]
-                                            required_in: []
-                                    }
-                                    ,
+                                    Keyed(
+                                        KeyedDiscriminator {
+                                            types: {
+                                                "Post",
+                                                "User",
+                                            },
+                                            type_name: "SearchResult",
+                                        },
+                                    ),
                                     IO(
                                         Http {
                                             req_template: RequestTemplate {
@@ -685,6 +693,8 @@ Index {
                                             group_by: None,
                                             dl_id: None,
                                             http_filter: None,
+                                            is_list: true,
+                                            dedupe: false,
                                         },
                                     ),
                                 ),
@@ -746,6 +756,8 @@ Index {
                                         group_by: None,
                                         dl_id: None,
                                         http_filter: None,
+                                        is_list: false,
+                                        dedupe: false,
                                     },
                                 ),
                             ),
@@ -756,6 +768,7 @@ Index {
                     ],
                     description: None,
                     implements: {},
+                    directives: [],
                 },
             ),
             {
@@ -774,20 +787,15 @@ Index {
                             of_type: [SearchResult!],
                             resolver: Some(
                                 Discriminate(
-                                    Discriminator {
-                                    types: ["Post", "User"]
-                                    fields_info:
-                                        author:
-                                            presented_in: ["Post"]
-                                            required_in: ["Post"]
-                                        email:
-                                            presented_in: ["User"]
-                                            required_in: ["User"]
-                                        status:
-                                            presented_in: ["User"]
-                                            required_in: []
-                                    }
-                                    ,
+                                    Keyed(
+                                        KeyedDiscriminator {
+                                            types: {
+                                                "Post",
+                                                "User",
+                                            },
+                                            type_name: "SearchResult",
+                                        },
+                                    ),
                                     IO(
                                         Http {
                                             req_template: RequestTemplate {
@@ -844,6 +852,8 @@ Index {
                                             group_by: None,
                                             dl_id: None,
                                             http_filter: None,
+                                            is_list: true,
+                                            dedupe: false,
                                         },
                                     ),
                                 ),
@@ -917,6 +927,8 @@ Index {
                                         group_by: None,
                                         dl_id: None,
                                         http_filter: None,
+                                        is_list: false,
+                                        dedupe: false,
                                     },
                                 ),
                             ),
@@ -1000,6 +1012,7 @@ Index {
                     implements: {
                         "Node",
                     },
+                    directives: [],
                 },
             ),
             {
@@ -1114,6 +1127,7 @@ Index {
                         },
                     ],
                     description: None,
+                    directives: [],
                 },
             ),
             {
@@ -1168,16 +1182,19 @@ Index {
                             description: None,
                             name: "ACTIVE",
                             directives: [],
+                            alias: {},
                         },
                         EnumValueDefinition {
                             description: None,
                             name: "INACTIVE",
                             directives: [],
+                            alias: {},
                         },
                         EnumValueDefinition {
                             description: None,
                             name: "PENDING",
                             directives: [],
+                            alias: {},
                         },
                     ],
                 },
@@ -1196,7 +1213,6 @@ Index {
                 arguments: {
                     "port": Number(8000),
                 },
-                index: 0,
             },
         ],
     },

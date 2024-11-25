@@ -1,0 +1,13 @@
+---
+source: tests/jit_spec.rs
+expression: response
+snapshot_kind: text
+---
+{
+  "data": {
+    "user": {
+      "id": 1,
+      "name": "Leanne Graham"
+    }
+  }
+}

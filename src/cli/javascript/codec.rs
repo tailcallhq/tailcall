@@ -1,8 +1,7 @@
 use std::collections::BTreeMap;
 use std::str::FromStr;
 
-use headers::HeaderValue;
-use reqwest::header::HeaderName;
+use http::header::{HeaderName, HeaderValue};
 use rquickjs::{FromJs, IntoJs};
 
 use super::create_header_map;
@@ -91,7 +90,7 @@ impl<'js> FromJs<'js> for WorkerRequest {
                 })?,
                 HeaderValue::from_str(v.as_str()).map_err(|e| rquickjs::Error::FromJs {
                     from: "string",
-                    to: "reqwest::header::HeaderValue",
+                    to: "headers::HeaderValue",
                     message: Some(e.to_string()),
                 })?,
             );
@@ -192,7 +191,7 @@ impl<'js> FromJs<'js> for WorkerResponse {
             })?,
             headers: create_header_map(headers).map_err(|e| rquickjs::Error::FromJs {
                 from: "BTreeMap<String, String>",
-                to: "reqwest::header::HeaderMap",
+                to: "headers::HeaderMap",
                 message: Some(e.to_string()),
             })?,
             body: body.unwrap_or_default(),
@@ -206,10 +205,9 @@ mod test {
     use std::collections::BTreeMap;
 
     use anyhow::Result;
-    use headers::{HeaderName, HeaderValue};
+    use http::header::{HeaderMap, HeaderName, HeaderValue};
     use hyper::body::Bytes;
     use pretty_assertions::assert_eq;
-    use reqwest::header::HeaderMap;
     use reqwest::Request;
     use rquickjs::{Context, FromJs, IntoJs, Object, Runtime, String as JsString};
 
@@ -283,7 +281,7 @@ mod test {
     #[test]
     fn test_response_into_js() {
         let runtime = Runtime::new().unwrap();
-        let context = Context::base(&runtime).unwrap();
+        let context = Context::full(&runtime).unwrap();
         context.with(|ctx| {
             let value = create_test_response().unwrap().into_js(&ctx).unwrap();
             let object = value.as_object().unwrap();
@@ -307,7 +305,7 @@ mod test {
     #[test]
     fn test_response_from_js() {
         let runtime = Runtime::new().unwrap();
-        let context = Context::base(&runtime).unwrap();
+        let context = Context::full(&runtime).unwrap();
         context.with(|ctx| {
             let js_response = create_test_response().unwrap().into_js(&ctx).unwrap();
             let response = WorkerResponse::from_js(&ctx, js_response).unwrap();
@@ -324,7 +322,7 @@ mod test {
     #[test]
     fn test_command_from_invalid_object() {
         let runtime = Runtime::new().unwrap();
-        let context = Context::base(&runtime).unwrap();
+        let context = Context::full(&runtime).unwrap();
         context.with(|ctx| {
             let value = JsString::from_str(ctx.clone(), "invalid")
                 .unwrap()
@@ -336,7 +334,7 @@ mod test {
     #[test]
     fn test_command_from_request() {
         let runtime = Runtime::new().unwrap();
-        let context = Context::base(&runtime).unwrap();
+        let context = Context::full(&runtime).unwrap();
         context.with(|ctx| {
             let request =
                 reqwest::Request::new(reqwest::Method::GET, "http://example.com/".parse().unwrap());
@@ -350,11 +348,11 @@ mod test {
     #[test]
     fn test_command_from_response() {
         let runtime = Runtime::new().unwrap();
-        let context = Context::base(&runtime).unwrap();
+        let context = Context::full(&runtime).unwrap();
         context.with(|ctx| {
             let js_response = WorkerResponse::try_from(Response {
                 status: reqwest::StatusCode::OK,
-                headers: reqwest::header::HeaderMap::default(),
+                headers: HeaderMap::default(),
                 body: Bytes::new(),
             })
             .unwrap();
@@ -367,7 +365,7 @@ mod test {
     #[test]
     fn test_command_from_arbitrary_object() {
         let runtime = Runtime::new().unwrap();
-        let context = Context::base(&runtime).unwrap();
+        let context = Context::full(&runtime).unwrap();
         context.with(|ctx| {
             let value = Object::new(ctx.clone()).unwrap();
             assert!(Command::from_js(&ctx, value.into_value()).is_err());
@@ -391,7 +389,7 @@ mod test {
     #[test]
     fn test_js_request_into_js() {
         let runtime = Runtime::new().unwrap();
-        let context = Context::base(&runtime).unwrap();
+        let context = Context::full(&runtime).unwrap();
         context.with(|ctx| {
             let mut headers = BTreeMap::new();
             headers.insert("content-type".to_string(), "application/json".to_string());
@@ -430,7 +428,7 @@ mod test {
     #[test]
     fn test_js_request_from_js() {
         let runtime = Runtime::new().unwrap();
-        let context = Context::base(&runtime).unwrap();
+        let context = Context::full(&runtime).unwrap();
         context.with(|ctx| {
             let mut headers = BTreeMap::new();
             headers.insert("content-type".to_string(), "application/json".to_string());

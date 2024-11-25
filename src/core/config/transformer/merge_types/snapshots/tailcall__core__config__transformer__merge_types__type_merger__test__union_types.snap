@@ -2,11 +2,11 @@
 source: src/core/config/transformer/merge_types/type_merger.rs
 expression: config.to_sdl()
 ---
-schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+schema @server @upstream {
   query: Query
 }
 
-union FooBar = Foo | M1
+union FooBar = Foo | GEN__M1
 
 type Foo {
   a: String
@@ -14,10 +14,10 @@ type Foo {
   foo: String
 }
 
-type M1 {
+type GEN__M1 {
   bar: String
 }
 
 type Query {
-  foo: FooBar @http(path: "/foo")
+  foo: FooBar @http(url: "http://jsonplacheholder.typicode.com/foo")
 }

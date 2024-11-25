@@ -1,0 +1,21 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+---
+type DTA {
+  departments: [Department]
+}
+
+enum Department {
+  ENGINEERING
+  HUMAN_RESOURCE
+  MARKETING
+}
+
+type Query {
+  color: DTA
+}
+
+schema {
+  query: Query
+}

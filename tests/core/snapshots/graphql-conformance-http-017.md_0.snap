@@ -1,0 +1,47 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "allAnimals": [
+        {
+          "id": "cat-1",
+          "sound": "meow",
+          "weight": 2,
+          "owner": "John",
+          "legs": 4
+        },
+        {
+          "id": "dog-2",
+          "sound": "woof",
+          "weight": 2,
+          "owner": "Steve"
+        },
+        {
+          "id": "salmon-1",
+          "sound": "..."
+        },
+        {
+          "id": "salmon-2",
+          "sound": "..."
+        },
+        {
+          "id": "pig-1",
+          "sound": "oik",
+          "weight": 24
+        },
+        {
+          "id": "pig-2",
+          "sound": "oik",
+          "weight": 41
+        }
+      ]
+    }
+  }
+}

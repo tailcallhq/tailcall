@@ -1,22 +1,23 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::ops::Deref;
-use std::sync::Arc;
 
 use jsonwebtoken::jwk::JwkSet;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
+use tailcall_valid::{Valid, Validator};
 
 use crate::core::config::Config;
 use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoMetadata;
 use crate::core::rest::{EndpointSet, Unchecked};
-use crate::core::valid::{Valid, Validator};
 use crate::core::Transform;
+
+mod merge;
 
 /// A wrapper on top of Config that contains all the resolved extensions and
 /// computed values.
-#[derive(Clone, Debug, Default, MergeRight)]
+#[derive(Clone, Debug, Default)]
 pub struct ConfigModule {
     extensions: Extensions,
     cache: Cache,
@@ -29,27 +30,21 @@ struct Cache {
     config: Config,
     input_types: HashSet<String>,
     output_types: HashSet<String>,
-    interface_types: HashSet<String>,
+    interfaces_types_map: BTreeMap<String, BTreeSet<String>>,
 }
 
 impl From<Config> for Cache {
     fn from(value: Config) -> Self {
         let input_types = value.input_types();
         let output_types = value.output_types();
-        let interface_types = value.interface_types();
+        let interfaces_types_map = value.interfaces_types_map();
 
         Cache {
             config: value,
-            input_types: input_types.clone(),
-            output_types: output_types.clone(),
-            interface_types: interface_types.clone(),
+            input_types,
+            output_types,
+            interfaces_types_map,
         }
-    }
-}
-
-impl MergeRight for Cache {
-    fn merge_right(self, other: Self) -> Self {
-        Cache::from(self.config.merge_right(other.config))
     }
 }
 
@@ -84,8 +79,8 @@ impl ConfigModule {
         &self.cache.output_types
     }
 
-    pub fn interface_types(&self) -> &HashSet<String> {
-        &self.cache.interface_types
+    pub fn interfaces_types_map(&self) -> &BTreeMap<String, BTreeSet<String>> {
+        &self.cache.interfaces_types_map
     }
 
     pub fn transform<T: Transform<Value = Config>>(self, transformer: T) -> Valid<Self, T::Error> {
@@ -108,6 +103,27 @@ impl<A> Deref for Content<A> {
     }
 }
 
+#[derive(Debug)]
+pub struct PrivateKey(PrivateKeyDer<'static>);
+
+impl Clone for PrivateKey {
+    fn clone(&self) -> Self {
+        Self(self.0.clone_key())
+    }
+}
+
+impl From<PrivateKeyDer<'static>> for PrivateKey {
+    fn from(value: PrivateKeyDer<'static>) -> Self {
+        Self(value)
+    }
+}
+
+impl PrivateKey {
+    pub fn into_inner(self) -> PrivateKeyDer<'static> {
+        self.0
+    }
+}
+
 /// Extensions are meta-information required before we can generate the
 /// blueprint. Typically, this information cannot be inferred without performing
 /// an IO operation, i.e., reading a file, making an HTTP call, etc.
@@ -123,7 +139,7 @@ pub struct Extensions {
     pub cert: Vec<CertificateDer<'static>>,
 
     /// Contains the key used on HTTP2 with TLS
-    pub keys: Arc<Vec<PrivateKeyDer<'static>>>,
+    pub keys: Vec<PrivateKey>,
 
     /// Contains the endpoints
     pub endpoint_set: EndpointSet<Unchecked>,

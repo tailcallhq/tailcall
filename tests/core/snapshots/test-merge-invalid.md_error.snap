@@ -1,0 +1,14 @@
+---
+source: tests/core/spec.rs
+expression: errors
+---
+[
+  {
+    "message": "Type mismatch: expected `String`, got `Int`",
+    "trace": [
+      "Foo",
+      "a"
+    ],
+    "description": null
+  }
+]

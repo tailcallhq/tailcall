@@ -1,0 +1,21 @@
+schema @server(port: 8002, enableFederation: true) @upstream(httpCache: 42, batch: {delay: 100}) {
+  query: Query
+}
+
+type Query {
+  user(id: Int!): User @http(url: "http://jsonplaceholder.typicode.com/users/{{.args.id}}")
+}
+
+type User
+  @http(
+    url: "http://jsonplaceholder.typicode.com/users"
+    query: [{key: "id", value: "{{.value.id}}"}]
+    batchKey: ["id"]
+  ) {
+  id: Int!
+  name: String
+  username: String
+  email: String
+  phone: String
+  website: String
+}

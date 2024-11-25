@@ -6,17 +6,13 @@ schema @server @upstream {
   mutation: Mutation
 }
 
-input T2 {
+input GEN__2 {
   expiresInMins: Int
   password: String
   username: String
 }
 
-type Mutation {
-  login(loginInput: T2): T1 @http(baseURL: "https://dummyjson.com", body: "{{.args.loginInput}}", method: "POST", path: "/auth/login")
-}
-
-type T1 {
+type GEN__1 {
   email: String
   firstName: String
   gender: String
@@ -26,4 +22,8 @@ type T1 {
   refreshToken: String
   token: String
   username: String
+}
+
+type Mutation {
+  login(GEN__Input1: GEN__2): GEN__1 @http(url: "https://dummyjson.com/auth/login", body: "{{.args.GEN__Input1}}", method: "POST")
 }

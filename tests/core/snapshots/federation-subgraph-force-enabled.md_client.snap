@@ -1,0 +1,24 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+---
+type Query {
+  """
+  Apollo federation Query._service resolver
+  """
+  _service: _Service!
+  user(id: Int!): User
+}
+
+type User {
+  id: Int!
+  name: String!
+}
+
+type _Service {
+  sdl: String
+}
+
+schema {
+  query: Query
+}

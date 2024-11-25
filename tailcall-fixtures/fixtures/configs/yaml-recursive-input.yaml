@@ -1,7 +1,5 @@
 server:
   port: 8000
-upstream:
-  baseURL: http://localhost
 schema:
   query: Query
 types:
@@ -27,7 +25,7 @@ types:
           args:
           - key: baz
             value: '{{.args.baz}}'
-          baseURL: http://localhost
+          url: http://localhost
           name: bars
   Foo:
     fields:

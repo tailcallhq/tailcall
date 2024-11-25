@@ -1,7 +1,10 @@
 use std::collections::HashSet;
 
 use async_graphql_value::ConstValue;
+use directive::Directive;
+use interface_resolver::update_interface_resolver;
 use regex::Regex;
+use tailcall_valid::{Valid, Validator};
 use union_resolver::update_union_resolver;
 
 use crate::core::blueprint::*;
@@ -9,7 +12,6 @@ use crate::core::config::{Config, Enum, Field, GraphQLOperationType, Protected, 
 use crate::core::directive::DirectiveCodec;
 use crate::core::ir::model::{Cache, IR};
 use crate::core::try_fold::TryFold;
-use crate::core::valid::{Valid, Validator};
 use crate::core::{config, scalar, Type};
 
 pub fn to_scalar_type_definition(name: &str) -> Valid<Definition, String> {
@@ -18,7 +20,7 @@ pub fn to_scalar_type_definition(name: &str) -> Valid<Definition, String> {
     } else {
         Valid::succeed(Definition::Scalar(ScalarTypeDefinition {
             name: name.to_string(),
-            directive: Vec::new(),
+            directives: Vec::new(),
             description: None,
             scalar: scalar::Scalar::find(name)
                 .unwrap_or(&scalar::Scalar::Empty)
@@ -52,6 +54,7 @@ pub fn to_input_object_type_definition(
             })
             .collect(),
         description: definition.description,
+        directives: Vec::new(),
     }))
 }
 
@@ -60,6 +63,8 @@ pub fn to_interface_type_definition(definition: ObjectTypeDefinition) -> Valid<D
         name: definition.name,
         fields: definition.fields,
         description: definition.description,
+        implements: definition.implements,
+        directives: Vec::new(),
     }))
 }
 
@@ -239,6 +244,7 @@ fn to_enum_type_definition((name, eu): (&String, &Enum)) -> Definition {
                 description: None,
                 name: variant.name.clone(),
                 directives: vec![],
+                alias: variant.alias.clone().unwrap_or_default().options,
             })
             .collect(),
     })
@@ -255,6 +261,7 @@ fn to_object_type_definition(
             description: type_of.doc.clone(),
             fields,
             implements: type_of.implements.clone(),
+            directives: to_directives(&type_of.directives),
         })
     })
 }
@@ -278,7 +285,7 @@ fn update_args<'a>(
                 description: field.doc.clone(),
                 args,
                 of_type: field.type_of.clone(),
-                directives: Vec::new(),
+                directives: to_directives(&field.directives),
                 resolver: None,
                 default_value: field.default_value.clone(),
             })
@@ -489,7 +496,7 @@ pub fn to_field_definition(
     object_name: &str,
     config_module: &ConfigModule,
     type_of: &config::Type,
-    name: &String,
+    name: &str,
 ) -> Valid<FieldDefinition, String> {
     update_args()
         .and(update_http().trace(config::Http::trace_name().as_str()))
@@ -504,6 +511,7 @@ pub fn to_field_definition(
         .and(update_protected(object_name).trace(Protected::trace_name().as_str()))
         .and(update_enum_alias())
         .and(update_union_resolver())
+        .and(update_interface_resolver())
         .try_fold(
             &(config_module, field, type_of, name),
             FieldDefinition::default(),
@@ -522,7 +530,7 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
                         Definition::Object(object_type_definition) => {
                             if config_module.input_types().contains(name) {
                                 to_input_object_type_definition(object_type_definition).trace(name)
-                            } else if config_module.interface_types().contains(name) {
+                            } else if config_module.interfaces_types_map().contains_key(name) {
                                 to_interface_type_definition(object_type_definition).trace(name)
                             } else {
                                 Valid::succeed(definition)
@@ -552,4 +560,8 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
             v
         })
     })
+}
+
+fn to_directives(directives: &[config::Directive]) -> Vec<Directive> {
+    directives.iter().cloned().map(Directive::from).collect()
 }

@@ -40,18 +40,18 @@ impl HttpIO for LambdaHttp {
     }
 }
 
-pub fn to_request(req: lambda_http::Request) -> anyhow::Result<hyper::Request<hyper::Body>> {
+pub fn to_request(req: lambda_http::Request) -> anyhow::Result<http::Request<hyper::Body>> {
     // TODO: Update hyper to 1.0 to make conversions easier
-    let method: hyper::Method = match req.method().to_owned() {
-        lambda_http::http::Method::CONNECT => hyper::Method::CONNECT,
-        lambda_http::http::Method::DELETE => hyper::Method::DELETE,
-        lambda_http::http::Method::GET => hyper::Method::GET,
-        lambda_http::http::Method::HEAD => hyper::Method::HEAD,
-        lambda_http::http::Method::OPTIONS => hyper::Method::OPTIONS,
-        lambda_http::http::Method::PATCH => hyper::Method::PATCH,
-        lambda_http::http::Method::POST => hyper::Method::POST,
-        lambda_http::http::Method::PUT => hyper::Method::PUT,
-        lambda_http::http::Method::TRACE => hyper::Method::TRACE,
+    let method: http::Method = match req.method().to_owned() {
+        lambda_http::http::Method::CONNECT => http::Method::CONNECT,
+        lambda_http::http::Method::DELETE => http::Method::DELETE,
+        lambda_http::http::Method::GET => http::Method::GET,
+        lambda_http::http::Method::HEAD => http::Method::HEAD,
+        lambda_http::http::Method::OPTIONS => http::Method::OPTIONS,
+        lambda_http::http::Method::PATCH => http::Method::PATCH,
+        lambda_http::http::Method::POST => http::Method::POST,
+        lambda_http::http::Method::PUT => http::Method::PUT,
+        lambda_http::http::Method::TRACE => http::Method::TRACE,
         _ => unreachable!(),
     };
 
@@ -68,11 +68,11 @@ pub fn to_request(req: lambda_http::Request) -> anyhow::Result<hyper::Request<hy
             .join("/")
     );
 
-    let mut req2 = hyper::Request::builder().method(method).uri(url);
+    let mut req2 = http::Request::builder().method(method).uri(url);
 
     for (k, v) in req.headers() {
-        let key: hyper::http::header::HeaderName = k.as_str().parse()?;
-        let value = hyper::http::header::HeaderValue::from_bytes(v.as_bytes())?;
+        let key: http::header::HeaderName = k.as_str().parse()?;
+        let value = http::header::HeaderValue::from_bytes(v.as_bytes())?;
         req2 = req2.header(key, value);
     }
 
@@ -80,7 +80,7 @@ pub fn to_request(req: lambda_http::Request) -> anyhow::Result<hyper::Request<hy
 }
 
 pub async fn to_response(
-    res: hyper::Response<hyper::Body>,
+    res: http::Response<hyper::Body>,
 ) -> Result<lambda_http::Response<lambda_http::Body>, lambda_http::http::Error> {
     // TODO: Update hyper to 1.0 to make conversions easier
     let mut build = lambda_http::Response::builder().status(res.status().as_u16());
@@ -102,6 +102,7 @@ pub fn init_http() -> Arc<LambdaHttp> {
 mod tests {
     use lambda_http::http::{Method, Request, StatusCode, Uri};
     use lambda_http::Body;
+    extern crate http;
 
     use super::*;
 
@@ -115,7 +116,7 @@ mod tests {
             .body(Body::from("Hello, world!"))
             .unwrap();
         let hyper_req = to_request(req).unwrap();
-        assert_eq!(hyper_req.method(), hyper::Method::GET);
+        assert_eq!(hyper_req.method(), http::Method::GET);
         assert_eq!(hyper_req.uri(), "http://example.com/");
         assert_eq!(
             hyper_req.headers().get("content-type").unwrap(),
@@ -129,7 +130,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_to_response() {
-        let res = hyper::Response::builder()
+        let res = http::Response::builder()
             .status(200)
             .header("content-type", "application/json")
             .header("x-custom-header", "custom-value")

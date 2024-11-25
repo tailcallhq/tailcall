@@ -1,12 +1,15 @@
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::collections::HashSet;
+
+use indexmap::{IndexMap, IndexSet};
+use tailcall_valid::{Valid, Validator};
 
 use super::mergeable_types::MergeableTypes;
 use super::similarity::Similarity;
 use crate::core::config::{Config, Type};
+use crate::core::generator::PREFIX;
 use crate::core::merge_right::MergeRight;
 use crate::core::scalar::Scalar;
 use crate::core::transform::Transform;
-use crate::core::valid::{Valid, Validator};
 
 pub struct TypeMerger {
     /// threshold required for the merging process.
@@ -31,25 +34,31 @@ impl Default for TypeMerger {
 
 impl TypeMerger {
     fn merger(&self, mut merge_counter: u32, mut config: Config) -> Config {
-        let mut type_to_merge_type_mapping = BTreeMap::new();
-        let mut similar_type_group_list: Vec<BTreeSet<String>> = vec![];
+        let mut type_to_merge_type_mapping = IndexMap::new();
+        let mut similar_type_group_list: Vec<IndexSet<String>> = vec![];
         let mut visited_types = HashSet::new();
         let mut i = 0;
         let mut stat_gen = Similarity::new(&config);
         let mergeable_types = MergeableTypes::new(&config, self.threshold);
 
+        // fixes the flaky tests.
+        let mut types = mergeable_types.iter().collect::<Vec<_>>();
+        types.sort();
+
         // step 1: identify all the types that satisfies the thresh criteria and group
         // them.
-        for type_name_1 in mergeable_types.iter() {
+        for type_name_1 in types.iter() {
+            let type_name_1 = type_name_1.as_str();
             if let Some(type_info_1) = config.types.get(type_name_1) {
                 if visited_types.contains(type_name_1) {
                     continue;
                 }
 
-                let mut similar_type_set = BTreeSet::new();
+                let mut similar_type_set = IndexSet::new();
                 similar_type_set.insert(type_name_1.to_string());
 
-                for type_name_2 in mergeable_types.iter().skip(i + 1) {
+                for type_name_2 in types.iter().skip(i + 1) {
+                    let type_name_2 = type_name_2.as_str();
                     if visited_types.contains(type_name_2)
                         || !mergeable_types.mergeable(type_name_1, type_name_2)
                     {
@@ -58,7 +67,7 @@ impl TypeMerger {
 
                     if let Some(type_info_2) = config.types.get(type_name_2) {
                         let threshold = mergeable_types.get_threshold(type_name_1, type_name_2);
-                        visited_types.insert(type_name_1.clone());
+                        visited_types.insert(type_name_1.to_owned());
                         let is_similar = stat_gen
                             .similarity(
                                 (type_name_1, type_info_1),
@@ -69,7 +78,7 @@ impl TypeMerger {
 
                         if let Ok(similar) = is_similar {
                             if similar {
-                                visited_types.insert(type_name_2.clone());
+                                visited_types.insert(type_name_2.to_owned());
                                 similar_type_set.insert(type_name_2.to_owned());
                             }
                         }
@@ -89,7 +98,7 @@ impl TypeMerger {
         // step 2: merge similar types into single merged type.
         for same_types in similar_type_group_list {
             let mut merged_into = Type::default();
-            let merged_type_name = format!("M{}", merge_counter);
+            let merged_type_name = format!("{}M{}", PREFIX, merge_counter);
             let mut did_we_merge = false;
             for type_name in same_types {
                 if let Some(type_) = config.types.get(type_name.as_str()) {
@@ -236,11 +245,11 @@ impl Transform for TypeMerger {
 #[cfg(test)]
 mod test {
     use tailcall_fixtures;
+    use tailcall_valid::Validator;
 
     use super::TypeMerger;
     use crate::core::config::{Config, Field, Type};
     use crate::core::transform::Transform;
-    use crate::core::valid::Validator;
 
     #[test]
     fn test_cyclic_merge_case() -> anyhow::Result<()> {

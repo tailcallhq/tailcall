@@ -13,7 +13,7 @@ type User {
 }
 
 type Query {
-  user: User @graphQL(baseURL: "http://upstream/graphql", name: "user")
+  user: User @graphQL(url: "http://upstream/graphql", name: "user")
 }
 ```
 

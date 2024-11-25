@@ -36,11 +36,18 @@ Provides the ability to refer to multiple fields in the Query or Mutation root.
 """
 directive @call(
   """
+  Enables deduplication of IO operations to enhance performance.This flag prevents 
+  duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
+  May lead to issues with APIs that expect unique results for identical inputs, such 
+  as nonce-based APIs.
+  """
+  dedupe: Boolean
+  """
   Steps are composed together to form a call. If you have multiple steps, the output 
   of the previous step is passed as input to the next step.
   """
   steps: [Step]
-) on FIELD_DEFINITION
+) on FIELD_DEFINITION | OBJECT
 
 """
 The `@expr` operators allows you to specify an expression that can evaluate to a 
@@ -48,7 +55,7 @@ value. The expression can be a static value or built form a Mustache template. s
 """
 directive @expr(
   body: JSON
-) on FIELD_DEFINITION
+) on FIELD_DEFINITION | OBJECT
 
 """
 The @graphQL operator allows to specify GraphQL API server request to fetch data 
@@ -60,16 +67,18 @@ directive @graphQL(
   """
   args: [KeyValue]
   """
-  This refers to the base URL of the API. If not specified, the default base URL is 
-  the one specified in the `@upstream` operator.
-  """
-  baseURL: String
-  """
   If the upstream GraphQL server supports request batching, you can specify the 'batch' 
   argument to batch several requests into a single batch request.Make sure you have 
   also specified batch settings to the `@upstream` and to the `@graphQL` operator.
   """
   batch: Boolean!
+  """
+  Enables deduplication of IO operations to enhance performance.This flag prevents 
+  duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
+  May lead to issues with APIs that expect unique results for identical inputs, such 
+  as nonce-based APIs.
+  """
+  dedupe: Boolean
   """
   The headers parameter allows you to customize the headers of the GraphQL request 
   made by the `@graphQL` operator. It is used by specifying a key-value map of header 
@@ -82,7 +91,11 @@ directive @graphQL(
   field, Tailcall requests data from the corresponding upstream field.
   """
   name: String!
-) on FIELD_DEFINITION
+  """
+  This refers URL of the API.
+  """
+  url: String!
+) on FIELD_DEFINITION | OBJECT
 
 """
 The @grpc operator indicates that a field or node is backed by a gRPC API.For instance, 
@@ -95,11 +108,6 @@ specified when the `users` field is queried.
 """
 directive @grpc(
   """
-  This refers to the base URL of the API. If not specified, the default base URL is 
-  the one specified in the `@upstream` operator.
-  """
-  baseURL: String
-  """
   The `batchKey` dictates the path Tailcall will follow to group the returned items 
   from the batch request. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
   """
@@ -111,6 +119,13 @@ directive @grpc(
   """
   body: JSON
   """
+  Enables deduplication of IO operations to enhance performance.This flag prevents 
+  duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
+  May lead to issues with APIs that expect unique results for identical inputs, such 
+  as nonce-based APIs.
+  """
+  dedupe: Boolean
+  """
   The `headers` parameter allows you to customize the headers of the HTTP request made 
   by the `@grpc` operator. It is used by specifying a key-value map of header names 
   and their values. Note: content-type is automatically set to application/grpc
@@ -121,12 +136,20 @@ directive @grpc(
   """
   method: String!
   """
-  Specifies a JavaScript function to be executed after receiving the response body. 
-  This function can modify or transform the response body before it's sent back to 
-  the client.
+  You can use `select` with mustache syntax to re-construct the directives response 
+  to the desired format. This is useful when data are deeply nested or want to keep 
+  specific fields only from the response.* EXAMPLE 1: if we have a call that returns 
+  `{ "user": { "items": [...], ... } ... }` we can use `"{{.user.items}}"`, to extract 
+  the `items`. * EXAMPLE 2: if we have a call that returns `{ "foo": "bar", "fizz": 
+  { "buzz": "eggs", ... }, ... }` we can use { foo: "{{.foo}}", buzz: "{{.fizz.buzz}}" 
+  }`
   """
-  onResponseBody: String
-) on FIELD_DEFINITION
+  select: JSON
+  """
+  This refers to URL of the API.
+  """
+  url: String!
+) on FIELD_DEFINITION | OBJECT
 
 """
 The @http operator indicates that a field or node is backed by a REST API.For instance, 
@@ -138,11 +161,6 @@ is queried.
 """
 directive @http(
   """
-  This refers to the base URL of the API. If not specified, the default base URL is 
-  the one specified in the `@upstream` operator.
-  """
-  baseURL: String
-  """
   The `batchKey` dictates the path Tailcall will follow to group the returned items 
   from the batch request. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
   """
@@ -153,6 +171,13 @@ directive @http(
   variables from the GraphQL variables.
   """
   body: String
+  """
+  Enables deduplication of IO operations to enhance performance.This flag prevents 
+  duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
+  May lead to issues with APIs that expect unique results for identical inputs, such 
+  as nonce-based APIs.
+  """
+  dedupe: Boolean
   """
   The `encoding` parameter specifies the encoding of the request body. It can be `ApplicationJson` 
   or `ApplicationXWwwFormUrlEncoded`. @default `ApplicationJson`.
@@ -189,12 +214,6 @@ directive @http(
   """
   output: Schema
   """
-  This refers to the API endpoint you're going to call. For instance `https://jsonplaceholder.typicode.com/users`.For 
-  dynamic segments in your API endpoint, use Mustache templates for variable substitution. 
-  For instance, to fetch a specific user, use `/users/{{args.id}}`.
-  """
-  path: String!
-  """
   This represents the query parameters of your API call. You can pass it as a static 
   object or use Mustache template for dynamic parameters. These parameters will be 
   added to the URL. NOTE: Query parameter order is critical for batching in Tailcall. 
@@ -202,11 +221,25 @@ directive @http(
   is automatically selected as the batching parameter.
   """
   query: [URLQuery]
-) on FIELD_DEFINITION
+  """
+  You can use `select` with mustache syntax to re-construct the directives response 
+  to the desired format. This is useful when data are deeply nested or want to keep 
+  specific fields only from the response.* EXAMPLE 1: if we have a call that returns 
+  `{ "user": { "items": [...], ... } ... }` we can use `"{{.user.items}}"`, to extract 
+  the `items`. * EXAMPLE 2: if we have a call that returns `{ "foo": "bar", "fizz": 
+  { "buzz": "eggs", ... }, ... }` we can use { foo: "{{.foo}}", buzz: "{{.fizz.buzz}}" 
+  }`
+  """
+  select: JSON
+  """
+  This refers to URL of the API.
+  """
+  url: String!
+) on FIELD_DEFINITION | OBJECT
 
 directive @js(
   name: String!
-) on FIELD_DEFINITION
+) on FIELD_DEFINITION | OBJECT
 
 """
 The @link directive allows you to import external resources, such as configuration 
@@ -214,6 +247,10 @@ The @link directive allows you to import external resources, such as configurati
  will be later used by `@grpc` directive –.
 """
 directive @link(
+  """
+  Custom headers for gRPC reflection server.
+  """
+  headers: [KeyValue]
   """
   The id of the link. It is used to reference the link in the schema.
   """
@@ -243,7 +280,22 @@ Used to omit a field from public consumption.
 """
 directive @omit on FIELD_DEFINITION
 
-directive @protected on OBJECT | FIELD_DEFINITION
+"""
+Specifies the authentication requirements for accessing a field or type.This allows 
+you to control access by listing the IDs of authentication providers. - If `id` is 
+not provided, all available providers must authorize the request. - If multiple provider 
+IDs are listed, the request must be authorized by all of them.Example: If you want 
+only specific providers to allow access, include their IDs in the list. Otherwise, 
+leave it empty to require authorization from all available providers.
+"""
+directive @protected(
+  """
+  List of authentication provider IDs that can access this field or type. - Leave empty 
+  to require authorization from all providers. - Include multiple IDs to require authorization 
+  from each one.
+  """
+  id: [String!]
+) on OBJECT | FIELD_DEFINITION
 
 """
 The `@server` directive, when applied at the schema level, offers a comprehensive 
@@ -262,12 +314,10 @@ directive @server(
   """
   batchRequests: Boolean
   """
-  Enables deduplication of IO operations to enhance performance.This flag prevents 
-  duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
-  May lead to issues with APIs that expect unique results for identical inputs, such 
-  as nonce-based APIs.
+  `enableFederation` enables functionality to Tailcall server to act as a federation 
+  subgraph.
   """
-  dedupe: Boolean
+  enableFederation: Boolean
   enableJIT: Boolean
   """
   `globalResponseTimeout` sets the maximum query duration before termination, acting 
@@ -307,6 +357,12 @@ directive @server(
   using inferred schema. @default `false`.
   """
   responseValidation: Boolean
+  """
+  `routes` allows customization of server endpoint paths. It provides options to change 
+  the default paths for status and GraphQL endpoints. Default values are: - status: 
+  "/status" - graphQL: "/graphql" If not specified, these default values will be used.
+  """
+  routes: Routes
   """
   A link to an external JS file that listens on every HTTP request response event.
   """
@@ -359,13 +415,6 @@ directive @upstream(
   flow.
   """
   allowedHeaders: [String!]
-  """
-  This refers to the default base URL for your APIs. If it's not explicitly mentioned 
-  in the `@upstream` operator, then each [@http](#http) operator must specify its own 
-  `baseURL`. If neither `@upstream` nor [@http](#http) provides a `baseURL`, it results 
-  in a compilation error.
-  """
-  baseURL: String
   """
   An object that specifies the batch settings, including `maxSize` (the maximum size 
   of the batch), `delay` (the delay in milliseconds between each batch), and `headers` 
@@ -433,17 +482,32 @@ directive @upstream(
   The User-Agent header value to be used in HTTP requests. @default `Tailcall/1.0`
   """
   userAgent: String
+  """
+  A boolean value that determines whether to verify certificates. Setting this as `false` 
+  will make tailcall accept self-signed certificates. NOTE: use this *only* during 
+  development or testing. It is highly recommended to keep this enabled (`true`) in 
+  production.
+  """
+  verifySSL: Boolean
 ) on SCHEMA
 
 """
-Field whose value is a sequence of bytes.
+The `@discriminate` directive is used to drive Tailcall discriminator to use a field 
+of an object to resolve the type. For example with the directive applied on a field 
+`@discriminate(field: "object_type")` and the given value `{"foo": "bar", "object_type": 
+"Buzz"}` the resolved type of the object will be `Buzz`. If `field` is not applied 
+it defaults to "type". The `field` does not have to be part of the GraphQL Schema, 
+but it is required to be part of the JSON response. In case this field is missing 
+from the response an appropriate error message will be displayed.
 """
-scalar Bytes
+directive @discriminate(
+  field: String
+) on FIELD_DEFINITION
 
 """
-Field whose value conforms to the standard date format as specified in RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339).
+Empty scalar type represents an empty value.
 """
-scalar Date
+scalar Empty
 
 """
 Field whose value conforms to the standard internet email address format as specified 
@@ -452,14 +516,36 @@ in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-add
 scalar Email
 
 """
-Empty scalar type represents an empty value.
+Field whose value conforms to the standard E.164 format as specified in E.164 specification 
+(https://en.wikipedia.org/wiki/E.164).
 """
-scalar Empty
+scalar PhoneNumber
 
 """
-Field whose value is a 128-bit signed integer.
+Field whose value conforms to the standard date format as specified in RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339).
 """
-scalar Int128
+scalar Date
+
+"""
+Field whose value conforms to the standard datetime format as specified in RFC 3339 
+(https://datatracker.ietf.org/doc/html/rfc3339").
+"""
+scalar DateTime
+
+"""
+Field whose value conforms to the standard URL format as specified in RFC 3986 (https://datatracker.ietf.org/doc/html/rfc3986).
+"""
+scalar Url
+
+"""
+Field whose value conforms to the standard JSON format as specified in RFC 8259 (https://datatracker.ietf.org/doc/html/rfc8259).
+"""
+scalar JSON
+
+"""
+Field whose value is an 8-bit signed integer.
+"""
+scalar Int8
 
 """
 Field whose value is a 16-bit signed integer.
@@ -477,25 +563,14 @@ Field whose value is a 64-bit signed integer.
 scalar Int64
 
 """
-Field whose value is an 8-bit signed integer.
+Field whose value is a 128-bit signed integer.
 """
-scalar Int8
+scalar Int128
 
 """
-Field whose value conforms to the standard JSON format as specified in RFC 8259 (https://datatracker.ietf.org/doc/html/rfc8259).
+Field whose value is an 8-bit unsigned integer.
 """
-scalar JSON
-
-"""
-Field whose value conforms to the standard E.164 format as specified in E.164 specification 
-(https://en.wikipedia.org/wiki/E.164).
-"""
-scalar PhoneNumber
-
-"""
-Field whose value is a 128-bit unsigned integer.
-"""
-scalar UInt128
+scalar UInt8
 
 """
 Field whose value is a 16-bit unsigned integer.
@@ -513,14 +588,14 @@ Field whose value is a 64-bit unsigned integer.
 scalar UInt64
 
 """
-Field whose value is an 8-bit unsigned integer.
+Field whose value is a 128-bit unsigned integer.
 """
-scalar UInt8
+scalar UInt128
 
 """
-Field whose value conforms to the standard URL format as specified in RFC 3986 (https://datatracker.ietf.org/doc/html/rfc3986).
+Field whose value is a sequence of bytes.
 """
-scalar Url
+scalar Bytes
 
 """
 Provides the ability to refer to a field defined in the root Query or Mutation.
@@ -646,6 +721,11 @@ input Headers {
   setCookies: Boolean
 }
 
+input Routes {
+  graphQL: String!
+  status: String!
+}
+
 input ScriptOptions {
   timeout: Int
 }
@@ -726,16 +806,18 @@ input GraphQL {
   """
   args: [KeyValue]
   """
-  This refers to the base URL of the API. If not specified, the default base URL is 
-  the one specified in the `@upstream` operator.
-  """
-  baseURL: String
-  """
   If the upstream GraphQL server supports request batching, you can specify the 'batch' 
   argument to batch several requests into a single batch request.Make sure you have 
   also specified batch settings to the `@upstream` and to the `@graphQL` operator.
   """
   batch: Boolean!
+  """
+  Enables deduplication of IO operations to enhance performance.This flag prevents 
+  duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
+  May lead to issues with APIs that expect unique results for identical inputs, such 
+  as nonce-based APIs.
+  """
+  dedupe: Boolean
   """
   The headers parameter allows you to customize the headers of the GraphQL request 
   made by the `@graphQL` operator. It is used by specifying a key-value map of header 
@@ -748,6 +830,10 @@ input GraphQL {
   field, Tailcall requests data from the corresponding upstream field.
   """
   name: String!
+  """
+  This refers URL of the API.
+  """
+  url: String!
 }
 
 """
@@ -761,11 +847,6 @@ specified when the `users` field is queried.
 """
 input Grpc {
   """
-  This refers to the base URL of the API. If not specified, the default base URL is 
-  the one specified in the `@upstream` operator.
-  """
-  baseURL: String
-  """
   The `batchKey` dictates the path Tailcall will follow to group the returned items 
   from the batch request. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
   """
@@ -777,6 +858,13 @@ input Grpc {
   """
   body: JSON
   """
+  Enables deduplication of IO operations to enhance performance.This flag prevents 
+  duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
+  May lead to issues with APIs that expect unique results for identical inputs, such 
+  as nonce-based APIs.
+  """
+  dedupe: Boolean
+  """
   The `headers` parameter allows you to customize the headers of the HTTP request made 
   by the `@grpc` operator. It is used by specifying a key-value map of header names 
   and their values. Note: content-type is automatically set to application/grpc
@@ -787,11 +875,19 @@ input Grpc {
   """
   method: String!
   """
-  Specifies a JavaScript function to be executed after receiving the response body. 
-  This function can modify or transform the response body before it's sent back to 
-  the client.
+  You can use `select` with mustache syntax to re-construct the directives response 
+  to the desired format. This is useful when data are deeply nested or want to keep 
+  specific fields only from the response.* EXAMPLE 1: if we have a call that returns 
+  `{ "user": { "items": [...], ... } ... }` we can use `"{{.user.items}}"`, to extract 
+  the `items`. * EXAMPLE 2: if we have a call that returns `{ "foo": "bar", "fizz": 
+  { "buzz": "eggs", ... }, ... }` we can use { foo: "{{.foo}}", buzz: "{{.fizz.buzz}}" 
+  }`
   """
-  onResponseBody: String
+  select: JSON
+  """
+  This refers to URL of the API.
+  """
+  url: String!
 }
 
 """
@@ -804,11 +900,6 @@ is queried.
 """
 input Http {
   """
-  This refers to the base URL of the API. If not specified, the default base URL is 
-  the one specified in the `@upstream` operator.
-  """
-  baseURL: String
-  """
   The `batchKey` dictates the path Tailcall will follow to group the returned items 
   from the batch request. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
   """
@@ -819,6 +910,13 @@ input Http {
   variables from the GraphQL variables.
   """
   body: String
+  """
+  Enables deduplication of IO operations to enhance performance.This flag prevents 
+  duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
+  May lead to issues with APIs that expect unique results for identical inputs, such 
+  as nonce-based APIs.
+  """
+  dedupe: Boolean
   """
   The `encoding` parameter specifies the encoding of the request body. It can be `ApplicationJson` 
   or `ApplicationXWwwFormUrlEncoded`. @default `ApplicationJson`.
@@ -855,12 +953,6 @@ input Http {
   """
   output: Schema
   """
-  This refers to the API endpoint you're going to call. For instance `https://jsonplaceholder.typicode.com/users`.For 
-  dynamic segments in your API endpoint, use Mustache templates for variable substitution. 
-  For instance, to fetch a specific user, use `/users/{{args.id}}`.
-  """
-  path: String!
-  """
   This represents the query parameters of your API call. You can pass it as a static 
   object or use Mustache template for dynamic parameters. These parameters will be 
   added to the URL. NOTE: Query parameter order is critical for batching in Tailcall. 
@@ -868,6 +960,20 @@ input Http {
   is automatically selected as the batching parameter.
   """
   query: [URLQuery]
+  """
+  You can use `select` with mustache syntax to re-construct the directives response 
+  to the desired format. This is useful when data are deeply nested or want to keep 
+  specific fields only from the response.* EXAMPLE 1: if we have a call that returns 
+  `{ "user": { "items": [...], ... } ... }` we can use `"{{.user.items}}"`, to extract 
+  the `items`. * EXAMPLE 2: if we have a call that returns `{ "foo": "bar", "fizz": 
+  { "buzz": "eggs", ... }, ... }` we can use { foo: "{{.foo}}", buzz: "{{.fizz.buzz}}" 
+  }`
+  """
+  select: JSON
+  """
+  This refers to URL of the API.
+  """
+  url: String!
 }
 
 """

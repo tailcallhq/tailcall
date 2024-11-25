@@ -2,7 +2,6 @@ pub use cache::*;
 pub use data_loader::*;
 pub use data_loader_request::*;
 use derive_setters::Setters;
-use headers::HeaderValue;
 pub use method::Method;
 pub use query_encoder::QueryEncoder;
 pub use request_context::RequestContext;

@@ -1,0 +1,104 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+---
+interface Animal {
+  id: ID!
+  legs: Int!
+  sound: String!
+}
+
+interface Bird {
+  eggSize: Int!
+}
+
+type Boar implements Animal & WildAnimal {
+  blackBoar: Boolean!
+  dangerous: Boolean!
+  id: ID!
+  legs: Int!
+  sound: String!
+}
+
+type Cat implements Animal & DomesticAnimal & Pet {
+  hasFur: Boolean!
+  id: ID!
+  legs: Int!
+  owner: String!
+  sound: String!
+  weight: Int!
+}
+
+type Chicken implements Animal & Bird {
+  eggSize: Int!
+  id: ID!
+  legs: Int!
+  sound: String!
+}
+
+type Cow implements Animal & DomesticAnimal {
+  canProduceMilk: Boolean!
+  id: ID!
+  legs: Int!
+  sound: String!
+  weight: Int!
+}
+
+type Deer implements Animal & WildAnimal {
+  dangerous: Boolean!
+  hasAntlers: Boolean!
+  id: ID!
+  legs: Int!
+  sound: String!
+}
+
+type Dog implements Animal & DomesticAnimal & Pet {
+  id: ID!
+  legs: Int!
+  owner: String!
+  size: Int!
+  sound: String!
+  weight: Int!
+}
+
+interface DomesticAnimal {
+  weight: Int!
+}
+
+union EdibleAnimals = Boar | Chicken | Pig | Salmon
+
+interface Fish {
+  length: Int!
+}
+
+interface Pet {
+  owner: String!
+}
+
+type Pig implements Animal & DomesticAnimal {
+  id: ID!
+  isForBacon: Boolean!
+  legs: Int!
+  sound: String!
+  weight: Int!
+}
+
+type Query {
+  allAnimals: [Animal]
+  edibleAnimals: [EdibleAnimals]
+}
+
+type Salmon implements Animal & Fish {
+  id: ID!
+  legs: Int!
+  length: Int!
+  sound: String!
+}
+
+interface WildAnimal {
+  dangerous: Boolean!
+}
+
+schema {
+  query: Query
+}

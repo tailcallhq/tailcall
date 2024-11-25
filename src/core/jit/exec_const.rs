@@ -1,63 +1,138 @@
 use std::sync::Arc;
 
-use async_graphql_value::ConstValue;
+use async_graphql_value::{ConstValue, Value};
 use futures_util::future::join_all;
+use tailcall_valid::Validator;
 
 use super::context::Context;
 use super::exec::{Executor, IRExecutor};
-use super::{Error, OperationPlan, Request, Response, Result};
+use super::graphql_error::GraphQLError;
+use super::{transform, AnyResponse, BuildError, Error, OperationPlan, Request, Response, Result};
 use crate::core::app_context::AppContext;
 use crate::core::http::RequestContext;
 use crate::core::ir::model::IR;
-use crate::core::ir::{self, EvalContext};
+use crate::core::ir::{self, EmptyResolverContext, EvalContext};
 use crate::core::jit::synth::Synth;
+use crate::core::jit::transform::InputResolver;
 use crate::core::json::{JsonLike, JsonLikeList};
+use crate::core::Transform;
 
 /// A specialized executor that executes with async_graphql::Value
 pub struct ConstValueExecutor {
-    pub plan: OperationPlan<ConstValue>,
+    pub plan: OperationPlan<Value>,
+}
+
+impl From<OperationPlan<Value>> for ConstValueExecutor {
+    fn from(plan: OperationPlan<Value>) -> Self {
+        Self { plan }
+    }
 }
 
 impl ConstValueExecutor {
-    pub fn new(request: &Request<ConstValue>, app_ctx: Arc<AppContext>) -> Result<Self> {
-        Ok(Self { plan: request.create_plan(&app_ctx.blueprint)? })
+    pub fn try_new(request: &Request<ConstValue>, app_ctx: &Arc<AppContext>) -> Result<Self> {
+        let plan = request.create_plan(&app_ctx.blueprint)?;
+        Ok(Self::from(plan))
     }
 
-    pub async fn execute(
+    pub async fn execute<'a>(
         self,
+        app_ctx: &Arc<AppContext>,
         req_ctx: &RequestContext,
-        request: &Request<ConstValue>,
-    ) -> Response<ConstValue, Error> {
-        let plan = self.plan;
-        // TODO: drop the clones in plan
-        let exec = ConstValueExec::new(plan.clone(), req_ctx);
+        request: Request<ConstValue>,
+    ) -> AnyResponse<Vec<u8>> {
+        // Run all the IRs in the before chain
+        if let Some(ir) = &self.plan.before {
+            let mut eval_context = EvalContext::new(req_ctx, &EmptyResolverContext {});
+            match ir.eval(&mut eval_context).await {
+                Ok(_) => (),
+                Err(err) => {
+                    let resp: Response<ConstValue> = Response::default();
+                    return resp
+                        .with_errors(vec![GraphQLError::new(err.to_string(), None)])
+                        .into();
+                }
+            }
+        }
+
+        let is_introspection_query =
+            req_ctx.server.get_enable_introspection() && self.plan.is_introspection_query;
+        let variables = &request.variables;
+
+        // Attempt to skip unnecessary fields
+        let Ok(plan) = transform::Skip::new(variables)
+            .transform(self.plan)
+            .to_result()
+        else {
+            let resp: Response<ConstValue> = Response::default();
+            // this shouldn't actually ever happen
+            return resp
+                .with_errors(vec![GraphQLError::new(Error::Unknown.to_string(), None)])
+                .into();
+        };
+
+        // Attempt to replace variables in the plan with the actual values
+        // TODO: operation from [ExecutableDocument] could contain definitions for
+        // default values of arguments. That info should be passed to
+        // [InputResolver] to resolve defaults properly
+        let result = InputResolver::new(plan).resolve_input(variables);
+
+        let plan = match result {
+            Ok(plan) => plan,
+            Err(err) => {
+                let resp: Response<ConstValue> = Response::default();
+                return resp
+                    .with_errors(vec![GraphQLError::new(
+                        BuildError::from(err).to_string(),
+                        None,
+                    )])
+                    .into();
+            }
+        };
+
+        let exec = ConstValueExec::new(&plan, req_ctx);
+        // PERF: remove this particular clone?
         let vars = request.variables.clone();
-        let exe = Executor::new(plan.clone(), exec);
+        let exe = Executor::new(&plan, exec);
         let store = exe.store().await;
-        let synth = Synth::new(plan, store, vars);
-        exe.execute(synth).await
+        let synth = Synth::new(&plan, store, vars);
+
+        let resp: Response<serde_json_borrow::Value> = exe.execute(&synth).await;
+
+        if is_introspection_query {
+            let async_req = async_graphql::Request::from(request).only_introspection();
+            let async_resp = app_ctx.execute(async_req).await;
+
+            resp.merge_with(&async_resp).into()
+        } else {
+            resp.into()
+        }
     }
 }
 
 struct ConstValueExec<'a> {
-    plan: OperationPlan<ConstValue>,
+    plan: &'a OperationPlan<ConstValue>,
     req_context: &'a RequestContext,
 }
 
 impl<'a> ConstValueExec<'a> {
-    pub fn new(plan: OperationPlan<ConstValue>, req_context: &'a RequestContext) -> Self {
+    pub fn new(plan: &'a OperationPlan<ConstValue>, req_context: &'a RequestContext) -> Self {
         Self { req_context, plan }
     }
 
     async fn call(
         &self,
-        ctx: &'a Context<
-            'a,
-            <ConstValueExec<'a> as IRExecutor>::Input,
-            <ConstValueExec<'a> as IRExecutor>::Output,
-        >,
+        ctx: &'a Context<'a, <Self as IRExecutor>::Input, <Self as IRExecutor>::Output>,
         ir: &'a IR,
-    ) -> Result<<ConstValueExec<'a> as IRExecutor>::Output> {
+    ) -> Result<<Self as IRExecutor>::Output>
+    where
+        <Self as IRExecutor>::Input: JsonLike<'a>,
+        <Self as IRExecutor>::Output: JsonLike<'a>,
+    {
+        // if parent value is null do not try to resolve child fields
+        if matches!(ctx.value(), Some(v) if v.is_null()) {
+            return Ok(Default::default());
+        }
+
         let req_context = &self.req_context;
         let mut eval_ctx = EvalContext::new(req_context, ctx);
 
@@ -65,7 +140,7 @@ impl<'a> ConstValueExec<'a> {
     }
 }
 
-impl<'ctx> IRExecutor for ConstValueExec<'ctx> {
+impl IRExecutor for ConstValueExec<'_> {
     type Input = ConstValue;
     type Output = ConstValue;
     type Error = Error;
@@ -88,11 +163,7 @@ impl<'ctx> IRExecutor for ConstValueExec<'ctx> {
                     // for fragments on union/interface
                     if self.plan.field_is_part_of_value(field, value) {
                         let ctx = ctx.with_value(value);
-                        tasks.push(async move {
-                            let req_context = &self.req_context;
-                            let mut eval_ctx = EvalContext::new(req_context, &ctx);
-                            ir.eval(&mut eval_ctx).await
-                        })
+                        tasks.push(async move { self.call(&ctx, ir).await })
                     }
                 });
 
@@ -109,7 +180,8 @@ impl<'ctx> IRExecutor for ConstValueExec<'ctx> {
                     if self.plan.field_is_part_of_value(field, value) {
                         iter.next().unwrap_or(Err(ir::Error::IO(
                             "Expected value to be present".to_string(),
-                        )))
+                        )
+                        .into()))
                     } else {
                         Ok(Self::Output::default())
                     }

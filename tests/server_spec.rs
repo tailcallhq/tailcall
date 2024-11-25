@@ -43,7 +43,8 @@ pub mod test {
                 .http2_keep_alive_while_idle(upstream.keep_alive_while_idle)
                 .pool_idle_timeout(Some(Duration::from_secs(upstream.pool_idle_timeout)))
                 .pool_max_idle_per_host(upstream.pool_max_idle_per_host)
-                .user_agent(upstream.user_agent.clone());
+                .user_agent(upstream.user_agent.clone())
+                .danger_accept_invalid_certs(!upstream.verify_ssl);
 
             // Add Http2 Prior Knowledge
             if upstream.http2_only {
@@ -142,7 +143,7 @@ pub mod test {
             http2_only: http2,
             env: Arc::new(env),
             file: Arc::new(file),
-            cache: Arc::new(InMemoryCache::new()),
+            cache: Arc::new(InMemoryCache::default()),
             extensions: Arc::new(vec![]),
             cmd_worker: match &script {
                 Some(script) => Some(init_worker_io::<Event, Command>(script.to_owned())),

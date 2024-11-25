@@ -1,14 +1,12 @@
 # Set Cookie Header
 
 ```graphql @config
-schema
-  @server(port: 8080, hostname: "0.0.0.0", headers: {setCookies: true})
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @server(port: 8080, hostname: "0.0.0.0", headers: {setCookies: true}) {
   query: Query
 }
 
 type Query {
-  user(id: Int!): User @http(path: "/users/{{.args.id}}")
+  user(id: Int!): User @http(url: "http://jsonplaceholder.typicode.com/users/{{.args.id}}")
 }
 type User {
   id: Int!

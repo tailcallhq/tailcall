@@ -140,9 +140,11 @@ fn print_type_def(type_def: &TypeDefinition) -> String {
             format!("{}scalar {}\n", doc, type_def.name.node)
         }
         TypeKind::Union(union) => {
+            let directives = print_pos_directives(&type_def.directives);
             format!(
-                "union {} = {}\n",
+                "union {}{} = {}\n",
                 type_def.name.node,
+                directives,
                 union
                     .members
                     .iter()

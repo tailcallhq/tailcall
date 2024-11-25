@@ -7,11 +7,19 @@ use indexmap::IndexMap;
 
 use super::*;
 
-impl<'obj, Value: JsonLike<'obj> + Clone> JsonObjectLike<'obj> for IndexMap<Name, Value> {
+impl<'obj, Value: JsonLike<'obj>> JsonObjectLike<'obj> for IndexMap<Name, Value> {
     type Value = Value;
 
     fn new() -> Self {
         IndexMap::new()
+    }
+
+    fn with_capacity(n: usize) -> Self {
+        IndexMap::with_capacity(n)
+    }
+
+    fn from_vec(v: Vec<(&'obj str, Self::Value)>) -> Self {
+        IndexMap::from_iter(v.into_iter().map(|(k, v)| (Name::new(k), v)))
     }
 
     fn get_key(&self, key: &str) -> Option<&Self::Value> {
@@ -21,12 +29,49 @@ impl<'obj, Value: JsonLike<'obj> + Clone> JsonObjectLike<'obj> for IndexMap<Name
     fn insert_key(&mut self, key: &'obj str, value: Self::Value) {
         self.insert(Name::new(key), value);
     }
+
+    fn iter<'slf>(&'slf self) -> impl Iterator<Item = (&'slf str, &'slf Self::Value)>
+    where
+        Self::Value: 'slf,
+        'obj: 'slf,
+    {
+        self.iter().map(|(k, v)| (k.as_str(), v))
+    }
 }
 
 impl<'json> JsonLike<'json> for ConstValue {
     type JsonObject = IndexMap<Name, ConstValue>;
 
+    fn from_primitive(x: JsonPrimitive<'json>) -> Self {
+        match x {
+            JsonPrimitive::Null => ConstValue::Null,
+            JsonPrimitive::Bool(x) => ConstValue::Boolean(x),
+            JsonPrimitive::Str(s) => ConstValue::String(s.to_string()),
+            JsonPrimitive::Number(number) => ConstValue::Number(number),
+        }
+    }
+
+    fn as_primitive(&self) -> Option<JsonPrimitive> {
+        let val = match self {
+            ConstValue::Null => JsonPrimitive::Null,
+            ConstValue::Boolean(x) => JsonPrimitive::Bool(*x),
+            ConstValue::Number(number) => JsonPrimitive::Number(number.clone()),
+            ConstValue::String(s) => JsonPrimitive::Str(s.as_ref()),
+            ConstValue::Enum(e) => JsonPrimitive::Str(e.as_str()),
+            _ => return None,
+        };
+
+        Some(val)
+    }
+
     fn as_array(&self) -> Option<&Vec<Self>> {
+        match self {
+            ConstValue::List(seq) => Some(seq),
+            _ => None,
+        }
+    }
+
+    fn as_array_mut(&mut self) -> Option<&mut Vec<Self>> {
         match self {
             ConstValue::List(seq) => Some(seq),
             _ => None,

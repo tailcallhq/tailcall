@@ -6,9 +6,6 @@ expression: merged_resp
   "data": null,
   "errors": [
     {
-      "message": "Error-1"
-    },
-    {
       "message": "Error-2",
       "locations": [
         {
@@ -16,6 +13,9 @@ expression: merged_resp
           "column": 0
         }
       ]
+    },
+    {
+      "message": "Error-1"
     }
   ]
 }

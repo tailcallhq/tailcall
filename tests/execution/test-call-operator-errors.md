@@ -5,14 +5,14 @@ error: true
 # test-call-operator
 
 ```graphql @config
-schema @server @upstream(baseURL: "http://localhost:3000") {
+schema @server {
   query: Query
 }
 
 type Query {
-  posts: [Post] @http(path: "/posts")
+  posts: [Post] @http(url: "http://localhost:3000/posts")
   userWithoutResolver(id: Int!): User
-  user(id: Int!): User @http(path: "/users/{{.args.id}}")
+  user(id: Int!): User @http(url: "http://localhost:3000/users/{{.args.id}}")
   userWithGraphQLResolver(id: Int!): User @graphQL(name: "user", args: [{key: "id", value: "{{.args.id}}"}])
   userWithGraphQLHeaders(id: Int!): User @graphQL(name: "user", headers: [{key: "id", value: "{{.args.id}}"}])
 }

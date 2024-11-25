@@ -1,0 +1,108 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server(hostname: "0.0.0.0", port: 8001, queryValidation: false) @upstream(httpCache: 42) {
+  query: Query
+}
+
+interface Animal {
+  id: ID!
+  legs: Int!
+  sound: String!
+}
+
+interface Bird {
+  eggSize: Int!
+}
+
+interface DomesticAnimal {
+  weight: Int!
+}
+
+interface Fish {
+  length: Int!
+}
+
+interface Pet {
+  owner: String!
+}
+
+interface WildAnimal {
+  dangerous: Boolean!
+}
+
+union EdibleAnimals = Boar | Chicken | Pig | Salmon
+
+union FarmingAnimals = Chicken | Pig
+
+union HuntedAnimals = Boar | Salmon
+
+type Boar implements Animal & WildAnimal {
+  blackBoar: Boolean!
+  dangerous: Boolean!
+  id: ID!
+  legs: Int!
+  sound: String!
+}
+
+type Cat implements Animal & DomesticAnimal & Pet {
+  hasFur: Boolean!
+  id: ID!
+  legs: Int!
+  owner: String!
+  sound: String!
+  weight: Int!
+}
+
+type Chicken implements Animal & Bird {
+  eggSize: Int!
+  id: ID!
+  legs: Int!
+  sound: String!
+}
+
+type Cow implements Animal & DomesticAnimal {
+  canProduceMilk: Boolean!
+  id: ID!
+  legs: Int!
+  sound: String!
+  weight: Int!
+}
+
+type Deer implements Animal & WildAnimal {
+  dangerous: Boolean!
+  hasAntlers: Boolean!
+  id: ID!
+  legs: Int!
+  sound: String!
+}
+
+type Dog implements Animal & DomesticAnimal & Pet {
+  id: ID!
+  legs: Int!
+  owner: String!
+  size: Int!
+  sound: String!
+  weight: Int!
+}
+
+type Pig implements Animal & DomesticAnimal {
+  id: ID!
+  isForBacon: Boolean!
+  legs: Int!
+  sound: String!
+  weight: Int!
+}
+
+type Query {
+  allAnimals: [Animal] @http(url: "http://upstream/all-animals")
+  edibleAnimals: [EdibleAnimals] @http(url: "http://upstream/edible-animals")
+}
+
+type Salmon implements Animal & Fish {
+  id: ID!
+  legs: Int!
+  length: Int!
+  sound: String!
+}

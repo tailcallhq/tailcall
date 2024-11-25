@@ -14,19 +14,16 @@ pub struct InMemoryCache<K: Hash + Eq, V> {
     miss: AtomicUsize,
 }
 
-// TODO: take this from the user instead of hardcoding it
-const CACHE_CAPACITY: usize = 100000;
-
 impl<K: Hash + Eq, V: Clone> Default for InMemoryCache<K, V> {
     fn default() -> Self {
-        Self::new()
+        Self::new(100000)
     }
 }
 
 impl<K: Hash + Eq, V: Clone> InMemoryCache<K, V> {
-    pub fn new() -> Self {
+    pub fn new(capacity: usize) -> Self {
         InMemoryCache {
-            data: Arc::new(RwLock::new(TtlCache::new(CACHE_CAPACITY))),
+            data: Arc::new(RwLock::new(TtlCache::new(capacity))),
             hits: AtomicUsize::new(0),
             miss: AtomicUsize::new(0),
         }

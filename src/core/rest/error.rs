@@ -5,8 +5,7 @@ use async_graphql::parser::types::{Directive, Type};
 use async_graphql::{Name, ServerError};
 use derive_more::{DebugCustom, From};
 use serde_json;
-
-use crate::core::valid::ValidationError;
+use tailcall_valid::ValidationError;
 
 #[derive(From, thiserror::Error, DebugCustom)]
 pub enum Error {
@@ -46,10 +45,10 @@ pub enum Error {
     ParseGraphQL(async_graphql::parser::Error),
 
     #[error("Hyper HTTP Invalid URI Error: {}", _0)]
-    HyperHttpInvalidUri(hyper::http::uri::InvalidUri),
+    HyperHttpInvalidUri(http::uri::InvalidUri),
 
     #[error("Hyper HTTP Error: {}", _0)]
-    HyperHttp(hyper::http::Error),
+    HyperHttp(http::Error),
 
     #[error("Hyper Error: {}", _0)]
     Hyper(hyper::Error),

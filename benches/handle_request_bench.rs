@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
 use criterion::Criterion;
-use hyper::Request;
+use http::Request;
 use tailcall::cli::server::server_config::ServerConfig;
 use tailcall::core::async_graphql_hyper::GraphQLRequest;
 use tailcall::core::blueprint::Blueprint;
 use tailcall::core::config::{Config, ConfigModule};
 use tailcall::core::http::handle_request;
-use tailcall::core::valid::Validator;
+use tailcall_valid::Validator;
 
 static QUERY: &str = r#"{"query":"query{posts{title}}"}"#;
 
