@@ -5495,6 +5495,7 @@ dependencies = [
  "lru",
  "maplit",
  "markdown",
+ "miette 7.2.0",
  "mimalloc",
  "mime",
  "moka",
