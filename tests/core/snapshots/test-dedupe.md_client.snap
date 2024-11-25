@@ -6,11 +6,18 @@ type Post {
   body: String
   id: Int
   title: String
+  user: User
   userId: Int!
 }
 
 type Query {
   posts: [Post]
+  user: [User]
+}
+
+type User {
+  id: Int
+  name: String
 }
 
 schema {

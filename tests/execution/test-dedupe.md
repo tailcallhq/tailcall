@@ -1,7 +1,7 @@
 # testing dedupe functionality
 
 ```graphql @config
-schema @server(port: 8000) {
+schema @server(port: 8000) @upstream(batch: {delay: 1}) {
   query: Query
 }
 
@@ -14,6 +14,13 @@ type Post {
   title: String
   body: String
   userId: Int!
+  user: User
+    @http(
+      url: "http://jsonplaceholder.typicode.com/users"
+      query: [{key: "id", value: "{{.value.userId}}"}]
+      batchKey: ["id"]
+      dedupe: true
+    )
 }
 
 type User {
@@ -35,6 +42,18 @@ type User {
         userId: 1
       - id: 2
         userId: 2
+- request:
+    method: GET
+    url: http://jsonplaceholder.typicode.com/users?id=1&id=2
+  expectedHits: 1
+  delay: 10
+  response:
+    status: 200
+    body:
+      - id: 1
+        name: user-1
+      - id: 2
+        name: user-2
 ```
 
 ```yml @test
@@ -42,5 +61,5 @@ type User {
   url: http://localhost:8080/graphql
   concurrency: 10
   body:
-    query: query { posts { id, userId } }
+    query: query { posts { id, userId user { id name } duplicateUser:user { id name } } }
 ```
