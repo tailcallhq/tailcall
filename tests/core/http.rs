@@ -55,9 +55,6 @@ impl Http {
 #[async_trait::async_trait]
 impl HttpIO for Http {
     async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response<Bytes>> {
-        // TODO: configure this delay only for dedupe requests.
-        let _ = tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
-
         // Try to find a matching mock for the incoming request.
         let execution_mock = self
             .mocks
@@ -103,6 +100,11 @@ impl HttpIO for Http {
                 req.url(),
                 self.spec_path
             ))?;
+
+        if let Some(delay) = execution_mock.mock.delay {
+            // add delay to the request if there's a delay in the mock.
+            let _ = tokio::time::sleep(tokio::time::Duration::from_millis(delay)).await;
+        }
 
         execution_mock.actual_hits.fetch_add(1, Ordering::Relaxed);
 

@@ -46,6 +46,8 @@ pub struct Mock {
     pub assert_hits: bool,
     #[serde(default = "default::expected_hits")]
     pub expected_hits: usize,
+    #[serde(default)]
+    pub delay: Option<u64>
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
@@ -62,7 +64,7 @@ pub struct APIRequest {
     #[serde(default)]
     pub test_metrics: bool,
     #[serde(default = "default::concurrent")]
-    pub concurrent: usize,
+    pub concurrency: usize,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

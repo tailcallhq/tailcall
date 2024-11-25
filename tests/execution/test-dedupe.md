@@ -27,6 +27,7 @@ type User {
     method: GET
     url: http://jsonplaceholder.typicode.com/posts?id=1
   expectedHits: 1
+  delay: 10
   response:
     status: 200
     body:
@@ -39,7 +40,7 @@ type User {
 ```yml @test
 - method: POST
   url: http://localhost:8080/graphql
-  concurrent: 10
+  concurrency: 10
   body:
     query: query { posts { id, userId } }
 ```
