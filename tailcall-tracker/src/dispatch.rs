@@ -118,50 +118,39 @@ async fn email() -> HashSet<String> {
     }
 
     // From Git
-    async fn git() -> Option<String> {
-        let output = Command::new("git")
+    async fn git() -> Result<Output> {
+        Ok(Command::new("git")
             .args(["config", "--global", "user.email"])
             .output()
-            .await
-            .ok()?;
-
-        parse(output)
+            .await?)
     }
 
     // From SSH Keys
-    async fn ssh() -> Option<HashSet<String>> {
-        // Single command to find all unique email addresses from .pub files
-        let output = Command::new("sh")
-            .args([
-                "-c",
-                "cat ~/.ssh/*.pub | grep -o '[^ ]\\+@[^ ]\\+\\.[^ ]\\+'",
-            ])
+    async fn ssh() -> Result<Output> {
+        Ok(Command::new("sh")
+            .args(["-c", "cat ~/.ssh/*.pub"])
             .output()
-            .await
-            .ok()?;
-
-        Some(parse(output)?.lines().map(|o| o.to_owned()).collect())
+            .await?)
     }
 
-    let git_email = git().await;
-    let ssh_emails = ssh().await;
-    let mut email_ids = HashSet::new();
-
-    if let Some(email) = git_email {
-        if !email.trim().is_empty() {
-            email_ids.insert(email.trim().to_string());
-        }
+    // From defaults read MobileMeAccounts Accounts
+    async fn mobile_me() -> Result<Output> {
+        Ok(Command::new("defaults")
+            .args(["read", "MobileMeAccounts", "Accounts"])
+            .output()
+            .await?)
     }
 
-    if let Some(emails) = ssh_emails {
-        for email in emails {
-            if !email.trim().is_empty() {
-                email_ids.insert(email.trim().to_string());
-            }
-        }
-    }
-
-    email_ids
+    vec![git().await, ssh().await, mobile_me().await]
+        .into_iter()
+        .flat_map(|output| {
+            output
+                .ok()
+                .and_then(parse)
+                .map(parse_email)
+                .unwrap_or_default()
+        })
+        .collect::<HashSet<String>>()
 }
 
 // Generates a random client ID
@@ -213,6 +202,18 @@ fn args() -> Vec<String> {
 
 fn os_name() -> String {
     System::long_os_version().unwrap_or("Unknown".to_string())
+}
+
+// Should take arbitrary text and be able to extract email addresses
+fn parse_email(text: String) -> Vec<String> {
+    let mut email_ids = Vec::new();
+
+    let re = regex::Regex::new(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}").unwrap();
+    for email in re.find_iter(&text) {
+        email_ids.push(email.as_str().to_string());
+    }
+
+    email_ids
 }
 
 #[cfg(test)]

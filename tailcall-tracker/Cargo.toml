@@ -27,3 +27,4 @@ whoami = "1.5.2"
 strum = "0.26.3"
 convert_case = { workspace = true }
 http = { workspace = true }
+regex = "1.11.1"
