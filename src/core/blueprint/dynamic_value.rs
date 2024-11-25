@@ -12,6 +12,12 @@ pub enum DynamicValue<A> {
     Array(Vec<DynamicValue<A>>),
 }
 
+impl<A: Default> Default for DynamicValue<A> {
+    fn default() -> Self {
+        DynamicValue::Value(A::default())
+    }
+}
+
 impl<A> DynamicValue<A> {
     /// This function is used to prepend a string to every Mustache Expression.
     /// This is useful when we want to hide a Mustache data argument from the
