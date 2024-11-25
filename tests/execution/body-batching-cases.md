@@ -85,11 +85,7 @@ type Post {
 - request:
     method: POST
     url: http://jsonplaceholder.typicode.com/posts
-    body:
-      [
-        {"userId":"1","title":"title","body":"body"},
-        {"userId":"2","title":"title","body":"body"},
-      ]
+    body: [{"userId": "1", "title": "title", "body": "body"}, {"userId": "2", "title": "title", "body": "body"}]
   response:
     status: 200
     body:
@@ -120,7 +116,7 @@ type Post {
 - request:
     method: POST
     url: http://jsonplaceholder.typicode.com/users
-    body: [{"key":"id","value": "1"},{"key":"id","value":"2"}]
+    body: [{"key": "id", "value": "1"}, {"key": "id", "value": "2"}]
   response:
     status: 200
     body:
@@ -147,7 +143,7 @@ type Post {
 - request:
     method: POST
     url: http://jsonplaceholder.typicode.com/bar
-    body: [{"id":"11"},{"id":"21"}]
+    body: [{"id": "11"}, {"id": "21"}]
   response:
     status: 200
     body:
@@ -159,7 +155,7 @@ type Post {
 - request:
     method: POST
     url: http://jsonplaceholder.typicode.com/tar
-    body: [12,22]
+    body: [12, 22]
   expectedHits: 0
   response:
     status: 200
@@ -183,7 +179,6 @@ type Post {
   url: http://localhost:8080/graphql
   body:
     query: query { foo { a b bar { a  b } } }
-
 # - method: POST
 #   url: http://localhost:8080/graphql
 #   body:
