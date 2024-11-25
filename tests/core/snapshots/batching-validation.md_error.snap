@@ -1,0 +1,35 @@
+---
+source: tests/core/spec.rs
+expression: errors
+---
+[
+  {
+    "message": "POST request batching requires exactly one dynamic value in the request body.",
+    "trace": [
+      "Query",
+      "user",
+      "@http",
+      "body"
+    ],
+    "description": null
+  },
+  {
+    "message": "POST request batching requires exactly one dynamic value in the request body.",
+    "trace": [
+      "Query",
+      "userWithId",
+      "@http",
+      "body"
+    ],
+    "description": null
+  },
+  {
+    "message": "GroupBy is only supported for GET/POST requests",
+    "trace": [
+      "Query",
+      "userWithIdTest",
+      "@http"
+    ],
+    "description": null
+  }
+]

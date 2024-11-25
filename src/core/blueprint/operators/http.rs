@@ -29,29 +29,31 @@ pub fn compile_http(
                     && !http.batch_key.is_empty()
             }),
         )
-        .and(
-            Valid::<(), String>::fail(
-                "Only one dynamic key allowed in POST batch request.".to_string(),
-            )
-            .when(|| {
-                if http.method != Method::POST {
-                    return false;
-                }
-
+        .and_then(|_| {
+            let result = if http.method == Method::POST {
                 if !http.batch_key.is_empty() {
-                    let is_single_key = http
+                    let keys = http
                         .body
                         .as_ref()
-                        .map(|b| extract_expression_keys(b).len() == 1)
+                        .map(|b| extract_expression_keys(b).len())
                         .unwrap_or_default();
 
-                    return !is_single_key;
+                    if keys == 1 {
+                        Valid::succeed(())
+                    }else{
+                        Valid::fail(
+                            "POST request batching requires exactly one dynamic value in the request body.".to_string(),
+                        )
+                    }
+                } else {
+                    Valid::succeed(())
                 }
+            } else {
+                Valid::succeed(())
+            };
 
-                false
-            })
-            .trace("body"),
-        )
+            result.trace("body")
+        })
         .and(Valid::succeed(http.url.as_str()))
         .zip(helpers::headers::to_mustache_headers(&http.headers))
         .and_then(|(base_url, headers)| {
@@ -164,6 +166,7 @@ fn extract_expression_keys(json: &str) -> Vec<String> {
             keys.push(key.as_str().to_string());
         }
     }
+    println!("[Finder]: input: {:#?} and output: {:#?}", json, keys);
     keys
 }
 
