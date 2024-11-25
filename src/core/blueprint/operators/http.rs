@@ -17,7 +17,6 @@ pub fn compile_http(
 ) -> Valid<IR, String> {
     let dedupe = http.dedupe.unwrap_or_default();
 
-    // batch key is defined, and method is not GET or POST.
     Valid::<(), String>::fail("GroupBy is only supported for GET/POST requests".to_string())
         .when(|| !http.batch_key.is_empty() && !matches!(http.method, Method::GET | Method::POST))
         .and(
@@ -37,9 +36,10 @@ pub fn compile_http(
             .when(|| {
                 http.method == Method::POST
                     && !http.batch_key.is_empty()
-                    && http.body.as_ref().map_or(true, |b| {
-                        Mustache::parse(b).expression_segments().len() == 1
-                    })
+                    && http
+                        .body
+                        .as_ref()
+                        .map_or(true, |b| extract_expression_keys(b).len() == 1)
             })
             .trace("body"),
         )
@@ -78,9 +78,9 @@ pub fn compile_http(
                 .or(config_module.upstream.on_request.clone())
                 .map(|on_request| HttpFilter { on_request });
 
-            let group_by_clause_check = !http.batch_key.is_empty()
+            let group_by_clause = !http.batch_key.is_empty()
                 && (http.method == Method::GET || http.method == Method::POST);
-            let io = if group_by_clause_check {
+            let io = if group_by_clause {
                 // Find a query parameter that contains a reference to the {{.value}} key
                 let key = if http.method == Method::GET {
                     http.query.iter().find_map(|q| {
@@ -89,6 +89,7 @@ pub fn compile_http(
                             .then(|| q.key.clone())
                     })
                 } else {
+                    // find the key from the body where value is mustache template.
                     http.body
                         .as_ref()
                         .map(|b| extract_expression_keys(b))
@@ -144,6 +145,7 @@ pub fn update_http<'a>(
     )
 }
 
+/// extracts the keys from the json representation, if the value is of mustache template type.
 fn extract_expression_keys(json: &str) -> Vec<String> {
     let mut keys = Vec::new();
     let re = Regex::new(r#""([^"]+)"\s*:\s*"\{\{.*?\}\}""#).unwrap();
