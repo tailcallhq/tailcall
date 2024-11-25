@@ -1,12 +1,12 @@
 # testing dedupe functionality
 
 ```graphql @config
-schema @server(port: 8000, queryValidation: false) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @server(port: 8000) {
   query: Query
 }
 
 type Query {
-  posts: [Post] @http(path: "/posts?id=1", dedupe: true)
+  posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts?id=1", dedupe: true)
 }
 
 type Post {
