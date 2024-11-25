@@ -395,9 +395,17 @@ fn to_fields(
     let fields_with_different_auth_ids = type_of
         .fields
         .iter()
-        .filter(|(_, f)| f.protected.is_some())
-        .filter(|(_, f)| f.protected.as_ref().and_then(|p| p.id.as_ref()) != parent_auth_ids)
-        .map(|(f, _)| f)
+        .filter_map(|(k, v)| {
+            if let Some(p) = &v.protected {
+                if p.id.as_ref() != parent_auth_ids {
+                    Some(k)
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        })
         .collect::<HashSet<_>>();
 
     let fields = Valid::from_iter(
