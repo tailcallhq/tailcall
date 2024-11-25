@@ -49,14 +49,11 @@ impl HttpDataLoader {
     }
 }
 
-fn get_key<'a>(value: &'a serde_json::Value, path: &[String]) -> anyhow::Result<&'a str> {
+fn get_key<'a>(value: &'a serde_json_borrow::Value<'a>, path: &str) -> anyhow::Result<&'a str> {
     value
-        .get_path(path)
+        .get_path(&[path])
         .and_then(|k| k.as_str())
-        .ok_or(anyhow::anyhow!(
-            "Unable to find key {} in body",
-            path.join(" ")
-        ))
+        .ok_or(anyhow::anyhow!("Unable to find key '{}' in request body.", path))
 }
 
 #[async_trait::async_trait]
@@ -177,14 +174,14 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
                     hashmap.insert(dl_req.clone(), res);
                 }
             } else {
-                let path = group_by.body_key();
-
+                let path = group_by.key();
                 for (dl_req, body) in body_mapping.into_iter() {
                     // retrive the key from body
-                    let extracted_value = data_extractor(&response_map, get_key(&body, &path)?);
+                    let extracted_value = data_extractor(&response_map, get_key(&body, path)?);
                     let res = res.clone().body(extracted_value);
                     hashmap.insert(dl_req.clone(), res);
                 }
+                println!("[Finder]: {:#?}", hashmap);
             }
 
             Ok(hashmap)

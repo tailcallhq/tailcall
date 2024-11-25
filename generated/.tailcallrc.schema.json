@@ -728,13 +728,6 @@
             "null"
           ]
         },
-        "bodyKey": {
-          "description": "when response data is grouped by `batchKey`, `bodyKey` is used to define the association between grouped data and the request body.",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
         "dedupe": {
           "description": "Enables deduplication of IO operations to enhance performance.\n\nThis flag prevents duplicate IO requests from being executed concurrently, reducing resource load. Caution: May lead to issues with APIs that expect unique results for identical inputs, such as nonce-based APIs.",
           "type": [

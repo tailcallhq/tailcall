@@ -21,7 +21,6 @@ type Foo {
       method: POST
       body: "{\"id\":\"{{.value.a}}\"}"
       batchKey: ["a"]
-      bodyKey: ["id"]
     )
   # think about it later.
   # tar: Tar
@@ -30,7 +29,6 @@ type Foo {
   #     method: POST
   #     body: "{{.value.b}}"
   #     batchKey: ["a"]
-  #     bodyKey: [""]
   #   )
 }
 
@@ -51,9 +49,8 @@ type User {
     @http(
       url: "http://jsonplaceholder.typicode.com/posts"
       method: POST
-      body: "{\"userId\":\"{{.value.id}}\",\"title\":\"{{.value.name}}\",\"body\":\"{{.value.email}}\"}"
+      body: "{\"userId\":\"{{.value.id}}\",\"title\":\"title\",\"body\":\"body\"}"
       batchKey: ["userId"]
-      bodyKey: ["userId"] # we group by batchKey, then for each request we retrive it's bodyKey from request body and then we use that body key to get the appropriate data from grouped source.
     )
 }
 
@@ -68,7 +65,6 @@ type Post {
       method: POST
       body: "{\"key\":\"id\",\"value\":\"{{.value.userId}}\"}"
       batchKey: ["id"]
-      bodyKey: ["value"]
     )
 }
 ```
@@ -91,8 +87,8 @@ type Post {
     url: http://jsonplaceholder.typicode.com/posts
     body:
       [
-        {"userId":"1","title":"user-1","body":"user-1@gmail.com"},
-        {"userId":"2","title":"user-2","body":"user-2@gmail.com"},
+        {"userId":"1","title":"title","body":"body"},
+        {"userId":"2","title":"title","body":"body"},
       ]
   response:
     status: 200
@@ -187,6 +183,7 @@ type Post {
   url: http://localhost:8080/graphql
   body:
     query: query { foo { a b bar { a  b } } }
+
 # - method: POST
 #   url: http://localhost:8080/graphql
 #   body:

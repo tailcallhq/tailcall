@@ -1,3 +1,4 @@
+use regex::Regex;
 use tailcall_valid::{Valid, ValidationError, Validator};
 
 use crate::core::blueprint::*;
@@ -31,13 +32,16 @@ pub fn compile_http(
         )
         .and(
             Valid::<(), String>::fail(
-                "Batching capability enabled on POST request without bodyKey".to_string(),
+                "Only one dynamic key allowed in POST batch request.".to_string(),
             )
             .when(|| {
                 http.method == Method::POST
                     && !http.batch_key.is_empty()
-                    && http.body_key.is_empty()
-            }),
+                    && http.body.as_ref().map_or(true, |b| {
+                        Mustache::parse(b).expression_segments().len() == 1
+                    })
+            })
+            .trace("body"),
         )
         .and(Valid::succeed(http.url.as_str()))
         .zip(helpers::headers::to_mustache_headers(&http.headers))
@@ -74,20 +78,32 @@ pub fn compile_http(
                 .or(config_module.upstream.on_request.clone())
                 .map(|on_request| HttpFilter { on_request });
 
-            let group_by_clause_check = !http.batch_key.is_empty() && (http.method == Method::POST && !http.body_key.is_empty() || http.method != Method::POST);
+            let group_by_clause_check = !http.batch_key.is_empty()
+                && (http.method == Method::GET || http.method == Method::POST);
             let io = if group_by_clause_check {
                 // Find a query parameter that contains a reference to the {{.value}} key
-                let key = http.query.iter().find_map(|q| {
-                    Mustache::parse(&q.value)
-                        .expression_contains("value")
-                        .then(|| q.key.clone())
-                });
+                let key = if http.method == Method::GET {
+                    http.query.iter().find_map(|q| {
+                        Mustache::parse(&q.value)
+                            .expression_contains("value")
+                            .then(|| q.key.clone())
+                    })
+                } else {
+                    http.body
+                        .as_ref()
+                        .map(|b| extract_expression_keys(b))
+                        .and_then(|keys| {
+                            if keys.len() == 1 {
+                                Some(keys[0].clone())
+                            } else {
+                                None
+                            }
+                        })
+                };
+
                 IR::IO(IO::Http {
                     req_template,
-                    group_by: Some(
-                        GroupBy::new(http.batch_key.clone(), key)
-                            .with_body_key(http.body_key.clone()),
-                    ),
+                    group_by: Some(GroupBy::new(http.batch_key.clone(), key)),
                     dl_id: None,
                     http_filter,
                     is_list,
@@ -126,4 +142,34 @@ pub fn update_http<'a>(
                 })
         },
     )
+}
+
+fn extract_expression_keys(json: &str) -> Vec<String> {
+    let mut keys = Vec::new();
+    let re = Regex::new(r#""([^"]+)"\s*:\s*"\{\{.*?\}\}""#).unwrap();
+    for cap in re.captures_iter(json) {
+        if let Some(key) = cap.get(1) {
+            keys.push(key.as_str().to_string());
+        }
+    }
+    keys
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_extract_expression_keys_from_str() {
+        let json = r#"{"body":"d","userId":"{{.value.uid}}","nested":{"other":"{{test}}"}}"#;
+        let keys = extract_expression_keys(json);
+        assert_eq!(keys, vec!["userId", "other"]);
+    }
+
+    #[test]
+    fn test_with_non_json_value() {
+        let json = r#"{{.value}}"#;
+        let keys = extract_expression_keys(json);
+        assert_eq!(keys, Vec::<String>::new());
+    }
 }

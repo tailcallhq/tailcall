@@ -9,22 +9,11 @@ pub struct GroupBy {
     path: Vec<String>,
     #[serde(default, skip_serializing_if = "is_default")]
     key: Option<String>,
-    #[serde(default, skip_serializing_if = "is_default")]
-    body_key: Vec<String>,
 }
 
 impl GroupBy {
     pub fn new(path: Vec<String>, key: Option<String>) -> Self {
-        Self { path, key, body_key: vec![] }
-    }
-
-    pub fn with_body_key(mut self, body_key: Vec<String>) -> Self {
-        self.body_key = body_key;
-        self
-    }
-
-    pub fn body_key(&self) -> Vec<String> {
-        self.body_key.clone()
+        Self { path, key }
     }
 
     pub fn path(&self) -> Vec<String> {
@@ -51,6 +40,6 @@ const ID: &str = "id";
 
 impl Default for GroupBy {
     fn default() -> Self {
-        Self { path: vec![ID.to_string()], key: None, body_key: vec![] }
+        Self { path: vec![ID.to_string()], key: None }
     }
 }
