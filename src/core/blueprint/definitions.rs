@@ -388,22 +388,41 @@ fn to_fields(
         GraphQLOperationType::Query
     };
     // Process fields that are not marked as `omit`
+
+    // collect the parent auth ids
+    let parent_auth_ids = type_of.protected.as_ref().and_then(|p| p.id.as_ref());
+    // collect the field names that have different auth ids than the parent type
+    let fields_with_different_auth_ids = type_of
+        .fields
+        .iter()
+        .filter(|(_, f)| f.protected.is_some())
+        .filter(|(_, f)| f.protected.as_ref().and_then(|p| p.id.as_ref()) != parent_auth_ids)
+        .map(|(f, _)| f)
+        .collect::<HashSet<_>>();
+
     let fields = Valid::from_iter(
         type_of
             .fields
             .iter()
             .filter(|(_, field)| !field.is_omitted()),
         |(name, field)| {
-            validate_field_type_exist(config_module, field)
-                .and(to_field_definition(
+            let mut result =
+                validate_field_type_exist(config_module, field).and(to_field_definition(
                     field,
                     &operation_type,
                     object_name,
                     config_module,
                     type_of,
                     name,
-                ))
-                .trace(name)
+                ));
+
+            if fields_with_different_auth_ids.contains(name) || parent_auth_ids.is_none() {
+                // if the field has a different auth id than the parent type or parent has no
+                // auth id, we need to add correct trace.
+                result = result.trace(name);
+            }
+
+            result
         },
     );
 
