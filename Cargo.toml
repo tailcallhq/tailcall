@@ -24,7 +24,7 @@ tracing = "0.1.40"
 lazy_static = "1.4.0"
 serde_json = { version = "1.0.116", features = ["preserve_order"] }
 serde = { version = "1.0.200", features = ["derive"] }
-derive_more = "0.99.18"
+derive_more = { version = "1", features = ["from", "debug"] }
 thiserror = "1.0.59"
 url = { version = "2.5.0", features = ["serde"] }
 convert_case = "0.6.0"
