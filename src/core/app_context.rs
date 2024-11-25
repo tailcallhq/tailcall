@@ -6,7 +6,6 @@ use dashmap::DashMap;
 
 use super::jit::AnyResponse;
 use crate::core::async_graphql_hyper::OperationId;
-use crate::core::auth::context::GlobalAuthContext;
 use crate::core::blueprint::{Blueprint, Definition, SchemaModifiers};
 use crate::core::data_loader::{DataLoader, DedupeResult};
 use crate::core::graphql::GraphqlDataLoader;
@@ -27,7 +26,6 @@ pub struct AppContext {
     pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
     pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
     pub endpoints: EndpointSet<Checked>,
-    pub auth_ctx: Arc<GlobalAuthContext>,
     pub dedupe_handler: Arc<DedupeResult<IoId, ConstValue, Error>>,
     pub dedupe_operation_handler: DedupeResult<OperationId, AnyResponse<Vec<u8>>, Error>,
     pub operation_plans: DashMap<OPHash, OperationPlan<async_graphql_value::Value>>,
@@ -138,8 +136,6 @@ impl AppContext {
 
         let schema = blueprint
             .to_schema_with(SchemaModifiers::default().extensions(runtime.extensions.clone()));
-        let auth = blueprint.server.auth.clone();
-        let auth_ctx = GlobalAuthContext::new(auth);
 
         AppContext {
             schema,
@@ -149,7 +145,7 @@ impl AppContext {
             gql_data_loaders: Arc::new(gql_data_loaders),
             grpc_data_loaders: Arc::new(grpc_data_loaders),
             endpoints,
-            auth_ctx: Arc::new(auth_ctx),
+
             dedupe_handler: Arc::new(DedupeResult::new(false)),
             dedupe_operation_handler: DedupeResult::new(false),
             operation_plans: DashMap::new(),

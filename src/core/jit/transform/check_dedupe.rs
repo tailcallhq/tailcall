@@ -19,7 +19,7 @@ fn check_dedupe(ir: &IR) -> bool {
         IR::IO(io) => io.dedupe(),
         IR::Cache(cache) => cache.io.dedupe(),
         IR::Path(ir, _) => check_dedupe(ir),
-        IR::Protect(ir) => check_dedupe(ir),
+        IR::Protect(_, ir) => check_dedupe(ir),
         IR::Pipe(ir, ir1) => check_dedupe(ir) && check_dedupe(ir1),
         IR::Discriminate(_, ir) => check_dedupe(ir),
         IR::Entity(hash_map) => hash_map.values().all(check_dedupe),
