@@ -81,6 +81,9 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         &self,
         mut request: reqwest::Request,
         worker: &Arc<dyn WorkerIO<worker::Event, worker::Command>>,
+        js_worker: &Arc<
+            dyn WorkerIO<async_graphql_value::ConstValue, async_graphql_value::ConstValue>,
+        >,
         http_filter: &HttpFilter,
     ) -> Result<Response<async_graphql::Value>, Error> {
         let js_request = worker::WorkerRequest::try_from(&request)?;
@@ -106,7 +109,8 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
                         request
                             .url_mut()
                             .set_path(w_response.headers()["location"].as_str());
-                        self.execute_with_worker(request, worker, http_filter).await
+                        self.execute_with_worker(request, worker, js_worker, http_filter)
+                            .await
                     } else {
                         Ok(w_response.try_into()?)
                     }
@@ -118,13 +122,9 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         // send the final response to JS script to futher evaluation.
         if let Ok(resp) = resp {
             if let Some(on_response) = http_filter.on_response_body.as_ref() {
-                let js_response = worker::WorkerResponse::try_from(resp.clone())?;
-                let response_event = worker::Event::Response(js_response);
-                let final_command = worker.call(on_response, response_event).await?;
-
-                match final_command {
-                    Some(worker::Command::Response(w_response)) => Ok(w_response.try_into()?),
-                    _ => Ok(resp),
+                match js_worker.call(on_response, resp.body.clone()).await? {
+                    Some(js_response) => Ok(resp.body(js_response)),
+                    None => Ok(resp),
                 }
             } else {
                 Ok(resp)

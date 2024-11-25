@@ -46,13 +46,14 @@ where
 {
     match io {
         IO::Http { req_template, dl_id, http_filter, .. } => {
-            let worker = &ctx.request_ctx.runtime.cmd_worker;
+            let event_worker = &ctx.request_ctx.runtime.cmd_worker;
+            let js_worker = &ctx.request_ctx.runtime.worker;
             let eval_http = EvalHttp::new(ctx, req_template, dl_id);
             let request = eval_http.init_request()?;
-            let response = match (&worker, http_filter) {
-                (Some(worker), Some(http_filter)) => {
+            let response = match (&event_worker, js_worker, http_filter) {
+                (Some(worker), Some(js_worker), Some(http_filter)) => {
                     eval_http
-                        .execute_with_worker(request, worker, http_filter)
+                        .execute_with_worker(request, worker, js_worker, http_filter)
                         .await?
                 }
                 _ => eval_http.execute(request).await?,
