@@ -184,7 +184,6 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
                     let res = res.clone().body(extracted_value);
                     hashmap.insert(dl_req.clone(), res);
                 }
-                println!("[Finder]: {:#?}", hashmap);
             }
 
             Ok(hashmap)

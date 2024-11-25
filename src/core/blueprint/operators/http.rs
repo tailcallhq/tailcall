@@ -34,12 +34,21 @@ pub fn compile_http(
                 "Only one dynamic key allowed in POST batch request.".to_string(),
             )
             .when(|| {
-                http.method == Method::POST
-                    && !http.batch_key.is_empty()
-                    && http
+                if http.method != Method::POST {
+                    return false;
+                }
+
+                if !http.batch_key.is_empty() {
+                    let is_single_key = http
                         .body
                         .as_ref()
-                        .map_or(true, |b| extract_expression_keys(b).len() == 1)
+                        .map(|b| extract_expression_keys(b).len() == 1)
+                        .unwrap_or_default();
+
+                    return !is_single_key;
+                }
+
+                false
             })
             .trace("body"),
         )
