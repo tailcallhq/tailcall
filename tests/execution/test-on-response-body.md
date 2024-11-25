@@ -2,8 +2,8 @@
 
 ```js @file:test.js
 function onResponse(data) {
-  const body = JSON.parse(data);
-  body.name += " - Changed by JS";
+  const body = JSON.parse(data)
+  body.name += " - Changed by JS"
   return JSON.stringify(body)
 }
 ```

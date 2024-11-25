@@ -8,7 +8,7 @@ function hello(val) {
 }
 
 function onResponse(response) {
-  const parsedValue = JSON.parse(response);
-  parsedValue.name += " - modified by JS";
-  return JSON.stringify(parsedValue);
+  const parsedValue = JSON.parse(response)
+  parsedValue.name += " - modified by JS"
+  return JSON.stringify(parsedValue)
 }

@@ -136,6 +136,12 @@ directive @grpc(
   """
   method: String!
   """
+  Specifies a JavaScript function to be executed after receiving the response body. 
+  This function can modify or transform the response body before it's sent back to 
+  the client.
+  """
+  onResponseBody: String
+  """
   You can use `select` with mustache syntax to re-construct the directives response 
   to the desired format. This is useful when data are deeply nested or want to keep 
   specific fields only from the response.* EXAMPLE 1: if we have a call that returns 
@@ -874,6 +880,12 @@ input Grpc {
   This refers to the gRPC method you're going to call. For instance `GetAllNews`.
   """
   method: String!
+  """
+  Specifies a JavaScript function to be executed after receiving the response body. 
+  This function can modify or transform the response body before it's sent back to 
+  the client.
+  """
+  onResponseBody: String
   """
   You can use `select` with mustache syntax to re-construct the directives response 
   to the desired format. This is useful when data are deeply nested or want to keep 
