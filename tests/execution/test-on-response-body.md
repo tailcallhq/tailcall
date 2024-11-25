@@ -10,12 +10,12 @@ function onResponse({response}) {
 ```
 
 ```graphql @config
-schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") @link(type: Script, src: "test.js") {
+schema @server @link(type: Script, src: "test.js") {
   query: Query
 }
 
 type Query {
-  hello: User! @http(path: "/users/1", onResponseBody: "onResponse")
+  hello: User! @http(url: "https://jsonplaceholder.typicode.com/users/1", onResponseBody: "onResponse")
 }
 
 type User {
