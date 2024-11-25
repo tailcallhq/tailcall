@@ -24,7 +24,7 @@ tracing = "0.1.40"
 lazy_static = "1.4.0"
 serde_json = { version = "1.0.116", features = ["preserve_order"] }
 serde = { version = "1.0.200", features = ["derive"] }
-derive_more = "1.0.0"
+derive_more = { version = "1.0.0", features = ["display", "debug", "from"]}
 thiserror = "1.0.59"
 url = { version = "2.5.0", features = ["serde"] }
 convert_case = "0.6.0"
@@ -170,7 +170,7 @@ path-clean = "=1.0.1"
 pathdiff = "0.2.1"
 num = "0.4.3"
 indenter = "0.3.3"
-derive_more = { version = "1.0.0", workspace = true, features = ["display", "debug", "from"] }
+derive_more = { workspace = true }
 strum = "0.26.2"
 tailcall-valid = { workspace = true }
 dashmap = "6.1.0"
