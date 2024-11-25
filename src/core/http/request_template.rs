@@ -2,8 +2,7 @@ use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
 
 use derive_setters::Setters;
-use hyper::HeaderMap;
-use reqwest::header::HeaderValue;
+use http::header::{HeaderMap, HeaderValue};
 use tailcall_hasher::TailcallHasher;
 use url::Url;
 
@@ -278,7 +277,6 @@ impl<Ctx: PathString + HasHeaders + PathValue> CacheKey<Ctx> for RequestTemplate
 
 /// ValueStringEval parses the mustache template and uses ctx to retrieve the
 /// values for templates.
-
 struct ValueStringEval<A>(std::marker::PhantomData<A>);
 impl<A> Default for ValueStringEval<A> {
     fn default() -> Self {
@@ -309,8 +307,7 @@ mod tests {
     use std::borrow::Cow;
 
     use derive_setters::Setters;
-    use hyper::header::HeaderName;
-    use hyper::HeaderMap;
+    use http::header::{HeaderMap, HeaderName};
     use pretty_assertions::assert_eq;
     use serde_json::json;
 
@@ -346,7 +343,7 @@ mod tests {
     }
 
     impl crate::core::path::PathString for Context {
-        fn path_string<'a, T: AsRef<str>>(&'a self, parts: &'a [T]) -> Option<Cow<'_, str>> {
+        fn path_string<'a, T: AsRef<str>>(&'a self, parts: &'a [T]) -> Option<Cow<'a, str>> {
             self.value.path_string(parts)
         }
     }
@@ -648,7 +645,7 @@ mod tests {
     }
 
     mod endpoint {
-        use hyper::HeaderMap;
+        use http::header::HeaderMap;
         use serde_json::json;
 
         use crate::core::http::request_template::tests::Context;
@@ -845,7 +842,7 @@ mod tests {
     mod cache_key {
         use std::collections::HashSet;
 
-        use hyper::HeaderMap;
+        use http::header::HeaderMap;
         use serde_json::json;
 
         use crate::core::http::request_template::tests::Context;

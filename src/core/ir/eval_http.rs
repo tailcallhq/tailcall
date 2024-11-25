@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use async_graphql::from_value;
 use reqwest::Request;
+use tailcall_valid::Validator;
 
 use super::model::DataLoaderId;
 use super::{EvalContext, ResolverContextLike};
@@ -15,8 +16,26 @@ use crate::core::http::{
 use crate::core::ir::Error;
 use crate::core::js_hooks::JsHooks;
 use crate::core::json::JsonLike;
-use crate::core::valid::Validator;
 use crate::core::{grpc, http, worker, WorkerIO};
+
+pub struct WorkerContext<'a> {
+    pub worker: &'a Arc<dyn WorkerIO<worker::Event, worker::Command>>,
+    pub js_worker:
+        &'a Arc<dyn WorkerIO<async_graphql_value::ConstValue, async_graphql_value::ConstValue>>,
+    pub http_filter: &'a HttpFilter,
+}
+
+impl<'a> WorkerContext<'a> {
+    pub fn new(
+        worker: &'a Arc<dyn WorkerIO<worker::Event, worker::Command>>,
+        js_worker: &'a Arc<
+            dyn WorkerIO<async_graphql_value::ConstValue, async_graphql_value::ConstValue>,
+        >,
+        http_filter: &'a HttpFilter,
+    ) -> Self {
+        Self { worker, js_worker, http_filter }
+    }
+}
 
 ///
 /// Executing a HTTP request is a bit more complex than just sending a request
@@ -78,13 +97,24 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
     }
 
     #[async_recursion::async_recursion]
-    pub async fn execute_with_worker(
+    pub async fn execute_with_worker<'worker: 'async_recursion>(
         &self,
         mut request: reqwest::Request,
-        worker: &Arc<dyn WorkerIO<worker::Event, worker::Command>>,
-        hook: &JsHooks,
+        worker_ctx: WorkerContext<'worker>,
     ) -> Result<Response<async_graphql::Value>, Error> {
-        let command = hook.on_request(worker, &request).await?;
+        // extract variables from the worker context.
+        let http_filter = worker_ctx.http_filter;
+        let worker = worker_ctx.worker;
+        let js_worker = worker_ctx.js_worker;
+
+        let js_request = worker::WorkerRequest::try_from(&request)?;
+        let event = worker::Event::Request(js_request);
+
+        let command = if let Some(on_request) = http_filter.on_request.as_ref() {
+            worker.call(on_request, event).await?
+        } else {
+            None
+        };
 
         let resp = match command {
             Some(command) => match command {
@@ -100,7 +130,7 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
                         request
                             .url_mut()
                             .set_path(w_response.headers()["location"].as_str());
-                        self.execute_with_worker(request, worker, hook).await
+                        self.execute_with_worker(request, worker_ctx).await
                     } else {
                         Ok(w_response.try_into()?)
                     }
@@ -109,7 +139,19 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
             None => self.execute(request).await,
         };
 
-        hook.on_response(worker, resp?).await
+        // send the final response to JS script to futher evaluation.
+        if let Ok(resp) = resp {
+            if let Some(on_response) = http_filter.on_response_body.as_ref() {
+                match js_worker.call(on_response, resp.body.clone()).await? {
+                    Some(js_response) => Ok(resp.body(js_response)),
+                    None => Ok(resp),
+                }
+            } else {
+                Ok(resp)
+            }
+        } else {
+            resp
+        }
     }
 }
 

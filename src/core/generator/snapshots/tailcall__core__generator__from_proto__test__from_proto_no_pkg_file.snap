@@ -6,17 +6,17 @@ schema @server @upstream {
   query: Query
 }
 
-type News {
+type GEN__News {
   body: String
   id: Int
   postImage: String
   title: String
 }
 
-type NewsList {
-  news: [News]
+type GEN__NewsList {
+  news: [GEN__News]
 }
 
 type Query {
-  NewsService__GetAllNews: NewsList @grpc(method: "NewsService.GetAllNews")
+  GEN__NewsService__GetAllNews: GEN__NewsList @grpc(url: "http://localhost:50051", method: "NewsService.GetAllNews")
 }

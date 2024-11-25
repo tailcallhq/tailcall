@@ -2,7 +2,7 @@
 source: tests/cli/gen.rs
 expression: config.to_sdl()
 ---
-schema @server @upstream(allowedHeaders: ["Accept", "Content-Type"], baseURL: "https://jsonplaceholder.typicode.com") {
+schema @server @upstream(allowedHeaders: ["Accept", "Content-Type"]) {
   query: Query
 }
 
@@ -49,17 +49,17 @@ type Post {
 }
 
 type Query {
-  comment(p1: Int!): Comment @http(path: "/comments/{{.args.p1}}")
-  comments: [Comment] @http(path: "/comments")
-  photo(p1: Int!): Photo @http(path: "/photos/{{.args.p1}}")
-  photos: [Photo] @http(path: "/photos")
-  post(p1: Int!): Post @http(path: "/posts/{{.args.p1}}")
-  postComments(postId: Int): [Comment] @http(path: "/comments", query: [{key: "postId", value: "{{.args.postId}}"}])
-  posts: [Post] @http(path: "/posts")
-  todo(p1: Int!): Todo @http(path: "/todos/{{.args.p1}}")
-  todos: [Todo] @http(path: "/todos")
-  user(p1: Int!): User @http(path: "/users/{{.args.p1}}")
-  users: [User] @http(path: "/users")
+  comment(GEN__1: Int!): Comment @http(url: "http://jsonplaceholder.typicode.com/comments/{{.args.GEN__1}}")
+  comments: [Comment] @http(url: "http://jsonplaceholder.typicode.com/comments")
+  photo(GEN__1: Int!): Photo @http(url: "http://jsonplaceholder.typicode.com/photos/{{.args.GEN__1}}")
+  photos: [Photo] @http(url: "http://jsonplaceholder.typicode.com/photos")
+  post(GEN__1: Int!): Post @http(url: "http://jsonplaceholder.typicode.com/posts/{{.args.GEN__1}}")
+  postComments(postId: Int): [Comment] @http(url: "http://jsonplaceholder.typicode.com/comments", query: [{key: "postId", value: "{{.args.postId}}"}])
+  posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts")
+  todo(GEN__1: Int!): Todo @http(url: "http://jsonplaceholder.typicode.com/todos/{{.args.GEN__1}}")
+  todos: [Todo] @http(url: "http://jsonplaceholder.typicode.com/todos")
+  user(GEN__1: Int!): User @http(url: "http://jsonplaceholder.typicode.com/users/{{.args.GEN__1}}")
+  users: [User] @http(url: "http://jsonplaceholder.typicode.com/users")
 }
 
 type Todo {

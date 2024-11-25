@@ -1,18 +1,15 @@
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::net::{AddrParseError, IpAddr};
 use std::str::FromStr;
-use std::sync::Arc;
 use std::time::Duration;
 
 use derive_setters::Setters;
-use hyper::header::{HeaderName, HeaderValue};
-use hyper::HeaderMap;
-use rustls_pki_types::{CertificateDer, PrivateKeyDer};
+use http::header::{HeaderMap, HeaderName, HeaderValue};
+use rustls_pki_types::CertificateDer;
+use tailcall_valid::{Valid, ValidationError, Validator};
 
-use super::Auth;
 use crate::core::blueprint::Cors;
-use crate::core::config::{self, ConfigModule, HttpVersion};
-use crate::core::valid::{Valid, ValidationError, Validator};
+use crate::core::config::{self, ConfigModule, HttpVersion, PrivateKey, Routes};
 
 #[derive(Clone, Debug, Setters)]
 pub struct Server {
@@ -36,8 +33,7 @@ pub struct Server {
     pub script: Option<Script>,
     pub cors: Option<Cors>,
     pub experimental_headers: HashSet<HeaderName>,
-    pub auth: Option<Auth>,
-    pub dedupe: bool,
+    pub routes: Routes,
 }
 
 /// Mimic of mini_v8::Script that's wasm compatible
@@ -52,7 +48,7 @@ pub enum Http {
     HTTP1,
     HTTP2 {
         cert: Vec<CertificateDer<'static>>,
-        key: Arc<PrivateKeyDer<'static>>,
+        key: PrivateKey,
     },
 }
 
@@ -99,14 +95,12 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
 
                 let cert = config_module.extensions().cert.clone();
 
-                let key_file: PrivateKeyDer<'_> = config_module
+                let key = config_module
                     .extensions()
                     .keys
                     .first()
                     .ok_or_else(|| ValidationError::new("Key is required for HTTP2".to_string()))?
-                    .clone_key();
-
-                let key: Arc<PrivateKeyDer<'_>> = Arc::new(key_file);
+                    .clone();
 
                 Valid::succeed(Http::HTTP2 { cert, key })
             }
@@ -128,33 +122,29 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
                     .as_ref()
                     .and_then(|headers| headers.get_cors()),
             ))
-            .fuse(Auth::make(&config_module))
             .map(
-                |(hostname, http, response_headers, script, experimental_headers, cors, auth)| {
-                    Server {
-                        enable_jit: (config_server).enable_jit(),
-                        enable_apollo_tracing: (config_server).enable_apollo_tracing(),
-                        enable_cache_control_header: (config_server).enable_cache_control(),
-                        enable_set_cookie_header: (config_server).enable_set_cookies(),
-                        enable_introspection: (config_server).enable_introspection(),
-                        enable_query_validation: (config_server).enable_query_validation(),
-                        enable_response_validation: (config_server).enable_http_validation(),
-                        enable_batch_requests: (config_server).enable_batch_requests(),
-                        enable_showcase: (config_server).enable_showcase(),
-                        experimental_headers,
-                        global_response_timeout: (config_server).get_global_response_timeout(),
-                        http,
-                        worker: (config_server).get_workers(),
-                        port: (config_server).get_port(),
-                        hostname,
-                        vars: (config_server).get_vars(),
-                        pipeline_flush: (config_server).get_pipeline_flush(),
-                        response_headers,
-                        script,
-                        cors,
-                        auth,
-                        dedupe: config_server.get_dedupe(),
-                    }
+                |(hostname, http, response_headers, script, experimental_headers, cors)| Server {
+                    enable_jit: (config_server).enable_jit(),
+                    enable_apollo_tracing: (config_server).enable_apollo_tracing(),
+                    enable_cache_control_header: (config_server).enable_cache_control(),
+                    enable_set_cookie_header: (config_server).enable_set_cookies(),
+                    enable_introspection: (config_server).enable_introspection(),
+                    enable_query_validation: (config_server).enable_query_validation(),
+                    enable_response_validation: (config_server).enable_http_validation(),
+                    enable_batch_requests: (config_server).enable_batch_requests(),
+                    enable_showcase: (config_server).enable_showcase(),
+                    experimental_headers,
+                    global_response_timeout: (config_server).get_global_response_timeout(),
+                    http,
+                    worker: (config_server).get_workers(),
+                    port: (config_server).get_port(),
+                    hostname,
+                    vars: (config_server).get_vars(),
+                    pipeline_flush: (config_server).get_pipeline_flush(),
+                    response_headers,
+                    script,
+                    cors,
+                    routes: config_server.get_routes(),
                 },
             )
             .to_result()

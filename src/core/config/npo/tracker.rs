@@ -1,7 +1,8 @@
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Display, Formatter};
 
-use super::chunk::Chunk;
+use tailcall_chunk::Chunk;
+
 use crate::core::config::Config;
 
 ///
@@ -33,7 +34,7 @@ impl<'a> From<Chunk<Chunk<FieldName<'a>>>> for QueryPath<'a> {
     }
 }
 
-impl<'a> Display for QueryPath<'a> {
+impl Display for QueryPath<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let query_data: Vec<String> = self
             .0
@@ -109,7 +110,7 @@ pub struct PathTracker<'a> {
 }
 
 impl<'a> PathTracker<'a> {
-    pub fn new(config: &'a Config) -> PathTracker {
+    pub fn new(config: &'a Config) -> PathTracker<'a> {
         PathTracker { config, cache: Default::default() }
     }
 
@@ -125,7 +126,7 @@ impl<'a> PathTracker<'a> {
             return chunks.clone();
         }
 
-        let mut chunks = Chunk::new();
+        let mut chunks = Chunk::default();
         if let Some(type_of) = self.config.find_type(type_name.as_str()) {
             for (name, field) in type_of.fields.iter() {
                 let field_name = FieldName::new(name);
@@ -154,9 +155,9 @@ impl<'a> PathTracker<'a> {
 
     fn find_chunks(&mut self) -> Chunk<Chunk<FieldName<'a>>> {
         match &self.config.schema.query {
-            None => Chunk::new(),
+            None => Chunk::default(),
             Some(query) => self.iter(
-                Chunk::new(),
+                Chunk::default(),
                 TypeName::new(query.as_str()),
                 false,
                 HashSet::new(),

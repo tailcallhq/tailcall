@@ -1,10 +1,10 @@
 use convert_case::{Case, Casing};
+use tailcall_valid::Valid;
 
 use super::http_directive_generator::HttpDirectiveGenerator;
 use crate::core::config::{Arg, Config, Field, GraphQLOperationType, Resolver};
 use crate::core::generator::json::types_generator::TypeGenerator;
-use crate::core::generator::{NameGenerator, RequestSample};
-use crate::core::valid::Valid;
+use crate::core::generator::{NameGenerator, RequestSample, PREFIX};
 use crate::core::{config, Type};
 
 pub struct OperationTypeGenerator;
@@ -39,7 +39,9 @@ impl OperationTypeGenerator {
             let root_ty = TypeGenerator::new(name_generator)
                 .generate_types(&request_sample.req_body, &mut config);
             // add input type to field.
-            let arg_name = format!("{}Input", request_sample.field_name).to_case(Case::Camel);
+            let prefix = format!("{}Input", PREFIX);
+            let arg_name_gen = NameGenerator::new(prefix.as_str());
+            let arg_name = arg_name_gen.next();
             if let Some(Resolver::Http(http)) = &mut field.resolver {
                 http.body = Some(format!("{{{{.args.{}}}}}", arg_name));
                 http.method = request_sample.method.to_owned();
@@ -74,11 +76,12 @@ impl OperationTypeGenerator {
 mod test {
     use std::collections::BTreeMap;
 
+    use tailcall_valid::Validator;
+
     use super::OperationTypeGenerator;
     use crate::core::config::{Config, Field, Type};
     use crate::core::generator::{NameGenerator, RequestSample};
     use crate::core::http::Method;
-    use crate::core::valid::Validator;
 
     #[test]
     fn test_query() {

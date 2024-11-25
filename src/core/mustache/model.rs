@@ -33,6 +33,10 @@ impl Mustache {
         &self.0
     }
 
+    pub fn segments_mut(&mut self) -> &mut Vec<Segment> {
+        &mut self.0
+    }
+
     pub fn expression_segments(&self) -> Vec<&Vec<String>> {
         self.segments()
             .iter()

@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 use derive_more::{DebugCustom, From};
 use reqwest::header::InvalidHeaderValue;
 
@@ -16,17 +14,15 @@ pub enum Error {
 
     #[debug(fmt = "Url Parser Error: {}", _0)]
     UrlParser(url::ParseError),
-}
 
-impl Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Error::Reqwest(error) => write!(f, "Reqwest Error: {}", error),
-            Error::InvalidHeaderValue(error) => write!(f, "Invalid Header Value: {}", error),
-            Error::SerdeJson(error) => write!(f, "Serde JSON Error: {}", error),
-            Error::UrlParser(error) => write!(f, "Url Parser Error: {}", error),
-        }
-    }
+    #[debug(fmt = "PostHog Error: {}", _0)]
+    PostHog(posthog_rs::Error),
+
+    #[debug(fmt = "Tokio Join Error: {}", _0)]
+    TokioJoin(tokio::task::JoinError),
+
+    #[debug(fmt = "IO Error: {}", _0)]
+    IO(std::io::Error),
 }
 
 pub type Result<A> = std::result::Result<A, Error>;

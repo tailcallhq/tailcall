@@ -1,4 +1,4 @@
-use hyper::HeaderMap;
+use http::header::HeaderMap;
 
 use crate::core::ir::{EvalContext, ResolverContextLike};
 
@@ -6,7 +6,7 @@ pub trait HasHeaders {
     fn headers(&self) -> &HeaderMap;
 }
 
-impl<'a, Ctx: ResolverContextLike> HasHeaders for EvalContext<'a, Ctx> {
+impl<Ctx: ResolverContextLike> HasHeaders for EvalContext<'_, Ctx> {
     fn headers(&self) -> &HeaderMap {
         self.headers()
     }

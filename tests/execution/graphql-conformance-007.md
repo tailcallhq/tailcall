@@ -7,15 +7,13 @@ skip: true
 TODO: Skipped because Tailcall does not send the whole query with the **fragments** to the remote server.
 
 ```graphql @config
-schema
-  @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://upstream/graphql", httpCache: 42) {
+schema @server(port: 8001, queryValidation: false, hostname: "0.0.0.0") @upstream(httpCache: 42) {
   query: Query
 }
 
 type Query {
   profiles(handles: [ID!]!): [Profile!]!
-    @graphQL(name: "profiles", args: [{key: "handles", value: "{{.args.handles}}"}])
+    @graphQL(url: "http://upstream/graphql", name: "profiles", args: [{key: "handles", value: "{{.args.handles}}"}])
 }
 
 interface Profile {
@@ -55,12 +53,12 @@ type Counter {
             handle: user-1
             __typename: User
             friends:
-              counter: 2
+              count: 2
           - id: 2
             handle: user-2
             __typename: Page
             likers:
-              counter: 4
+              count: 4
 ```
 
 ```yml @test

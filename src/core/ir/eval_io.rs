@@ -2,7 +2,7 @@ use async_graphql_value::ConstValue;
 
 use super::eval_http::{
     execute_grpc_request_with_dl, execute_raw_grpc_request, execute_raw_request,
-    execute_request_with_dl, parse_graphql_response, set_headers, EvalHttp,
+    execute_request_with_dl, parse_graphql_response, set_headers, EvalHttp, WorkerContext,
 };
 use super::model::{CacheKey, IO};
 use super::{EvalContext, ResolverContextLike};
@@ -20,7 +20,9 @@ where
 {
     // Note: Handled the case separately for performance reasons. It avoids cache
     // key generation when it's not required
-    if !ctx.request_ctx.server.dedupe || !ctx.is_query() {
+    let dedupe = io.dedupe();
+
+    if !dedupe || !ctx.is_query() {
         return eval_io_inner(io, ctx).await;
     }
     if let Some(key) = io.cache_key(ctx) {
@@ -44,12 +46,14 @@ where
 {
     match io {
         IO::Http { req_template, dl_id, hook, .. } => {
-            let worker = &ctx.request_ctx.runtime.cmd_worker;
+            let event_worker = &ctx.request_ctx.runtime.cmd_worker;
+            let js_worker = &ctx.request_ctx.runtime.worker;
             let eval_http = EvalHttp::new(ctx, req_template, dl_id);
             let request = eval_http.init_request()?;
-            let response = match (&worker, hook) {
-                (Some(worker), Some(hook)) => {
-                    eval_http.execute_with_worker(request, worker, hook).await?
+            let response = match (&event_worker, js_worker, hook) {
+                (Some(worker), Some(js_worker), Some(hook)) => {
+                    let worker_ctx = WorkerContext::new(worker, js_worker, hook);
+                    eval_http.execute_with_worker(request, worker_ctx).await?
                 }
                 _ => eval_http.execute(request).await?,
             };

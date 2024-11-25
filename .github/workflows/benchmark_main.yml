@@ -13,7 +13,8 @@ concurrency:
 jobs:
   micro_benchmarks:
     name: Micro Benchmarks
-    runs-on: benchmarking-runner
+    runs-on:
+      group: benchmarking-runner
     steps:
       - name: Check out code
         uses: actions/checkout@v4

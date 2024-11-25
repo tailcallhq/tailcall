@@ -1,0 +1,27 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server(hostname: "0.0.0.0", port: 8001, queryValidation: false) @upstream(httpCache: 42) {
+  query: Query
+}
+
+type Company {
+  catchPhrase: String!
+  name: String!
+}
+
+type Query {
+  userCompany(id: Int!): Company @http(url: "http://upstream/users/{{.args.id}}", select: "{{.company}}")
+  userDetails(id: Int!): UserDetails
+    @http(
+      url: "http://upstream/users/{{.args.id}}"
+      select: {id: "{{.id}}", city: "{{.address.city}}", phone: "{{.phone}}"}
+    )
+}
+
+type UserDetails {
+  city: String!
+  id: Int!
+  phone: String!
+}

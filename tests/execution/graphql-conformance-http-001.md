@@ -1,14 +1,12 @@
 # Basic queries with field ordering check
 
 ```graphql @config
-schema
-  @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://upstream", httpCache: 42) {
+schema @server(port: 8001, queryValidation: false, hostname: "0.0.0.0") @upstream(httpCache: 42) {
   query: Query
 }
 
 type Query {
-  user(id: ID!): User! @http(path: "/user", query: [{key: "id", value: "{{.args.id}}"}])
+  user(id: ID!): User! @http(url: "http://upstream/user", query: [{key: "id", value: "{{.args.id}}"}])
 }
 
 type User {
@@ -86,16 +84,15 @@ type User {
         }
 
 # Negative: missing input
-# TODO: expect error that user.id input is missing
-# - method: POST
-#   url: http://localhost:8080/graphql
-#   body:
-#     query: |
-#       query {
-#         user {
-#           id
-#           name
-#           city
-#         }
-#       }
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: |
+      query {
+        user {
+          id
+          name
+          city
+        }
+      }
 ```

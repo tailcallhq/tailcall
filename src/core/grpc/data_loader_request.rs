@@ -54,8 +54,7 @@ impl DataLoaderRequest {
 mod tests {
     use std::collections::BTreeSet;
 
-    use hyper::header::{HeaderName, HeaderValue};
-    use hyper::HeaderMap;
+    use http::header::{HeaderMap, HeaderName, HeaderValue};
     use pretty_assertions::assert_eq;
     use tailcall_fixtures::protobuf;
     use url::Url;
@@ -73,6 +72,7 @@ mod tests {
             id: None,
             src: test_file.to_string(),
             type_of: LinkType::Protobuf,
+            headers: None,
             meta: None,
         }]);
         let method = GrpcMethod {

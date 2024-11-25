@@ -10,6 +10,6 @@ schema @server @upstream(proxy: {url: "http://localhost:8085"}) {
 }
 
 type Query {
-  hello: String @http(baseURL: "http://localhost:8000", path: "/hello")
+  hello: String @http(url: "http://localhost:8000/hello")
 }
 ```

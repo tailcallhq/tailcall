@@ -1,0 +1,21 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+---
+type DTA {
+  departments: [Department]
+}
+
+enum Department {
+  BLUE
+  ENGINEERING
+  MARKETING
+}
+
+type Query {
+  color: DTA
+}
+
+schema {
+  query: Query
+}

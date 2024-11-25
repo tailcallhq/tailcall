@@ -1,0 +1,11 @@
+---
+source: src/core/config/transformer/subgraph.rs
+expression: keys
+---
+Valid(
+    Ok(
+        Some(
+            "arg { a b }",
+        ),
+    ),
+)

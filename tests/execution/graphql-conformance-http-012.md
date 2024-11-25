@@ -1,14 +1,12 @@
 # Test unions
 
 ```graphql @config
-schema
-  @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://upstream/", httpCache: 42) {
+schema @server(port: 8001, queryValidation: false, hostname: "0.0.0.0") @upstream(httpCache: 42) {
   query: Query
 }
 
 type Query {
-  search: [SearchResult!]! @http(path: "/search")
+  search: [SearchResult!]! @http(url: "http://upstream/search")
 }
 
 union SearchResult = Photo | Person
@@ -43,14 +41,16 @@ type Page {
   response:
     status: 200
     body:
-      - name: Person
-        age: 80
-      - height: 100
-        width: 200
-        meta:
-          iso: 200
-          aparture: 3
-          shutter: 250
+      - Person:
+          name: Person
+          age: 80
+      - Photo:
+          height: 100
+          width: 200
+          meta:
+            iso: 200
+            aparture: 3
+            shutter: 250
 ```
 
 ```yml @test

@@ -1,0 +1,37 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+---
+type Post {
+  id: Int!
+  title: String!
+}
+
+type Query {
+  """
+  Apollo federation Query._entities resolver
+  """
+  _entities(representations: [_Any!]!): [_Entity]!
+  """
+  Apollo federation Query._service resolver
+  """
+  _service: _Service!
+  user(id: Int!): User
+}
+
+type User {
+  id: Int!
+  name: String!
+}
+
+scalar _Any
+
+union _Entity = Post | User
+
+type _Service {
+  sdl: String
+}
+
+schema {
+  query: Query
+}

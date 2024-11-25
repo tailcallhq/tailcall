@@ -1,3 +1,5 @@
+use tailcall_valid::{Valid, ValidationError, Validator};
+
 use crate::core::blueprint::*;
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::{Field, Resolver};
@@ -6,13 +8,15 @@ use crate::core::http::{Method, RequestTemplate};
 use crate::core::ir::model::{IO, IR};
 use crate::core::js_hooks::JsHooks;
 use crate::core::try_fold::TryFold;
-use crate::core::valid::{Valid, ValidationError, Validator};
 use crate::core::{config, helpers, Mustache};
 
 pub fn compile_http(
     config_module: &config::ConfigModule,
     http: &config::Http,
+    is_list: bool,
 ) -> Valid<IR, String> {
+    let dedupe = http.dedupe.unwrap_or_default();
+
     Valid::<(), String>::fail("GroupBy is only supported for GET requests".to_string())
         .when(|| !http.batch_key.is_empty() && http.method != Method::GET)
         .and(
@@ -25,17 +29,9 @@ pub fn compile_http(
                     && !http.batch_key.is_empty()
             }),
         )
-        .and(Valid::from_option(
-            http.base_url
-                .as_ref()
-                .or(config_module.upstream.base_url.as_ref()),
-            "No base URL defined".to_string(),
-        ))
+        .and(Valid::succeed(http.url.as_str()))
         .zip(helpers::headers::to_mustache_headers(&http.headers))
         .and_then(|(base_url, headers)| {
-            let mut base_url = base_url.trim_end_matches('/').to_owned();
-            base_url.push_str(http.path.clone().as_str());
-
             let query = http
                 .query
                 .clone()
@@ -66,11 +62,10 @@ pub fn compile_http(
                 .on_request
                 .clone()
                 .or(config_module.upstream.on_request.clone());
-            let on_response = http.on_response_body.clone();
-
+            let on_response_body = http.on_response_body.clone();
             let hook = JsHooks::new(on_request, on_response).ok();
 
-            if !http.batch_key.is_empty() && http.method == Method::GET {
+            let io = if !http.batch_key.is_empty() && http.method == Method::GET {
                 // Find a query parameter that contains a reference to the {{.value}} key
                 let key = http.query.iter().find_map(|q| {
                     Mustache::parse(&q.value)
@@ -81,12 +76,23 @@ pub fn compile_http(
                     req_template,
                     group_by: Some(GroupBy::new(http.batch_key.clone(), key)),
                     dl_id: None,
+                    is_list,
+                    dedupe,
                     hook,
                 })
             } else {
-                IR::IO(IO::Http { req_template, group_by: None, dl_id: None, hook })
-            }
+                IR::IO(IO::Http {
+                    req_template,
+                    group_by: None,
+                    dl_id: None,
+                    is_list,
+                    dedupe,
+                    hook,
+                })
+            };
+            (io, &http.select)
         })
+        .and_then(apply_select)
 }
 
 pub fn update_http<'a>(
@@ -98,7 +104,7 @@ pub fn update_http<'a>(
                 return Valid::succeed(b_field);
             };
 
-            compile_http(config_module, http)
+            compile_http(config_module, http, field.type_of.is_list())
                 .map(|resolver| b_field.resolver(Some(resolver)))
                 .and_then(|b_field| {
                     b_field

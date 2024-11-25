@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use criterion::{black_box, Criterion};
 use derive_setters::Setters;
-use hyper::HeaderMap;
+use http::header::HeaderMap;
 use serde_json::json;
 use tailcall::core::endpoint::Endpoint;
 use tailcall::core::has_headers::HasHeaders;
@@ -33,7 +33,7 @@ impl PathValue for Context {
 }
 
 impl PathString for Context {
-    fn path_string<'a, T: AsRef<str>>(&'a self, parts: &'a [T]) -> Option<Cow<'_, str>> {
+    fn path_string<'a, T: AsRef<str>>(&'a self, parts: &'a [T]) -> Option<Cow<'a, str>> {
         self.value.path_string(parts)
     }
 }

@@ -6,7 +6,7 @@ schema @server @upstream {
   query: Query
 }
 
-input scalars__ItemInput {
+input GEN__scalars__ItemInput {
   boolean: Boolean
   bytesType: Bytes
   doubleNum: Float
@@ -22,30 +22,30 @@ input scalars__ItemInput {
   str: String
   uinteger32: UInt32
   uinteger64: UInt64
+}
+
+type GEN__scalars__Item {
+  boolean: Boolean
+  bytesType: Bytes
+  doubleNum: Float
+  fixedint32: Int
+  fixedint64: Int64
+  floatNum: Float
+  integer32: Int
+  integer64: Int64
+  sfixedint32: Int
+  sfixedint64: Int64
+  sinteger32: Int
+  sinteger64: Int64
+  str: String
+  uinteger32: UInt32
+  uinteger64: UInt64
+}
+
+type GEN__scalars__Result {
+  result: [GEN__scalars__Item]
 }
 
 type Query {
-  scalars__Example__Get(item: scalars__ItemInput!): scalars__Result @grpc(body: "{{.args.item}}", method: "scalars.Example.Get")
-}
-
-type scalars__Item {
-  boolean: Boolean
-  bytesType: Bytes
-  doubleNum: Float
-  fixedint32: Int
-  fixedint64: Int64
-  floatNum: Float
-  integer32: Int
-  integer64: Int64
-  sfixedint32: Int
-  sfixedint64: Int64
-  sinteger32: Int
-  sinteger64: Int64
-  str: String
-  uinteger32: UInt32
-  uinteger64: UInt64
-}
-
-type scalars__Result {
-  result: [scalars__Item]
+  GEN__scalars__Example__Get(item: GEN__scalars__ItemInput!): GEN__scalars__Result @grpc(url: "http://localhost:50051", body: "{{.args.item}}", method: "scalars.Example.Get")
 }

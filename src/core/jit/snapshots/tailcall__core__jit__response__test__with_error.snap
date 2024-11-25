@@ -1,14 +1,9 @@
 ---
 source: src/core/jit/response.rs
-expression: response.into_async_graphql()
+expression: response
 ---
 Response {
     data: Null,
-    extensions: {},
-    cache_control: CacheControl {
-        public: true,
-        max_age: 0,
-    },
     errors: [
         ServerError {
             message: "internal: non-null types require a return value",
@@ -19,5 +14,9 @@ Response {
             extensions: None,
         },
     ],
-    http_headers: {},
+    extensions: [],
+    cache_control: CacheControl {
+        max_age: 0,
+        public: true,
+    },
 }

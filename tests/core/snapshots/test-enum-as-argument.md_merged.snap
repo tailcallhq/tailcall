@@ -1,0 +1,25 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server @upstream {
+  query: Query
+}
+
+enum Test {
+  A
+  B
+}
+
+type Query {
+  user(id: Int!, test: Test): User
+    @http(
+      url: "http://jsonplaceholder.typicode.com/users/{{.args.id}}"
+      query: [{key: "enum", value: "{{.args.test}}"}]
+    )
+}
+
+type User {
+  id: Int!
+  name: String!
+}

@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod tests {
+    use core::str;
     use std::sync::Arc;
 
     use async_graphql_value::ConstValue;
@@ -7,9 +8,10 @@ mod tests {
     use tailcall::core::blueprint::Blueprint;
     use tailcall::core::config::{Config, ConfigModule};
     use tailcall::core::http::RequestContext;
-    use tailcall::core::jit::{ConstValueExecutor, Error, Request, Response};
+    use tailcall::core::jit::{ConstValueExecutor, Request};
+    use tailcall::core::json::JsonLike;
     use tailcall::core::rest::EndpointSet;
-    use tailcall::core::valid::Validator;
+    use tailcall_valid::Validator;
 
     struct TestExecutor {
         app_ctx: Arc<AppContext>,
@@ -29,13 +31,18 @@ mod tests {
             Ok(Self { app_ctx, req_ctx })
         }
 
-        async fn run(
-            &self,
-            request: Request<ConstValue>,
-        ) -> anyhow::Result<Response<ConstValue, Error>> {
-            let executor = ConstValueExecutor::new(&request, self.app_ctx.clone())?;
+        async fn run(&self, request: Request<ConstValue>) -> anyhow::Result<serde_json::Value> {
+            let executor = ConstValueExecutor::try_new(&request, &self.app_ctx)?;
 
-            Ok(executor.execute(&self.req_ctx, &request).await)
+            let resp = executor
+                .execute(&self.app_ctx, &self.req_ctx, request)
+                .await;
+
+            let resp = Arc::into_inner(resp.body).unwrap();
+
+            let resp = str::from_utf8(&resp)?;
+
+            Ok(serde_json::from_str(resp)?)
         }
     }
 
@@ -45,9 +52,8 @@ mod tests {
         let request = Request::new("query {posts {id title}}");
         let executor = TestExecutor::try_new().await.unwrap();
         let response = executor.run(request).await.unwrap();
-        let data = response.data;
 
-        insta::assert_json_snapshot!(data);
+        insta::assert_json_snapshot!(response);
     }
 
     #[tokio::test]
@@ -56,9 +62,8 @@ mod tests {
         let request = Request::new("query {posts {title userId user {id name blog} }}");
         let executor = TestExecutor::try_new().await.unwrap();
         let response = executor.run(request).await.unwrap();
-        let data = response.data;
 
-        insta::assert_json_snapshot!(data);
+        insta::assert_json_snapshot!(response);
     }
 
     #[tokio::test]
@@ -69,9 +74,8 @@ mod tests {
         );
         let executor = TestExecutor::try_new().await.unwrap();
         let response = executor.run(request).await.unwrap();
-        let data = response.data;
 
-        insta::assert_json_snapshot!(data);
+        insta::assert_json_snapshot!(response);
     }
 
     #[tokio::test]
@@ -96,9 +100,8 @@ mod tests {
         );
         let executor = TestExecutor::try_new().await.unwrap();
         let response = executor.run(request).await.unwrap();
-        let data = response.data;
 
-        insta::assert_json_snapshot!(data);
+        insta::assert_json_snapshot!(response);
     }
 
     #[tokio::test]
@@ -126,9 +129,8 @@ mod tests {
         );
         let executor = TestExecutor::try_new().await.unwrap();
         let response = executor.run(request).await.unwrap();
-        let data = response.data;
 
-        insta::assert_json_snapshot!(data);
+        insta::assert_json_snapshot!(response);
     }
 
     #[tokio::test]
@@ -137,9 +139,8 @@ mod tests {
         let request = Request::new("query {user(id: 1) {id}}");
         let executor = TestExecutor::try_new().await.unwrap();
         let response = executor.run(request).await.unwrap();
-        let data = response.data;
 
-        insta::assert_json_snapshot!(data);
+        insta::assert_json_snapshot!(response);
     }
 
     #[tokio::test]
@@ -148,9 +149,8 @@ mod tests {
         let request = Request::new("query {post {id title}}");
         let executor = TestExecutor::try_new().await.unwrap();
         let response = executor.run(request).await.unwrap();
-        let data = response.data;
 
-        insta::assert_json_snapshot!(data);
+        insta::assert_json_snapshot!(response);
     }
 
     #[tokio::test]
@@ -167,20 +167,53 @@ mod tests {
         let request = Request::new(query);
         let executor = TestExecutor::try_new().await.unwrap();
 
-        match executor.run(request).await {
-            Ok(_) => panic!("Should fail with unresolved variable"),
-            Err(err) => assert_eq!(
-                err.to_string(),
-                "Build error: ResolveInputError: Variable `id` is not defined"
-            ),
-        };
+        let response = executor.run(request).await.unwrap();
+
+        insta::assert_json_snapshot!(response);
 
         let request = Request::new(query);
         let request = request.variables([("id".into(), ConstValue::from(1))]);
         let response = executor.run(request).await.unwrap();
-        let data = response.data;
 
-        insta::assert_json_snapshot!(data);
+        insta::assert_json_snapshot!(response);
+    }
+
+    #[tokio::test]
+    async fn test_operation_plan_cache() {
+        fn get_id_value(data: serde_json::Value) -> Option<i64> {
+            data.get_key("data")
+                .and_then(|v| v.get_key("user"))
+                .and_then(|v| v.get_key("id"))
+                .and_then(|u| u.as_i64())
+        }
+
+        //  NOTE: This test makes a real HTTP call
+        let query = r#"
+            query user($id: Int!) {
+              user(id: $id) {
+                id
+                name
+              }
+            }
+        "#;
+        let request = Request::new(query);
+        let executor = TestExecutor::try_new().await.unwrap();
+
+        let response = executor.run(request).await.unwrap();
+
+        insta::assert_json_snapshot!(response);
+
+        let request = Request::new(query);
+        let request = request.variables([("id".into(), ConstValue::from(1))]);
+        let response = executor.run(request).await.unwrap();
+
+        assert_eq!(get_id_value(response).unwrap(), 1);
+
+        let request = Request::new(query);
+        let request = request.variables([("id".into(), ConstValue::from(2))]);
+        let response = executor.run(request).await.unwrap();
+
+        assert_eq!(get_id_value(response).unwrap(), 2);
     }
 
     #[tokio::test]
@@ -190,9 +223,8 @@ mod tests {
             Request::new("query {user1: user(id: 1) {id name} user2: user(id: 2) {id name}}");
         let executor = TestExecutor::try_new().await.unwrap();
         let response = executor.run(request).await.unwrap();
-        let data = response.data;
 
-        insta::assert_json_snapshot!(data);
+        insta::assert_json_snapshot!(response);
     }
     #[tokio::test]
     async fn test_skip() {
@@ -216,8 +248,7 @@ mod tests {
 
         let executor = TestExecutor::try_new().await.unwrap();
         let response = executor.run(request).await.unwrap();
-        let data = response.data;
 
-        insta::assert_json_snapshot!(data);
+        insta::assert_json_snapshot!(response);
     }
 }

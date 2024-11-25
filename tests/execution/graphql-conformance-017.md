@@ -7,15 +7,13 @@ skip: true
 TODO: Skipped because Tailcall does not send the whole query with the **fragments** to the remote server.
 
 ```graphql @config
-schema
-  @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://upstream/graphql", httpCache: 42) {
+schema @server(port: 8001, queryValidation: false, hostname: "0.0.0.0") @upstream(httpCache: 42) {
   query: Query
 }
 
 type Query {
-  edibleAnimals: EdibleAnimals @graphQL(name: "edibleAnimals")
-  allAnimals: Animal @graphQL(name: "allAnimals")
+  edibleAnimals: [EdibleAnimals] @graphQL(url: "http://upstream/graphql", name: "edibleAnimals")
+  allAnimals: [Animal] @graphQL(url: "http://upstream/graphql", name: "allAnimals")
 }
 
 interface Animal {
@@ -55,6 +53,7 @@ type Cow implements Animal & DomesticAnimal {
   legs: Int!
   sound: String!
   weight: Int!
+  canProduceMilk: Boolean!
 }
 
 type Chicken implements Animal & Bird {
@@ -76,6 +75,7 @@ type Pig implements Animal & DomesticAnimal {
   legs: Int!
   sound: String!
   weight: Int!
+  isForBacon: Boolean!
 }
 
 type Boar implements Animal & WildAnimal {
@@ -83,6 +83,7 @@ type Boar implements Animal & WildAnimal {
   legs: Int!
   sound: String!
   dangerous: Boolean!
+  blackBoar: Boolean!
 }
 
 type Deer implements Animal & WildAnimal {
@@ -90,6 +91,7 @@ type Deer implements Animal & WildAnimal {
   legs: Int!
   sound: String!
   dangerous: Boolean!
+  hasAntlers: Boolean!
 }
 
 type Dog implements Animal & DomesticAnimal & Pet {
@@ -98,6 +100,7 @@ type Dog implements Animal & DomesticAnimal & Pet {
   sound: String!
   weight: Int!
   owner: String!
+  size: Int!
 }
 
 type Cat implements Animal & DomesticAnimal & Pet {
@@ -106,6 +109,7 @@ type Cat implements Animal & DomesticAnimal & Pet {
   sound: String!
   weight: Int!
   owner: String!
+  hasFur: Boolean!
 }
 ```
 
@@ -122,39 +126,36 @@ type Cat implements Animal & DomesticAnimal & Pet {
     status: 200
     body:
       data:
-        allAnimals:
-          - id: cat-1
-            legs: 4
-            sound: meow
-            weight: 2
-            owner: John
-            __typename: Cat
-          - id: dog-2
-            legs: 4
-            sound: woof
-            weight: 2
-            owner: Steve
-            __typename: Dog
-          - id: salmon-1
-            legs: 0
-            sound: ...
-            length: 2
-            __typename: Salmon
-          - id: salmon-2
-            legs: 0
-            sound: ...
-            length: 1
-            __typename: Salmon
-          - id: pig-1
-            legs: 4
-            sound: oik
-            weight: 24
-            __typename: Pig
-          - id: pig-2
-            legs: 4
-            sound: oik
-            weight: 41
-            __typename: Pig
+        - id: cat-1
+          legs: 4
+          sound: meow
+          weight: 2
+          owner: John
+          hasFur: true
+        - id: dog-2
+          legs: 4
+          sound: woof
+          weight: 2
+          owner: Steve
+          size: 12
+        - id: salmon-1
+          legs: 0
+          sound: ...
+          length: 2
+        - id: salmon-2
+          legs: 0
+          sound: ...
+          length: 1
+        - id: pig-1
+          legs: 4
+          sound: oik
+          weight: 24
+          isForBacon: false
+        - id: pig-2
+          legs: 4
+          sound: oik
+          weight: 41
+          isForBacon: true
 - request:
     method: POST
     url: http://upstream/graphql
@@ -167,27 +168,23 @@ type Cat implements Animal & DomesticAnimal & Pet {
     status: 200
     body:
       data:
-        edibleAnimals:
-          - id: salmon-1
-            legs: 0
-            sound: ...
-            length: 2
-            __typename: Salmon
-          - id: salmon-2
-            legs: 0
-            sound: ...
-            length: 1
-            __typename: Salmon
-          - id: pig-1
-            legs: 4
-            sound: oik
-            weight: 24
-            __typename: Pig
-          - id: pig-2
-            legs: 4
-            sound: oik
-            weight: 41
-            __typename: Pig
+        - id: salmon-1
+          legs: 0
+          sound: ...
+          length: 2
+        - id: salmon-2
+          legs: 0
+          sound: ...
+          length: 1
+        - id: pig-1
+          legs: 4
+          sound: oik
+          weight: 24
+        - id: pig-2
+          legs: 4
+          sound: oik
+          weight: 41
+          isForBacon: false
 ```
 
 ```yml @test

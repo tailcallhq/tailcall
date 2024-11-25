@@ -2,7 +2,7 @@
 source: src/core/config/transformer/merge_types/type_merger.rs
 expression: config.to_sdl()
 ---
-schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+schema @server @upstream {
   query: Query
 }
 
@@ -11,12 +11,12 @@ input Far {
   tar: String
 }
 
-input M1 {
+input GEN__M1 {
   tar: String
 }
 
 type Query {
-  bar(input: M1): String @http(path: "/bar")
-  far(input: Far): String @http(path: "/far")
-  foo(input: M1): String @http(path: "/foo")
+  bar(input: GEN__M1): String @http(url: "https://jsonplaceholder.typicode.com/bar")
+  far(input: Far): String @http(url: "https://jsonplaceholder.typicode.com/far")
+  foo(input: GEN__M1): String @http(url: "https://jsonplaceholder.typicode.com/foo")
 }

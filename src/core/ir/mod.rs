@@ -21,10 +21,10 @@ pub use resolver_context_like::{
 /// resolver i.e. fields that don't have their own resolver and are resolved by
 /// the ancestor
 #[derive(Debug, Default, Clone)]
-pub struct RelatedFields(pub HashMap<String, RelatedFields>);
+pub struct RelatedFields(pub HashMap<String, (String, RelatedFields)>);
 
 impl Deref for RelatedFields {
-    type Target = HashMap<String, RelatedFields>;
+    type Target = HashMap<String, (String, RelatedFields)>;
 
     fn deref(&self) -> &Self::Target {
         &self.0

@@ -1,11 +1,13 @@
 use std::fmt::Display;
 use std::sync::Arc;
 
-use async_graphql::{ErrorExtensions, Value as ConstValue};
+use async_graphql::Value as ConstValue;
 use derive_more::From;
 use thiserror::Error;
 
+use crate::core::jit::graphql_error::{Error as ExtensionError, ErrorExtensions};
 use crate::core::{auth, cache, worker, Errata};
+
 #[derive(From, Debug, Error, Clone)]
 pub enum Error {
     IO(String),
@@ -30,6 +32,9 @@ pub enum Error {
     Worker(worker::Error),
 
     Cache(cache::Error),
+
+    #[from(ignore)]
+    Entity(String),
 }
 
 impl Display for Error {
@@ -62,13 +67,14 @@ impl From<Error> for Errata {
             }
             Error::Worker(err) => Errata::new("Worker Error").description(err.to_string()),
             Error::Cache(err) => Errata::new("Cache Error").description(err.to_string()),
+            Error::Entity(message) => Errata::new("Entity Resolver Error").description(message)
         }
     }
 }
 
 impl ErrorExtensions for Error {
-    fn extend(&self) -> async_graphql::Error {
-        async_graphql::Error::new(format!("{}", self)).extend_with(|_err, e| {
+    fn extend(&self) -> ExtensionError {
+        ExtensionError::new(format!("{}", self)).extend_with(|_err, e| {
             if let Error::GRPC {
                 grpc_code,
                 grpc_description,
@@ -85,8 +91,8 @@ impl ErrorExtensions for Error {
     }
 }
 
-impl<'a> From<crate::core::valid::ValidationError<&'a str>> for Error {
-    fn from(value: crate::core::valid::ValidationError<&'a str>) -> Self {
+impl<'a> From<tailcall_valid::ValidationError<&'a str>> for Error {
+    fn from(value: tailcall_valid::ValidationError<&'a str>) -> Self {
         Error::APIValidation(
             value
                 .as_vec()

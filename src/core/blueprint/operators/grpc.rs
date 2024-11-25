@@ -2,7 +2,9 @@ use std::fmt::Display;
 
 use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::FieldDescriptor;
+use tailcall_valid::{Valid, ValidationError, Validator};
 
+use super::apply_select;
 use crate::core::blueprint::FieldDefinition;
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::{Config, ConfigModule, Field, GraphQLOperationType, Grpc, Resolver};
@@ -13,15 +15,10 @@ use crate::core::js_hooks::JsHooks;
 use crate::core::json::JsonSchema;
 use crate::core::mustache::Mustache;
 use crate::core::try_fold::TryFold;
-use crate::core::valid::{Valid, ValidationError, Validator};
 use crate::core::{config, helpers};
 
-fn to_url(grpc: &Grpc, method: &GrpcMethod, config: &Config) -> Valid<Mustache, String> {
-    Valid::from_option(
-        grpc.base_url.as_ref().or(config.upstream.base_url.as_ref()),
-        "No base URL defined".to_string(),
-    )
-    .and_then(|base_url| {
+fn to_url(grpc: &Grpc, method: &GrpcMethod) -> Valid<Mustache, String> {
+    Valid::succeed(grpc.url.as_str()).and_then(|base_url| {
         let mut base_url = base_url.trim_end_matches('/').to_owned();
         base_url.push('/');
         base_url.push_str(format!("{}.{}", method.package, method.service).as_str());
@@ -161,6 +158,7 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
     let field = inputs.field;
     let grpc = inputs.grpc;
     let validate_with_schema = inputs.validate_with_schema;
+    let dedupe = grpc.dedupe.unwrap_or_default();
 
     Valid::from(GrpcMethod::try_from(grpc.method.as_str()))
         .and_then(|method| {
@@ -171,7 +169,7 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
             }
 
             to_operation(&method, file_descriptor_set)
-                .fuse(to_url(grpc, &method, config_module))
+                .fuse(to_url(grpc, &method))
                 .fuse(helpers::headers::to_mustache_headers(&grpc.headers))
                 .fuse(helpers::body::to_body(grpc.body.as_ref()))
                 .into()
@@ -200,17 +198,21 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
             let on_response = grpc.on_response_body.clone();
             let hook = JsHooks::new(None, on_response).ok();
 
-            if !grpc.batch_key.is_empty() {
+            let io = if !grpc.batch_key.is_empty() {
                 IR::IO(IO::Grpc {
                     req_template,
                     group_by: Some(GroupBy::new(grpc.batch_key.clone(), None)),
                     dl_id: None,
-                    hook,
+                    dedupe,
+                    hook
                 })
             } else {
-                IR::IO(IO::Grpc { req_template, group_by: None, dl_id: None, hook })
-            }
+                IR::IO(IO::Grpc { req_template, group_by: None, dl_id: None, dedupe, hook })
+            };
+
+            (io, &grpc.select)
         })
+        .and_then(apply_select)
 }
 
 pub fn update_grpc<'a>(
@@ -244,8 +246,9 @@ pub fn update_grpc<'a>(
 mod tests {
     use std::convert::TryFrom;
 
+    use tailcall_valid::ValidationError;
+
     use super::GrpcMethod;
-    use crate::core::valid::ValidationError;
 
     #[test]
     fn try_from_grpc_method() {

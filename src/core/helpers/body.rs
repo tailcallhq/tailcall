@@ -1,8 +1,8 @@
 use serde_json::Value;
+use tailcall_valid::Valid;
 
 use crate::core::grpc::request_template::RequestBody;
 use crate::core::mustache::Mustache;
-use crate::core::valid::Valid;
 
 pub fn to_body(body: Option<&Value>) -> Valid<Option<RequestBody>, String> {
     let Some(body) = body else {
@@ -13,6 +13,7 @@ pub fn to_body(body: Option<&Value>) -> Valid<Option<RequestBody>, String> {
 
     let value = body.to_string();
     let mustache = Mustache::parse(&value);
+    // TODO: req_body.mustache is always set making req_body.value useless
     req_body = req_body.mustache(Some(mustache));
 
     Valid::succeed(Some(req_body.value(value)))
@@ -20,10 +21,11 @@ pub fn to_body(body: Option<&Value>) -> Valid<Option<RequestBody>, String> {
 
 #[cfg(test)]
 mod tests {
+    use tailcall_valid::Valid;
+
     use super::to_body;
     use crate::core::grpc::request_template::RequestBody;
     use crate::core::mustache::Mustache;
-    use crate::core::valid::Valid;
 
     #[test]
     fn no_body() {

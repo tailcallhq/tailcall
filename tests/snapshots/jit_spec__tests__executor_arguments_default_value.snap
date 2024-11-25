@@ -1,10 +1,13 @@
 ---
 source: tests/jit_spec.rs
-expression: data
+expression: response
+snapshot_kind: text
 ---
 {
-  "post": {
-    "id": 1,
-    "title": "sunt aut facere repellat provident occaecati excepturi optio reprehenderit"
+  "data": {
+    "post": {
+      "id": 1,
+      "title": "sunt aut facere repellat provident occaecati excepturi optio reprehenderit"
+    }
   }
 }

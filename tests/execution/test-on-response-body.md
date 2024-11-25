@@ -1,21 +1,20 @@
 # Js Customize the Response with onResponseBody.
 
 ```js @file:test.js
-function onResponse({response}) {
-  let body = JSON.parse(response.body)
-  body.name = body.name + " - Changed by JS"
-  response.body = JSON.stringify(body)
-  return {response}
+function onResponse(data) {
+  const body = JSON.parse(data)
+  body.name += " - Changed by JS"
+  return JSON.stringify(body)
 }
 ```
 
 ```graphql @config
-schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") @link(type: Script, src: "test.js") {
+schema @server @link(type: Script, src: "test.js") {
   query: Query
 }
 
 type Query {
-  hello: User! @http(path: "/users/1", onResponseBody: "onResponse")
+  hello: User! @http(url: "https://jsonplaceholder.typicode.com/users/1", onResponseBody: "onResponse")
 }
 
 type User {

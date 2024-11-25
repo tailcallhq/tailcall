@@ -9,15 +9,15 @@ use async_graphql::parser::Positioned;
 use async_graphql::Name;
 use async_graphql_value::ConstValue;
 use indexmap::IndexMap;
+use tailcall_valid::{Valid, ValidationError, Validator};
 
-use super::telemetry::Telemetry;
-use super::Alias;
+use super::directive::{to_directive, Directive};
+use super::{Alias, Discriminate, Resolver, Telemetry, FEDERATION_DIRECTIVES};
 use crate::core::config::{
     self, Cache, Config, Enum, Link, Modify, Omit, Protected, RootSchema, Server, Union, Upstream,
     Variant,
 };
 use crate::core::directive::DirectiveCodec;
-use crate::core::valid::{Valid, ValidationError, Validator};
 
 const DEFAULT_SCHEMA_DEFINITION: &SchemaDefinition = &SchemaDefinition {
     extend: false,
@@ -125,7 +125,7 @@ fn links(schema_definition: &SchemaDefinition) -> Valid<Vec<Link>, String> {
 fn telemetry(schema_definition: &SchemaDefinition) -> Valid<Telemetry, String> {
     process_schema_directives(
         schema_definition,
-        config::telemetry::Telemetry::directive_name().as_str(),
+        super::Telemetry::directive_name().as_str(),
     )
 }
 
@@ -188,26 +188,22 @@ fn to_scalar_type() -> config::Type {
 fn to_union_types(
     type_definitions: &[&Positioned<TypeDefinition>],
 ) -> Valid<BTreeMap<String, Union>, String> {
-    Valid::succeed(
-        type_definitions
-            .iter()
-            .filter_map(|type_definition| {
-                let type_name = pos_name_to_string(&type_definition.node.name);
-                let type_opt = match type_definition.node.kind.clone() {
-                    TypeKind::Union(union_type) => to_union(
-                        union_type,
-                        &type_definition
-                            .node
-                            .description
-                            .to_owned()
-                            .map(|pos| pos.node),
-                    ),
-                    _ => return None,
-                };
-                Some((type_name, type_opt))
-            })
-            .collect(),
-    )
+    Valid::from_iter(type_definitions.iter(), |type_definition| {
+        let type_name = pos_name_to_string(&type_definition.node.name);
+        let type_opt = match type_definition.node.kind.clone() {
+            TypeKind::Union(union_type) => to_union(
+                union_type,
+                &type_definition
+                    .node
+                    .description
+                    .to_owned()
+                    .map(|pos| pos.node),
+            ),
+            _ => return Valid::succeed(None),
+        };
+        type_opt.map(|type_opt| Some((type_name, type_opt)))
+    })
+    .map(|values| values.into_iter().flatten().collect())
 }
 
 fn to_enum_types(
@@ -242,15 +238,28 @@ where
     let fields = object.fields();
     let implements = object.implements();
 
-    Cache::from_directives(directives.iter())
+    Resolver::from_directives(directives)
+        .fuse(Cache::from_directives(directives.iter()))
         .fuse(to_fields(fields))
         .fuse(Protected::from_directives(directives.iter()))
-        .map(|(cache, fields, protected)| {
-            let doc = description.to_owned().map(|pos| pos.node);
-            let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
-            let added_fields = to_add_fields_from_directives(directives);
-            config::Type { fields, added_fields, doc, implements, cache, protected }
-        })
+        .fuse(to_add_fields_from_directives(directives))
+        .fuse(to_federation_directives(directives))
+        .map(
+            |(resolver, cache, fields, protected, added_fields, unknown_directives)| {
+                let doc = description.to_owned().map(|pos| pos.node);
+                let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
+                config::Type {
+                    fields,
+                    added_fields,
+                    doc,
+                    implements,
+                    cache,
+                    protected,
+                    resolver,
+                    directives: unknown_directives,
+                }
+            },
+        )
 }
 fn to_input_object(
     input_object_type: InputObjectType,
@@ -325,9 +334,20 @@ where
         .fuse(Omit::from_directives(directives.iter()))
         .fuse(Modify::from_directives(directives.iter()))
         .fuse(Protected::from_directives(directives.iter()))
+        .fuse(Discriminate::from_directives(directives.iter()))
         .fuse(default_value)
+        .fuse(to_federation_directives(directives))
         .map(
-            |(resolver, cache, omit, modify, protected, default_value)| config::Field {
+            |(
+                resolver,
+                cache,
+                omit,
+                modify,
+                protected,
+                discriminate,
+                default_value,
+                directives,
+            )| config::Field {
                 type_of: type_of.into(),
                 args,
                 doc,
@@ -335,8 +355,10 @@ where
                 omit,
                 cache,
                 protected,
+                discriminate,
                 default_value,
                 resolver,
+                directives,
             },
         )
         .trace(pos_name_to_string(field.name()).as_str())
@@ -372,13 +394,14 @@ fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
     config::Arg { type_of: type_of.into(), doc, modify, default_value }
 }
 
-fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {
+fn to_union(union_type: UnionType, doc: &Option<String>) -> Valid<Union, String> {
     let types = union_type
         .members
         .iter()
         .map(|member| member.node.to_string())
         .collect();
-    Union { types, doc: doc.clone() }
+
+    Valid::succeed(Union { types, doc: doc.clone() })
 }
 
 fn to_enum(enum_type: EnumType, doc: Option<String>) -> Valid<Enum, String> {
@@ -400,19 +423,32 @@ fn to_enum(enum_type: EnumType, doc: Option<String>) -> Valid<Enum, String> {
 
 fn to_add_fields_from_directives(
     directives: &[Positioned<ConstDirective>],
-) -> Vec<config::AddField> {
-    directives
-        .iter()
-        .filter_map(|directive| {
-            if directive.node.name.node == config::AddField::directive_name() {
-                config::AddField::from_directive(&directive.node)
-                    .to_result()
-                    .ok()
-            } else {
-                None
-            }
-        })
-        .collect::<Vec<_>>()
+) -> Valid<Vec<config::AddField>, String> {
+    Valid::from_iter(
+        directives
+            .iter()
+            .filter(|v| v.node.name.node == config::AddField::directive_name()),
+        |directive| {
+            let val = config::AddField::from_directive(&directive.node).to_result();
+            Valid::from(val)
+        },
+    )
+}
+
+fn to_federation_directives(
+    directives: &[Positioned<ConstDirective>],
+) -> Valid<Vec<Directive>, String> {
+    Valid::from_iter(directives.iter(), |directive| {
+        if FEDERATION_DIRECTIVES
+            .iter()
+            .any(|&known| known == directive.node.name.node.as_str())
+        {
+            to_directive(directive.node.clone()).map(Some)
+        } else {
+            Valid::succeed(None)
+        }
+    })
+    .map(|directives| directives.into_iter().flatten().collect())
 }
 
 trait HasName {

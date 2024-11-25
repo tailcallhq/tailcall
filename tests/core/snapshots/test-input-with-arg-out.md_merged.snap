@@ -22,9 +22,5 @@ type MyType {
 
 type Query {
   queryTest(filter: StringFilter): [MyType]
-    @graphQL(
-      args: [{key: "filter", value: "{{.args.filter}}"}]
-      baseURL: "http://localhost:8083/mesh"
-      name: "getMyType"
-    )
+    @graphQL(args: [{key: "filter", value: "{{.args.filter}}"}], url: "http://localhost:8083/mesh", name: "getMyType")
 }

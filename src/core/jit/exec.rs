@@ -18,22 +18,22 @@ type SharedStore<Output, Error> = Arc<Mutex<Store<Result<Output, Positioned<Erro
 ///
 /// Default GraphQL executor that takes in a GraphQL Request and produces a
 /// GraphQL Response
-pub struct Executor<IRExec, Input> {
-    ctx: RequestContext<Input>,
+pub struct Executor<'a, IRExec, Input> {
+    ctx: RequestContext<'a, Input>,
     exec: IRExec,
 }
 
-impl<Input, Output, Exec> Executor<Exec, Input>
+impl<'a, Input, Value, Exec> Executor<'a, Exec, Input>
 where
-    Output: for<'b> JsonLike<'b> + Debug + Clone,
+    Value: for<'b> JsonLike<'b> + Debug + Clone + Default,
     Input: Clone + Debug,
-    Exec: IRExecutor<Input = Input, Output = Output, Error = jit::Error>,
+    Exec: IRExecutor<Input = Input, Output = Value, Error = jit::Error>,
 {
-    pub fn new(plan: OperationPlan<Input>, exec: Exec) -> Self {
-        Self { exec, ctx: RequestContext::new(plan.clone()) }
+    pub fn new(plan: &'a OperationPlan<Input>, exec: Exec) -> Self {
+        Self { exec, ctx: RequestContext::new(plan) }
     }
 
-    pub async fn store(&self) -> Store<Result<Output, Positioned<jit::Error>>> {
+    pub async fn store(&self) -> Store<Result<Value, Positioned<jit::Error>>> {
         let store = Arc::new(Mutex::new(Store::new()));
         let mut ctx = ExecutorInner::new(store.clone(), &self.exec, &self.ctx);
         ctx.init().await;
@@ -42,7 +42,10 @@ where
         store
     }
 
-    pub async fn execute(self, synth: Synth<Output>) -> Response<Output, jit::Error> {
+    pub async fn execute<Output>(self, synth: &'a Synth<'a, Value>) -> Response<Output>
+    where
+        Output: JsonLike<'a> + Default,
+    {
         let mut response = Response::new(synth.synthesize());
         response.add_errors(self.ctx.errors().clone());
         response
@@ -53,7 +56,7 @@ where
 struct ExecutorInner<'a, Input, Output, Error, Exec> {
     store: SharedStore<Output, Error>,
     ir_exec: &'a Exec,
-    request: &'a RequestContext<Input>,
+    request: &'a RequestContext<'a, Input>,
 }
 
 impl<'a, Input, Output, Error, Exec> ExecutorInner<'a, Input, Output, Error, Exec>
@@ -71,7 +74,7 @@ where
     }
 
     async fn init(&mut self) {
-        join_all(self.request.plan().as_nested().iter().map(|field| async {
+        join_all(self.request.plan().selection.iter().map(|field| async {
             let ctx = Context::new(field, self.request);
             // TODO: with_args should be called on inside iter_field on any level, not only
             // for root fields

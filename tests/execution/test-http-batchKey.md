@@ -1,14 +1,12 @@
 # Http with args as body
 
 ```graphql @config
-schema
-  @server(port: 8000)
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", batch: {maxSize: 1000, delay: 10}) {
+schema @server(port: 8000) @upstream(batch: {maxSize: 1000, delay: 10}) {
   query: Query
 }
 
 type Query {
-  foos: FooResponse @http(path: "/foo")
+  foos: FooResponse @http(url: "http://jsonplaceholder.typicode.com/foo")
 }
 
 type FooResponse {
@@ -21,7 +19,7 @@ type Foo {
   barId: String!
   bars: [Bar!]!
     @http(
-      path: "/bar"
+      url: "http://jsonplaceholder.typicode.com/bar"
       query: [
         #
         {key: "baz", value: "static_value"}

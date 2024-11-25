@@ -13,7 +13,8 @@ jobs:
   micro_benchmarks_pr_run:
     name: Micro Benchmarks for PR
     if: "${{ contains(github.event.pull_request.labels.*.name, 'ci: benchmark') }}"
-    runs-on: benchmarking-runner
+    runs-on:
+      group: benchmarking-runner
     steps:
       - uses: actions/checkout@v4
       - name: Run Benchmarks

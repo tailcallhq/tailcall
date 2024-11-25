@@ -23,7 +23,7 @@ fn init_env() -> Arc<dyn EnvIO> {
 }
 
 fn init_cache() -> Arc<InMemoryCache<IoId, ConstValue>> {
-    Arc::new(InMemoryCache::new())
+    Arc::new(InMemoryCache::default())
 }
 
 pub fn init_rt() -> TargetRuntime {

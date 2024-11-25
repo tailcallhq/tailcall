@@ -6,45 +6,45 @@ schema @server @upstream {
   query: Query
 }
 
-input news__MultipleNewsId {
-  ids: [news__NewsId]
+input GEN__news__MultipleNewsId {
+  ids: [GEN__news__NewsId]
 }
 
-input news__NewsId {
+input GEN__news__NewsId {
   id: Int
 }
 
-input news__NewsInput {
+input GEN__news__NewsInput {
   body: String
   id: Int
   postImage: String
-  status: news__Status
+  status: GEN__news__Status
   title: String
 }
 
-enum news__Status {
+enum GEN__news__Status {
   DELETED
   DRAFT
   PUBLISHED
 }
 
-type Query {
-  news__NewsService__AddNews(news: news__NewsInput!): news__News @grpc(body: "{{.args.news}}", method: "news.NewsService.AddNews")
-  news__NewsService__DeleteNews(newsId: news__NewsId!): Empty @grpc(body: "{{.args.newsId}}", method: "news.NewsService.DeleteNews")
-  news__NewsService__EditNews(news: news__NewsInput!): news__News @grpc(body: "{{.args.news}}", method: "news.NewsService.EditNews")
-  news__NewsService__GetAllNews: news__NewsList @grpc(method: "news.NewsService.GetAllNews")
-  news__NewsService__GetMultipleNews(multipleNewsId: news__MultipleNewsId!): news__NewsList @grpc(body: "{{.args.multipleNewsId}}", method: "news.NewsService.GetMultipleNews")
-  news__NewsService__GetNews(newsId: news__NewsId!): news__News @grpc(body: "{{.args.newsId}}", method: "news.NewsService.GetNews")
-}
-
-type news__News {
+type GEN__news__News {
   body: String
   id: Int
   postImage: String
-  status: news__Status
+  status: GEN__news__Status
   title: String
 }
 
-type news__NewsList {
-  news: [news__News]
+type GEN__news__NewsList {
+  news: [GEN__news__News]
+}
+
+type Query {
+  GEN__news__NewsService__AddNews(news: GEN__news__NewsInput!): GEN__news__News @grpc(url: "http://localhost:50051", body: "{{.args.news}}", method: "news.NewsService.AddNews")
+  GEN__news__NewsService__DeleteNews(newsId: GEN__news__NewsId!): Empty @grpc(url: "http://localhost:50051", body: "{{.args.newsId}}", method: "news.NewsService.DeleteNews")
+  GEN__news__NewsService__EditNews(news: GEN__news__NewsInput!): GEN__news__News @grpc(url: "http://localhost:50051", body: "{{.args.news}}", method: "news.NewsService.EditNews")
+  GEN__news__NewsService__GetAllNews: GEN__news__NewsList @grpc(url: "http://localhost:50051", method: "news.NewsService.GetAllNews")
+  GEN__news__NewsService__GetMultipleNews(multipleNewsId: GEN__news__MultipleNewsId!): GEN__news__NewsList @grpc(url: "http://localhost:50051", body: "{{.args.multipleNewsId}}", method: "news.NewsService.GetMultipleNews")
+  GEN__news__NewsService__GetNews(newsId: GEN__news__NewsId!): GEN__news__News @grpc(url: "http://localhost:50051", body: "{{.args.newsId}}", method: "news.NewsService.GetNews")
 }
