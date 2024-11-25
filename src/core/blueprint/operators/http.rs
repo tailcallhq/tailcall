@@ -154,7 +154,8 @@ pub fn update_http<'a>(
     )
 }
 
-/// extracts the keys from the json representation, if the value is of mustache template type.
+/// extracts the keys from the json representation, if the value is of mustache
+/// template type.
 fn extract_expression_keys(json: &str) -> Vec<String> {
     let mut keys = Vec::new();
     let re = Regex::new(r#""([^"]+)"\s*:\s*"\{\{.*?\}\}""#).unwrap();

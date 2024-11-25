@@ -4,11 +4,12 @@ expression: errors
 ---
 [
   {
-    "message": "Batching capability enabled on POST request without bodyKey",
+    "message": "Only one dynamic key allowed in POST batch request.",
     "trace": [
       "Query",
       "user",
-      "@http"
+      "@http",
+      "body"
     ],
     "description": null
   }

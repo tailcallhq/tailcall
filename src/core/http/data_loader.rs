@@ -49,11 +49,14 @@ impl HttpDataLoader {
     }
 }
 
-fn get_key<'a>(value: &'a serde_json_borrow::Value<'a>, path: &str) -> anyhow::Result<&'a str> {
+fn get_key<'a, T: JsonLike<'a>>(value: &'a T, path: &str) -> anyhow::Result<&'a str> {
     value
         .get_path(&[path])
         .and_then(|k| k.as_str())
-        .ok_or(anyhow::anyhow!("Unable to find key '{}' in request body.", path))
+        .ok_or(anyhow::anyhow!(
+            "Unable to find key '{}' in request body.",
+            path
+        ))
 }
 
 #[async_trait::async_trait]
@@ -80,8 +83,6 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
             let mut request_to_body_map = HashMap::with_capacity(dl_requests.len());
 
             if dl_requests[0].method() == reqwest::Method::POST {
-                // TODO: what if underlying body isn't encoded with JSON??
-
                 // run only for POST requests.
                 let mut merged_body = Vec::with_capacity(dl_requests.len());
                 for req in dl_requests.iter() {
@@ -101,7 +102,9 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
 
                     // construct serialization manually.
                     let arr = merged_body.iter().fold(
-                        Vec::with_capacity(merged_body.iter().map(|i| i.len()).sum::<usize>() + merged_body.len()),
+                        Vec::with_capacity(
+                            merged_body.iter().map(|i| i.len()).sum::<usize>() + merged_body.len(),
+                        ),
                         |mut acc, item| {
                             if !acc.is_empty() {
                                 acc.extend_from_slice(b",");
@@ -129,7 +132,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
                     .filter(|(key, _)| group_by.key().eq(&key.to_string()))
                     .collect();
                 if !pairs.is_empty() {
-                    // if pair's are empty then don't extend the query params else it ends 
+                    // if pair's are empty then don't extend the query params else it ends
                     // up appending '?' to the url.
                     base_request.url_mut().query_pairs_mut().extend_pairs(pairs);
                 }
