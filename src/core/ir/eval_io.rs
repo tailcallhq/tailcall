@@ -78,7 +78,7 @@ where
         }
         IO::Grpc { req_template, dl_id, hook, .. } => {
             let rendered = req_template.render(ctx)?;
-            let worker = &ctx.request_ctx.runtime.cmd_worker;
+            let worker = &ctx.request_ctx.runtime.worker;
 
             let res = if ctx.request_ctx.upstream.batch.is_some() &&
                     // TODO: share check for operation_type for resolvers

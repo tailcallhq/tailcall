@@ -4,7 +4,7 @@ expression: formatter
 ---
 schema
   @server(port: 8000)
-  @upstream(baseURL: "http://localhost:50051")
+  @upstream
   @link(src: "test.js", type: Script)
   @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
@@ -18,5 +18,11 @@ type News {
 }
 
 type Query {
-  newsById: News! @grpc(body: {id: 2}, method: "news.NewsService.GetNews", onResponseBody: "onResponse")
+  newsById: News!
+    @grpc(
+      url: "http://localhost:50051"
+      body: {id: 2}
+      method: "news.NewsService.GetNews"
+      onResponseBody: "onResponse"
+    )
 }

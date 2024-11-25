@@ -103,14 +103,14 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         worker_ctx: WorkerContext<'worker>,
     ) -> Result<Response<async_graphql::Value>, Error> {
         // extract variables from the worker context.
-        let http_filter = worker_ctx.js_hooks;
+        let js_hooks = worker_ctx.js_hooks;
         let worker = worker_ctx.worker;
         let js_worker = worker_ctx.js_worker;
 
         let js_request = worker::WorkerRequest::try_from(&request)?;
         let event = worker::Event::Request(js_request);
 
-        let command = if let Some(on_request) = http_filter.on_request.as_ref() {
+        let command = if let Some(on_request) = js_hooks.on_request.as_ref() {
             worker.call(on_request, event).await?
         } else {
             None
@@ -141,7 +141,7 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
 
         // send the final response to JS script to futher evaluation.
         if let Ok(resp) = resp {
-            if let Some(on_response) = http_filter.on_response.as_ref() {
+            if let Some(on_response) = js_hooks.on_response.as_ref() {
                 match js_worker.call(on_response, resp.body.clone()).await? {
                     Some(js_response) => Ok(resp.body(js_response)),
                     None => Ok(resp),

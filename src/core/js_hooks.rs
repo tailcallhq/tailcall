@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use super::ir::Error;
-use super::worker::{self, Command, Event, WorkerRequest, WorkerResponse};
 use super::WorkerIO;
 use crate::core::http::Response;
 
@@ -25,34 +24,33 @@ impl JsHooks {
         }
     }
 
-    pub async fn on_request(
-        &self,
-        worker: &Arc<dyn WorkerIO<worker::Event, worker::Command>>,
-        request: &reqwest::Request,
-    ) -> Result<Option<worker::Command>, Error> {
-        match &self.on_request {
-            Some(on_request) => {
-                let js_request = WorkerRequest::try_from(request)?;
-                let event = worker::Event::Request(js_request);
-                worker.call(on_request, event).await.map_err(|e| e.into())
-            }
-            None => Ok(None),
-        }
-    }
+    // pub async fn on_request(
+    //     &self,
+    //     worker: &Arc<dyn WorkerIO<worker::Event, worker::Command>>,
+    //     request: &reqwest::Request,
+    // ) -> Result<Option<worker::Command>, Error> {
+    //     match &self.on_request {
+    //         Some(on_request) => {
+    //             let js_request = WorkerRequest::try_from(request)?;
+    //             let event = worker::Event::Request(js_request);
+    //             worker.call(on_request, event).await.map_err(|e| e.into())
+    //         }
+    //         None => Ok(None),
+    //     }
+    // }
 
     pub async fn on_response(
         &self,
-        worker: &Arc<dyn WorkerIO<worker::Event, worker::Command>>,
+        worker: &Arc<
+            dyn WorkerIO<async_graphql_value::ConstValue, async_graphql_value::ConstValue>,
+        >,
         response: Response<async_graphql::Value>,
     ) -> Result<Response<async_graphql::Value>, Error> {
         if let Some(on_response) = self.on_response.as_ref() {
-            let js_response = WorkerResponse::try_from(response.clone())?;
-            let response_event = Event::Response(js_response);
-            let command = worker.call(on_response, response_event).await?;
-            Ok(match command {
-                Some(Command::Response(w_response)) => w_response.try_into()?,
-                _ => response,
-            })
+            match worker.call(on_response, response.body.clone()).await? {
+                Some(js_response) => Ok(response.body(js_response)),
+                None => Ok(response),
+            }
         } else {
             Ok(response)
         }
