@@ -28,12 +28,7 @@ pub(super) async fn init_command(runtime: TargetRuntime, folder_path: &str) -> R
     match selection {
         Source::GraphQL => {
             // .tailcallrc.graphql
-            confirm_and_write(
-                runtime.clone(),
-                &tailcall_rc.display().to_string(),
-                tailcallrc.as_bytes(),
-            )
-            .await?;
+            runtime.file.write(&tailcall_rc.display().to_string(), tailcallrc.as_bytes()).await?;
 
             // .graphqlrc.yml
             confirm_and_write_yml(runtime.clone(), &graphql_rc).await?;
