@@ -12,7 +12,6 @@ type Post {
 
 type Query {
   posts: [Post]
-  user: [User]
 }
 
 type User {

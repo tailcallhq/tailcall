@@ -22,7 +22,6 @@ type Post {
 
 type Query {
   posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts?id=1", dedupe: true)
-  user: [User] @http(url: "http://jsonplaceholder.typicode.com/users?id=1&id=2", dedupe: true)
 }
 
 type User {
