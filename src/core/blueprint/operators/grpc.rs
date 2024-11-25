@@ -196,7 +196,7 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
                 operation_type: operation_type.clone(),
             };
             let on_response = grpc.on_response_body.clone();
-            let hook = JsHooks::new(None, on_response).ok();
+            let hook = JsHooks::try_new(None, on_response).ok();
 
             let io = if !grpc.batch_key.is_empty() {
                 IR::IO(IO::Grpc {

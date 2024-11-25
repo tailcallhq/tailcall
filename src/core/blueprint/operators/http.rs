@@ -63,7 +63,7 @@ pub fn compile_http(
                 .clone()
                 .or(config_module.upstream.on_request.clone());
             let on_response_body = http.on_response_body.clone();
-            let hook = JsHooks::new(on_request, on_response_body).ok();
+            let hook = JsHooks::try_new(on_request, on_response_body).ok();
 
             let io = if !http.batch_key.is_empty() && http.method == Method::GET {
                 // Find a query parameter that contains a reference to the {{.value}} key

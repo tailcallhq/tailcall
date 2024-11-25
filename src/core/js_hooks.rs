@@ -13,7 +13,7 @@ pub struct JsHooks {
 }
 
 impl JsHooks {
-    pub fn new(
+    pub fn try_new(
         on_request: Option<String>,
         on_response: Option<String>,
     ) -> Result<Self, &'static str> {

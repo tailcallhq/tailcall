@@ -141,14 +141,7 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
 
         // send the final response to JS script to futher evaluation.
         if let Ok(resp) = resp {
-            if let Some(on_response) = js_hooks.on_response.as_ref() {
-                match js_worker.call(on_response, resp.body.clone()).await? {
-                    Some(js_response) => Ok(resp.body(js_response)),
-                    None => Ok(resp),
-                }
-            } else {
-                Ok(resp)
-            }
+            js_hooks.on_response(js_worker, resp).await
         } else {
             resp
         }
