@@ -44,10 +44,6 @@ type Query {
   users: [User] @http(url: "http://jsonplaceholder.typicode.com/users")
 }
 
-type Tar {
-  a: Int
-}
-
 type User {
   email: String!
   id: Int!

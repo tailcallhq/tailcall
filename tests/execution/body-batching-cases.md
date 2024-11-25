@@ -22,18 +22,6 @@ type Foo {
       body: "{\"id\":\"{{.value.a}}\"}"
       batchKey: ["a"]
     )
-  # think about it later.
-  # tar: Tar
-  #   @http(
-  #     url: "http://jsonplaceholder.typicode.com/tar"
-  #     method: POST
-  #     body: "{{.value.b}}"
-  #     batchKey: ["a"]
-  #   )
-}
-
-type Tar {
-  a: Int
 }
 
 type Bar {
@@ -151,17 +139,6 @@ type Post {
         b: 12
       - a: 21
         b: 22
-
-- request:
-    method: POST
-    url: http://jsonplaceholder.typicode.com/tar
-    body: [12, 22]
-  expectedHits: 0
-  response:
-    status: 200
-    body:
-      - a: 12
-      - a: 22
 ```
 
 ```yml @test
@@ -179,8 +156,4 @@ type Post {
   url: http://localhost:8080/graphql
   body:
     query: query { foo { a b bar { a  b } } }
-# - method: POST
-#   url: http://localhost:8080/graphql
-#   body:
-#     query: query { foo { a b tar { a } } }
 ```
