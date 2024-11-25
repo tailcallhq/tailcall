@@ -13,10 +13,14 @@ use crate::core::{config, Type};
 pub(super) async fn init_command(runtime: TargetRuntime, folder_path: &str) -> Result<()> {
     create_directory(folder_path).await?;
 
-    let selection = select_prompt(
-        "Please select the format in which you want to generate the config.",
-        vec![Source::GraphQL, Source::Json, Source::Yml],
-    )?;
+    let detected_configuration_format = detect_configuration_format(folder_path).map(Ok);
+
+    let configuration_format = detected_configuration_format.unwrap_or_else(|| {
+        select_prompt(
+            "Please select the format in which you want to generate the config.",
+            vec![Source::GraphQL, Source::Json, Source::Yml],
+        )
+    })?;
 
     let tailcallrc = include_str!("../../../generated/.tailcallrc.graphql");
     let tailcallrc_json: &str = include_str!("../../../generated/.tailcallrc.schema.json");
@@ -25,10 +29,13 @@ pub(super) async fn init_command(runtime: TargetRuntime, folder_path: &str) -> R
     let tailcall_rc_schema = Path::new(folder_path).join(TAILCALL_RC_SCHEMA);
     let graphql_rc = Path::new(folder_path).join(GRAPHQL_RC);
 
-    match selection {
+    match configuration_format {
         Source::GraphQL => {
             // .tailcallrc.graphql
-            runtime.file.write(&tailcall_rc.display().to_string(), tailcallrc.as_bytes()).await?;
+            runtime
+                .file
+                .write(&tailcall_rc.display().to_string(), tailcallrc.as_bytes())
+                .await?;
 
             // .graphqlrc.yml
             confirm_and_write_yml(runtime.clone(), &graphql_rc).await?;
@@ -36,16 +43,17 @@ pub(super) async fn init_command(runtime: TargetRuntime, folder_path: &str) -> R
 
         Source::Json | Source::Yml => {
             // .tailcallrc.schema.json
-            confirm_and_write(
-                runtime.clone(),
-                &tailcall_rc_schema.display().to_string(),
-                tailcallrc_json.as_bytes(),
-            )
-            .await?;
+            runtime
+                .file
+                .write(
+                    &tailcall_rc_schema.display().to_string(),
+                    tailcallrc_json.as_bytes(),
+                )
+                .await?;
         }
     }
 
-    create_main(runtime.clone(), folder_path, selection).await?;
+    create_main(runtime.clone(), folder_path, configuration_format).await?;
 
     Ok(())
 }
@@ -126,4 +134,25 @@ async fn create_main(
 
     confirm_and_write(runtime.clone(), &path, content.as_bytes()).await?;
     Ok(())
+}
+
+/// Used to detect the configuration format of the tailcallrc file in the given
+/// folder. This is useful in situations where tailcall configuration was
+/// initialized already.
+fn detect_configuration_format(folder_path: impl AsRef<Path>) -> Option<Source> {
+    let folder_path = folder_path.as_ref();
+    let json_path = folder_path.join(".tailcallrc.schema.json");
+    let yaml_path = folder_path.join(".tailcallrc.schema.yaml");
+    let yml_path = folder_path.join(".tailcallrc.schema.yml");
+    let graphql_path = folder_path.join(".tailcallrc.schema.graphql");
+
+    if json_path.exists() {
+        return Some(Source::Json);
+    } else if yaml_path.exists() || yml_path.exists() {
+        return Some(Source::Yml);
+    } else if graphql_path.exists() {
+        return Some(Source::GraphQL);
+    }
+
+    None
 }
