@@ -156,3 +156,45 @@ fn detect_configuration_format(folder_path: impl AsRef<Path>) -> Option<Source> 
 
     None
 }
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+
+    use tempfile::tempdir;
+
+    use super::*;
+
+    #[test]
+    fn test_detect_configuration_format() {
+        let dir = tempdir().unwrap();
+        let dir_path = dir.path();
+
+        // Test JSON configuration detection
+        let json_path = dir_path.join(".tailcallrc.schema.json");
+        fs::write(&json_path, "").unwrap();
+        assert_eq!(detect_configuration_format(dir_path), Some(Source::Json));
+        fs::remove_file(&json_path).unwrap();
+
+        // Test YAML configuration detection
+        let yaml_path = dir_path.join(".tailcallrc.schema.yaml");
+        fs::write(&yaml_path, "").unwrap();
+        assert_eq!(detect_configuration_format(dir_path), Some(Source::Yml));
+        fs::remove_file(&yaml_path).unwrap();
+
+        // Test YML configuration detection
+        let yml_path = dir_path.join(".tailcallrc.schema.yml");
+        fs::write(&yml_path, "").unwrap();
+        assert_eq!(detect_configuration_format(dir_path), Some(Source::Yml));
+        fs::remove_file(&yml_path).unwrap();
+
+        // Test GraphQL configuration detection
+        let graphql_path = dir_path.join(".tailcallrc.schema.graphql");
+        fs::write(&graphql_path, "").unwrap();
+        assert_eq!(detect_configuration_format(dir_path), Some(Source::GraphQL));
+        fs::remove_file(&graphql_path).unwrap();
+
+        // Test no configuration detection
+        assert_eq!(detect_configuration_format(dir_path), None);
+    }
+}
