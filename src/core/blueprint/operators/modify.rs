@@ -6,10 +6,13 @@ use crate::core::config::Field;
 use crate::core::ir::model::IR;
 use crate::core::try_fold::TryFold;
 
-pub fn update_modify<'a>(
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
+pub fn update_modify<'a>() -> TryFold<
+    'a,
+    (&'a ConfigModule, &'a Field, &'a config::Type, &'a str),
+    FieldDefinition,
+    BlueprintError,
+> {
+    TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, BlueprintError>::new(
         |(config, field, type_of, _), mut b_field| {
             if let Some(modify) = field.modify.as_ref() {
                 if let Some(new_name) = &modify.name {
@@ -17,9 +20,9 @@ pub fn update_modify<'a>(
                         let interface = config.find_type(name);
                         if let Some(interface) = interface {
                             if interface.fields.iter().any(|(name, _)| name == new_name) {
-                                return Valid::fail(
+                                return Valid::fail(BlueprintError::Validation(
                                     "Field is already implemented from interface".to_string(),
-                                );
+                                ));
                             }
                         }
                     }

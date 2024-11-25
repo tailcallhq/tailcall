@@ -1,6 +1,6 @@
 use tailcall_valid::{Valid, Validator};
 
-use super::FieldDefinition;
+use super::{BlueprintError, FieldDefinition};
 use crate::core::config::{self, Config};
 use crate::core::ir::model::{IO, IR};
 use crate::core::scalar;
@@ -16,30 +16,35 @@ impl<'a> MustachePartsValidator<'a> {
         Self { type_of, config, field }
     }
 
-    fn validate_type(&self, parts: &[String], is_query: bool) -> Result<(), String> {
+    fn validate_type(&self, parts: &[String], is_query: bool) -> Result<(), BlueprintError> {
         let mut len = parts.len();
         let mut type_of = self.type_of;
         for item in parts {
             let field = type_of.fields.get(item).ok_or_else(|| {
-                format!(
+                BlueprintError::Validation(format!(
                     "no value '{}' found",
                     parts[0..parts.len() - len + 1].join(".").as_str()
-                )
+                ))
             })?;
             let val_type = &field.type_of;
 
             if !is_query && val_type.is_nullable() {
-                return Err(format!("value '{}' is a nullable type", item.as_str()));
+                return Err(BlueprintError::Validation(format!(
+                    "value '{}' is a nullable type",
+                    item.as_str()
+                )));
             } else if len == 1 && !scalar::Scalar::is_predefined(val_type.name()) {
-                return Err(format!("value '{}' is not of a scalar type", item.as_str()));
+                return Err(BlueprintError::Validation(format!(
+                    "value '{}' is not of a scalar type",
+                    item.as_str()
+                )));
             } else if len == 1 {
                 break;
             }
 
-            type_of = self
-                .config
-                .find_type(val_type.name())
-                .ok_or_else(|| format!("no type '{}' found", parts.join(".").as_str()))?;
+            type_of = self.config.find_type(val_type.name()).ok_or_else(|| {
+                BlueprintError::Validation(format!("no type '{}' found", parts.join(".").as_str()))
+            })?;
 
             len -= 1;
         }
@@ -47,12 +52,14 @@ impl<'a> MustachePartsValidator<'a> {
         Ok(())
     }
 
-    fn validate(&self, parts: &[String], is_query: bool) -> Valid<(), String> {
+    fn validate(&self, parts: &[String], is_query: bool) -> Valid<(), BlueprintError> {
         let config = self.config;
         let args = &self.field.args;
 
         if parts.len() < 2 {
-            return Valid::fail("too few parts in template".to_string());
+            return Valid::fail(BlueprintError::Validation(
+                "too few parts in template".to_string(),
+            ));
         }
 
         let head = parts[0].as_str();
@@ -73,20 +80,28 @@ impl<'a> MustachePartsValidator<'a> {
                 // most cases
                 if let Some(arg) = args.iter().find(|arg| arg.name == tail) {
                     if !is_query && arg.of_type.is_list() {
-                        return Valid::fail(format!("can't use list type '{tail}' here"));
+                        return Valid::fail(BlueprintError::Validation(format!(
+                            "can't use list type '{tail}' here"
+                        )));
                     }
 
                     // we can use non-scalar types in args
                     if !is_query && arg.default_value.is_none() && arg.of_type.is_nullable() {
-                        return Valid::fail(format!("argument '{tail}' is a nullable type"));
+                        return Valid::fail(BlueprintError::Validation(format!(
+                            "argument '{tail}' is a nullable type"
+                        )));
                     }
                 } else {
-                    return Valid::fail(format!("no argument '{tail}' found"));
+                    return Valid::fail(BlueprintError::Validation(format!(
+                        "no argument '{tail}' found"
+                    )));
                 }
             }
             "vars" => {
                 if !config.server.vars.iter().any(|vars| vars.key == tail) {
-                    return Valid::fail(format!("var '{tail}' is not set in the server config"));
+                    return Valid::fail(BlueprintError::Validation(format!(
+                        "var '{tail}' is not set in the server config"
+                    )));
                 }
             }
             "headers" | "env" => {
@@ -94,7 +109,9 @@ impl<'a> MustachePartsValidator<'a> {
                 // we can't validate here
             }
             _ => {
-                return Valid::fail(format!("unknown template directive '{head}'"));
+                return Valid::fail(BlueprintError::Validation(format!(
+                    "unknown template directive '{head}'"
+                )));
             }
         }
 
@@ -103,7 +120,11 @@ impl<'a> MustachePartsValidator<'a> {
 }
 
 impl FieldDefinition {
-    pub fn validate_field(&self, type_of: &config::Type, config: &Config) -> Valid<(), String> {
+    pub fn validate_field(
+        &self,
+        type_of: &config::Type,
+        config: &Config,
+    ) -> Valid<(), BlueprintError> {
         // XXX we could use `Mustache`'s `render` method with a mock
         // struct implementing the `PathString` trait encapsulating `validation_map`
         // but `render` simply falls back to the default value for a given

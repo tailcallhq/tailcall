@@ -59,7 +59,10 @@ impl From<Cause<String>> for SDLError {
 async fn is_sdl_error(spec: &ExecutionSpec, config_module: Valid<ConfigModule, String>) -> bool {
     if spec.sdl_error {
         // errors: errors are expected, make sure they match
-        let blueprint = config_module.and_then(|cfg| Valid::from(Blueprint::try_from(&cfg)));
+        let blueprint = config_module.and_then(|cfg| match Blueprint::try_from(&cfg) {
+            Ok(blueprint) => Valid::succeed(blueprint),
+            Err(e) => Valid::fail(e.to_string()),
+        });
 
         match blueprint.to_result() {
             Ok(_) => {

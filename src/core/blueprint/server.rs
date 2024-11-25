@@ -8,6 +8,7 @@ use http::header::{HeaderMap, HeaderName, HeaderValue};
 use rustls_pki_types::CertificateDer;
 use tailcall_valid::{Valid, ValidationError, Validator};
 
+use super::BlueprintError;
 use crate::core::blueprint::Cors;
 use crate::core::config::{self, ConfigModule, HttpVersion, PrivateKey, Routes};
 
@@ -81,7 +82,7 @@ impl Server {
 }
 
 impl TryFrom<crate::core::config::ConfigModule> for Server {
-    type Error = ValidationError<String>;
+    type Error = ValidationError<crate::core::blueprint::BlueprintError>;
 
     fn try_from(config_module: config::ConfigModule) -> Result<Self, Self::Error> {
         let config_server = config_module.server.clone();
@@ -89,8 +90,10 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
         let http_server = match config_server.clone().get_version() {
             HttpVersion::HTTP2 => {
                 if config_module.extensions().cert.is_empty() {
-                    return Valid::fail("Certificate is required for HTTP2".to_string())
-                        .to_result();
+                    return Valid::fail(BlueprintError::Validation(
+                        "Certificate is required for HTTP2".to_owned(),
+                    ))
+                    .to_result();
                 }
 
                 let cert = config_module.extensions().cert.clone();
@@ -99,7 +102,11 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
                     .extensions()
                     .keys
                     .first()
-                    .ok_or_else(|| ValidationError::new("Key is required for HTTP2".to_string()))?
+                    .ok_or_else(|| {
+                        ValidationError::new(BlueprintError::Validation(
+                            "Key is required for HTTP2".to_string(),
+                        ))
+                    })?
                     .clone();
 
                 Valid::succeed(Http::HTTP2 { cert, key })
@@ -151,7 +158,9 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
     }
 }
 
-fn to_script(config_module: &crate::core::config::ConfigModule) -> Valid<Option<Script>, String> {
+fn to_script(
+    config_module: &crate::core::config::ConfigModule,
+) -> Valid<Option<Script>, BlueprintError> {
     config_module.extensions().script.as_ref().map_or_else(
         || Valid::succeed(None),
         |script| {
@@ -168,7 +177,7 @@ fn to_script(config_module: &crate::core::config::ConfigModule) -> Valid<Option<
     )
 }
 
-fn validate_cors(cors: Option<config::cors::Cors>) -> Valid<Option<Cors>, String> {
+fn validate_cors(cors: Option<config::cors::Cors>) -> Valid<Option<Cors>, BlueprintError> {
     Valid::from(cors.map(|cors| cors.try_into()).transpose())
         .trace("cors")
         .trace("headers")
@@ -176,12 +185,15 @@ fn validate_cors(cors: Option<config::cors::Cors>) -> Valid<Option<Cors>, String
         .trace("schema")
 }
 
-fn validate_hostname(hostname: String) -> Valid<IpAddr, String> {
+fn validate_hostname(hostname: String) -> Valid<IpAddr, BlueprintError> {
     if hostname == "localhost" {
         Valid::succeed(IpAddr::from([127, 0, 0, 1]))
     } else {
         Valid::from(hostname.parse().map_err(|e: AddrParseError| {
-            ValidationError::new(format!("Parsing failed because of {}", e))
+            ValidationError::new(BlueprintError::Validation(format!(
+                "Parsing failed because of {}",
+                e
+            )))
         }))
         .trace("hostname")
         .trace("@server")
@@ -189,16 +201,20 @@ fn validate_hostname(hostname: String) -> Valid<IpAddr, String> {
     }
 }
 
-fn handle_response_headers(resp_headers: Vec<(String, String)>) -> Valid<HeaderMap, String> {
+fn handle_response_headers(
+    resp_headers: Vec<(String, String)>,
+) -> Valid<HeaderMap, BlueprintError> {
     Valid::from_iter(resp_headers.iter(), |(k, v)| {
-        let name = Valid::from(
-            HeaderName::from_bytes(k.as_bytes())
-                .map_err(|e| ValidationError::new(format!("Parsing failed because of {}", e))),
-        );
-        let value = Valid::from(
-            HeaderValue::from_str(v.as_str())
-                .map_err(|e| ValidationError::new(format!("Parsing failed because of {}", e))),
-        );
+        let name = match HeaderName::from_bytes(k.as_bytes()) {
+            Ok(name) => Valid::succeed(name),
+            Err(e) => Valid::fail(BlueprintError::InvalidHeaderName(e)),
+        };
+
+        let value = match HeaderValue::from_str(v.as_str()) {
+            Ok(value) => Valid::succeed(value),
+            Err(e) => Valid::fail(BlueprintError::InvalidHeaderValue(e)),
+        };
+
         name.zip(value)
     })
     .map(|headers| headers.into_iter().collect::<HeaderMap>())
@@ -208,18 +224,20 @@ fn handle_response_headers(resp_headers: Vec<(String, String)>) -> Valid<HeaderM
     .trace("schema")
 }
 
-fn handle_experimental_headers(headers: BTreeSet<String>) -> Valid<HashSet<HeaderName>, String> {
+fn handle_experimental_headers(
+    headers: BTreeSet<String>,
+) -> Valid<HashSet<HeaderName>, BlueprintError> {
     Valid::from_iter(headers.iter(), |h| {
         if !h.to_lowercase().starts_with("x-") {
-            Valid::fail(
-                format!(
-                    "Experimental headers must start with 'x-' or 'X-'. Got: '{}'",
-                    h
-                )
-                .to_string(),
-            )
+            Valid::fail(BlueprintError::Validation(format!(
+                "Experimental headers must start with 'x-' or 'X-'. Got: '{}'",
+                h
+            )))
         } else {
-            Valid::from(HeaderName::from_str(h).map_err(|e| ValidationError::new(e.to_string())))
+            match HeaderName::from_str(h) {
+                Ok(name) => Valid::succeed(name),
+                Err(e) => Valid::fail(BlueprintError::InvalidHeaderName(e)),
+            }
         }
     })
     .map(HashSet::from_iter)

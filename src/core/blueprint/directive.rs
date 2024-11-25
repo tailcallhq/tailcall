@@ -5,6 +5,7 @@ use async_graphql::Name;
 use serde_json::Value;
 use tailcall_valid::{Valid, ValidationError, Validator};
 
+use super::BlueprintError;
 use crate::core::{config, pos};
 
 #[derive(Clone, Debug)]
@@ -13,8 +14,8 @@ pub struct Directive {
     pub arguments: HashMap<String, Value>,
 }
 
-pub fn to_directive(const_directive: ConstDirective) -> Valid<Directive, String> {
-    const_directive
+pub fn to_directive(const_directive: ConstDirective) -> Valid<Directive, BlueprintError> {
+    match const_directive
         .arguments
         .into_iter()
         .map(|(k, v)| {
@@ -25,7 +26,10 @@ pub fn to_directive(const_directive: ConstDirective) -> Valid<Directive, String>
         .collect::<Result<_, _>>()
         .map_err(|e| ValidationError::new(e.to_string()))
         .map(|arguments| Directive { name: const_directive.name.node.to_string(), arguments })
-        .into()
+    {
+        Ok(data) => Valid::succeed(data),
+        Err(e) => Valid::fail(BlueprintError::Directive(e)),
+    }
 }
 
 pub fn to_const_directive(directive: &Directive) -> Valid<ConstDirective, String> {

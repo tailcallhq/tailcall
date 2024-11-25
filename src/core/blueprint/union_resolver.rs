@@ -1,5 +1,6 @@
 use tailcall_valid::{Valid, Validator};
 
+use super::BlueprintError;
 use crate::core::blueprint::FieldDefinition;
 use crate::core::config::{ConfigModule, Discriminate, Field, Type, Union};
 use crate::core::ir::model::IR;
@@ -10,19 +11,25 @@ fn compile_union_resolver(
     union_name: &str,
     union_definition: &Union,
     discriminate: &Option<Discriminate>,
-) -> Valid<Discriminator, String> {
+) -> Valid<Discriminator, BlueprintError> {
     let typename_field = discriminate.as_ref().map(|d| d.get_field());
 
-    Discriminator::new(
+    match Discriminator::new(
         union_name.to_string(),
         union_definition.types.clone(),
         typename_field,
     )
+    .to_result()
+    {
+        Ok(discriminator) => Valid::succeed(discriminator),
+        Err(e) => Valid::fail(BlueprintError::Discriminator(e)),
+    }
 }
 
 pub fn update_union_resolver<'a>(
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a Type, &'a str), FieldDefinition, String> {
-    TryFold::<(&ConfigModule, &Field, &Type, &str), FieldDefinition, String>::new(
+) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a Type, &'a str), FieldDefinition, BlueprintError>
+{
+    TryFold::<(&ConfigModule, &Field, &Type, &str), FieldDefinition, BlueprintError>::new(
         |(config, field, _, _), mut b_field| {
             let Some(union_definition) = config.find_union(field.type_of.name()) else {
                 return Valid::succeed(b_field);

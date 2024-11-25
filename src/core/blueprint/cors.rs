@@ -118,7 +118,9 @@ impl Cors {
     }
 }
 
-fn ensure_usable_cors_rules(layer: &Cors) -> Result<(), ValidationError<String>> {
+fn ensure_usable_cors_rules(
+    layer: &Cors,
+) -> Result<(), ValidationError<crate::core::blueprint::BlueprintError>> {
     if layer.allow_credentials {
         let allowing_all_headers = layer
             .allow_headers
@@ -157,14 +159,20 @@ fn ensure_usable_cors_rules(layer: &Cors) -> Result<(), ValidationError<String>>
     Ok(())
 }
 
-fn to_validation_err<T: Display>(err: T) -> ValidationError<String> {
-    ValidationError::new(err.to_string())
+fn to_validation_err<T: Display>(
+    err: T,
+) -> ValidationError<crate::core::blueprint::BlueprintError> {
+    ValidationError::new(crate::core::blueprint::BlueprintError::from(
+        err.to_string(),
+    ))
 }
 
 impl TryFrom<config::cors::Cors> for Cors {
-    type Error = ValidationError<String>;
+    type Error = ValidationError<crate::core::blueprint::BlueprintError>;
 
-    fn try_from(value: config::cors::Cors) -> Result<Self, ValidationError<String>> {
+    fn try_from(
+        value: config::cors::Cors,
+    ) -> Result<Self, ValidationError<crate::core::blueprint::BlueprintError>> {
         let cors = Cors {
             allow_credentials: value.allow_credentials.unwrap_or_default(),
             allow_headers: (!value.allow_headers.is_empty()).then_some(
@@ -192,7 +200,7 @@ impl TryFrom<config::cors::Cors> for Cors {
                 .allow_origins
                 .into_iter()
                 .map(|val| val.parse().map_err(to_validation_err))
-                .collect::<Result<_, ValidationError<String>>>()?,
+                .collect::<Result<_, ValidationError<crate::core::blueprint::BlueprintError>>>()?,
             allow_private_network: value.allow_private_network.unwrap_or_default(),
             expose_headers: Some(
                 value
@@ -206,7 +214,7 @@ impl TryFrom<config::cors::Cors> for Cors {
                 .vary
                 .iter()
                 .map(|val| val.parse().map_err(to_validation_err))
-                .collect::<Result<_, ValidationError<String>>>()?,
+                .collect::<Result<_, ValidationError<crate::core::blueprint::BlueprintError>>>()?,
         };
         ensure_usable_cors_rules(&cors)?;
         Ok(cors)
