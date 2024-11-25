@@ -167,3 +167,72 @@ impl IR {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    mod merge {
+        use serde_json::json;
+
+        use super::*;
+        use crate::core::blueprint::{Blueprint, DynamicValue};
+        use crate::core::http::RequestContext;
+        use crate::core::ir::EmptyResolverContext;
+
+        #[tokio::test]
+        async fn test_const_values() {
+            let a = DynamicValue::Value(
+                ConstValue::from_json(json!({
+                    "a": 1,
+                    "c": {
+                        "ca": false
+                    }
+                }))
+                .unwrap(),
+            );
+
+            let b = DynamicValue::Value(
+                ConstValue::from_json(json!({
+                    "b": 2,
+                    "c": {
+                        "cb": 23
+                    }
+                }))
+                .unwrap(),
+            );
+
+            let c = DynamicValue::Value(
+                ConstValue::from_json(json!({
+                    "c" : {
+                        "ca": true,
+                        "cc": [1, 2]
+                    },
+                    "d": "additional"
+                }))
+                .unwrap(),
+            );
+
+            let ir = IR::Merge([a, b, c].into_iter().map(IR::Dynamic).collect());
+            let runtime = crate::cli::runtime::init(&Blueprint::default());
+            let req_ctx = RequestContext::new(runtime);
+            let res_ctx = EmptyResolverContext {};
+            let mut eval_ctx = EvalContext::new(&req_ctx, &res_ctx);
+
+            let actual = ir.eval(&mut eval_ctx).await.unwrap();
+            let expected = ConstValue::from_json(json!({
+                "a": 1,
+                "b": 2,
+                "c": {
+                    "ca": true,
+                    "cb": 23,
+                    "cc": [1, 2]
+                },
+                "d": "additional"
+            }))
+            .unwrap();
+
+            assert_eq!(actual, expected);
+        }
+    }
+}
