@@ -32,15 +32,18 @@ message NewsId {
 ```
 
 ```graphql @config
-schema
-  @server(port: 8000)
-  @link(type: Script, src: "test.js")
-  @link(id: "news", src: "news.proto", type: Protobuf) {
+schema @server(port: 8000) @link(type: Script, src: "test.js") @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
 }
 
 type Query {
-  newsById: News! @grpc(method: "news.NewsService.GetNews", body: {id: 2}, onResponseBody: "onResponse", url: "http://localhost:50051")
+  newsById: News!
+    @grpc(
+      method: "news.NewsService.GetNews"
+      body: {id: 2}
+      onResponseBody: "onResponse"
+      url: "http://localhost:50051"
+    )
 }
 
 type News {

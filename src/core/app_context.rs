@@ -50,12 +50,7 @@ impl AppContext {
                         expr.modify(&mut |expr| match expr {
                             IR::IO(io) => match io {
                                 IO::Http {
-                                    req_template,
-                                    group_by,
-                                    is_list,
-                                    dedupe,
-                                    hook,
-                                    ..
+                                    req_template, group_by, is_list, dedupe, hook, ..
                                 } => {
                                     let is_list = *is_list;
                                     let dedupe = *dedupe;
