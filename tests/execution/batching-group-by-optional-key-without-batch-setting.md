@@ -1,7 +1,7 @@
 # Batching group by
 
 ```graphql @config
-schema @server(port: 8000, queryValidation: false) @upstream(httpCache: 42, batch: {delay: 1, maxSize: 1000}) {
+schema @server(port: 8000, queryValidation: false) {
   query: Query
 }
 
@@ -44,7 +44,7 @@ type User {
         title: foo
 - request:
     method: GET
-    url: http://jsonplaceholder.typicode.com/users?id&foo=bar&id=1 # query should be id=1&id&foo=bar
+    url: http://jsonplaceholder.typicode.com/users?id=1&id&foo=bar # query should be id=1&id&foo=bar
   response:
     status: 200
     body:

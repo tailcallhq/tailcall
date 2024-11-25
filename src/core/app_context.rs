@@ -4,6 +4,7 @@ use async_graphql::dynamic::{self, DynamicRequest};
 use async_graphql_value::ConstValue;
 use dashmap::DashMap;
 
+use super::data_loader::HttpMerge;
 use super::jit::AnyResponse;
 use crate::core::async_graphql_hyper::OperationId;
 use crate::core::blueprint::{Blueprint, Definition, SchemaModifiers};
@@ -25,6 +26,7 @@ pub struct AppContext {
     pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
     pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
     pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
+    pub http_merge: Arc<HttpMerge>,
     pub endpoints: EndpointSet<Checked>,
     pub dedupe_handler: Arc<DedupeResult<IoId, ConstValue, Error>>,
     pub dedupe_operation_handler: DedupeResult<OperationId, AnyResponse<Vec<u8>>, Error>,
@@ -70,6 +72,7 @@ impl AppContext {
                                         req_template: req_template.clone(),
                                         group_by: group_by.clone(),
                                         dl_id: Some(DataLoaderId::new(http_data_loaders.len())),
+                                        dl_enabled: false,
                                         http_filter: http_filter.clone(),
                                         is_list,
                                         dedupe,
@@ -139,7 +142,7 @@ impl AppContext {
 
         AppContext {
             schema,
-            runtime,
+            runtime: runtime.clone(),
             blueprint,
             http_data_loaders: Arc::new(http_data_loaders),
             gql_data_loaders: Arc::new(gql_data_loaders),
@@ -150,6 +153,7 @@ impl AppContext {
             dedupe_operation_handler: DedupeResult::new(false),
             operation_plans: DashMap::new(),
             const_execution_cache: DashMap::default(),
+            http_merge: Arc::new(HttpMerge::new(runtime)),
         }
     }
 

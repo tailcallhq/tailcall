@@ -1,7 +1,7 @@
-# Batching group by
+# Batching default
 
 ```graphql @config
-schema @server(port: 8000, queryValidation: false) @upstream(httpCache: 42, batch: {delay: 1, maxSize: 1000}) {
+schema @server @upstream(httpCache: 42) {
   query: Query
 }
 
@@ -13,7 +13,7 @@ type Post {
   id: Int
   title: String
   body: String
-  userId: Int
+  userId: Int!
   user: User
     @http(
       url: "http://jsonplaceholder.typicode.com/users"
@@ -35,23 +35,18 @@ type User {
   response:
     status: 200
     body:
-      - body: bar
-        id: 11
-        title: foo
+      - id: 11
         userId: 1
-      - body: bar # no userId for bar
-        id: 3
-        title: foo
+      - id: 3
+        userId: 2
 - request:
     method: GET
-    url: http://jsonplaceholder.typicode.com/users?id&foo=bar&id=1 # query should be id=1&id&foo=bar
+    url: http://jsonplaceholder.typicode.com/users?id=1&id=2&foo=bar
   response:
     status: 200
     body:
       - id: 1
-        name: Leanne Graham
       - id: 2
-        name: Ervin Howell
 ```
 
 ```yml @test

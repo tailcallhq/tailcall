@@ -1,0 +1,34 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "postData": [
+        {
+          "meta": "Data owned by tailcall.",
+          "post": {
+            "id": 1,
+            "user": {
+              "id": 1
+            }
+          }
+        },
+        {
+          "meta": "Data owned by tailcall.",
+          "post": {
+            "id": 2,
+            "user": {
+              "id": 2
+            }
+          }
+        }
+      ]
+    }
+  }
+}
