@@ -127,16 +127,14 @@ impl Deref for Resolvers {
     }
 }
 
-// Custom implementation for MergeRight in order
-// to provide compatibility with old tests where
-// the same resolver could be defined in multiple configs
-// leading to duplicated resolver in such tests
 impl MergeRight for Resolvers {
-    fn merge_right(self, other: Self) -> Self {
-        if other.is_empty() {
-            self
-        } else {
-            other
+    fn merge_right(mut self, other: Self) -> Self {
+        for resolver in other.0.into_iter() {
+            if !self.0.contains(&resolver) {
+                self.0.push(resolver);
+            }
         }
+
+        self
     }
 }
