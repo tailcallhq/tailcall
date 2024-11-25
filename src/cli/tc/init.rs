@@ -110,6 +110,17 @@ async fn create_main(
     folder_path: impl AsRef<Path>,
     source: Source,
 ) -> Result<()> {
+    let path = folder_path
+        .as_ref()
+        .join(format!("main.{}", source.ext()))
+        .display()
+        .to_string();
+
+    // check if the main file already exists and skip creation
+    if std::fs::metadata(&path).is_ok() {
+        return Ok(());
+    }
+
     let config = main_config();
 
     let content = match source {
@@ -117,12 +128,6 @@ async fn create_main(
         Source::Json => config.to_json(true)?,
         Source::Yml => config.to_yaml()?,
     };
-
-    let path = folder_path
-        .as_ref()
-        .join(format!("main.{}", source.ext()))
-        .display()
-        .to_string();
 
     confirm_and_write(runtime.clone(), &path, content.as_bytes()).await?;
     Ok(())
