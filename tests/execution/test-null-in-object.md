@@ -6,7 +6,7 @@ schema @server {
 }
 
 type Query {
-  hi(id: ID!): Company @http(baseURL: "http://localhost:3000", path: "/hi")
+  hi(id: ID!): Company @http(url: "http://localhost:3000/hi")
 }
 type Company {
   name: String

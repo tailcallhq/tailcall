@@ -55,25 +55,9 @@ fn not_found() -> Result<Response<Body>> {
 }
 
 fn create_request_context(req: &Request<Body>, app_ctx: &AppContext) -> RequestContext {
-    let upstream = app_ctx.blueprint.upstream.clone();
-    let allowed = upstream.allowed_headers;
-    let allowed_headers = create_allowed_headers(req.headers(), &allowed);
-
-    let _allowed = app_ctx.blueprint.server.get_experimental_headers();
+    let allowed_headers =
+        create_allowed_headers(req.headers(), &app_ctx.blueprint.upstream.allowed_headers);
     RequestContext::from(app_ctx).allowed_headers(allowed_headers)
-}
-
-fn update_cache_control_header(
-    response: GraphQLResponse,
-    app_ctx: &AppContext,
-    req_ctx: Arc<RequestContext>,
-) -> GraphQLResponse {
-    if app_ctx.blueprint.server.enable_cache_control_header {
-        let ttl = req_ctx.get_min_max_age().unwrap_or(0);
-        let cache_public_flag = req_ctx.is_cache_public().unwrap_or(true);
-        return response.set_cache_control(ttl, cache_public_flag);
-    }
-    response
 }
 
 pub fn update_response_headers(
@@ -132,32 +116,40 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
 async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
     app_ctx: &Arc<AppContext>,
     req_ctx: &Arc<RequestContext>,
-    mut request: T,
+    request: T,
     req: Parts,
 ) -> anyhow::Result<Response<Body>> {
     let mut response = if app_ctx.blueprint.server.enable_jit {
-        let is_query = request.is_query();
         let operation_id = request.operation_id(&req.headers);
+        let exec = JITExecutor::new(app_ctx.clone(), req_ctx.clone(), operation_id);
         request
-            .execute(&JITExecutor::new(
-                app_ctx.clone(),
-                req_ctx.clone(),
-                is_query,
-                operation_id,
-            ))
+            .execute_with_jit(exec)
             .await
+            .set_cache_control(
+                app_ctx.blueprint.server.enable_cache_control_header,
+                req_ctx.get_min_max_age().unwrap_or(0),
+                req_ctx.is_cache_public().unwrap_or(true),
+            )
+            .into_response()?
     } else {
-        request.data(req_ctx.clone()).execute(&app_ctx.schema).await
+        request
+            .data(req_ctx.clone())
+            .execute(&app_ctx.schema)
+            .await
+            .set_cache_control(
+                app_ctx.blueprint.server.enable_cache_control_header,
+                req_ctx.get_min_max_age().unwrap_or(0),
+                req_ctx.is_cache_public().unwrap_or(true),
+            )
+            .into_response()?
     };
-    response = update_cache_control_header(response, app_ctx, req_ctx.clone());
 
-    let mut resp = response.into_response()?;
-    update_response_headers(&mut resp, req_ctx, app_ctx);
-    Ok(resp)
+    update_response_headers(&mut response, req_ctx, app_ctx);
+    Ok(response)
 }
 
 fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> HeaderMap {
-    let mut new_headers = HeaderMap::new();
+    let mut new_headers = HeaderMap::with_capacity(allowed.len());
     for (k, v) in headers.iter() {
         if allowed
             .iter()
@@ -276,11 +268,15 @@ async fn handle_rest_apis(
             let mut response = graphql_request
                 .data(req_ctx.clone())
                 .execute(&app_ctx.schema)
-                .await;
-            response = update_cache_control_header(response, app_ctx.as_ref(), req_ctx.clone());
-            let mut resp = response.into_rest_response()?;
-            update_response_headers(&mut resp, &req_ctx, &app_ctx);
-            Ok(resp)
+                .await
+                .set_cache_control(
+                    app_ctx.blueprint.server.enable_cache_control_header,
+                    req_ctx.get_min_max_age().unwrap_or(0),
+                    req_ctx.is_cache_public().unwrap_or(true),
+                )
+                .into_rest_response()?;
+            update_response_headers(&mut response, &req_ctx, &app_ctx);
+            Ok(response)
         }
         .instrument(span)
         .await;
@@ -381,13 +377,14 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
 
 #[cfg(test)]
 mod test {
+    use tailcall_valid::Validator;
+
     use super::*;
     use crate::core::async_graphql_hyper::GraphQLRequest;
     use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule, Routes};
     use crate::core::rest::EndpointSet;
     use crate::core::runtime::test::init;
-    use crate::core::valid::Validator;
 
     #[tokio::test]
     async fn test_health_endpoint() -> anyhow::Result<()> {

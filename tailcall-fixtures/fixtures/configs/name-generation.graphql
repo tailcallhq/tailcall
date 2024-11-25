@@ -1,4 +1,4 @@
-schema @server(port: 8000, hostname: "0.0.0.0") @upstream(baseURL: "http://example.typicode.com", httpCache: 42) {
+schema @server(port: 8000, hostname: "0.0.0.0") @upstream(httpCache: 42) {
   query: Query
 }
 type T3 {
@@ -17,5 +17,5 @@ type T1 {
 }
 
 type Query {
-  f1: T1 @http(path: "/colors")
+  f1: T1 @http(url: "http://example.typicode.com/colors")
 }

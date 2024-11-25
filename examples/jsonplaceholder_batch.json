@@ -3,7 +3,6 @@
     "port": 8000
   },
   "upstream": {
-    "baseURL": "http://jsonplaceholder.typicode.com",
     "httpCache": 42,
     "batch": {
       "maxSize": 1000,
@@ -40,7 +39,7 @@
             "name": "User"
           },
           "http": {
-            "path": "/users",
+            "url": "http://jsonplaceholder.typicode.com/users",
             "query": [
               {
                 "key": "id",
@@ -67,7 +66,7 @@
             }
           },
           "http": {
-            "path": "/posts"
+            "url": "http://jsonplaceholder.typicode.com/posts"
           }
         }
       }

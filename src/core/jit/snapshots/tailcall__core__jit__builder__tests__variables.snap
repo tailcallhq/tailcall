@@ -1,6 +1,6 @@
 ---
 source: src/core/jit/builder.rs
-expression: plan.into_nested()
+expression: plan.selection
 ---
 [
     Field {
@@ -18,39 +18,37 @@ expression: plan.into_nested()
                 name: "id",
                 type_of: ID!,
                 value: Some(
-                    Number(
-                        Number(1),
+                    Variable(
+                        Name(
+                            "id",
+                        ),
                     ),
                 ),
                 default_value: None,
             },
         ],
-        extensions: Some(
-            Nested(
-                [
-                    Field {
-                        id: 1,
-                        name: "id",
-                        output_name: "id",
-                        type_of: ID!,
-                        type_condition: Some(
-                            "User",
-                        ),
-                        directives: [],
-                    },
-                    Field {
-                        id: 2,
-                        name: "name",
-                        output_name: "name",
-                        type_of: String!,
-                        type_condition: Some(
-                            "User",
-                        ),
-                        directives: [],
-                    },
-                ],
-            ),
-        ),
+        selection: [
+            Field {
+                id: 1,
+                name: "id",
+                output_name: "id",
+                type_of: ID!,
+                type_condition: Some(
+                    "User",
+                ),
+                directives: [],
+            },
+            Field {
+                id: 2,
+                name: "name",
+                output_name: "name",
+                type_of: String!,
+                type_condition: Some(
+                    "User",
+                ),
+                directives: [],
+            },
+        ],
         directives: [],
     },
 ]

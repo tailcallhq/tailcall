@@ -1,7 +1,7 @@
 # Test merge input
 
 ```graphql @config
-schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+schema @server {
   query: Query
 }
 
@@ -11,12 +11,12 @@ input Test {
 }
 
 type Query {
-  foo(x: Test): Boolean @http(path: "/foo")
+  foo(x: Test): Boolean @http(url: "http://jsonplaceholder.typicode.com/foo")
 }
 ```
 
 ```graphql @config
-schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+schema @server {
   query: Query
 }
 
@@ -26,6 +26,6 @@ input Test {
 }
 
 type Query {
-  foo(x: Test): Boolean @http(path: "/foo")
+  foo(x: Test): Boolean @http(url: "http://jsonplaceholder.typicode.com/foo")
 }
 ```

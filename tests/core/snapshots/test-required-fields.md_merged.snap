@@ -2,7 +2,7 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema @server(enableJIT: true) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @server(enableJIT: true) @upstream {
   query: Query
 }
 
@@ -12,26 +12,26 @@ type Foo {
 }
 
 type Query {
-  basicFieldMissing: Foo! @http(path: "/basic-field-missing")
-  basicMissing: Foo! @http(path: "/basic-missing")
-  basicPresent: Foo! @http(path: "/basic-present")
-  fullEntryMissing: [Foo!]! @http(path: "/full-entry-missing")
-  fullFieldMissing: [Foo!]! @http(path: "/full-field-missing")
-  fullMissing: [Foo!]! @http(path: "/full-missing")
-  fullPresent: [Foo!]! @http(path: "/full-present")
-  innerEntryMissing: [Foo!] @http(path: "/inner-entry-missing")
-  innerFieldMissing: [Foo!] @http(path: "/inner-field-missing")
-  innerMissing: [Foo!] @http(path: "/inner-missing")
-  innerPresent: [Foo!] @http(path: "/inner-present")
-  noneEntryMissing: [Foo] @http(path: "/none-entry-missing")
-  noneFieldMissing: [Foo] @http(path: "/none-field-missing")
-  noneMissing: [Foo] @http(path: "/none-missing")
-  nonePresent: [Foo] @http(path: "/none-present")
-  outerEntryMissing: [Foo]! @http(path: "/outer-entry-missing")
-  outerFieldMissing: [Foo]! @http(path: "/outer-field-missing")
-  outerMissing: [Foo]! @http(path: "/outer-missing")
-  outerPresent: [Foo]! @http(path: "/outer-present")
-  relaxedFieldMissing: Foo @http(path: "/relaxed-field-missing")
-  relaxedMissing: Foo @http(path: "/relaxed-missing")
-  relaxedPresent: Foo @http(path: "/relaxed-present")
+  basicFieldMissing: Foo! @http(url: "http://jsonplaceholder.typicode.com/basic-field-missing")
+  basicMissing: Foo! @http(url: "http://jsonplaceholder.typicode.com/basic-missing")
+  basicPresent: Foo! @http(url: "http://jsonplaceholder.typicode.com/basic-present")
+  fullEntryMissing: [Foo!]! @http(url: "http://jsonplaceholder.typicode.com/full-entry-missing")
+  fullFieldMissing: [Foo!]! @http(url: "http://jsonplaceholder.typicode.com/full-field-missing")
+  fullMissing: [Foo!]! @http(url: "http://jsonplaceholder.typicode.com/full-missing")
+  fullPresent: [Foo!]! @http(url: "http://jsonplaceholder.typicode.com/full-present")
+  innerEntryMissing: [Foo!] @http(url: "http://jsonplaceholder.typicode.com/inner-entry-missing")
+  innerFieldMissing: [Foo!] @http(url: "http://jsonplaceholder.typicode.com/inner-field-missing")
+  innerMissing: [Foo!] @http(url: "http://jsonplaceholder.typicode.com/inner-missing")
+  innerPresent: [Foo!] @http(url: "http://jsonplaceholder.typicode.com/inner-present")
+  noneEntryMissing: [Foo] @http(url: "http://jsonplaceholder.typicode.com/none-entry-missing")
+  noneFieldMissing: [Foo] @http(url: "http://jsonplaceholder.typicode.com/none-field-missing")
+  noneMissing: [Foo] @http(url: "http://jsonplaceholder.typicode.com/none-missing")
+  nonePresent: [Foo] @http(url: "http://jsonplaceholder.typicode.com/none-present")
+  outerEntryMissing: [Foo]! @http(url: "http://jsonplaceholder.typicode.com/outer-entry-missing")
+  outerFieldMissing: [Foo]! @http(url: "http://jsonplaceholder.typicode.com/outer-field-missing")
+  outerMissing: [Foo]! @http(url: "http://jsonplaceholder.typicode.com/outer-missing")
+  outerPresent: [Foo]! @http(url: "http://jsonplaceholder.typicode.com/outer-present")
+  relaxedFieldMissing: Foo @http(url: "http://jsonplaceholder.typicode.com/relaxed-field-missing")
+  relaxedMissing: Foo @http(url: "http://jsonplaceholder.typicode.com/relaxed-missing")
+  relaxedPresent: Foo @http(url: "http://jsonplaceholder.typicode.com/relaxed-present")
 }

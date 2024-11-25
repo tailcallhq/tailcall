@@ -7,12 +7,12 @@ use derive_setters::Setters;
 use path_clean::PathClean;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use tailcall_valid::{Valid, ValidateFrom, Validator};
 use url::Url;
 
 use crate::core::config::transformer::Preset;
 use crate::core::config::{self};
 use crate::core::http::Method;
-use crate::core::valid::{Valid, ValidateFrom, Validator};
 
 #[derive(Deserialize, Serialize, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]
@@ -43,8 +43,6 @@ pub struct LLMConfig {
 #[serde(deny_unknown_fields)]
 pub struct PresetConfig {
     pub merge_type: Option<f32>,
-    #[serde(rename = "consolidateURL")]
-    pub consolidate_url: Option<f32>,
     pub infer_type_names: Option<bool>,
     pub tree_shake: Option<bool>,
     pub unwrap_single_field_types: Option<bool>,
@@ -85,6 +83,7 @@ pub enum Source<Status = UnResolved> {
     },
     Proto {
         src: Location<Status>,
+        url: String,
     },
     Config {
         src: Location<Status>,
@@ -134,10 +133,6 @@ impl ValidateFrom<PresetConfig> for Preset {
             preset = preset.merge_type(merge_type);
         }
 
-        if let Some(consolidate_url) = config.consolidate_url {
-            preset = preset.consolidate_url(consolidate_url);
-        }
-
         if let Some(use_better_names) = config.infer_type_names {
             preset = preset.infer_type_names(use_better_names);
         }
@@ -154,10 +149,8 @@ impl ValidateFrom<PresetConfig> for Preset {
         Valid::succeed(preset)
             .and_then(|preset| {
                 let merge_types_th = between(preset.merge_type, 0.0, 1.0).trace("mergeType");
-                let consolidate_url_th =
-                    between(preset.consolidate_url, 0.0, 1.0).trace("consolidateURL");
 
-                merge_types_th.and(consolidate_url_th).map_to(preset)
+                merge_types_th.map_to(preset)
             })
             .trace("preset")
     }
@@ -224,9 +217,9 @@ impl Source<UnResolved> {
                     is_mutation,
                 })
             }
-            Source::Proto { src } => {
+            Source::Proto { src, url } => {
                 let resolved_path = src.into_resolved(parent_dir);
-                Ok(Source::Proto { src: resolved_path })
+                Ok(Source::Proto { src: resolved_path, url })
             }
             Source::Config { src } => {
                 let resolved_path = src.into_resolved(parent_dir);
@@ -275,9 +268,9 @@ mod tests {
     use std::collections::HashMap;
 
     use pretty_assertions::assert_eq;
+    use tailcall_valid::{ValidateInto, ValidationError, Validator};
 
     use super::*;
-    use crate::core::valid::{ValidateInto, ValidationError, Validator};
 
     fn location<S: AsRef<str>>(s: S) -> Location<UnResolved> {
         Location(s.as_ref().to_string(), PhantomData)
@@ -337,7 +330,6 @@ mod tests {
             tree_shake: None,
             infer_type_names: None,
             merge_type: Some(2.0),
-            consolidate_url: None,
             unwrap_single_field_types: None,
         };
 
@@ -352,14 +344,12 @@ mod tests {
             tree_shake: Some(true),
             infer_type_names: Some(true),
             merge_type: Some(0.5),
-            consolidate_url: Some(1.0),
             unwrap_single_field_types: None,
         };
         let transform_preset: Preset = config_preset.validate_into().to_result().unwrap();
         let expected_preset = Preset::new()
             .infer_type_names(true)
             .tree_shake(true)
-            .consolidate_url(1.0)
             .merge_type(0.5);
         assert_eq!(transform_preset, expected_preset);
     }
@@ -431,12 +421,11 @@ mod tests {
     fn test_raise_error_unknown_field_in_preset() {
         let json = r#"
             {"preset": {
-                "mergeTypes": 1.0,
-                "consolidateURL": 0.5
-            }} 
+                "mergeTypes": 1.0
+            }}
         "#;
         let expected_error =
-            "unknown field `mergeTypes`, expected one of `mergeType`, `consolidateURL`, `inferTypeNames`, `treeShake`, `unwrapSingleFieldTypes` at line 3 column 28";
+            "unknown field `mergeTypes`, expected one of `mergeType`, `inferTypeNames`, `treeShake`, `unwrapSingleFieldTypes` at line 3 column 28";
         assert_deserialization_error(json, expected_error);
     }
 

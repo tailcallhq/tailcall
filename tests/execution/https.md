@@ -3,9 +3,6 @@
 ```json @config
 {
   "server": {},
-  "upstream": {
-    "baseURL": "https://jsonplaceholder.typicode.com"
-  },
   "schema": {
     "query": "Query"
   },
@@ -17,8 +14,7 @@
             "name": "User"
           },
           "http": {
-            "path": "/users/1",
-            "baseURL": "https://jsonplaceholder.typicode.com"
+            "url": "http://jsonplaceholder.typicode.com/users/1"
           },
           "cache": null
         }
@@ -49,7 +45,7 @@
 ```yml @mock
 - request:
     method: GET
-    url: https://jsonplaceholder.typicode.com/users/1
+    url: http://jsonplaceholder.typicode.com/users/1
   response:
     status: 200
     body:

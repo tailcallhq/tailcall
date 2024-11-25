@@ -67,11 +67,6 @@ directive @graphQL(
   """
   args: [KeyValue]
   """
-  This refers to the base URL of the API. If not specified, the default base URL is 
-  the one specified in the `@upstream` operator.
-  """
-  baseURL: String
-  """
   If the upstream GraphQL server supports request batching, you can specify the 'batch' 
   argument to batch several requests into a single batch request.Make sure you have 
   also specified batch settings to the `@upstream` and to the `@graphQL` operator.
@@ -96,6 +91,10 @@ directive @graphQL(
   field, Tailcall requests data from the corresponding upstream field.
   """
   name: String!
+  """
+  This refers URL of the API.
+  """
+  url: String!
 ) on FIELD_DEFINITION | OBJECT
 
 """
@@ -108,11 +107,6 @@ In this scenario, the GraphQL server will make a gRPC request to the gRPC endpoi
 specified when the `users` field is queried.
 """
 directive @grpc(
-  """
-  This refers to the base URL of the API. If not specified, the default base URL is 
-  the one specified in the `@upstream` operator.
-  """
-  baseURL: String
   """
   The `batchKey` dictates the path Tailcall will follow to group the returned items 
   from the batch request. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
@@ -151,6 +145,10 @@ directive @grpc(
   }`
   """
   select: JSON
+  """
+  This refers to URL of the API.
+  """
+  url: String!
 ) on FIELD_DEFINITION | OBJECT
 
 """
@@ -162,11 +160,6 @@ server will make a GET request to the API endpoint specified when the `users` fi
 is queried.
 """
 directive @http(
-  """
-  This refers to the base URL of the API. If not specified, the default base URL is 
-  the one specified in the `@upstream` operator.
-  """
-  baseURL: String
   """
   The `batchKey` dictates the path Tailcall will follow to group the returned items 
   from the batch request. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
@@ -215,12 +208,6 @@ directive @http(
   """
   output: Schema
   """
-  This refers to the API endpoint you're going to call. For instance `https://jsonplaceholder.typicode.com/users`.For 
-  dynamic segments in your API endpoint, use Mustache templates for variable substitution. 
-  For instance, to fetch a specific user, use `/users/{{args.id}}`.
-  """
-  path: String!
-  """
   This represents the query parameters of your API call. You can pass it as a static 
   object or use Mustache template for dynamic parameters. These parameters will be 
   added to the URL. NOTE: Query parameter order is critical for batching in Tailcall. 
@@ -238,6 +225,10 @@ directive @http(
   }`
   """
   select: JSON
+  """
+  This refers to URL of the API.
+  """
+  url: String!
 ) on FIELD_DEFINITION | OBJECT
 
 directive @js(
@@ -283,7 +274,22 @@ Used to omit a field from public consumption.
 """
 directive @omit on FIELD_DEFINITION
 
-directive @protected on OBJECT | FIELD_DEFINITION
+"""
+Specifies the authentication requirements for accessing a field or type.This allows 
+you to control access by listing the IDs of authentication providers. - If `id` is 
+not provided, all available providers must authorize the request. - If multiple provider 
+IDs are listed, the request must be authorized by all of them.Example: If you want 
+only specific providers to allow access, include their IDs in the list. Otherwise, 
+leave it empty to require authorization from all available providers.
+"""
+directive @protected(
+  """
+  List of authentication provider IDs that can access this field or type. - Leave empty 
+  to require authorization from all providers. - Include multiple IDs to require authorization 
+  from each one.
+  """
+  id: [String!]
+) on OBJECT | FIELD_DEFINITION
 
 """
 The `@server` directive, when applied at the schema level, offers a comprehensive 
@@ -404,13 +410,6 @@ directive @upstream(
   """
   allowedHeaders: [String!]
   """
-  This refers to the default base URL for your APIs. If it's not explicitly mentioned 
-  in the `@upstream` operator, then each [@http](#http) operator must specify its own 
-  `baseURL`. If neither `@upstream` nor [@http](#http) provides a `baseURL`, it results 
-  in a compilation error.
-  """
-  baseURL: String
-  """
   An object that specifies the batch settings, including `maxSize` (the maximum size 
   of the batch), `delay` (the delay in milliseconds between each batch), and `headers` 
   (an array of HTTP headers to be included in the batch).
@@ -485,6 +484,19 @@ directive @upstream(
   """
   verifySSL: Boolean
 ) on SCHEMA
+
+"""
+The `@discriminate` directive is used to drive Tailcall discriminator to use a field 
+of an object to resolve the type. For example with the directive applied on a field 
+`@discriminate(field: "object_type")` and the given value `{"foo": "bar", "object_type": 
+"Buzz"}` the resolved type of the object will be `Buzz`. If `field` is not applied 
+it defaults to "type". The `field` does not have to be part of the GraphQL Schema, 
+but it is required to be part of the JSON response. In case this field is missing 
+from the response an appropriate error message will be displayed.
+"""
+directive @discriminate(
+  field: String
+) on FIELD_DEFINITION
 
 """
 Empty scalar type represents an empty value.
@@ -788,11 +800,6 @@ input GraphQL {
   """
   args: [KeyValue]
   """
-  This refers to the base URL of the API. If not specified, the default base URL is 
-  the one specified in the `@upstream` operator.
-  """
-  baseURL: String
-  """
   If the upstream GraphQL server supports request batching, you can specify the 'batch' 
   argument to batch several requests into a single batch request.Make sure you have 
   also specified batch settings to the `@upstream` and to the `@graphQL` operator.
@@ -817,6 +824,10 @@ input GraphQL {
   field, Tailcall requests data from the corresponding upstream field.
   """
   name: String!
+  """
+  This refers URL of the API.
+  """
+  url: String!
 }
 
 """
@@ -829,11 +840,6 @@ In this scenario, the GraphQL server will make a gRPC request to the gRPC endpoi
 specified when the `users` field is queried.
 """
 input Grpc {
-  """
-  This refers to the base URL of the API. If not specified, the default base URL is 
-  the one specified in the `@upstream` operator.
-  """
-  baseURL: String
   """
   The `batchKey` dictates the path Tailcall will follow to group the returned items 
   from the batch request. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
@@ -872,6 +878,10 @@ input Grpc {
   }`
   """
   select: JSON
+  """
+  This refers to URL of the API.
+  """
+  url: String!
 }
 
 """
@@ -883,11 +893,6 @@ server will make a GET request to the API endpoint specified when the `users` fi
 is queried.
 """
 input Http {
-  """
-  This refers to the base URL of the API. If not specified, the default base URL is 
-  the one specified in the `@upstream` operator.
-  """
-  baseURL: String
   """
   The `batchKey` dictates the path Tailcall will follow to group the returned items 
   from the batch request. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
@@ -936,12 +941,6 @@ input Http {
   """
   output: Schema
   """
-  This refers to the API endpoint you're going to call. For instance `https://jsonplaceholder.typicode.com/users`.For 
-  dynamic segments in your API endpoint, use Mustache templates for variable substitution. 
-  For instance, to fetch a specific user, use `/users/{{args.id}}`.
-  """
-  path: String!
-  """
   This represents the query parameters of your API call. You can pass it as a static 
   object or use Mustache template for dynamic parameters. These parameters will be 
   added to the URL. NOTE: Query parameter order is critical for batching in Tailcall. 
@@ -959,6 +958,10 @@ input Http {
   }`
   """
   select: JSON
+  """
+  This refers to URL of the API.
+  """
+  url: String!
 }
 
 """

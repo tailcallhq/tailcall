@@ -3,7 +3,7 @@ use std::path::Path;
 
 use anyhow::Result;
 
-use super::helpers::{FILE_NAME, JSON_FILE_NAME, YML_FILE_NAME};
+use super::helpers::{GRAPHQL_RC, TAILCALL_RC, TAILCALL_RC_SCHEMA};
 use crate::cli::runtime::{confirm_and_write, create_directory, select_prompt};
 use crate::core::config::{Config, Expr, Field, Resolver, RootSchema, Source};
 use crate::core::merge_right::MergeRight;
@@ -21,23 +21,35 @@ pub(super) async fn init_command(runtime: TargetRuntime, folder_path: &str) -> R
     let tailcallrc = include_str!("../../../generated/.tailcallrc.graphql");
     let tailcallrc_json: &str = include_str!("../../../generated/.tailcallrc.schema.json");
 
-    let file_path = Path::new(folder_path).join(FILE_NAME);
-    let json_file_path = Path::new(folder_path).join(JSON_FILE_NAME);
-    let yml_file_path = Path::new(folder_path).join(YML_FILE_NAME);
+    let tailcall_rc = Path::new(folder_path).join(TAILCALL_RC);
+    let tailcall_rc_schema = Path::new(folder_path).join(TAILCALL_RC_SCHEMA);
+    let graphql_rc = Path::new(folder_path).join(GRAPHQL_RC);
 
-    confirm_and_write(
-        runtime.clone(),
-        &file_path.display().to_string(),
-        tailcallrc.as_bytes(),
-    )
-    .await?;
-    confirm_and_write(
-        runtime.clone(),
-        &json_file_path.display().to_string(),
-        tailcallrc_json.as_bytes(),
-    )
-    .await?;
-    confirm_and_write_yml(runtime.clone(), &yml_file_path).await?;
+    match selection {
+        Source::GraphQL => {
+            // .tailcallrc.graphql
+            confirm_and_write(
+                runtime.clone(),
+                &tailcall_rc.display().to_string(),
+                tailcallrc.as_bytes(),
+            )
+            .await?;
+
+            // .graphqlrc.yml
+            confirm_and_write_yml(runtime.clone(), &graphql_rc).await?;
+        }
+
+        Source::Json | Source::Yml => {
+            // .tailcallrc.schema.json
+            confirm_and_write(
+                runtime.clone(),
+                &tailcall_rc_schema.display().to_string(),
+                tailcallrc_json.as_bytes(),
+            )
+            .await?;
+        }
+    }
+
     create_main(runtime.clone(), folder_path, selection).await?;
 
     Ok(())
@@ -46,7 +58,7 @@ pub(super) async fn init_command(runtime: TargetRuntime, folder_path: &str) -> R
 fn default_graphqlrc() -> serde_yaml::Value {
     serde_yaml::Value::Mapping(serde_yaml::mapping::Mapping::from_iter([(
         "schema".into(),
-        serde_yaml::Value::Sequence(vec!["./.tailcallrc.graphql".into()]),
+        serde_yaml::Value::Sequence(vec!["./.tailcallrc.graphql".into(), "./*.graphql".into()]),
     )]))
 }
 

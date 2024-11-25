@@ -9,21 +9,16 @@ use indexmap::IndexMap;
 use super::eval_io::eval_io;
 use super::model::{Cache, CacheKey, Map, IR};
 use super::{Error, EvalContext, ResolverContextLike, TypedValue};
-use crate::core::json::{JsonLike, JsonLikeList, JsonObjectLike};
+use crate::core::auth::verify::{AuthVerifier, Verify};
+use crate::core::json::{JsonLike, JsonObjectLike};
 use crate::core::serde_value_ext::ValueExt;
-
-// Fake trait to capture proper lifetimes.
-// see discussion https://users.rust-lang.org/t/rpitit-allows-more-flexible-code-in-comparison-with-raw-rpit-in-inherit-impl/113417
-// TODO: could be removed after migrating to 2024 edition
-pub trait Captures<T: ?Sized> {}
-impl<T: ?Sized, U: ?Sized> Captures<T> for U {}
 
 impl IR {
     #[tracing::instrument(skip_all, fields(otel.name = %self), err)]
     pub fn eval<'a, 'b, Ctx>(
         &'a self,
         ctx: &'b mut EvalContext<'a, Ctx>,
-    ) -> impl Future<Output = Result<ConstValue, Error>> + Send + Captures<&'b &'a ()>
+    ) -> impl Future<Output = Result<ConstValue, Error>> + Send + use<'a, 'b, Ctx>
     where
         Ctx: ResolverContextLike + Sync,
     {
@@ -41,12 +36,10 @@ impl IR {
                         .clone())
                 }
                 IR::Dynamic(value) => Ok(value.render_value(ctx)),
-                IR::Protect(expr) => {
-                    ctx.request_ctx
-                        .auth_ctx
-                        .validate(ctx.request_ctx)
-                        .await
-                        .to_result()?;
+                IR::Protect(auth, expr) => {
+                    let verifier = AuthVerifier::from(auth.clone());
+                    verifier.verify(ctx.request_ctx).await.to_result()?;
+
                     expr.eval(ctx).await
                 }
                 IR::IO(io) => eval_io(io, ctx).await,
@@ -102,23 +95,10 @@ impl IR {
                     let ctx = &mut ctx.with_args(args);
                     second.eval(ctx).await
                 }
-                IR::Discriminate(discriminator, expr) => expr.eval(ctx).await.and_then(|value| {
-                    let value = value.map(&mut |mut value| {
-                        if value.get_type_name().is_some() {
-                            // if typename is already present in value just reuse it instead
-                            // of recalculating from scratch
-                            return Ok(value);
-                        }
-
-                        let type_name = discriminator.resolve_type(&value)?;
-
-                        value.set_type_name(type_name.to_string())?;
-
-                        anyhow::Ok(value)
-                    })?;
-
-                    Ok(value)
-                }),
+                IR::Discriminate(discriminator, expr) => expr
+                    .eval(ctx)
+                    .await
+                    .and_then(|value| Ok(discriminator.resolve_type(value)?)),
                 IR::Entity(map) => {
                     let representations = ctx.path_arg(&["representations"]);
 

@@ -48,8 +48,7 @@ types:
               name: U
               required: true
         http:
-          baseURL: http://localhost
-          path: /users/{{args.u}}
+          url: http://localhost/users/{{args.u}}
 
 unions:
   U1:

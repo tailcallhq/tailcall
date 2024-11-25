@@ -1,6 +1,11 @@
+use std::collections::HashSet;
+use std::process::Output;
+
 use chrono::{DateTime, Utc};
 use machineid_rs::{Encryption, HWIDComponent, IdBuilder};
 use sysinfo::System;
+use tokio::process::Command;
+use tokio::sync::Mutex;
 use tokio::time::Duration;
 
 use super::Result;
@@ -29,6 +34,7 @@ pub struct Tracker {
     collectors: Vec<Box<dyn Collect>>,
     can_track: bool,
     start_time: DateTime<Utc>,
+    email: Mutex<Option<Vec<String>>>,
 }
 
 impl Default for Tracker {
@@ -44,6 +50,7 @@ impl Default for Tracker {
             collectors: vec![ga_tracker, posthog_tracker],
             can_track,
             start_time,
+            email: Mutex::new(None),
         }
     }
 }
@@ -74,6 +81,7 @@ impl Tracker {
                 cwd: cwd(),
                 user: user(),
                 version: version(),
+                email: self.email().await.clone(),
             };
 
             // Dispatch the event to all collectors
@@ -86,6 +94,63 @@ impl Tracker {
 
         Ok(())
     }
+
+    async fn email(&'static self) -> Vec<String> {
+        let mut guard = self.email.lock().await;
+        if guard.is_none() {
+            *guard = Some(email().await.into_iter().collect());
+        }
+        guard.clone().unwrap_or_default()
+    }
+}
+
+// Get the email address
+async fn email() -> HashSet<String> {
+    fn parse(output: Output) -> Option<String> {
+        if output.status.success() {
+            let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            if !text.is_empty() {
+                return Some(text);
+            }
+        }
+
+        None
+    }
+
+    // From Git
+    async fn git() -> Result<Output> {
+        Ok(Command::new("git")
+            .args(["config", "--global", "user.email"])
+            .output()
+            .await?)
+    }
+
+    // From SSH Keys
+    async fn ssh() -> Result<Output> {
+        Ok(Command::new("sh")
+            .args(["-c", "cat ~/.ssh/*.pub"])
+            .output()
+            .await?)
+    }
+
+    // From defaults read MobileMeAccounts Accounts
+    async fn mobile_me() -> Result<Output> {
+        Ok(Command::new("defaults")
+            .args(["read", "MobileMeAccounts", "Accounts"])
+            .output()
+            .await?)
+    }
+
+    vec![git().await, ssh().await, mobile_me().await]
+        .into_iter()
+        .flat_map(|output| {
+            output
+                .ok()
+                .and_then(parse)
+                .map(parse_email)
+                .unwrap_or_default()
+        })
+        .collect::<HashSet<String>>()
 }
 
 // Generates a random client ID
@@ -139,8 +204,21 @@ fn os_name() -> String {
     System::long_os_version().unwrap_or("Unknown".to_string())
 }
 
+// Should take arbitrary text and be able to extract email addresses
+fn parse_email(text: String) -> Vec<String> {
+    let mut email_ids = Vec::new();
+
+    let re = regex::Regex::new(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}").unwrap();
+    for email in re.find_iter(&text) {
+        email_ids.push(email.as_str().to_string());
+    }
+
+    email_ids
+}
+
 #[cfg(test)]
 mod tests {
+
     use lazy_static::lazy_static;
 
     use super::*;

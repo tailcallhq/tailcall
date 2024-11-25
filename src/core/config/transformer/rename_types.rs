@@ -1,9 +1,9 @@
 use std::collections::HashSet;
 
 use indexmap::IndexMap;
+use tailcall_valid::{Valid, Validator};
 
 use crate::core::config::Config;
-use crate::core::valid::{Valid, Validator};
 use crate::core::Transform;
 
 /// A transformer that renames existing types by replacing them with suggested
@@ -142,11 +142,11 @@ impl Transform for RenameTypes {
 mod test {
     use indexmap::IndexMap;
     use maplit::hashmap;
+    use tailcall_valid::{ValidationError, Validator};
 
     use super::RenameTypes;
     use crate::core::config::Config;
     use crate::core::transform::Transform;
-    use crate::core::valid::{ValidationError, Validator};
 
     #[test]
     fn test_rename_type() {
@@ -174,10 +174,10 @@ mod test {
                 COMPLETED
             }
             type Query {
-                posts: [Post] @http(path: "/posts")
+                posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts")
             }
             type Mutation {
-              createUser(user: B!): A @http(method: POST, path: "/users", body: "{{args.user}}")
+              createUser(user: B!): A @http(method: POST, url: "http://jsonplaceholder.typicode.com/users", body: "{{args.user}}")
             }
         "#;
         let config = Config::from_sdl(sdl).to_result().unwrap();
@@ -210,7 +210,7 @@ mod test {
                 title: String
             }
             type PostQuery {
-                posts: [Post] @http(path: "/posts")
+                posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts")
             }
         "#;
         let config = Config::from_sdl(sdl).to_result().unwrap();
@@ -237,7 +237,7 @@ mod test {
                 body: String
             }
             type Query {
-                posts: [Post] @http(path: "/posts")
+                posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts")
             }
         "#;
         let config = Config::from_sdl(sdl).to_result().unwrap();
@@ -272,7 +272,7 @@ mod test {
                 title: String
             }
             type Query {
-                posts: [Post] @http(path: "/posts")
+                posts: [Post] @http(url: "/posts")
             }
         "#;
         let config = Config::from_sdl(sdl).to_result().unwrap();

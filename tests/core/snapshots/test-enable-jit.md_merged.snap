@@ -2,21 +2,19 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema
-  @server(enableJIT: true, hostname: "0.0.0.0", port: 8000)
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @server(enableJIT: true, hostname: "0.0.0.0", port: 8000) @upstream {
   query: Query
 }
 
 type Post {
   id: Int!
   title: String!
-  user: User @http(path: "/users/{{.value.userId}}")
+  user: User @http(url: "http://jsonplaceholder.typicode.com/users/{{.value.userId}}")
   userId: Int!
 }
 
 type Query @cache(maxAge: 30000) {
-  posts: [Post] @http(path: "/posts")
+  posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts")
 }
 
 type User {

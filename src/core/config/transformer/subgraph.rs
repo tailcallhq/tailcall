@@ -5,6 +5,7 @@ use std::fmt::{Display, Write};
 use std::ops::Deref;
 
 use tailcall_macros::MergeRight;
+use tailcall_valid::{Valid, Validator};
 
 use crate::core::config::directive::to_directive;
 use crate::core::config::{
@@ -14,7 +15,6 @@ use crate::core::config::{
 use crate::core::directive::DirectiveCodec;
 use crate::core::merge_right::MergeRight;
 use crate::core::mustache::Segment;
-use crate::core::valid::{Valid, Validator};
 use crate::core::{Mustache, Transform, Type};
 
 const ENTITIES_FIELD_NAME: &str = "_entities";
@@ -39,22 +39,24 @@ impl Transform for Subgraph {
             // if federation is disabled don't process the config
             return Valid::succeed(config);
         }
-
+        let config_types = config.types.clone();
         let mut resolver_by_type = BTreeMap::new();
 
         let valid = Valid::from_iter(config.types.iter_mut(), |(type_name, ty)| {
             if let Some(resolver) = &ty.resolver {
                 resolver_by_type.insert(type_name.clone(), resolver.clone());
 
-                KeysExtractor::extract_keys(resolver).and_then(|fields| match fields {
-                    Some(fields) => {
-                        let key = Key { fields };
+                KeysExtractor::validate(&config_types, resolver, type_name).and_then(|_| {
+                    KeysExtractor::extract_keys(resolver).and_then(|fields| match fields {
+                        Some(fields) => {
+                            let key = Key { fields };
 
-                        to_directive(key.to_directive()).map(|directive| {
-                            ty.directives.push(directive);
-                        })
-                    }
-                    None => Valid::succeed(()),
+                            to_directive(key.to_directive()).map(|directive| {
+                                ty.directives.push(directive);
+                            })
+                        }
+                        None => Valid::succeed(()),
+                    })
                 })
             } else {
                 Valid::succeed(())
@@ -192,14 +194,79 @@ fn combine_keys(v: Vec<Keys>) -> Keys {
 struct KeysExtractor;
 
 impl KeysExtractor {
+    fn validate_expressions<'a>(
+        type_name: &str,
+        type_map: &BTreeMap<String, config::Type>,
+        expr_iter: impl Iterator<Item = &'a Segment>,
+    ) -> Valid<(), String> {
+        Valid::from_iter(expr_iter, |segment| {
+            if let Segment::Expression(expr) = segment {
+                if expr.len() > 1 && expr[0].as_str() == "value" {
+                    Self::validate_iter(type_map, type_name, expr.iter().skip(1))
+                } else {
+                    Valid::succeed(())
+                }
+            } else {
+                Valid::succeed(())
+            }
+        })
+        .unit()
+    }
+
+    fn validate_iter<'a>(
+        type_map: &BTreeMap<String, config::Type>,
+        current_type: &str,
+        fields_iter: impl Iterator<Item = &'a String>,
+    ) -> Valid<(), String> {
+        let mut current_type = current_type;
+        Valid::from_iter(fields_iter.enumerate(), |(index, key)| {
+            if let Some(type_def) = type_map.get(current_type) {
+                if !type_def.fields.contains_key(key) {
+                    return Valid::fail(format!(
+                        "Invalid key at index {}: '{}' is not a field of '{}'",
+                        index, key, current_type
+                    ));
+                }
+                current_type = type_def.fields[key].type_of.name();
+            } else {
+                return Valid::fail(format!("Type '{}' not found in config", current_type));
+            }
+            Valid::succeed(())
+        })
+        .unit()
+    }
+
+    fn validate(
+        type_map: &BTreeMap<String, config::Type>,
+        resolver: &Resolver,
+        type_name: &str,
+    ) -> Valid<(), String> {
+        if let Resolver::Http(http) = resolver {
+            Valid::from_iter(http.query.iter(), |q| {
+                Self::validate_expressions(
+                    type_name,
+                    type_map,
+                    Mustache::parse(&q.value).segments().iter(),
+                )
+            })
+            .and(Self::validate_expressions(
+                type_name,
+                type_map,
+                Mustache::parse(&http.url).segments().iter(),
+            ))
+            .unit()
+        } else {
+            Valid::succeed(())
+        }
+    }
+
     fn extract_keys(resolver: &Resolver) -> Valid<Option<String>, String> {
         // TODO: add validation for available fields from the type
         match resolver {
             Resolver::Http(http) => {
                 Valid::from_iter(
                     [
-                        Self::parse_str_option(http.base_url.as_deref()).trace("base_url"),
-                        Self::parse_str(&http.path).trace("path"),
+                        Self::parse_str(http.url.as_str()).trace("url"),
                         Self::parse_str_option(http.body.as_deref()).trace("body"),
                         Self::parse_key_value_iter(http.headers.iter()).trace("headers"),
                         Self::parse_key_value_iter(http.query.iter().map(|q| KeyValue {
@@ -214,7 +281,7 @@ impl KeysExtractor {
             }
             Resolver::Grpc(grpc) => Valid::from_iter(
                 [
-                    Self::parse_str_option(grpc.base_url.as_deref()),
+                    Self::parse_str(grpc.url.as_str()),
                     Self::parse_str(&grpc.method),
                     Self::parse_value_option(&grpc.body),
                     Self::parse_key_value_iter(grpc.headers.iter()),
@@ -377,6 +444,7 @@ mod tests {
         }
     }
 
+    #[cfg(test)]
     mod extractor {
         use insta::assert_debug_snapshot;
         use serde_json::json;
@@ -389,8 +457,7 @@ mod tests {
         #[test]
         fn test_non_value_template() {
             let http = Http {
-                base_url: Some("http://tailcall.run".to_string()),
-                path: "users/{{.args.id}}".to_string(),
+                url: "http://tailcall.run/users/{{.args.id}}".to_string(),
                 query: vec![URLQuery {
                     key: "{{.env.query.key}}".to_string(),
                     value: "{{.args.query.value}}".to_string(),
@@ -407,14 +474,13 @@ mod tests {
         #[test]
         fn test_extract_http() {
             let http = Http {
-                base_url: Some("http://tailcall.run".to_string()),
+                url: "http://tailcall.run/users/{{.value.id}}".to_string(),
                 body: Some(r#"{ "obj": "{{.value.obj}}"} "#.to_string()),
                 headers: vec![KeyValue {
                     key: "{{.value.header.key}}".to_string(),
                     value: "{{.value.header.value}}".to_string(),
                 }],
                 method: Method::POST,
-                path: "users/{{.value.id}}".to_string(),
                 query: vec![URLQuery {
                     key: "{{.value.query_key}}".to_string(),
                     value: "{{.value.query_value}}".to_string(),
@@ -431,7 +497,7 @@ mod tests {
         #[test]
         fn test_extract_grpc() {
             let grpc = Grpc {
-                base_url: Some("http://localhost:5051/{{.env.target}}".to_string()),
+                url: "http://localhost:5051/{{.env.target}}".to_string(),
                 body: Some(json!({ "a": "{{.value.body.a}}", "b": "{{.value.body.b}}"})),
                 headers: vec![KeyValue {
                     key: "test".to_string(),
@@ -450,7 +516,7 @@ mod tests {
         #[test]
         fn test_extract_graphql() {
             let graphql = GraphQL {
-                base_url: Some("http://localhost:5051/{{.env.target}}".to_string()),
+                url: "http://localhost:5051/{{.env.target}}".to_string(),
                 headers: vec![KeyValue {
                     key: "test".to_string(),
                     value: "{{.value.header_test}}".to_string(),

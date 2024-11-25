@@ -1,6 +1,7 @@
 ---
 source: tests/core/spec.rs
 expression: response
+snapshot_kind: text
 ---
 {
   "status": 200,
@@ -11,7 +12,7 @@ expression: response
     "data": null,
     "errors": [
       {
-        "message": "Build error: ResolveInputError: Argument `id` for field `user` is required"
+        "message": "ResolveInputError: Argument `id` for field `user` is required"
       }
     ]
   }

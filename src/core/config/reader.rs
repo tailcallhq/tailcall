@@ -4,6 +4,7 @@ use rustls_pemfile;
 use rustls_pki_types::{
     CertificateDer, PrivateKeyDer, PrivatePkcs1KeyDer, PrivatePkcs8KeyDer, PrivateSec1KeyDer,
 };
+use tailcall_valid::{Valid, Validator};
 use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType, PrivateKey};
@@ -12,7 +13,6 @@ use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::{Cached, Resource, ResourceReader};
 use crate::core::rest::EndpointSet;
 use crate::core::runtime::TargetRuntime;
-use crate::core::valid::{Valid, Validator};
 use crate::core::variance::Invariant;
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all
@@ -60,8 +60,6 @@ impl ConfigReader {
         let mut extensions = config_module.extensions().clone();
         let mut config_module = Valid::succeed(config_module);
 
-        // let mut base_config = config_module.config().clone();
-
         for link in links.iter() {
             let path = Self::resolve_path(&link.src, parent_dir);
 
@@ -69,7 +67,6 @@ impl ConfigReader {
                 LinkType::Config => {
                     let source = self.resource_reader.read_file(path).await?;
                     let content = source.content;
-
                     let config = Config::from_source(Source::detect(&source.path)?, &content)?;
                     config_module = config_module.and_then(|config_module| {
                         config_module.unify(ConfigModule::from(config.clone()))

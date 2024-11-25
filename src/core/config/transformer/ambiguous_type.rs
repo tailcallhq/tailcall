@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
+use tailcall_valid::{Valid, Validator};
+
 use crate::core::config::Config;
 use crate::core::transform::Transform;
-use crate::core::valid::{Valid, Validator};
 
 /// Resolves the ambiguous types by renaming the input and
 /// output types. The resolver function is called whenever is a conflict is
@@ -150,17 +151,16 @@ impl Transform for AmbiguousType {
 
 #[cfg(test)]
 mod tests {
-
     use insta::assert_snapshot;
     use prost_reflect::prost_types::FileDescriptorSet;
     use tailcall_fixtures::protobuf;
+    use tailcall_valid::Validator;
 
     use crate::core::config::transformer::AmbiguousType;
     use crate::core::config::{self, Config};
     use crate::core::generator::{Generator, Input};
     use crate::core::proto_reader::ProtoMetadata;
     use crate::core::transform::Transform;
-    use crate::core::valid::Validator;
     use crate::core::Type;
 
     fn build_qry(mut config: Config) -> Config {
@@ -246,12 +246,13 @@ mod tests {
     async fn test_resolve_ambiguous_news_types() -> anyhow::Result<()> {
         let news_proto = tailcall_fixtures::protobuf::NEWS;
         let set = compile_protobuf(&[protobuf::NEWS])?;
+        let url = "http://localhost:50051".to_string();
 
         let cfg_module = Generator::default()
-            .inputs(vec![Input::Proto(ProtoMetadata {
-                descriptor_set: set,
-                path: news_proto.to_string(),
-            })])
+            .inputs(vec![Input::Proto {
+                metadata: ProtoMetadata { descriptor_set: set, path: news_proto.to_string() },
+                url,
+            }])
             .generate(false)?;
 
         let mut config = AmbiguousType::default()

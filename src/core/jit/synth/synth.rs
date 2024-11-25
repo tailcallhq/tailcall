@@ -1,23 +1,22 @@
 use std::borrow::Cow;
 
-use crate::core::jit::model::{Field, Nested, OperationPlan, Variables};
+use crate::core::jit::model::{Field, OperationPlan, Variables};
 use crate::core::jit::store::{DataPath, Store};
 use crate::core::jit::{Error, PathSegment, Positioned, ValidationError};
 use crate::core::json::{JsonLike, JsonObjectLike};
-use crate::core::scalar;
 
 type ValueStore<Value> = Store<Result<Value, Positioned<Error>>>;
 
-pub struct Synth<Value> {
-    plan: OperationPlan<Value>,
+pub struct Synth<'a, Value> {
+    plan: &'a OperationPlan<Value>,
     store: ValueStore<Value>,
     variables: Variables<Value>,
 }
 
-impl<Value> Synth<Value> {
+impl<'a, Value> Synth<'a, Value> {
     #[inline(always)]
     pub fn new(
-        plan: OperationPlan<Value>,
+        plan: &'a OperationPlan<Value>,
         store: ValueStore<Value>,
         variables: Variables<Value>,
     ) -> Self {
@@ -25,22 +24,25 @@ impl<Value> Synth<Value> {
     }
 }
 
-impl<'a, Value> Synth<Value>
+impl<'a, Value> Synth<'a, Value>
 where
     Value: JsonLike<'a> + Clone + std::fmt::Debug,
 {
     #[inline(always)]
-    fn include<T>(&self, field: &Field<T, Value>) -> bool {
+    fn include(&self, field: &Field<Value>) -> bool {
         !field.skip(&self.variables)
     }
 
     #[inline(always)]
-    pub fn synthesize(&'a self) -> Result<Value, Positioned<Error>> {
-        let mut data = Value::JsonObject::new();
+    pub fn synthesize<Output>(&'a self) -> Result<Output, Positioned<Error>>
+    where
+        Output: JsonLike<'a>,
+    {
+        let mut data = Output::JsonObject::with_capacity(self.plan.selection.len());
         let mut path = Vec::new();
         let root_name = self.plan.root_name();
 
-        for child in self.plan.as_nested().iter() {
+        for child in self.plan.selection.iter() {
             if !self.include(child) {
                 continue;
             }
@@ -50,20 +52,23 @@ where
             data.insert_key(&child.output_name, val);
         }
 
-        Ok(Value::object(data))
+        Ok(Output::object(data))
     }
 
     #[allow(clippy::too_many_arguments)]
     #[inline(always)]
-    fn iter(
+    fn iter<Output>(
         &'a self,
-        node: &'a Field<Nested<Value>, Value>,
+        node: &'a Field<Value>,
         value: Option<&'a Value>,
         data_path: &DataPath,
-        path: &mut Vec<PathSegment>,
+        path: &mut Vec<PathSegment<'a>>,
         root_name: Option<&'a str>,
-    ) -> Result<Value, Positioned<Error>> {
-        path.push(PathSegment::Field(node.output_name.clone()));
+    ) -> Result<Output, Positioned<Error>>
+    where
+        Output: JsonLike<'a>,
+    {
+        path.push(PathSegment::Field(Cow::Borrowed(&node.output_name)));
 
         let result = match self.store.get(&node.id) {
             Some(value) => {
@@ -73,7 +78,7 @@ where
                     if let Some(arr) = value.as_array() {
                         value = &arr[*index];
                     } else {
-                        return Ok(Value::null());
+                        return Ok(Output::null());
                     }
                 }
 
@@ -94,20 +99,23 @@ where
 
     /// This guard ensures to return Null value only if node type permits it, in
     /// case it does not it throws an Error
-    fn node_nullable_guard(
+    fn node_nullable_guard<Output>(
         &'a self,
-        node: &'a Field<Nested<Value>, Value>,
+        node: &'a Field<Value>,
         path: &[PathSegment],
         root_name: Option<&'a str>,
-    ) -> Result<Value, Positioned<Error>> {
+    ) -> Result<Output, Positioned<Error>>
+    where
+        Output: JsonLike<'a>,
+    {
         if let Some(root_name) = root_name {
             if node.name.eq("__typename") {
-                return Ok(Value::string(Cow::Borrowed(root_name)));
+                return Ok(Output::string(Cow::Borrowed(root_name)));
             }
         }
         // according to GraphQL spec https://spec.graphql.org/October2021/#sec-Handling-Field-Errors
         if node.type_of.is_nullable() {
-            Ok(Value::null())
+            Ok(Output::null())
         } else {
             Err(ValidationError::ValueRequired.into())
                 .map_err(|e| self.to_location_error(e, node, path))
@@ -116,16 +124,19 @@ where
 
     #[allow(clippy::too_many_arguments)]
     #[inline(always)]
-    fn iter_inner(
+    fn iter_inner<Output>(
         &'a self,
-        node: &'a Field<Nested<Value>, Value>,
+        node: &'a Field<Value>,
         value: &'a Value,
         data_path: &DataPath,
-        path: &mut Vec<PathSegment>,
-    ) -> Result<Value, Positioned<Error>> {
+        path: &mut Vec<PathSegment<'a>>,
+    ) -> Result<Output, Positioned<Error>>
+    where
+        Output: JsonLike<'a>,
+    {
         // skip the field if field is not included in schema
         if !self.include(node) {
-            return Ok(Value::null());
+            return Ok(Output::null());
         }
 
         let eval_result = if value.is_null() {
@@ -135,26 +146,25 @@ where
                 crate::core::Type::List { of_type, .. } => of_type.is_nullable(),
             };
             if is_nullable {
-                Ok(Value::null())
+                Ok(Output::null())
             } else {
                 Err(ValidationError::ValueRequired.into())
             }
-        } else if self.plan.field_is_scalar(node) {
-            let scalar =
-                scalar::Scalar::find(node.type_of.name()).unwrap_or(&scalar::Scalar::Empty);
+        } else if node.scalar.is_some() {
+            let scalar = node.scalar.as_ref().unwrap();
 
             // TODO: add validation for input type as well. But input types are not checked
             // by async_graphql anyway so it should be done after replacing
             // default engine with JIT
             if scalar.validate(value) {
-                Ok(value.clone())
+                Ok(Output::clone_from(value))
             } else {
                 Err(
                     ValidationError::ScalarInvalid { type_of: node.type_of.name().to_string() }
                         .into(),
                 )
             }
-        } else if self.plan.field_is_enum(node) {
+        } else if node.is_enum {
             let check_valid_enum = |value: &Value| -> bool {
                 value
                     .as_str()
@@ -169,7 +179,7 @@ where
             };
 
             if is_valid_enum {
-                Ok(value.clone())
+                Ok(Output::clone_from(value))
             } else {
                 Err(
                     ValidationError::EnumInvalid { type_of: node.type_of.name().to_string() }
@@ -179,7 +189,7 @@ where
         } else {
             match (value.as_array(), value.as_object()) {
                 (_, Some(obj)) => {
-                    let mut ans = Value::JsonObject::new();
+                    let mut fields = Vec::with_capacity(node.selection.len());
 
                     for child in node
                         .iter()
@@ -189,19 +199,19 @@ where
                         // and include be checked before calling `iter` or recursing.
                         if self.include(child) {
                             let value = if child.name == "__typename" {
-                                Value::string(node.value_type(value).into())
+                                Output::string(node.value_type(value).into())
                             } else {
                                 let val = obj.get_key(child.name.as_str());
                                 self.iter(child, val, data_path, path, None)?
                             };
-                            ans.insert_key(&child.output_name, value);
+                            fields.push((child.output_name.as_str(), value));
                         }
                     }
 
-                    Ok(Value::object(ans))
+                    Ok(Output::object(Output::JsonObject::from_vec(fields)))
                 }
                 (Some(arr), _) => {
-                    let mut ans = vec![];
+                    let mut ans = Vec::with_capacity(arr.len());
                     for (i, val) in arr.iter().enumerate() {
                         path.push(PathSegment::Index(i));
                         let val =
@@ -209,9 +219,9 @@ where
                         path.pop();
                         ans.push(val);
                     }
-                    Ok(Value::array(ans))
+                    Ok(Output::array(ans))
                 }
-                _ => Ok(value.clone()),
+                _ => Ok(Output::clone_from(value)),
             }
         };
 
@@ -221,10 +231,19 @@ where
     fn to_location_error(
         &'a self,
         error: Error,
-        node: &'a Field<Nested<Value>, Value>,
+        node: &'a Field<Value>,
         path: &[PathSegment],
     ) -> Positioned<Error> {
-        Positioned::new(error, node.pos).with_path(path.to_vec())
+        Positioned::new(error, node.pos).with_path(
+            path.iter()
+                .map(|x| match x {
+                    PathSegment::Field(cow) => {
+                        PathSegment::Field(Cow::Owned(cow.clone().into_owned()))
+                    }
+                    PathSegment::Index(i) => PathSegment::Index(*i),
+                })
+                .collect(),
+        )
     }
 }
 
@@ -232,16 +251,18 @@ where
 mod tests {
     use async_graphql_value::ConstValue;
     use serde::{Deserialize, Serialize};
+    use tailcall_valid::Validator;
 
+    use super::ValueStore;
     use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
     use crate::core::jit::builder::Builder;
-    use crate::core::jit::common::JP;
+    use crate::core::jit::fixtures::JP;
     use crate::core::jit::model::{FieldId, Variables};
     use crate::core::jit::store::Store;
     use crate::core::jit::synth::Synth;
+    use crate::core::jit::OperationPlan;
     use crate::core::json::JsonLike;
-    use crate::core::valid::Validator;
 
     const POSTS: &str = r#"
         [
@@ -308,7 +329,10 @@ mod tests {
 
     const CONFIG: &str = include_str!("../fixtures/jsonplaceholder-mutation.graphql");
 
-    fn make_store<'a, Value>(query: &str, store: Vec<(FieldId, TestData)>) -> Synth<Value>
+    fn make_store<'a, Value>(
+        query: &str,
+        store: Vec<(FieldId, TestData)>,
+    ) -> (OperationPlan<Value>, ValueStore<Value>, Variables<Value>)
     where
         Value: Deserialize<'a> + JsonLike<'a> + Serialize + Clone + std::fmt::Debug,
     {
@@ -322,8 +346,18 @@ mod tests {
         let config = ConfigModule::from(config);
 
         let builder = Builder::new(&Blueprint::try_from(&config).unwrap(), doc);
-        let plan = builder.build(&Variables::new(), None).unwrap();
-        let plan = plan.try_map(Deserialize::deserialize).unwrap();
+        let plan = builder.build(None).unwrap();
+        let plan = plan
+            .try_map(|v| {
+                // Earlier we hard OperationPlan<ConstValue> which has impl Deserialize
+                // but now InputResolver takes OperationPlan<async_graphql_value::Value>
+                // and returns OperationPlan<async_graphql_value::Value>.
+                // So we need to map Plan to some other value before being able to deserialize
+                // it.
+                let serde = v.into_json().unwrap();
+                Deserialize::deserialize(serde)
+            })
+            .unwrap();
 
         let store = store
             .into_iter()
@@ -333,27 +367,21 @@ mod tests {
             });
         let vars = Variables::new();
 
-        super::Synth::new(plan, store, vars)
+        (plan, store, vars)
     }
 
-    struct Synths<'a> {
-        synth_const: Synth<async_graphql::Value>,
-        synth_borrow: Synth<serde_json_borrow::Value<'a>>,
-    }
+    fn assert_synths(query: &str, store: Vec<(FieldId, TestData)>) {
+        let (plan, value_store, vars) = make_store::<ConstValue>(query, store.clone());
+        let synth_const = Synth::new(&plan, value_store, vars);
+        let (plan, value_store, vars) =
+            make_store::<serde_json_borrow::Value>(query, store.clone());
+        let synth_borrow = Synth::new(&plan, value_store, vars);
 
-    impl<'a> Synths<'a> {
-        fn init(query: &str, store: Vec<(FieldId, TestData)>) -> Self {
-            let synth_const = make_store::<ConstValue>(query, store.clone());
-            let synth_borrow = make_store::<serde_json_borrow::Value>(query, store.clone());
-            Self { synth_const, synth_borrow }
-        }
-        fn assert(self) {
-            let val_const = self.synth_const.synthesize().unwrap();
-            let val_const = serde_json::to_string_pretty(&val_const).unwrap();
-            let val_borrow = self.synth_borrow.synthesize().unwrap();
-            let val_borrow = serde_json::to_string_pretty(&val_borrow).unwrap();
-            assert_eq!(val_const, val_borrow);
-        }
+        let val_const: ConstValue = synth_const.synthesize().unwrap();
+        let val_const = serde_json::to_string_pretty(&val_const).unwrap();
+        let val_borrow: serde_json_borrow::Value = synth_borrow.synthesize().unwrap();
+        let val_borrow = serde_json::to_string_pretty(&val_borrow).unwrap();
+        assert_eq!(val_const, val_borrow);
     }
 
     #[test]
@@ -365,8 +393,7 @@ mod tests {
             }
         "#;
 
-        let synths = Synths::init(query, store);
-        synths.assert();
+        assert_synths(query, store);
     }
 
     #[test]
@@ -378,8 +405,7 @@ mod tests {
                 }
             "#;
 
-        let synths = Synths::init(query, store);
-        synths.assert();
+        assert_synths(query, store);
     }
 
     #[test]
@@ -393,8 +419,7 @@ mod tests {
                     posts { id title user { id name } }
                 }
             "#;
-        let synths = Synths::init(query, store);
-        synths.assert();
+        assert_synths(query, store);
     }
 
     #[test]
@@ -410,13 +435,13 @@ mod tests {
                     users { id name }
                 }
             "#;
-        let synths = Synths::init(query, store);
-        synths.assert();
+        assert_synths(query, store);
     }
 
     #[test]
     fn test_json_placeholder() {
-        let jp = JP::init("{ posts { id title userId user { id name } } }", None);
+        let jp: JP<async_graphql::Value> =
+            JP::init("{ posts { id title userId user { id name } } }", None);
         let synth = jp.synth();
         let val: async_graphql::Value = synth.synthesize().unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())
@@ -424,7 +449,8 @@ mod tests {
 
     #[test]
     fn test_json_placeholder_borrowed() {
-        let jp = JP::init("{ posts { id title userId user { id name } } }", None);
+        let jp: JP<serde_json_borrow::Value> =
+            JP::init("{ posts { id title userId user { id name } } }", None);
         let synth = jp.synth();
         let val: serde_json_borrow::Value = synth.synthesize().unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())
@@ -432,7 +458,8 @@ mod tests {
 
     #[test]
     fn test_json_placeholder_typename() {
-        let jp = JP::init("{ posts { id __typename user { __typename id } } }", None);
+        let jp: JP<serde_json_borrow::Value> =
+            JP::init("{ posts { id __typename user { __typename id } } }", None);
         let synth = jp.synth();
         let val: serde_json_borrow::Value = synth.synthesize().unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())
@@ -440,7 +467,8 @@ mod tests {
 
     #[test]
     fn test_json_placeholder_typename_root_level() {
-        let jp = JP::init("{ __typename posts { id user { id }} }", None);
+        let jp: JP<serde_json_borrow::Value> =
+            JP::init("{ __typename posts { id user { id }} }", None);
         let synth = jp.synth();
         let val: serde_json_borrow::Value = synth.synthesize().unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())

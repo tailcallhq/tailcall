@@ -3,7 +3,7 @@ schema @server @upstream {
 }
 
 type Query {
-  f1: [RootType1] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/users")
+  f1: [RootType1] @http(url: "https://jsonplaceholder.typicode.com/users")
 }
 
 type RootType1 {

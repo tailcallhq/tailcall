@@ -11,7 +11,7 @@ type User {
 }
 
 type Query {
-  users_list: [User] @graphQL(baseURL: "http://upstream/graphql", name: "users")
+  users_list: [User] @graphQL(url: "http://upstream/graphql", name: "users")
 }
 ```
 

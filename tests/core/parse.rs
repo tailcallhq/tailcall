@@ -302,7 +302,7 @@ impl ExecutionSpec {
             http2_only,
             file: Arc::new(File::new(self.clone())),
             env: Arc::new(Env::init(env)),
-            cache: Arc::new(InMemoryCache::new()),
+            cache: Arc::new(InMemoryCache::default()),
             extensions: Arc::new(vec![]),
             cmd_worker: http_worker,
             worker,

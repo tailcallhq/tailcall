@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use convert_case::{Case, Casing};
 use serde_json::Value;
+use tailcall_valid::{Valid, Validator};
 use url::Url;
 
 use super::json::{self, GraphQLTypesGenerator};
@@ -11,7 +12,6 @@ use crate::core::config::{Config, GraphQLOperationType};
 use crate::core::http::Method;
 use crate::core::merge_right::MergeRight;
 use crate::core::transform::{Transform, TransformerOps};
-use crate::core::valid::{Valid, Validator};
 
 pub struct RequestSample {
     pub url: Url,
@@ -125,10 +125,6 @@ impl Transform for FromJsonGenerator<'_> {
                     &sample.operation_type,
                     &header_keys,
                 ))
-                .pipe(json::FieldBaseUrlGenerator::new(
-                    &sample.url,
-                    &sample.operation_type,
-                ))
                 .pipe(RenameTypes::new(rename_types.into_iter()))
                 .transform(config.clone())
         })
@@ -142,11 +138,12 @@ impl Transform for FromJsonGenerator<'_> {
 
 #[cfg(test)]
 mod tests {
+    use tailcall_valid::Validator;
+
     use crate::core::config::transformer::Preset;
     use crate::core::generator::generator::test::JsonFixture;
     use crate::core::generator::{FromJsonGenerator, NameGenerator, RequestSample};
     use crate::core::transform::TransformerOps;
-    use crate::core::valid::Validator;
 
     #[tokio::test]
     async fn generate_config_from_json() -> anyhow::Result<()> {

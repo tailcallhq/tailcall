@@ -4,6 +4,7 @@ use std::path::Path;
 use http::header::{HeaderMap, HeaderName, HeaderValue};
 use inquire::Confirm;
 use pathdiff::diff_paths;
+use tailcall_valid::{ValidateInto, Validator};
 
 use super::config::{Config, LLMConfig, Resolved, Source};
 use super::source::ConfigSource;
@@ -14,7 +15,6 @@ use crate::core::generator::{Generator as ConfigGenerator, Input};
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::{Resource, ResourceReader};
 use crate::core::runtime::TargetRuntime;
-use crate::core::valid::{ValidateInto, Validator};
 use crate::core::{Mustache, Transform};
 
 /// CLI that reads the the config file and generates the required tailcall
@@ -139,13 +139,13 @@ impl Generator {
                         headers: headers.into_btree_map(),
                     });
                 }
-                Source::Proto { src } => {
+                Source::Proto { src, url } => {
                     let path = src.0;
                     let mut metadata = proto_reader.read(&path).await?;
                     if let Some(relative_path_to_proto) = to_relative_path(output_dir, &path) {
                         metadata.path = relative_path_to_proto;
                     }
-                    input_samples.push(Input::Proto(metadata));
+                    input_samples.push(Input::Proto { metadata, url });
                 }
                 Source::Config { src } => {
                     let path = src.0;

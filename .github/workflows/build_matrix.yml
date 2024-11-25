@@ -77,14 +77,14 @@ jobs:
                 target: x86_64-apple-darwin
 
               - build: win32-x64-msvc
-                os: windows-latest
+                os: windows-2019
                 rust: stable
                 target: x86_64-pc-windows-msvc
                 libc: msvc
                 ext: ".exe"
 
               - build: win32-arm64-msvc
-                os: windows-latest
+                os: windows-2019
                 rust: stable
                 target: aarch64-pc-windows-msvc
                 features: --no-default-features --features cli
@@ -93,7 +93,7 @@ jobs:
                 test: false # TODO: tests are broken without default features
 
               - build: win32-ia32-msvc
-                os: windows-latest
+                os: windows-2019
                 rust: stable
                 target: i686-pc-windows-msvc
                 libc: msvc
