@@ -47,7 +47,7 @@ pub struct Mock {
     #[serde(default = "default::expected_hits")]
     pub expected_hits: usize,
     #[serde(default)]
-    pub delay: Option<u64>
+    pub delay: Option<u64>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]

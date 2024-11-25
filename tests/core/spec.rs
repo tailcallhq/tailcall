@@ -8,7 +8,7 @@ use std::{fs, panic};
 use anyhow::Context;
 use colored::Colorize;
 use futures_util::future::join_all;
-use http::Request;
+use http::{Request, Response};
 use hyper::Body;
 use serde::{Deserialize, Serialize};
 use tailcall::core::app_context::AppContext;
@@ -318,8 +318,24 @@ async fn run_test(
     let responses = responses
         .into_iter()
         .map(|res| res.map_err(anyhow::Error::from).and_then(|inner| inner))
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
 
-    // Return the last response or propagate an error if any occurred
-    responses.into_iter().last().unwrap()
+    let mut base_response = None;
+
+    // ensure all the received responses are the same.
+    for response in responses {
+        let (head, body) = response.into_parts();
+        let body = hyper::body::to_bytes(body).await?;
+
+        if let Some((_, base_body)) = &base_response {
+            if *base_body != body {
+                return Err(anyhow::anyhow!("Responses are not the same."));
+            }
+        } else {
+            base_response = Some((head, body));
+        }
+    }
+
+    let (head, body) = base_response.ok_or_else(|| anyhow::anyhow!("No Response received."))?;
+    Ok(Response::from_parts(head, Body::from(body)))
 }
