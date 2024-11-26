@@ -28,6 +28,7 @@ pub fn is_protected(ir: &IR) -> bool {
         IR::Discriminate(_, ir) => is_protected(ir),
         IR::Entity(hash_map) => hash_map.values().any(is_protected),
         IR::Service(_) => false,
+        IR::Deferred(ir) => is_protected(ir),
     }
 }
 

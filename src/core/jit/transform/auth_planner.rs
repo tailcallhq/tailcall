@@ -78,5 +78,8 @@ pub fn update_ir(ir: &mut IR, vec: &mut Vec<Auth>) {
         IR::Discriminate(_, ir) => {
             update_ir(ir, vec);
         }
+        IR::Deferred(ir) => {
+            update_ir(ir, vec);
+        }
     }
 }

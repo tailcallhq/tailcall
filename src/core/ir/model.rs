@@ -175,6 +175,7 @@ impl IR {
                             .collect(),
                     ),
                     IR::Service(sdl) => IR::Service(sdl),
+                    IR::Deferred(ir) => IR::Deferred(ir.modify_box(modifier)),
                 }
             }
         }
