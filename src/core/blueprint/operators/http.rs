@@ -63,6 +63,12 @@ pub fn compile_http(
                 .or(config_module.upstream.on_request.clone())
                 .map(|on_request| HttpFilter { on_request });
 
+            // check if the resolver is independent or not.
+            let is_dependent = http.query.iter().any(|q| q.value.contains("{{.value") || q.value.contains("{{value")) || http
+                    .body
+                    .as_ref()
+                    .map_or(false, |b| b.contains("{{.value") || b.contains("{{value"));
+
             let io = if !http.batch_key.is_empty() && http.method == Method::GET {
                 // Find a query parameter that contains a reference to the {{.value}} key
                 let key = http.query.iter().find_map(|q| {
@@ -77,6 +83,7 @@ pub fn compile_http(
                     http_filter,
                     is_list,
                     dedupe,
+                    is_dependent,
                 })
             } else {
                 IR::IO(IO::Http {
@@ -86,6 +93,7 @@ pub fn compile_http(
                     http_filter,
                     is_list,
                     dedupe,
+                    is_dependent,
                 })
             };
             (io, &http.select)

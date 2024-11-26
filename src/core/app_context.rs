@@ -55,6 +55,7 @@ impl AppContext {
                                     http_filter,
                                     is_list,
                                     dedupe,
+                                    is_dependent,
                                     ..
                                 } => {
                                     let is_list = *is_list;
@@ -73,6 +74,7 @@ impl AppContext {
                                         http_filter: http_filter.clone(),
                                         is_list,
                                         dedupe,
+                                        is_dependent: *is_dependent,
                                     }));
 
                                     http_data_loaders.push(data_loader);

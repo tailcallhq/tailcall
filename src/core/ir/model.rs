@@ -14,6 +14,7 @@ use crate::core::http::HttpFilter;
 use crate::core::{grpc, http};
 
 #[derive(Clone, Debug)]
+#[allow(dead_code)]
 pub struct IrId(usize);
 impl IrId {
     pub fn new(id: usize) -> Self {
@@ -61,6 +62,7 @@ pub enum IO {
         http_filter: Option<HttpFilter>,
         is_list: bool,
         dedupe: bool,
+        is_dependent: bool,
     },
     GraphQL {
         req_template: graphql::RequestTemplate,
@@ -81,6 +83,16 @@ pub enum IO {
 }
 
 impl IO {
+    // TODO: fix is_dependent for GraphQL and Grpc.
+    pub fn is_dependent(&self) -> bool {
+        match self {
+            IO::Http { is_dependent, .. } => *is_dependent,
+            IO::GraphQL { .. } => true,
+            IO::Grpc { .. } => true,
+            IO::Js { .. } => false,
+        }
+    }
+
     pub fn dedupe(&self) -> bool {
         match self {
             IO::Http { dedupe, .. } => *dedupe,

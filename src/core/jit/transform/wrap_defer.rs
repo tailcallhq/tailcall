@@ -14,6 +14,20 @@ pub struct WrapDefer<A> {
     defer_id: Counter<usize>,
 }
 
+fn check_dependent_irs(ir: &IR) -> bool {
+    match ir {
+        IR::IO(io) => io.is_dependent(),
+        IR::Cache(cache) => cache.io.is_dependent(),
+        IR::Deferred { .. } | IR::Service(_) | IR::ContextPath(_) | IR::Dynamic(_) => false,
+        IR::Path(ir, _) => check_dependent_irs(ir),
+        IR::Map(map) => check_dependent_irs(&map.input),
+        IR::Pipe(l, r) => check_dependent_irs(l) || check_dependent_irs(r),
+        IR::Discriminate(_, ir) => check_dependent_irs(ir),
+        IR::Entity(map) => map.values().any(check_dependent_irs),
+        IR::Protect(_, ir) => check_dependent_irs(ir),
+    }
+}
+
 impl<A> WrapDefer<A> {
     pub fn new() -> Self {
         Self { _marker: PhantomData, defer_id: Counter::new(0) }
@@ -29,6 +43,7 @@ impl<A> WrapDefer<A> {
                     .iter()
                     .find(|d| d.name == "defer")
                     .is_some()
+                    && !check_dependent_irs(&ir)
                 {
                     IR::Deferred {
                         ir: Box::new(ir),
