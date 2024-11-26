@@ -291,6 +291,7 @@ pub struct OperationPlan<Input> {
     pub min_cache_ttl: Option<NonZeroU64>,
     pub selection: Vec<Field<Input>>,
     pub before: Option<IR>,
+    pub deferred_fields: Vec<Field<Input>>,
 }
 
 impl<Input> OperationPlan<Input> {
@@ -298,10 +299,14 @@ impl<Input> OperationPlan<Input> {
         self,
         map: impl Fn(Input) -> Result<Output, Error>,
     ) -> Result<OperationPlan<Output>, Error> {
-        let mut selection = vec![];
-
+        let mut selection = Vec::with_capacity(self.selection.len());
         for n in self.selection {
             selection.push(n.try_map(&map)?);
+        }
+
+        let mut deferred_selection = Vec::with_capacity(self.deferred_fields.len());
+        for n in self.deferred_fields {
+            deferred_selection.push(n.try_map(&map)?);
         }
 
         Ok(OperationPlan {
@@ -315,6 +320,7 @@ impl<Input> OperationPlan<Input> {
             is_protected: self.is_protected,
             min_cache_ttl: self.min_cache_ttl,
             before: self.before,
+            deferred_fields: deferred_selection,
         })
     }
 }
@@ -342,6 +348,7 @@ impl<Input> OperationPlan<Input> {
             is_protected: false,
             min_cache_ttl: None,
             before: Default::default(),
+            deferred_fields: Default::default(),
         }
     }
 

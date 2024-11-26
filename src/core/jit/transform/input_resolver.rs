@@ -68,6 +68,14 @@ where
             .map(|field| Self::resolve_field(&index, field?))
             .collect::<Result<Vec<_>, _>>()?;
 
+        let deferred_fields = self
+            .plan
+            .deferred_fields
+            .into_iter()
+            .map(|field| field.try_map(&|value| value.resolve(variables)))
+            .map(|field| Self::resolve_field(&index, field?))
+            .collect::<Result<Vec<_>, _>>()?;
+
         Ok(OperationPlan {
             root_name: self.plan.root_name.to_string(),
             operation_type: self.plan.operation_type,
@@ -79,6 +87,7 @@ where
             min_cache_ttl: self.plan.min_cache_ttl,
             selection,
             before: self.plan.before,
+            deferred_fields: deferred_fields,
         })
     }
 
