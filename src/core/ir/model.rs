@@ -13,6 +13,14 @@ use crate::core::graphql::{self};
 use crate::core::http::HttpFilter;
 use crate::core::{grpc, http};
 
+#[derive(Clone, Debug)]
+pub struct IrId(usize);
+impl IrId {
+    pub fn new(id: usize) -> Self {
+        Self(id)
+    }
+}
+
 #[derive(Clone, Debug, Display)]
 pub enum IR {
     Dynamic(DynamicValue<Value>),
@@ -31,6 +39,7 @@ pub enum IR {
     /// Apollo Federation _service resolver
     Service(String),
     Deferred {
+        id: IrId,
         ir: Box<IR>,
         path: Vec<String>,
     },
@@ -178,8 +187,8 @@ impl IR {
                             .collect(),
                     ),
                     IR::Service(sdl) => IR::Service(sdl),
-                    IR::Deferred { ir, path } => {
-                        IR::Deferred { ir: Box::new(ir.modify(modifier)), path }
+                    IR::Deferred { ir, path, id } => {
+                        IR::Deferred { ir: Box::new(ir.modify(modifier)), path, id }
                     }
                 }
             }
