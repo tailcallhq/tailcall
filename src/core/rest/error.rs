@@ -3,11 +3,11 @@ use std::str::ParseBoolError;
 
 use async_graphql::parser::types::{Directive, Type};
 use async_graphql::{Name, ServerError};
-use derive_more::{DebugCustom, From};
+use derive_more::{Debug, From};
 use serde_json;
 use tailcall_valid::ValidationError;
 
-#[derive(From, thiserror::Error, DebugCustom)]
+#[derive(From, thiserror::Error, Debug)]
 pub enum Error {
     #[error("Unexpected Named Type: {}", 0.to_string())]
     UnexpectedNamedType(Name),
@@ -19,7 +19,7 @@ pub enum Error {
     SerdeJson(serde_json::Error),
 
     #[error("{msg}: {directive:?}")]
-    #[debug(fmt = "{msg}: {directive:?}")]
+    #[debug("{msg}: {directive:?}")]
     Missing { msg: String, directive: Directive },
 
     #[error("Undefined query param: {}", _0)]
@@ -35,7 +35,7 @@ pub enum Error {
     ParseBoolean(ParseBoolError),
 
     #[error("Undefined param : {key} in {input}")]
-    #[debug(fmt = "Undefined param : {key} in {input}")]
+    #[debug("Undefined param : {key} in {input}")]
     UndefinedParam { key: String, input: String },
 
     #[error("Validation Error : {}", _0)]
