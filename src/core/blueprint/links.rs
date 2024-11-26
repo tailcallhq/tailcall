@@ -14,9 +14,7 @@ impl TryFrom<Vec<Link>> for Links {
             Valid::succeed(link.to_owned())
                 .and_then(|link| {
                     if link.src.is_empty() {
-                        Valid::fail(BlueprintError::Validation(
-                            "Link src cannot be empty".to_string(),
-                        ))
+                        Valid::fail(BlueprintError::LinkSrcCannotBeEmpty)
                     } else {
                         Valid::succeed(link)
                     }
@@ -24,10 +22,7 @@ impl TryFrom<Vec<Link>> for Links {
                 .and_then(|link| {
                     if let Some(id) = &link.id {
                         if links.iter().filter(|l| l.id.as_ref() == Some(id)).count() > 1 {
-                            return Valid::fail(BlueprintError::Validation(format!(
-                                "Duplicated id: {}",
-                                id
-                            )));
+                            return Valid::fail(BlueprintError::Duplicated(id.clone()));
                         }
                     }
                     Valid::succeed(link)
@@ -41,9 +36,7 @@ impl TryFrom<Vec<Link>> for Links {
                 .collect::<Vec<&Link>>();
 
             if script_links.len() > 1 {
-                Valid::fail(BlueprintError::Validation(
-                    "Only one script link is allowed".to_string(),
-                ))
+                Valid::fail(BlueprintError::OnlyOneScriptLinkAllowed)
             } else {
                 Valid::succeed(links)
             }
@@ -55,9 +48,7 @@ impl TryFrom<Vec<Link>> for Links {
                 .collect::<Vec<&Link>>();
 
             if key_links.len() > 1 {
-                Valid::fail(BlueprintError::Validation(
-                    "Only one key link is allowed".to_string(),
-                ))
+                Valid::fail(BlueprintError::OnlyOneKeyLinkAllowed)
             } else {
                 Valid::succeed(links)
             }

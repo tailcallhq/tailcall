@@ -51,14 +51,13 @@ pub fn compile_call(
                 .collect();
 
             if empties.len().gt(&0) {
-                return Valid::fail(BlueprintError::Validation(format!(
-                    "no argument {} found",
+                return Valid::fail(BlueprintError::ArgumentNotFound(
                     empties
                         .into_iter()
                         .map(|k| format!("'{}'", k))
                         .collect::<Vec<String>>()
-                        .join(", ")
-                )))
+                        .join(", "),
+                ))
                 .trace(field_name.as_str());
             }
 
@@ -72,10 +71,7 @@ pub fn compile_call(
             )
             .and_then(|b_field| {
                 if b_field.resolver.is_none() {
-                    Valid::fail(BlueprintError::Validation(format!(
-                        "{} field has no resolver",
-                        field_name
-                    )))
+                    Valid::fail(BlueprintError::FieldHasNoResolver(field_name.clone()))
                 } else {
                     Valid::succeed(b_field)
                 }
@@ -111,14 +107,11 @@ pub fn compile_call(
 
                 b_field
             }),
-            BlueprintError::Validation("Steps can't be empty".to_string()),
+            BlueprintError::StepsCanNotBeEmpty,
         )
     })
     .and_then(|field| {
-        Valid::from_option(
-            field.resolver,
-            BlueprintError::Validation("Result resolver can't be empty".to_string()),
-        )
+        Valid::from_option(field.resolver, BlueprintError::ResultResolverCanNotBeEmpty)
     })
 }
 
@@ -140,17 +133,17 @@ fn get_field_and_field_name<'a>(
 ) -> Valid<(&'a Field, String, &'a config::Type), BlueprintError> {
     Valid::from_option(
         get_type_and_field(call),
-        BlueprintError::Validation("call must have query or mutation".to_string()),
+        BlueprintError::CallMustHaveQueryOrMutation,
     )
     .and_then(|(type_name, field_name)| {
         Valid::from_option(
             config_module.config().find_type(&type_name),
-            BlueprintError::Validation(format!("{} type not found on config", type_name)),
+            BlueprintError::TypeNotFoundInConfig(type_name.clone()),
         )
         .and_then(|query_type| {
             Valid::from_option(
                 query_type.fields.get(&field_name),
-                BlueprintError::Validation(format!("{} field not found", field_name)),
+                BlueprintError::FieldNotFoundInType(field_name.clone()),
             )
             .fuse(Valid::succeed(field_name))
             .fuse(Valid::succeed(query_type))

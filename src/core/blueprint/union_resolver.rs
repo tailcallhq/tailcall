@@ -22,7 +22,7 @@ fn compile_union_resolver(
     .to_result()
     {
         Ok(discriminator) => Valid::succeed(discriminator),
-        Err(e) => Valid::fail(BlueprintError::Discriminator(e)),
+        Err(e) => Valid::from_validation_err(BlueprintError::from_validation_string(e)),
     }
 }
 

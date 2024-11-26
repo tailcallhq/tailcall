@@ -90,10 +90,7 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
         let http_server = match config_server.clone().get_version() {
             HttpVersion::HTTP2 => {
                 if config_module.extensions().cert.is_empty() {
-                    return Valid::fail(BlueprintError::Validation(
-                        "Certificate is required for HTTP2".to_owned(),
-                    ))
-                    .to_result();
+                    return Valid::fail(BlueprintError::CertificateIsRequiredForHTTP2).to_result();
                 }
 
                 let cert = config_module.extensions().cert.clone();
@@ -102,11 +99,7 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
                     .extensions()
                     .keys
                     .first()
-                    .ok_or_else(|| {
-                        ValidationError::new(BlueprintError::Validation(
-                            "Key is required for HTTP2".to_string(),
-                        ))
-                    })?
+                    .ok_or_else(|| ValidationError::new(BlueprintError::KeyIsRequiredForHTTP2))?
                     .clone();
 
                 Valid::succeed(Http::HTTP2 { cert, key })
@@ -189,12 +182,11 @@ fn validate_hostname(hostname: String) -> Valid<IpAddr, BlueprintError> {
     if hostname == "localhost" {
         Valid::succeed(IpAddr::from([127, 0, 0, 1]))
     } else {
-        Valid::from(hostname.parse().map_err(|e: AddrParseError| {
-            ValidationError::new(BlueprintError::Validation(format!(
-                "Parsing failed because of {}",
-                e
-            )))
-        }))
+        Valid::from(
+            hostname.parse().map_err(|e: AddrParseError| {
+                ValidationError::new(BlueprintError::ParsingFailed(e))
+            }),
+        )
         .trace("hostname")
         .trace("@server")
         .trace("schema")
@@ -229,10 +221,7 @@ fn handle_experimental_headers(
 ) -> Valid<HashSet<HeaderName>, BlueprintError> {
     Valid::from_iter(headers.iter(), |h| {
         if !h.to_lowercase().starts_with("x-") {
-            Valid::fail(BlueprintError::Validation(format!(
-                "Experimental headers must start with 'x-' or 'X-'. Got: '{}'",
-                h
-            )))
+            Valid::fail(BlueprintError::ExperimentalHeaderInvalidFormat(h.clone()))
         } else {
             match HeaderName::from_str(h) {
                 Ok(name) => Valid::succeed(name),

@@ -24,7 +24,7 @@ fn compile_interface_resolver(
     .to_result()
     {
         Ok(data) => Valid::succeed(data),
-        Err(err) => Valid::fail(BlueprintError::Discriminator(err)),
+        Err(err) => Valid::from_validation_err(BlueprintError::from_validation_string(err)),
     }
 }
 

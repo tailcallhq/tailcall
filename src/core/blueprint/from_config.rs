@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use async_graphql::dynamic::SchemaBuilder;
 use indexmap::IndexMap;
-use tailcall_valid::{Cause, Valid, ValidationError, Validator};
+use tailcall_valid::{Valid, ValidationError, Validator};
 
 use self::telemetry::to_opentelemetry;
 use super::Server;
@@ -126,23 +126,7 @@ impl TryFrom<&ConfigModule> for Blueprint {
                     .to_owned()
                     .transform(Required)
                     .to_result()
-                    .map_err(|err| {
-                        ValidationError::from(
-                            err.as_vec()
-                                .iter()
-                                .map(|cause| {
-                                    let cause_new =
-                                        Cause::new(BlueprintError::from(cause.message.clone()))
-                                            .trace(cause.trace.clone().into());
-                                    if let Some(desc) = cause.description.clone() {
-                                        cause_new.description(BlueprintError::from(desc))
-                                    } else {
-                                        cause_new
-                                    }
-                                })
-                                .collect::<Vec<Cause<BlueprintError>>>(),
-                        )
-                    })?,
+                    .map_err(BlueprintError::from_validation_string)?,
                 Blueprint::default(),
             )
             .and_then(|blueprint| {

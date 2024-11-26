@@ -101,7 +101,7 @@ fn validate_graph_ref(graph_ref: &str) -> Valid<(), BlueprintError> {
     if is_valid {
         Valid::succeed(())
     } else {
-        Valid::fail(BlueprintError::Validation(format!("`graph_ref` should be in the format <graph_id>@<variant> where `graph_id` and `variant` can only contain letters, numbers, '-' and '_'. Found {graph_ref}").to_string()))
+        Valid::fail(BlueprintError::InvalidGraphRef(graph_ref.to_string()))
     }
 }
 
@@ -115,9 +115,8 @@ mod tests {
     #[test]
     fn test_validate_graph_ref() {
         let success = || Valid::succeed(());
-        let failure = |graph_ref| {
-            Valid::fail(BlueprintError::Validation(format!("`graph_ref` should be in the format <graph_id>@<variant> where `graph_id` and `variant` can only contain letters, numbers, '-' and '_'. Found {graph_ref}").to_string()))
-        };
+        let failure =
+            |graph_ref: &str| Valid::fail(BlueprintError::InvalidGraphRef(graph_ref.to_string()));
 
         assert_eq!(validate_graph_ref("graph_id@variant"), success());
         assert_eq!(

@@ -28,7 +28,7 @@ pub fn to_directive(const_directive: ConstDirective) -> Valid<Directive, Bluepri
         .map(|arguments| Directive { name: const_directive.name.node.to_string(), arguments })
     {
         Ok(data) => Valid::succeed(data),
-        Err(e) => Valid::fail(BlueprintError::Directive(e)),
+        Err(e) => Valid::from_validation_err(BlueprintError::from_validation_string(e)),
     }
 }
 

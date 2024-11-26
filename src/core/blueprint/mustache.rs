@@ -21,30 +21,22 @@ impl<'a> MustachePartsValidator<'a> {
         let mut type_of = self.type_of;
         for item in parts {
             let field = type_of.fields.get(item).ok_or_else(|| {
-                BlueprintError::Validation(format!(
-                    "no value '{}' found",
-                    parts[0..parts.len() - len + 1].join(".").as_str()
-                ))
+                BlueprintError::NoValueFound(parts[0..parts.len() - len + 1].join("."))
             })?;
             let val_type = &field.type_of;
 
             if !is_query && val_type.is_nullable() {
-                return Err(BlueprintError::Validation(format!(
-                    "value '{}' is a nullable type",
-                    item.as_str()
-                )));
+                return Err(BlueprintError::ValueIsNullableType(item.clone()));
             } else if len == 1 && !scalar::Scalar::is_predefined(val_type.name()) {
-                return Err(BlueprintError::Validation(format!(
-                    "value '{}' is not of a scalar type",
-                    item.as_str()
-                )));
+                return Err(BlueprintError::ValueIsNotOfScalarType(item.clone()));
             } else if len == 1 {
                 break;
             }
 
-            type_of = self.config.find_type(val_type.name()).ok_or_else(|| {
-                BlueprintError::Validation(format!("no type '{}' found", parts.join(".").as_str()))
-            })?;
+            type_of = self
+                .config
+                .find_type(val_type.name())
+                .ok_or_else(|| BlueprintError::NoTypeFound(parts.join(".")))?;
 
             len -= 1;
         }
@@ -57,9 +49,7 @@ impl<'a> MustachePartsValidator<'a> {
         let args = &self.field.args;
 
         if parts.len() < 2 {
-            return Valid::fail(BlueprintError::Validation(
-                "too few parts in template".to_string(),
-            ));
+            return Valid::fail(BlueprintError::TooFewPartsInTemplate);
         }
 
         let head = parts[0].as_str();
@@ -80,28 +70,22 @@ impl<'a> MustachePartsValidator<'a> {
                 // most cases
                 if let Some(arg) = args.iter().find(|arg| arg.name == tail) {
                     if !is_query && arg.of_type.is_list() {
-                        return Valid::fail(BlueprintError::Validation(format!(
-                            "can't use list type '{tail}' here"
-                        )));
+                        return Valid::fail(BlueprintError::CantUseListTypeHere(tail.to_string()));
                     }
 
                     // we can use non-scalar types in args
                     if !is_query && arg.default_value.is_none() && arg.of_type.is_nullable() {
-                        return Valid::fail(BlueprintError::Validation(format!(
-                            "argument '{tail}' is a nullable type"
-                        )));
+                        return Valid::fail(BlueprintError::ArgumentIsNullableType(
+                            tail.to_string(),
+                        ));
                     }
                 } else {
-                    return Valid::fail(BlueprintError::Validation(format!(
-                        "no argument '{tail}' found"
-                    )));
+                    return Valid::fail(BlueprintError::ArgumentNotFound(tail.to_string()));
                 }
             }
             "vars" => {
                 if !config.server.vars.iter().any(|vars| vars.key == tail) {
-                    return Valid::fail(BlueprintError::Validation(format!(
-                        "var '{tail}' is not set in the server config"
-                    )));
+                    return Valid::fail(BlueprintError::VarNotSetInServerConfig(tail.to_string()));
                 }
             }
             "headers" | "env" => {
@@ -109,9 +93,7 @@ impl<'a> MustachePartsValidator<'a> {
                 // we can't validate here
             }
             _ => {
-                return Valid::fail(BlueprintError::Validation(format!(
-                    "unknown template directive '{head}'"
-                )));
+                return Valid::fail(BlueprintError::UnknownTemplateDirective(head.to_string()));
             }
         }
 

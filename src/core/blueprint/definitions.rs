@@ -16,10 +16,7 @@ use crate::core::{config, scalar, Type};
 
 pub fn to_scalar_type_definition(name: &str) -> Valid<Definition, BlueprintError> {
     if scalar::Scalar::is_predefined(name) {
-        Valid::fail(BlueprintError::Validation(format!(
-            "Scalar type {} is predefined",
-            name
-        )))
+        Valid::fail(BlueprintError::ScalarTypeIsPredefined(name.to_string()))
     } else {
         Valid::succeed(Definition::Scalar(ScalarTypeDefinition {
             name: name.to_string(),
@@ -382,9 +379,7 @@ pub fn update_cache_resolvers<'a>() -> TryFold<
 fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), BlueprintError> {
     let field_type = field.type_of.name();
     if !scalar::Scalar::is_predefined(field_type) && !config.contains(field_type) {
-        Valid::fail(BlueprintError::Validation(format!(
-            "Undeclared type '{field_type}' was found"
-        )))
+        Valid::fail(BlueprintError::UndeclaredTypeFound(field_type.clone()))
     } else {
         Valid::succeed(())
     }
@@ -454,11 +449,8 @@ fn to_fields(
                                             original_path: &[String]|
                  -> Valid<Type, BlueprintError> {
                     Valid::fail_with(
-                        BlueprintError::Validation("Cannot add field".to_string()),
-                        BlueprintError::Validation(format!(
-                            "Path [{}] does not exist",
-                            original_path.join(", ")
-                        )),
+                        BlueprintError::CannotAddField,
+                        BlueprintError::PathDoesNotExist(original_path.join(", ")),
                     )
                     .trace(field_name)
                 };
@@ -468,14 +460,13 @@ fn to_fields(
                                                    original_path: &[String]|
                  -> Valid<Type, BlueprintError> {
                     Valid::<Type, BlueprintError>::fail_with(
-                        BlueprintError::Validation("Cannot add field".to_string()),
-                        BlueprintError::Validation(format!(
-                            "Path: [{}] contains resolver {} at [{}.{}]",
+                        BlueprintError::CannotAddField,
+                        BlueprintError::PathContainsResolver(
                             original_path.join(", "),
-                            resolver_name,
-                            field_type,
-                            field_name
-                        )),
+                            resolver_name.to_string(),
+                            field_type.to_string(),
+                            field_name.to_string(),
+                        ),
                     )
                 };
                 update_resolver_from_path(
@@ -493,11 +484,10 @@ fn to_fields(
                 )
             })
             .trace(config::AddField::trace_name().as_str()),
-            None => Valid::fail(BlueprintError::Validation(format!(
-                "Could not find field {} in path {}",
-                add_field.path[0],
-                add_field.path.join(",")
-            ))),
+            None => Valid::fail(BlueprintError::FieldNotFoundInPath(
+                add_field.path[0].clone(),
+                add_field.path.join(","),
+            )),
         }
     };
 
@@ -569,9 +559,7 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, Bluepr
             config_module.enums.iter(),
             |(name, type_)| {
                 if type_.variants.is_empty() {
-                    Valid::fail(BlueprintError::Validation(
-                        "No variants found for enum".to_string(),
-                    ))
+                    Valid::fail(BlueprintError::NoVariantsFoundForEnum)
                 } else {
                     Valid::succeed(to_enum_type_definition((name, type_)))
                 }

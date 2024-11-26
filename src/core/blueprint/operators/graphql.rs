@@ -66,7 +66,7 @@ pub fn compile_graphql(
 
     let mustache = match helpers::headers::to_mustache_headers(&graphql.headers).to_result() {
         Ok(mustache) => Valid::succeed(mustache),
-        Err(err) => Valid::fail(BlueprintError::Mustache(err)),
+        Err(err) => Valid::from_validation_err(BlueprintError::from_validation_string(err)),
     };
 
     Valid::succeed(graphql.url.as_str())

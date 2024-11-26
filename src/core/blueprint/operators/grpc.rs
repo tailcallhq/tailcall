@@ -70,12 +70,12 @@ fn validate_schema(
 
     let input_type = match JsonSchema::try_from(input_type) {
         Ok(input_schema) => Valid::succeed(input_schema),
-        Err(e) => Valid::fail(BlueprintError::JsonSchema(e)),
+        Err(e) => Valid::from_validation_err(BlueprintError::from_validation_string(e)),
     };
 
     let output_type = match JsonSchema::try_from(output_type) {
         Ok(output_type) => Valid::succeed(output_type),
-        Err(e) => Valid::fail(BlueprintError::JsonSchema(e)),
+        Err(e) => Valid::from_validation_err(BlueprintError::from_validation_string(e)),
     };
 
     input_type
@@ -89,7 +89,7 @@ fn validate_schema(
             // JsonSchema won't match and the validation will fail
             match sub_type.is_a(&super_type, name).to_result() {
                 Ok(res) => Valid::succeed(res),
-                Err(e) => Valid::fail(BlueprintError::JsonSchema(e)),
+                Err(e) => Valid::from_validation_err(BlueprintError::from_validation_string(e)),
             }
         })
 }
@@ -102,26 +102,24 @@ fn validate_group_by(
     let input_type = &operation.input_type;
     let output_type = &operation.output_type;
     let mut field_descriptor: Result<FieldDescriptor, ValidationError<BlueprintError>> = None
-        .ok_or(ValidationError::new(BlueprintError::Validation(format!(
-            "field {} not found",
-            group_by[0]
-        ))));
+        .ok_or(ValidationError::new(BlueprintError::FieldNotFound(
+            group_by[0].clone(),
+        )));
     for item in group_by.iter().take(&group_by.len() - 1) {
         field_descriptor =
             output_type
                 .get_field_by_json_name(item.as_str())
-                .ok_or(ValidationError::new(BlueprintError::Validation(format!(
-                    "field {} not found",
-                    item
-                ))));
+                .ok_or(ValidationError::new(BlueprintError::FieldNotFound(
+                    item.clone(),
+                )));
     }
     let output_type = field_descriptor.and_then(|f| {
-        JsonSchema::try_from(&f).map_err(|e| ValidationError::new(BlueprintError::JsonSchema(e)))
+        JsonSchema::try_from(&f).map_err(|e| BlueprintError::from_validation_string(e))
     });
 
     let json_schema = match JsonSchema::try_from(input_type) {
         Ok(schema) => Valid::succeed(schema),
-        Err(e) => Valid::fail(BlueprintError::JsonSchema(e)),
+        Err(e) => Valid::from_validation_err(BlueprintError::from_validation_string(e)),
     };
 
     json_schema
@@ -137,7 +135,7 @@ fn validate_group_by(
                 .to_result()
             {
                 Ok(res) => Valid::succeed(res),
-                Err(e) => Valid::fail(BlueprintError::JsonSchema(e)),
+                Err(e) => Valid::from_validation_err(BlueprintError::from_validation_string(e)),
             }
         })
 }
@@ -175,10 +173,9 @@ impl TryFrom<&str> for GrpcMethod {
                 };
                 Ok(method)
             }
-            _ => Err(ValidationError::new(BlueprintError::Validation(format!(
-                "Invalid method format: {}. Expected format is <package>.<service>.<method>",
-                value
-            )))),
+            _ => Err(ValidationError::new(
+                BlueprintError::InvalidGrpcMethodFormat(value.to_string()),
+            )),
         }
     }
 }
@@ -196,9 +193,7 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, BlueprintError> {
             let file_descriptor_set = config_module.extensions().get_file_descriptor_set();
 
             if file_descriptor_set.file.is_empty() {
-                return Valid::fail(BlueprintError::Validation(
-                    "Protobuf files were not specified in the config".to_string(),
-                ));
+                return Valid::fail(BlueprintError::ProtobufFilesNotSpecifiedInConfig);
             }
 
             match to_operation(&method, file_descriptor_set)
@@ -208,7 +203,7 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, BlueprintError> {
                 .to_result()
             {
                 Ok(data) => Valid::succeed(data),
-                Err(e) => Valid::fail(BlueprintError::Grpc(e)),
+                Err(e) => Valid::from_validation_err(BlueprintError::from_validation_string(e)),
             }
         })
         .and_then(|(operation, url, headers, body)| {
@@ -309,7 +304,9 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(
             result.err().unwrap(),
-            ValidationError::new(BlueprintError::Validation("Invalid method format: package_name.ServiceName. Expected format is <package>.<service>.<method>".to_owned()))
+            ValidationError::new(BlueprintError::InvalidGrpcMethodFormat(
+                "package_name.ServiceName".to_string()
+            ))
         );
     }
 }

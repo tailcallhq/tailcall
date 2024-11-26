@@ -65,10 +65,9 @@ pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, B
                     ApolloFederation::EntityResolver(entity_resolver) => {
                         compile_entity_resolver(CompileEntityResolver { entity_resolver, ..inputs })
                     }
-                    ApolloFederation::Service => Valid::fail(BlueprintError::Validation(
-                        "Apollo federation resolvers can't be a part of entity resolver"
-                            .to_string(),
-                    )),
+                    ApolloFederation::Service => {
+                        Valid::fail(BlueprintError::ApolloFederationResolversNoPartOfEntityResolver)
+                    }
                 },
             };
 
@@ -111,15 +110,11 @@ pub fn update_federation<'a>() -> TryFoldConfig<'a, Blueprint> {
             }
 
             let Definition::Object(mut obj) = def else {
-                return Valid::fail(BlueprintError::Validation(
-                    "Query type is not an object inside the blueprint".to_string(),
-                ));
+                return Valid::fail(BlueprintError::QueryTypeNotObject);
             };
 
             let Some(config_type) = config_module.types.get(&query_name) else {
-                return Valid::fail(BlueprintError::Validation(format!(
-                    "Cannot find type {query_name} in the config"
-                )));
+                return Valid::fail(BlueprintError::TypeNotFoundInConfig(query_name.clone()));
             };
 
             Valid::from_iter(obj.fields.iter_mut(), |b_field| {
@@ -127,7 +122,7 @@ pub fn update_federation<'a>() -> TryFoldConfig<'a, Blueprint> {
                 let name = &b_field.name;
                 Valid::from_option(
                     config_type.fields.get(name),
-                    BlueprintError::Validation(format!("Cannot find field {name} in the type")),
+                    BlueprintError::FieldNotFoundInType(name.clone()),
                 )
                 .and_then(|field| {
                     let Some(Resolver::ApolloFederation(federation)) = &field.resolver else {

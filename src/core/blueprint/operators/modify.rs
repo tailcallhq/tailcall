@@ -20,9 +20,7 @@ pub fn update_modify<'a>() -> TryFold<
                         let interface = config.find_type(name);
                         if let Some(interface) = interface {
                             if interface.fields.iter().any(|(name, _)| name == new_name) {
-                                return Valid::fail(BlueprintError::Validation(
-                                    "Field is already implemented from interface".to_string(),
-                                ));
+                                return Valid::fail(BlueprintError::FieldExistsInInterface);
                             }
                         }
                     }

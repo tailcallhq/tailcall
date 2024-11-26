@@ -10,14 +10,11 @@ use crate::core::directive::DirectiveCodec;
 fn validate_query(config: &Config) -> Valid<(), BlueprintError> {
     Valid::from_option(
         config.schema.query.clone(),
-        BlueprintError::Validation("Query root is missing".to_owned()),
+        BlueprintError::QueryRootIsMissing,
     )
     .and_then(|ref query_type_name| {
         let Some(query) = config.find_type(query_type_name) else {
-            return Valid::fail(BlueprintError::Validation(
-                "Query type is not defined".to_owned(),
-            ))
-            .trace(query_type_name);
+            return Valid::fail(BlueprintError::QueryTypeNotDefined).trace(query_type_name);
         };
         let mut set = HashSet::new();
         validate_type_has_resolvers(query_type_name, query, &config.types, &mut set)
@@ -52,22 +49,20 @@ pub fn validate_field_has_resolver(
     types: &BTreeMap<String, Type>,
     visited: &mut HashSet<String>,
 ) -> Valid<(), BlueprintError> {
-    Valid::<(), BlueprintError>::fail(BlueprintError::Validation(
-        "No resolver has been found in the schema".to_owned(),
-    ))
-    .when(|| {
-        if !field.has_resolver() {
-            let type_name = field.type_of.name();
-            if let Some(ty) = types.get(type_name) {
-                let res = validate_type_has_resolvers(type_name, ty, types, visited);
-                return !res.is_succeed();
-            }
+    Valid::<(), BlueprintError>::fail(BlueprintError::NoResolverFoundInSchema)
+        .when(|| {
+            if !field.has_resolver() {
+                let type_name = field.type_of.name();
+                if let Some(ty) = types.get(type_name) {
+                    let res = validate_type_has_resolvers(type_name, ty, types, visited);
+                    return !res.is_succeed();
+                }
 
-            return true;
-        }
-        false
-    })
-    .trace(name)
+                return true;
+            }
+            false
+        })
+        .trace(name)
 }
 
 fn validate_mutation(config: &Config) -> Valid<(), BlueprintError> {
@@ -75,10 +70,7 @@ fn validate_mutation(config: &Config) -> Valid<(), BlueprintError> {
 
     if let Some(mutation_type_name) = mutation_type_name {
         let Some(mutation) = config.find_type(mutation_type_name) else {
-            return Valid::fail(BlueprintError::Validation(
-                "Mutation type is not defined".to_owned(),
-            ))
-            .trace(mutation_type_name);
+            return Valid::fail(BlueprintError::MutationTypeNotDefined).trace(mutation_type_name);
         };
         let mut set = HashSet::new();
         validate_type_has_resolvers(mutation_type_name, mutation, &config.types, &mut set)
@@ -93,7 +85,7 @@ pub fn to_schema<'a>() -> TryFoldConfig<'a, SchemaDefinition> {
             .and(validate_mutation(config))
             .and(Valid::from_option(
                 config.schema.query.as_ref(),
-                BlueprintError::Validation("Query root is missing".to_owned()),
+                BlueprintError::QueryRootIsMissing,
             ))
             .zip(to_directive(config.server.to_directive()))
             .map(|(query_type_name, directive)| SchemaDefinition {

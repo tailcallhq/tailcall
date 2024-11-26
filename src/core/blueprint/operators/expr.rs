@@ -1,5 +1,5 @@
 use async_graphql_value::ConstValue;
-use tailcall_valid::{Cause, Valid, Validator};
+use tailcall_valid::{Valid, Validator};
 
 use crate::core::blueprint::*;
 use crate::core::config;
@@ -18,20 +18,7 @@ fn validate_data_with_schema(
         .to_result()
     {
         Ok(_) => Valid::succeed(()),
-        Err(err) => Valid::from_vec_cause(
-            err.as_vec()
-                .iter()
-                .map(|cause| {
-                    let cause_new = Cause::new(BlueprintError::from(cause.message))
-                        .trace(cause.trace.clone().into());
-                    if let Some(desc) = cause.description {
-                        cause_new.description(BlueprintError::from(desc))
-                    } else {
-                        cause_new
-                    }
-                })
-                .collect::<Vec<Cause<BlueprintError>>>(),
-        ),
+        Err(err) => Valid::from_validation_err(BlueprintError::from_validation_str(err)),
     }
 }
 
@@ -67,7 +54,7 @@ pub fn compile_expr(inputs: CompileExpr) -> Valid<IR, BlueprintError> {
                     };
                     validation.map(|_| Dynamic(value.to_owned()))
                 }
-                Err(e) => Valid::fail(BlueprintError::Validation(format!("invalid JSON: {}", e))),
+                Err(e) => Valid::fail(BlueprintError::InvalidJson(e)),
             }
         }
     })

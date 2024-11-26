@@ -23,15 +23,11 @@ pub fn update_protected<'a>(
                     .is_some()
             {
                 if config.input_types().contains(type_name) {
-                    return Valid::fail(BlueprintError::Validation(
-                        "Input types can not be protected".to_owned(),
-                    ));
+                    return Valid::fail(BlueprintError::InputTypesCannotBeProtected);
                 }
 
                 if !config.extensions().has_auth() {
-                    return Valid::fail(
-                        BlueprintError::Validation("@protected operator is used but there is no @link definitions for auth providers".to_owned()),
-                    );
+                    return Valid::fail(BlueprintError::ProtectedOperatorNoAuthProviders);
                 }
 
                 // Used to collect the providers that are used in the field
@@ -64,10 +60,7 @@ pub fn update_protected<'a>(
                     if let Some(provider) = providers.get(id) {
                         Valid::succeed(Auth::Provider(provider.clone()))
                     } else {
-                        Valid::fail(BlueprintError::Validation(format!(
-                            "Auth provider {} not found",
-                            id
-                        )))
+                        Valid::fail(BlueprintError::AuthProviderNotFound(id.clone()))
                     }
                 })
                 .map(|provider| {
