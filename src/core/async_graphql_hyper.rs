@@ -380,29 +380,7 @@ impl GraphQLArcResponse {
     }
 
     fn default_body(&self) -> Result<Body> {
-        let str_repr: Vec<u8> = match &self.response {
-            JITBatchResponse::Batch(resp) => {
-                // Use iterators and collect for more efficient concatenation
-                let combined = resp
-                    .iter()
-                    .enumerate()
-                    .flat_map(|(i, r)| {
-                        let mut v = if i > 0 {
-                            vec![b',']
-                        } else {
-                            Vec::with_capacity(r.body.as_ref().len())
-                        };
-                        v.extend_from_slice(r.body.as_ref());
-                        v
-                    })
-                    .collect::<Vec<u8>>();
-
-                // Wrap the result in square brackets
-                [b"[", &combined[..], b"]"].concat()
-            }
-            JITBatchResponse::Single(resp) => resp.body.as_ref().to_owned(),
-        };
-        Ok(Body::from(str_repr))
+        Ok(Body::from(self.response.as_bytes()))
     }
 
     pub fn into_response(self) -> Result<Response<hyper::Body>> {

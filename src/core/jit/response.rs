@@ -22,7 +22,7 @@ pub struct Response<Value> {
     pub cache_control: CacheControl,
 
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub pending: Vec<Value>
+    pub pending: Vec<Value>,
 }
 
 impl<V: Default> Default for Response<V> {
@@ -141,6 +141,35 @@ impl<V: Serialize> From<Response<V>> for AnyResponse<Vec<u8>> {
 pub enum BatchResponse<Body> {
     Single(AnyResponse<Body>),
     Batch(Vec<AnyResponse<Body>>),
+}
+
+impl BatchResponse<Vec<u8>> {
+    pub fn as_bytes(&self) -> Vec<u8> {
+        let resp = match self {
+            BatchResponse::Batch(resp) => {
+                // Use iterators and collect for more efficient concatenation
+                let combined = resp
+                    .iter()
+                    .enumerate()
+                    .flat_map(|(i, r)| {
+                        let mut v = if i > 0 {
+                            vec![b',']
+                        } else {
+                            Vec::with_capacity(r.body.as_ref().len())
+                        };
+                        v.extend_from_slice(r.body.as_ref());
+                        v
+                    })
+                    .collect::<Vec<u8>>();
+
+                // Wrap the result in square brackets
+                [b"[", &combined[..], b"]"].concat()
+            }
+            BatchResponse::Single(resp) => resp.body.as_ref().to_owned(),
+        };
+
+        resp
+    }
 }
 
 impl<Body> BatchResponse<Body> {
