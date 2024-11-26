@@ -13,7 +13,7 @@ use hyper::Body;
 use serde::{Deserialize, Serialize};
 use tailcall::core::app_context::AppContext;
 use tailcall::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
-use tailcall::core::blueprint::Blueprint;
+use tailcall::core::blueprint::{Blueprint, BlueprintError};
 use tailcall::core::config::reader::ConfigReader;
 use tailcall::core::config::transformer::Required;
 use tailcall::core::config::{Config, ConfigModule, Source};
@@ -61,7 +61,7 @@ async fn is_sdl_error(spec: &ExecutionSpec, config_module: Valid<ConfigModule, S
         // errors: errors are expected, make sure they match
         let blueprint = config_module.and_then(|cfg| match Blueprint::try_from(&cfg) {
             Ok(blueprint) => Valid::succeed(blueprint),
-            Err(e) => Valid::fail(e.to_string()),
+            Err(e) => Valid::from_validation_err(BlueprintError::to_validation_string(e)),
         });
 
         match blueprint.to_result() {

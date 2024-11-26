@@ -19,7 +19,7 @@ pub enum BlueprintError {
     #[error("Cannot find field {0} in the type")]
     FieldNotFoundInType(String),
 
-    #[error("no argument {0} found")]
+    #[error("no argument '{0}' found")]
     ArgumentNotFound(String),
 
     #[error("field {0} has no resolver")]
@@ -103,7 +103,7 @@ pub enum BlueprintError {
     #[error("Only one key link is allowed")]
     OnlyOneKeyLinkAllowed,
 
-    #[error("No value '{0}' found")]
+    #[error("no value '{0}' found")]
     NoValueFound(String),
 
     #[error("value '{0}' is a nullable type")]
@@ -172,10 +172,10 @@ pub enum BlueprintError {
     #[error(transparent)]
     UrlParse(#[from] url::ParseError),
 
-    #[error(transparent)]
+    #[error("Parsing failed because of {0}")]
     InvalidHeaderName(#[from] http::header::InvalidHeaderName),
 
-    #[error(transparent)]
+    #[error("Parsing failed because of {0}")]
     InvalidHeaderValue(#[from] http::header::InvalidHeaderValue),
 
     #[error(transparent)]
@@ -208,6 +208,27 @@ impl From<ValidationError<crate::core::blueprint::BlueprintError>> for Errata {
 }
 
 impl BlueprintError {
+    pub fn to_validation_string(
+        errors: ValidationError<BlueprintError>,
+    ) -> ValidationError<String> {
+        let causes: Vec<Cause<_>> = errors
+            .as_vec()
+            .iter()
+            .map(|cause| {
+                let new_cause =
+                    Cause::new(cause.message.to_string()).trace(cause.trace.clone().into());
+
+                if let Some(description) = &cause.description {
+                    new_cause.description(description.to_string())
+                } else {
+                    new_cause
+                }
+            })
+            .collect();
+
+        ValidationError::from(causes)
+    }
+
     pub fn from_validation_str(errors: ValidationError<&str>) -> ValidationError<BlueprintError> {
         let causes: Vec<Cause<_>> = errors
             .as_vec()
