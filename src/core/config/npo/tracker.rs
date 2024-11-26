@@ -44,7 +44,7 @@ impl Display for QueryPath {
                 path.push_str(
                     query_path
                         .iter()
-                        .fold("".to_string(), |s, field_name| {
+                        .rfold("".to_string(), |s, field_name| {
                             if s.is_empty() {
                                 field_name.to_string()
                             } else {
@@ -62,7 +62,7 @@ impl Display for QueryPath {
             if s.is_empty() {
                 query.to_string()
             } else {
-                format!("{}\n{}", query, s)
+                format!("{}\n{}", s, query)
             }
         });
 
@@ -170,7 +170,9 @@ impl<'a> PathTracker<'a> {
         // chunks contains only paths from the current type.
         // Prepend every subpath with parent path
         if let Some(path) = parent_name {
-            chunks.transform(move |chunk| Chunk::new(path).concat(chunk))
+            let vec = chunks.as_vec();
+
+            Chunk::from_iter(vec.into_iter().map(|chunk| chunk.prepend(path)))
         } else {
             chunks
         }
