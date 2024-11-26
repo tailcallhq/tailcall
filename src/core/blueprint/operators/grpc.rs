@@ -113,9 +113,8 @@ fn validate_group_by(
                     item.clone(),
                 )));
     }
-    let output_type = field_descriptor.and_then(|f| {
-        JsonSchema::try_from(&f).map_err(BlueprintError::from_validation_string)
-    });
+    let output_type = field_descriptor
+        .and_then(|f| JsonSchema::try_from(&f).map_err(BlueprintError::from_validation_string));
 
     let json_schema = match JsonSchema::try_from(input_type) {
         Ok(schema) => Valid::succeed(schema),
