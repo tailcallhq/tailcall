@@ -47,7 +47,7 @@ impl<A> WrapDefer<A> {
                 {
                     IR::Deferred {
                         ir: Box::new(ir),
-                        path: vec![],
+                        path: path.clone(),
                         id: IrId::new(self.defer_id.next()),
                     }
                 } else {
