@@ -28,7 +28,7 @@ pub fn is_const(ir: &IR) -> bool {
         IR::Discriminate(_, ir) => is_const(ir),
         IR::Entity(hash_map) => hash_map.values().all(is_const),
         IR::Service(_) => true,
-        IR::Deferred(ir) => is_const(ir),
+        IR::Deferred{ir, ..} => is_const(ir),
     }
 }
 

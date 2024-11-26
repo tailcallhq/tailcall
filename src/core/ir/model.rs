@@ -30,7 +30,10 @@ pub enum IR {
     Entity(HashMap<String, IR>),
     /// Apollo Federation _service resolver
     Service(String),
-    Deferred(Box<IR>),
+    Deferred {
+        ir: Box<IR>,
+        path: Vec<String>,
+    },
 }
 
 #[derive(Clone, Debug)]
@@ -175,7 +178,9 @@ impl IR {
                             .collect(),
                     ),
                     IR::Service(sdl) => IR::Service(sdl),
-                    IR::Deferred(ir) => IR::Deferred(ir.modify_box(modifier)),
+                    IR::Deferred { ir, path } => {
+                        IR::Deferred { ir: Box::new(ir.modify(modifier)), path }
+                    }
                 }
             }
         }

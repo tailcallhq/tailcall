@@ -21,7 +21,7 @@ fn move_deferred_fields<A: Clone>(field: &mut Field<A>) -> Vec<Field<A>> {
     let mut deferred_fields = Vec::new();
     for selection in field.selection.iter_mut() {
         match selection.ir {
-            Some(IR::Deferred(_)) => {
+            Some(IR::Deferred { .. }) => {
                 deferred_fields.push(selection.clone());
             }
             _ => {}
@@ -31,7 +31,7 @@ fn move_deferred_fields<A: Clone>(field: &mut Field<A>) -> Vec<Field<A>> {
 
     field.selection.retain(|f| {
         f.ir.as_ref()
-            .map_or(true, |ir| !matches!(ir, IR::Deferred(_)))
+            .map_or(true, |ir| !matches!(ir, IR::Deferred { .. }))
     });
 
     deferred_fields

@@ -868,44 +868,46 @@ OperationPlan {
                     ),
                     directives: [],
                 },
-                Field {
-                    id: 2,
-                    name: "comments",
-                    output_name: "comments",
-                    ir: "Some(..)",
-                    type_of: [Comment],
-                    type_condition: Some(
-                        "User",
-                    ),
-                    selection: [
-                        Field {
-                            id: 3,
-                            name: "body",
-                            output_name: "body",
-                            type_of: String!,
-                            type_condition: Some(
-                                "Comment",
-                            ),
-                            directives: [],
-                        },
-                    ],
-                    directives: [
-                        Directive {
-                            name: "defer",
-                            arguments: [
-                                (
-                                    "label",
-                                    String(
-                                        "comment-defer",
-                                    ),
-                                ),
-                            ],
-                        },
-                    ],
-                },
             ],
             directives: [],
         },
     ],
     before: None,
+    deferred_fields: [
+        Field {
+            id: 2,
+            name: "comments",
+            output_name: "comments",
+            ir: "Some(..)",
+            type_of: [Comment],
+            type_condition: Some(
+                "User",
+            ),
+            selection: [
+                Field {
+                    id: 3,
+                    name: "body",
+                    output_name: "body",
+                    type_of: String!,
+                    type_condition: Some(
+                        "Comment",
+                    ),
+                    directives: [],
+                },
+            ],
+            directives: [
+                Directive {
+                    name: "defer",
+                    arguments: [
+                        (
+                            "label",
+                            String(
+                                "comment-defer",
+                            ),
+                        ),
+                    ],
+                },
+            ],
+        },
+    ],
 }

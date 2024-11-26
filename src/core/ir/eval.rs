@@ -146,7 +146,7 @@ impl IR {
 
                     Ok(ConstValue::object(obj))
                 }
-                IR::Deferred(ir) => ir.eval(ctx).await,
+                IR::Deferred { ir, .. } => ir.eval(ctx).await,
             }
         })
     }

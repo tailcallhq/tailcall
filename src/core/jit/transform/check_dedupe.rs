@@ -27,7 +27,7 @@ fn check_dedupe(ir: &IR) -> bool {
         IR::ContextPath(_) => true,
         IR::Map(_) => true,
         IR::Service(_) => true,
-        IR::Deferred(ir) => check_dedupe(ir)
+        IR::Deferred{ir, ..} => check_dedupe(ir)
     }
 }
 
