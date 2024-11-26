@@ -1,25 +1,28 @@
-use derive_more::{DebugCustom, From};
+use derive_more::{Debug, From};
 use reqwest::header::InvalidHeaderValue;
 
-#[derive(From, DebugCustom)]
+#[derive(From, Debug)]
 pub enum Error {
-    #[debug(fmt = "Reqwest Error: {}", _0)]
+    #[debug("Reqwest Error: {}", _0)]
     Reqwest(reqwest::Error),
 
-    #[debug(fmt = "Invalid Header Value: {}", _0)]
+    #[debug("Invalid Header Value: {}", _0)]
     InvalidHeaderValue(InvalidHeaderValue),
 
-    #[debug(fmt = "Serde JSON Error: {}", _0)]
+    #[debug("Serde JSON Error: {}", _0)]
     SerdeJson(serde_json::Error),
 
-    #[debug(fmt = "Url Parser Error: {}", _0)]
+    #[debug("Url Parser Error: {}", _0)]
     UrlParser(url::ParseError),
 
-    #[debug(fmt = "PostHog Error: {}", _0)]
+    #[debug("PostHog Error: {}", _0)]
     PostHog(posthog_rs::Error),
 
-    #[debug(fmt = "Tokio Join Error: {}", _0)]
+    #[debug("Tokio Join Error: {}", _0)]
     TokioJoin(tokio::task::JoinError),
+
+    #[debug("IO Error: {}", _0)]
+    IO(std::io::Error),
 }
 
 pub type Result<A> = std::result::Result<A, Error>;

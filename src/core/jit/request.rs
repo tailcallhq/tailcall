@@ -46,8 +46,9 @@ impl Request<ConstValue> {
         let plan = builder.build(self.operation_name.as_deref())?;
 
         transform::CheckConst::new()
-            .pipe(transform::CheckDedupe::new())
             .pipe(transform::CheckProtected::new())
+            .pipe(transform::AuthPlanner::new())
+            .pipe(transform::CheckDedupe::new())
             .pipe(transform::CheckCache::new())
             .transform(plan)
             .to_result()
