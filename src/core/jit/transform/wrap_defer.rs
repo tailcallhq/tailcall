@@ -69,7 +69,9 @@ impl<A> Transform for WrapDefer<A> {
     fn transform(&self, mut plan: Self::Value) -> Valid<Self::Value, Self::Error> {
         plan.selection.iter_mut().for_each(|f| {
             if let Some(ir) = std::mem::take(&mut f.ir) {
-                let ir = if f.directives.iter().find(|d| d.name == "defer").is_some() {
+                let ir = if f.directives.iter().find(|d| d.name == "defer").is_some()
+                    && !check_dependent_irs(&ir)
+                {
                     IR::Deferred {
                         ir: Box::new(ir),
                         path: vec![],
