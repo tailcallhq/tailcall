@@ -601,4 +601,10 @@ mod test {
 
         assert!(actual.is_dedupe);
     }
+
+    #[test]
+    fn test_defer(){
+        let proposed_plan = plan(r#"{ users { id ... @defer(label: "comment-defer") { comments { body } } } }"#);
+        insta::assert_debug_snapshot!(proposed_plan);
+    }
 }

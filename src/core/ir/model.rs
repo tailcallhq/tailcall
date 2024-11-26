@@ -30,6 +30,7 @@ pub enum IR {
     Entity(HashMap<String, IR>),
     /// Apollo Federation _service resolver
     Service(String),
+    Deferred(Box<IR>),
 }
 
 #[derive(Clone, Debug)]

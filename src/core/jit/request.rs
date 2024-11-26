@@ -50,6 +50,7 @@ impl Request<ConstValue> {
             .pipe(transform::AuthPlanner::new())
             .pipe(transform::CheckDedupe::new())
             .pipe(transform::CheckCache::new())
+            .pipe(transform::WrapDefer::new())
             .transform(plan)
             .to_result()
             // both transformers are infallible right now
