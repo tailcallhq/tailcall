@@ -959,7 +959,7 @@
           ]
         },
         {
-          "description": "Points to a reflection endpoint. The imported reflection endpoint will be used by the @grpc directive to resolve data from gRPC services.",
+          "description": "Points to a reflection endpoint. The imported reflection endpoint will be used by the `@grpc` directive to resolve data from gRPC services.",
           "type": "string",
           "enum": [
             "Grpc"
