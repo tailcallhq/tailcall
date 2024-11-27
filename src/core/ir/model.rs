@@ -13,6 +13,15 @@ use crate::core::graphql::{self};
 use crate::core::http::HttpFilter;
 use crate::core::{grpc, http};
 
+#[derive(Clone, Debug)]
+#[allow(dead_code)]
+pub struct IrId(usize);
+impl IrId {
+    pub fn new(id: usize) -> Self {
+        Self(id)
+    }
+}
+
 #[derive(Clone, Debug, Display)]
 pub enum IR {
     Dynamic(DynamicValue<Value>),
@@ -30,6 +39,11 @@ pub enum IR {
     Entity(HashMap<String, IR>),
     /// Apollo Federation _service resolver
     Service(String),
+    Deferred {
+        id: IrId,
+        ir: Box<IR>,
+        path: Vec<String>,
+    },
 }
 
 #[derive(Clone, Debug)]
@@ -48,6 +62,7 @@ pub enum IO {
         http_filter: Option<HttpFilter>,
         is_list: bool,
         dedupe: bool,
+        is_dependent: bool,
     },
     GraphQL {
         req_template: graphql::RequestTemplate,
@@ -68,6 +83,16 @@ pub enum IO {
 }
 
 impl IO {
+    // TODO: fix is_dependent for GraphQL and Grpc.
+    pub fn is_dependent(&self) -> bool {
+        match self {
+            IO::Http { is_dependent, .. } => *is_dependent,
+            IO::GraphQL { .. } => true,
+            IO::Grpc { .. } => true,
+            IO::Js { .. } => false,
+        }
+    }
+
     pub fn dedupe(&self) -> bool {
         match self {
             IO::Http { dedupe, .. } => *dedupe,
@@ -174,6 +199,9 @@ impl IR {
                             .collect(),
                     ),
                     IR::Service(sdl) => IR::Service(sdl),
+                    IR::Deferred { ir, path, id } => {
+                        IR::Deferred { ir: Box::new(ir.modify(modifier)), path, id }
+                    }
                 }
             }
         }

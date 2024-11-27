@@ -278,7 +278,34 @@ impl Builder {
                         .map(|cond| cond.node.on.node.as_str())
                         .unwrap_or(type_condition);
 
-                    fields.extend(self.iter(&fragment.selection_set.node, type_of, fragments));
+                    // what if we've directive defined in the fragment?
+                    let mut directives = Vec::with_capacity(fragment.directives.len());
+                    for directive in fragment.directives.iter() {
+                        let directive = &directive.node;
+                        if directive.name.node == "skip" || directive.name.node == "include" {
+                            continue;
+                        }
+                        let arguments = directive
+                            .arguments
+                            .iter()
+                            .map(|(k, v)| (k.node.to_string(), v.node.clone()))
+                            .collect::<Vec<_>>();
+
+                        directives
+                            .push(JitDirective { name: directive.name.to_string(), arguments });
+                    }
+
+                    if directives.iter().find(|d| d.name == "defer").is_some() {
+                        let mut child_fields =
+                            self.iter(&fragment.selection_set.node, type_of, fragments);
+
+                        child_fields.iter_mut().for_each(|f| {
+                            f.directives.extend(directives.clone());
+                        });
+                        fields.extend(child_fields);
+                    } else {
+                        fields.extend(self.iter(&fragment.selection_set.node, type_of, fragments));
+                    }
                 }
             }
         }

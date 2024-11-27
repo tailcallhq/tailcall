@@ -4,7 +4,9 @@ mod check_const;
 mod check_dedupe;
 mod check_protected;
 mod input_resolver;
+mod wrap_defer;
 mod skip;
+mod defer_planner;
 
 pub use auth_planner::*;
 pub use check_cache::*;
@@ -12,4 +14,6 @@ pub use check_const::*;
 pub use check_dedupe::*;
 pub use check_protected::*;
 pub use input_resolver::*;
+pub use wrap_defer::*;
+pub use defer_planner::*;
 pub use skip::*;

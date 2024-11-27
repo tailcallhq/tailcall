@@ -98,6 +98,9 @@ impl ConstValueExecutor {
 
         let resp: Response<serde_json_borrow::Value> = exe.execute(&synth).await;
 
+
+        // add the pending to response.
+
         if is_introspection_query {
             let async_req = async_graphql::Request::from(request).only_introspection();
             let async_resp = app_ctx.execute(async_req).await;
