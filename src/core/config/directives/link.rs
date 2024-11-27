@@ -51,7 +51,7 @@ pub enum LinkType {
     Jwks,
 
     /// Points to a reflection endpoint. The imported reflection endpoint will
-    /// be used by the @grpc directive to resolve data from gRPC services.
+    /// be used by the `@grpc` directive to resolve data from gRPC services.
     Grpc,
 }
 
