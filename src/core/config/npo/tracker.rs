@@ -3,7 +3,7 @@ use std::fmt::{Display, Formatter};
 
 use tailcall_chunk::Chunk;
 
-use crate::core::config::Config;
+use crate::core::config::{Config, SchemaConfig};
 
 ///
 /// Represents a list of query paths that can issue a N + 1 query
@@ -105,12 +105,12 @@ impl Display for FieldName<'_> {
 /// A module that tracks the query paths that can issue a N + 1 calls to
 /// upstream.
 pub struct PathTracker<'a> {
-    config: &'a Config,
+    config: &'a SchemaConfig,
     cache: HashMap<(TypeName<'a>, bool), Chunk<Chunk<FieldName<'a>>>>,
 }
 
 impl<'a> PathTracker<'a> {
-    pub fn new(config: &'a Config) -> PathTracker<'a> {
+    pub fn new(config: &'a SchemaConfig) -> PathTracker<'a> {
         PathTracker { config, cache: Default::default() }
     }
 

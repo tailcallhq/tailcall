@@ -9,6 +9,8 @@ pub use reader_context::*;
 pub use resolver::*;
 pub use source::*;
 pub use url_query::*;
+pub use schema_config::*;
+
 mod apollo;
 mod config;
 mod config_module;
@@ -27,3 +29,5 @@ mod resolver;
 mod source;
 pub mod transformer;
 mod url_query;
+mod schema_config;
+mod runtime_config;
