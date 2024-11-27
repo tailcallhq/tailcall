@@ -902,16 +902,44 @@
     },
     "LinkType": {
       "type": "string",
-      "enum": [
-        "Config",
-        "Protobuf",
-        "Script",
-        "Cert",
-        "Key",
-        "Operation",
-        "Htpasswd",
-        "Jwks",
-        "Grpc"
+      "description": "Specifies the type of the link.",
+      "oneOf": [
+        {
+          "const": "Config",
+          "description": "Points to another Tailcall Configuration file. The imported configuration will be merged into the importing configuration."
+        },
+        {
+          "const": "Protobuf",
+          "description": "Points to a Protobuf file. The imported Protobuf file will be used by the `@grpc` directive. If your API exposes a reflection endpoint, you should set the type to `Grpc` instead."
+        },
+        {
+          "const": "Script",
+          "description": "Points to a JS file. The imported JS file will be used by the `@js` directive."
+        },
+        {
+          "const": "Cert",
+          "description": "Points to a Cert file. The imported Cert file will be used by the server to serve over HTTPS."
+        },
+        {
+          "const": "Key",
+          "description": "Points to a Key file. The imported Key file will be used by the server to serve over HTTPS."
+        },
+        {
+          "const": "Operation",
+          "description": "A trusted document that contains GraphQL operations (queries, mutations) that can be exposed as a REST API using the `@rest` directive."
+        },
+        {
+          "const": "Htpasswd",
+          "description": "Points to an Htpasswd file. The imported Htpasswd file will be used by the server to authenticate users."
+        },
+        {
+          "const": "Jwks",
+          "description": "Points to a Jwks file. The imported Jwks file will be used by the server to authenticate users."
+        },
+        {
+          "const": "Grpc",
+          "description": "Points to a reflection endpoint. The imported reflection endpoint will be used by the `@grpc` directive to resolve data from gRPC services."
+        }
       ]
     },
     "Method": {
