@@ -1,8 +1,8 @@
 use std::collections::{HashMap, HashSet};
 
-use tailcall_valid::{Valid, ValidationError, Validator};
+use tailcall_valid::{Valid, Validator};
 
-use crate::core::blueprint::FieldDefinition;
+use crate::core::blueprint::{BlueprintError, FieldDefinition};
 use crate::core::config::{
     Config, ConfigModule, Field, GraphQL, GraphQLOperationType, Resolver, Type,
 };
@@ -61,22 +61,28 @@ pub fn compile_graphql(
     operation_type: &GraphQLOperationType,
     type_name: &str,
     graphql: &GraphQL,
-) -> Valid<IR, String> {
+) -> Valid<IR, BlueprintError> {
     let args = graphql.args.as_ref();
+
+    let mustache = match helpers::headers::to_mustache_headers(&graphql.headers).to_result() {
+        Ok(mustache) => Valid::succeed(mustache),
+        Err(err) => Valid::from_validation_err(BlueprintError::from_validation_string(err)),
+    };
+
     Valid::succeed(graphql.url.as_str())
-        .zip(helpers::headers::to_mustache_headers(&graphql.headers))
+        .zip(mustache)
         .and_then(|(base_url, headers)| {
-            Valid::from(
-                RequestTemplate::new(
-                    base_url.to_owned(),
-                    operation_type,
-                    &graphql.name,
-                    args,
-                    headers,
-                    create_related_fields(config, type_name, &mut HashSet::new()),
-                )
-                .map_err(|e| ValidationError::new(e.to_string())),
-            )
+            match RequestTemplate::new(
+                base_url.to_owned(),
+                operation_type,
+                &graphql.name,
+                args,
+                headers,
+                create_related_fields(config, type_name, &mut HashSet::new()),
+            ) {
+                Ok(req_template) => Valid::succeed(req_template),
+                Err(err) => Valid::fail(BlueprintError::Error(err)),
+            }
         })
         .map(|req_template| {
             let field_name = graphql.name.clone();
@@ -88,8 +94,9 @@ pub fn compile_graphql(
 
 pub fn update_graphql<'a>(
     operation_type: &'a GraphQLOperationType,
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a Type, &'a str), FieldDefinition, String> {
-    TryFold::<(&ConfigModule, &Field, &Type, &'a str), FieldDefinition, String>::new(
+) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a Type, &'a str), FieldDefinition, BlueprintError>
+{
+    TryFold::<(&ConfigModule, &Field, &Type, &'a str), FieldDefinition, BlueprintError>::new(
         |(config, field, type_of, _), b_field| {
             let Some(Resolver::Graphql(graphql)) = &field.resolver else {
                 return Valid::succeed(b_field);

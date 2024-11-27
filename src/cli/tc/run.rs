@@ -16,7 +16,7 @@ pub async fn run() -> Result<()> {
         tracing::info!("Env file: {:?} loaded", path);
     }
     let cli = Cli::parse();
-    update_checker::check_for_update().await;
+    tokio::task::spawn(update_checker::check_for_update());
     // Initialize ping event every 60 seconds
     let _ = TRACKER
         .init_ping(tokio::time::Duration::from_secs(60))

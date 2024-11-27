@@ -1,62 +1,62 @@
 use std::fmt::Display;
 use std::sync::Arc;
 
-use derive_more::{DebugCustom, From};
+use derive_more::{Debug, From};
 use tokio::task::JoinError;
 
-#[derive(From, DebugCustom, Clone)]
+#[derive(From, Debug, Clone)]
 pub enum Error {
-    #[debug(fmt = "Failed to initialize worker")]
+    #[debug("Failed to initialize worker")]
     InitializationFailed,
 
-    #[debug(fmt = "Worker communication error")]
+    #[debug("Worker communication error")]
     Communication,
 
-    #[debug(fmt = "Serde Json Error: {}", _0)]
+    #[debug("Serde Json Error: {}", _0)]
     SerdeJson(Arc<serde_json::Error>),
 
-    #[debug(fmt = "Request Clone Failed")]
+    #[debug("Request Clone Failed")]
     RequestCloneFailed,
 
-    #[debug(fmt = "Hyper Header To Str Error: {}", _0)]
+    #[debug("Hyper Header To Str Error: {}", _0)]
     HyperHeaderStr(Arc<http::header::ToStrError>),
 
-    #[debug(fmt = "JS Runtime Stopped Error")]
+    #[debug("JS Runtime Stopped Error")]
     JsRuntimeStopped,
 
-    #[debug(fmt = "CLI Error : {}", _0)]
+    #[debug("CLI Error : {}", _0)]
     CLI(String),
 
-    #[debug(fmt = "Join Error : {}", _0)]
+    #[debug("Join Error : {}", _0)]
     Join(Arc<JoinError>),
 
-    #[debug(fmt = "Runtime not initialized")]
+    #[debug("Runtime not initialized")]
     RuntimeNotInitialized,
 
-    #[debug(fmt = "{} is not a function", _0)]
+    #[debug("{} is not a function", _0)]
     #[from(ignore)]
     InvalidFunction(String),
 
-    #[debug(fmt = "Rquickjs Error: {}", _0)]
+    #[debug("Rquickjs Error: {}", _0)]
     #[from(ignore)]
     Rquickjs(String),
 
-    #[debug(fmt = "Deserialize Failed: {}", _0)]
+    #[debug("Deserialize Failed: {}", _0)]
     #[from(ignore)]
     DeserializeFailed(String),
 
-    #[debug(fmt = "globalThis not initialized: {}", _0)]
+    #[debug("globalThis not initialized: {}", _0)]
     #[from(ignore)]
     GlobalThisNotInitialised(String),
 
     #[debug(
-        fmt = "Error: {}\nUnable to parse value from js function: {} maybe because it's not returning a string?",
+        "Error: {}\nUnable to parse value from js function: {} maybe because it's not returning a string?",
         _0,
         _1
     )]
     FunctionValueParseError(String, String),
 
-    #[debug(fmt = "Error : {}", _0)]
+    #[debug("Error : {}", _0)]
     Anyhow(Arc<anyhow::Error>),
 }
 
