@@ -30,6 +30,7 @@ url = { version = "2.5.0", features = ["serde"] }
 convert_case = "0.6.0"
 tailcall-valid = "0.1.1"
 miette = "7.2.0"
+enum_dispatch = "0.3.13"
 
 [dependencies]
 # dependencies specific to CLI must have optional = true and the dep should be added to default feature.
@@ -178,6 +179,7 @@ dashmap = "6.1.0"
 urlencoding = "2.1.3"
 tailcall-chunk = "0.2.5"
 miette = { workspace = true }
+enum_dispatch = { workspace = true }
 
 # to build rquickjs bindings on systems without builtin bindings
 [target.'cfg(all(target_os = "windows", target_arch = "x86"))'.dependencies]

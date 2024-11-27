@@ -1,9 +1,16 @@
+#![allow(unused)]
+
 use async_graphql::Positioned;
 use async_graphql_value::Name;
 
 mod from_service_document;
 mod schema;
 mod helpers;
+mod object;
+mod union;
+mod scalar;
+mod enum_ty;
+mod input_object_ty;
 
 
 pub(super) type Error = String;
