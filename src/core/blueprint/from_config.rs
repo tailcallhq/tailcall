@@ -15,7 +15,7 @@ use crate::core::json::JsonSchema;
 use crate::core::try_fold::TryFold;
 use crate::core::Type;
 
-pub fn config_blueprint<'a>() -> TryFold<'a, ConfigModule, Blueprint, String> {
+pub fn config_blueprint<'a>() -> TryFold<'a, ConfigModule, Blueprint, BlueprintError> {
     let server = TryFoldConfig::<Blueprint>::new(|config_module, blueprint| {
         Valid::from(Server::try_from(config_module.clone())).map(|server| blueprint.server(server))
     });
@@ -116,20 +116,24 @@ pub fn to_json_schema(type_of: &Type, config: &Config) -> JsonSchema {
 }
 
 impl TryFrom<&ConfigModule> for Blueprint {
-    type Error = ValidationError<String>;
+    type Error = ValidationError<crate::core::blueprint::BlueprintError>;
 
     fn try_from(config_module: &ConfigModule) -> Result<Self, Self::Error> {
         config_blueprint()
             .try_fold(
                 // Apply required transformers to the configuration
-                &config_module.to_owned().transform(Required).to_result()?,
+                &config_module
+                    .to_owned()
+                    .transform(Required)
+                    .to_result()
+                    .map_err(BlueprintError::from_validation_string)?,
                 Blueprint::default(),
             )
             .and_then(|blueprint| {
                 let schema_builder = SchemaBuilder::from(&blueprint);
                 match schema_builder.finish() {
                     Ok(_) => Valid::succeed(blueprint),
-                    Err(e) => Valid::fail(e.to_string()),
+                    Err(e) => Valid::fail(e.into()),
                 }
             })
             .to_result()

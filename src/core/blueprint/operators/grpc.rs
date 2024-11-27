@@ -5,7 +5,7 @@ use prost_reflect::FieldDescriptor;
 use tailcall_valid::{Valid, ValidationError, Validator};
 
 use super::apply_select;
-use crate::core::blueprint::FieldDefinition;
+use crate::core::blueprint::{BlueprintError, FieldDefinition};
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::{Config, ConfigModule, Field, GraphQLOperationType, Grpc, Resolver};
 use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
@@ -64,12 +64,22 @@ fn validate_schema(
     field_schema: FieldSchema,
     operation: &ProtobufOperation,
     name: &str,
-) -> Valid<(), String> {
+) -> Valid<(), BlueprintError> {
     let input_type = &operation.input_type;
     let output_type = &operation.output_type;
 
-    Valid::from(JsonSchema::try_from(input_type))
-        .zip(Valid::from(JsonSchema::try_from(output_type)))
+    let input_type = match JsonSchema::try_from(input_type) {
+        Ok(input_schema) => Valid::succeed(input_schema),
+        Err(e) => Valid::from_validation_err(BlueprintError::from_validation_string(e)),
+    };
+
+    let output_type = match JsonSchema::try_from(output_type) {
+        Ok(output_type) => Valid::succeed(output_type),
+        Err(e) => Valid::from_validation_err(BlueprintError::from_validation_string(e)),
+    };
+
+    input_type
+        .zip(output_type)
         .and_then(|(_input_schema, sub_type)| {
             // TODO: add validation for input schema - should compare result grpc.body to
             // schema
@@ -77,7 +87,10 @@ fn validate_schema(
             // TODO: all of the fields in protobuf are optional actually
             // and if we want to mark some fields as required in GraphQL
             // JsonSchema won't match and the validation will fail
-            sub_type.is_a(&super_type, name)
+            match sub_type.is_a(&super_type, name).to_result() {
+                Ok(res) => Valid::succeed(res),
+                Err(e) => Valid::from_validation_err(BlueprintError::from_validation_string(e)),
+            }
         })
 }
 
@@ -85,20 +98,30 @@ fn validate_group_by(
     field_schema: &FieldSchema,
     operation: &ProtobufOperation,
     group_by: Vec<String>,
-) -> Valid<(), String> {
+) -> Valid<(), BlueprintError> {
     let input_type = &operation.input_type;
     let output_type = &operation.output_type;
-    let mut field_descriptor: Result<FieldDescriptor, ValidationError<String>> = None.ok_or(
-        ValidationError::new(format!("field {} not found", group_by[0])),
-    );
+    let mut field_descriptor: Result<FieldDescriptor, ValidationError<BlueprintError>> = None
+        .ok_or(ValidationError::new(BlueprintError::FieldNotFound(
+            group_by[0].clone(),
+        )));
     for item in group_by.iter().take(&group_by.len() - 1) {
-        field_descriptor = output_type
-            .get_field_by_json_name(item.as_str())
-            .ok_or(ValidationError::new(format!("field {} not found", item)));
+        field_descriptor =
+            output_type
+                .get_field_by_json_name(item.as_str())
+                .ok_or(ValidationError::new(BlueprintError::FieldNotFound(
+                    item.clone(),
+                )));
     }
-    let output_type = field_descriptor.and_then(|f| JsonSchema::try_from(&f));
+    let output_type = field_descriptor
+        .and_then(|f| JsonSchema::try_from(&f).map_err(BlueprintError::from_validation_string));
 
-    Valid::from(JsonSchema::try_from(input_type))
+    let json_schema = match JsonSchema::try_from(input_type) {
+        Ok(schema) => Valid::succeed(schema),
+        Err(e) => Valid::from_validation_err(BlueprintError::from_validation_string(e)),
+    };
+
+    json_schema
         .zip(Valid::from(output_type))
         .and_then(|(_input_schema, output_schema)| {
             // TODO: add validation for input schema - should compare result grpc.body to
@@ -106,7 +129,13 @@ fn validate_group_by(
             let fields = &field_schema.field;
             // we're treating List types for gRPC as optional.
             let fields = JsonSchema::Opt(Box::new(JsonSchema::Arr(Box::new(fields.to_owned()))));
-            fields.is_a(&output_schema, group_by[0].as_str())
+            match fields
+                .is_a(&output_schema, group_by[0].as_str())
+                .to_result()
+            {
+                Ok(res) => Valid::succeed(res),
+                Err(e) => Valid::from_validation_err(BlueprintError::from_validation_string(e)),
+            }
         })
 }
 
@@ -130,7 +159,7 @@ impl Display for GrpcMethod {
 }
 
 impl TryFrom<&str> for GrpcMethod {
-    type Error = ValidationError<String>;
+    type Error = ValidationError<crate::core::blueprint::BlueprintError>;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let parts: Vec<&str> = value.rsplitn(3, '.').collect();
@@ -143,15 +172,14 @@ impl TryFrom<&str> for GrpcMethod {
                 };
                 Ok(method)
             }
-            _ => Err(ValidationError::new(format!(
-                "Invalid method format: {}. Expected format is <package>.<service>.<method>",
-                value
-            ))),
+            _ => Err(ValidationError::new(
+                BlueprintError::InvalidGrpcMethodFormat(value.to_string()),
+            )),
         }
     }
 }
 
-pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
+pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, BlueprintError> {
     let config_module = inputs.config_module;
     let operation_type = inputs.operation_type;
     let field = inputs.field;
@@ -164,14 +192,18 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
             let file_descriptor_set = config_module.extensions().get_file_descriptor_set();
 
             if file_descriptor_set.file.is_empty() {
-                return Valid::fail("Protobuf files were not specified in the config".to_string());
+                return Valid::fail(BlueprintError::ProtobufFilesNotSpecifiedInConfig);
             }
 
-            to_operation(&method, file_descriptor_set)
+            match to_operation(&method, file_descriptor_set)
                 .fuse(to_url(grpc, &method))
                 .fuse(helpers::headers::to_mustache_headers(&grpc.headers))
                 .fuse(helpers::body::to_body(grpc.body.as_ref()))
-                .into()
+                .to_result()
+            {
+                Ok(data) => Valid::succeed(data),
+                Err(e) => Valid::from_validation_err(BlueprintError::from_validation_string(e)),
+            }
         })
         .and_then(|(operation, url, headers, body)| {
             let validation = if validate_with_schema {
@@ -212,9 +244,13 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
 
 pub fn update_grpc<'a>(
     operation_type: &'a GraphQLOperationType,
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
+) -> TryFold<
+    'a,
+    (&'a ConfigModule, &'a Field, &'a config::Type, &'a str),
+    FieldDefinition,
+    BlueprintError,
+> {
+    TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, BlueprintError>::new(
         |(config_module, field, type_of, _name), b_field| {
             let Some(Resolver::Grpc(grpc)) = &field.resolver else {
                 return Valid::succeed(b_field);
@@ -244,6 +280,7 @@ mod tests {
     use tailcall_valid::ValidationError;
 
     use super::GrpcMethod;
+    use crate::core::blueprint::BlueprintError;
 
     #[test]
     fn try_from_grpc_method() {
@@ -266,7 +303,9 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(
             result.err().unwrap(),
-            ValidationError::new("Invalid method format: package_name.ServiceName. Expected format is <package>.<service>.<method>".to_string())
+            ValidationError::new(BlueprintError::InvalidGrpcMethodFormat(
+                "package_name.ServiceName".to_string()
+            ))
         );
     }
 }
