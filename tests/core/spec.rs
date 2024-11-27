@@ -8,7 +8,7 @@ use std::{fs, panic};
 use anyhow::Context;
 use colored::Colorize;
 use futures_util::future::join_all;
-use http::Request;
+use http::{Request, Response};
 use hyper::Body;
 use serde::{Deserialize, Serialize};
 use tailcall::core::app_context::AppContext;
@@ -282,29 +282,63 @@ async fn run_test(
     app_ctx: Arc<AppContext>,
     request: &APIRequest,
 ) -> anyhow::Result<http::Response<Body>> {
-    let body = request
-        .body
-        .as_ref()
-        .map(|body| Body::from(body.to_bytes()))
-        .unwrap_or_default();
+    let request_count = request.concurrency;
 
-    let method = request.method.clone();
-    let headers = request.headers.clone();
-    let url = request.url.clone();
-    let req = headers
+    let futures = (0..request_count).map(|_| {
+        let app_ctx = app_ctx.clone();
+        let body = request
+            .body
+            .as_ref()
+            .map(|body| Body::from(body.to_bytes()))
+            .unwrap_or_default();
+
+        let method = request.method.clone();
+        let headers = request.headers.clone();
+        let url = request.url.clone();
+
+        tokio::spawn(async move {
+            let req = headers
+                .into_iter()
+                .fold(
+                    Request::builder()
+                        .method(method.to_hyper())
+                        .uri(url.as_str()),
+                    |acc, (key, value)| acc.header(key, value),
+                )
+                .body(body)?;
+
+            if app_ctx.blueprint.server.enable_batch_requests {
+                handle_request::<GraphQLBatchRequest>(req, app_ctx).await
+            } else {
+                handle_request::<GraphQLRequest>(req, app_ctx).await
+            }
+        })
+    });
+
+    let responses = join_all(futures).await;
+
+    // Unwrap the Result from join_all and the individual task results
+    let responses = responses
         .into_iter()
-        .fold(
-            Request::builder()
-                .method(method.to_hyper())
-                .uri(url.as_str()),
-            |acc, (key, value)| acc.header(key, value),
-        )
-        .body(body)?;
+        .map(|res| res.map_err(anyhow::Error::from).and_then(|inner| inner))
+        .collect::<Result<Vec<_>, _>>()?;
 
-    // TODO: reuse logic from server.rs to select the correct handler
-    if app_ctx.blueprint.server.enable_batch_requests {
-        handle_request::<GraphQLBatchRequest>(req, app_ctx).await
-    } else {
-        handle_request::<GraphQLRequest>(req, app_ctx).await
+    let mut base_response = None;
+
+    // ensure all the received responses are the same.
+    for response in responses {
+        let (head, body) = response.into_parts();
+        let body = hyper::body::to_bytes(body).await?;
+
+        if let Some((_, base_body)) = &base_response {
+            if *base_body != body {
+                return Err(anyhow::anyhow!("Responses are not the same."));
+            }
+        } else {
+            base_response = Some((head, body));
+        }
     }
+
+    let (head, body) = base_response.ok_or_else(|| anyhow::anyhow!("No Response received."))?;
+    Ok(Response::from_parts(head, Body::from(body)))
 }
