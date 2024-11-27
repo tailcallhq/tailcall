@@ -1,7 +1,7 @@
 use tailcall_valid::{Valid, Validator};
 
 use super::{compile_call, compile_expr, compile_graphql, compile_grpc, compile_http, compile_js};
-use crate::core::blueprint::FieldDefinition;
+use crate::core::blueprint::{BlueprintError, FieldDefinition};
 use crate::core::config::{self, ConfigModule, Field, GraphQLOperationType, Resolver};
 use crate::core::directive::DirectiveCodec;
 use crate::core::ir::model::IR;
@@ -17,7 +17,7 @@ pub struct CompileResolver<'a> {
 pub fn compile_resolver(
     inputs: &CompileResolver,
     resolver: &Resolver,
-) -> Valid<Option<IR>, String> {
+) -> Valid<Option<IR>, BlueprintError> {
     let CompileResolver { config_module, field, operation_type, object_name } = inputs;
 
     match resolver {
@@ -62,9 +62,13 @@ pub fn compile_resolver(
 pub fn update_resolver<'a>(
     operation_type: &'a GraphQLOperationType,
     object_name: &'a str,
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
+) -> TryFold<
+    'a,
+    (&'a ConfigModule, &'a Field, &'a config::Type, &'a str),
+    FieldDefinition,
+    BlueprintError,
+> {
+    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, BlueprintError>::new(
         |(config_module, field, type_of, _), b_field| {
             let inputs = CompileResolver { config_module, field, operation_type, object_name };
 

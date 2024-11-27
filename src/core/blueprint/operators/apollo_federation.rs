@@ -5,7 +5,7 @@ use async_graphql::parser::types::ServiceDocument;
 use tailcall_valid::{Valid, Validator};
 
 use super::{compile_resolver, CompileResolver};
-use crate::core::blueprint::{Blueprint, Definition, TryFoldConfig};
+use crate::core::blueprint::{Blueprint, BlueprintError, Definition, TryFoldConfig};
 use crate::core::config::{
     ApolloFederation, ConfigModule, EntityResolver, Field, GraphQLOperationType, Resolver,
 };
@@ -17,7 +17,7 @@ pub struct CompileEntityResolver<'a> {
     pub entity_resolver: &'a EntityResolver,
 }
 
-pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, String> {
+pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, BlueprintError> {
     let CompileEntityResolver { config_module, entity_resolver } = inputs;
     let mut resolver_by_type = HashMap::new();
 
@@ -35,10 +35,9 @@ pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, S
                     ApolloFederation::EntityResolver(entity_resolver) => {
                         compile_entity_resolver(CompileEntityResolver { entity_resolver, ..inputs })
                     }
-                    ApolloFederation::Service => Valid::fail(
-                        "Apollo federation resolvers can't be a part of entity resolver"
-                            .to_string(),
-                    ),
+                    ApolloFederation::Service => {
+                        Valid::fail(BlueprintError::ApolloFederationResolversNoPartOfEntityResolver)
+                    }
                 },
                 resolver => {
                     let inputs = CompileResolver {
@@ -49,7 +48,7 @@ pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, S
                     };
 
                     compile_resolver(&inputs, resolver).and_then(|resolver| {
-                        Valid::from_option(resolver, "Resolver is empty".to_string())
+                        Valid::from_option(resolver, BlueprintError::NoResolverFoundInSchema)
                     })
                 }
             };
@@ -62,7 +61,7 @@ pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, S
     .map_to(IR::Entity(resolver_by_type))
 }
 
-pub fn compile_service(mut sdl: String) -> Valid<IR, String> {
+pub fn compile_service(mut sdl: String) -> Valid<IR, BlueprintError> {
     writeln!(sdl).ok();
 
     // Mark subgraph as Apollo federation v2 compatible according to [docs](https://www.apollographql.com/docs/apollo-server/using-federation/apollo-subgraph-setup/#2-opt-in-to-federation-2)
@@ -93,11 +92,11 @@ pub fn update_federation<'a>() -> TryFoldConfig<'a, Blueprint> {
             }
 
             let Definition::Object(mut obj) = def else {
-                return Valid::fail("Query type is not an object inside the blueprint".to_string());
+                return Valid::fail(BlueprintError::QueryTypeNotObject);
             };
 
             let Some(config_type) = config_module.types.get(&query_name) else {
-                return Valid::fail(format!("Cannot find type {query_name} in the config"));
+                return Valid::fail(BlueprintError::TypeNotFoundInConfig(query_name.clone()));
             };
 
             Valid::from_iter(obj.fields.iter_mut(), |b_field| {
@@ -105,7 +104,7 @@ pub fn update_federation<'a>() -> TryFoldConfig<'a, Blueprint> {
                 let name = &b_field.name;
                 Valid::from_option(
                     config_type.fields.get(name),
-                    format!("Cannot find field {name} in the type"),
+                    BlueprintError::FieldNotFoundInType(name.clone()),
                 )
                 .and_then(|field| {
                     let federation = field

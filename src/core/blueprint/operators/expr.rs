@@ -1,5 +1,5 @@
 use async_graphql_value::ConstValue;
-use tailcall_valid::{Valid, ValidationError, Validator};
+use tailcall_valid::{Valid, Validator};
 
 use crate::core::blueprint::*;
 use crate::core::config;
@@ -11,13 +11,13 @@ fn validate_data_with_schema(
     config: &config::Config,
     field: &config::Field,
     gql_value: ConstValue,
-) -> Valid<(), String> {
+) -> Valid<(), BlueprintError> {
     match to_json_schema(&field.type_of, config)
         .validate(&gql_value)
         .to_result()
     {
         Ok(_) => Valid::succeed(()),
-        Err(err) => Valid::from_validation_err(err.transform(&(|a| a.to_owned()))),
+        Err(err) => Valid::from_validation_err(BlueprintError::from_validation_str(err)),
     }
 }
 
@@ -28,15 +28,16 @@ pub struct CompileExpr<'a> {
     pub validate: bool,
 }
 
-pub fn compile_expr(inputs: CompileExpr) -> Valid<IR, String> {
+pub fn compile_expr(inputs: CompileExpr) -> Valid<IR, BlueprintError> {
     let config_module = inputs.config_module;
     let field = inputs.field;
     let value = &inputs.expr.body;
     let validate = inputs.validate;
 
-    Valid::from(
-        DynamicValue::try_from(&value.clone()).map_err(|e| ValidationError::new(e.to_string())),
-    )
+    match DynamicValue::try_from(&value.clone()) {
+        Ok(data) => Valid::succeed(data),
+        Err(err) => Valid::fail(BlueprintError::Error(err)),
+    }
     .and_then(|value| {
         if !value.is_const() {
             // TODO: Add validation for const with Mustache here
@@ -52,7 +53,7 @@ pub fn compile_expr(inputs: CompileExpr) -> Valid<IR, String> {
                     };
                     validation.map(|_| Dynamic(value.to_owned()))
                 }
-                Err(e) => Valid::fail(format!("invalid JSON: {}", e)),
+                Err(e) => Valid::fail(BlueprintError::InvalidJson(e)),
             }
         }
     })
