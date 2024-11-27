@@ -106,7 +106,7 @@ impl Display for FieldName<'_> {
 /// upstream.
 pub struct PathTracker<'a> {
     config: &'a Config,
-    cache: HashMap<(TypeName<'a>, bool), Chunk<Chunk<FieldName<'a>>>>,
+    cache: HashMap<String, Chunk<Chunk<FieldName<'a>>>>,
 }
 
 impl<'a> PathTracker<'a> {
@@ -122,7 +122,14 @@ impl<'a> PathTracker<'a> {
         is_list: bool,
         visited: HashSet<(TypeName<'a>, FieldName<'a>)>,
     ) -> Chunk<Chunk<FieldName<'a>>> {
-        if let Some(chunks) = self.cache.get(&(type_name, is_list)) {
+        let key = path
+            .as_vec()
+            .iter()
+            .map(|field_name| field_name.as_str())
+            .collect::<Vec<_>>()
+            .join(".");
+
+        if let Some(chunks) = self.cache.get(&key) {
             return chunks.clone();
         }
 
@@ -149,7 +156,7 @@ impl<'a> PathTracker<'a> {
             }
         }
 
-        self.cache.insert((type_name, is_list), chunks.clone());
+        self.cache.insert(key, chunks.clone());
         chunks
     }
 
