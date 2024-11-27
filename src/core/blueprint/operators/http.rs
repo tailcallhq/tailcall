@@ -77,8 +77,7 @@ pub fn compile_http(
     http: &config::Http,
     field: &Field,
     field_name: Option<&str>,
-) -> Valid<IR, String> {
-    let is_list = field.type_of.is_list();
+) -> Valid<IR, BlueprintError> {
     let dedupe = http.dedupe.unwrap_or_default();
     let mustache_headers = match helpers::headers::to_mustache_headers(&http.headers).to_result() {
         Ok(mustache_headers) => Valid::succeed(mustache_headers),
