@@ -7,7 +7,9 @@ use async_graphql::{BatchRequest, Value};
 use async_graphql_value::{ConstValue, Extensions};
 use futures_util::stream::FuturesOrdered;
 use futures_util::StreamExt;
+use hyper::body::Sender;
 use tailcall_hasher::TailcallHasher;
+use tokio::sync::Mutex;
 
 use super::{AnyResponse, BatchResponse, Response};
 use crate::core::app_context::AppContext;
@@ -15,11 +17,12 @@ use crate::core::async_graphql_hyper::OperationId;
 use crate::core::http::RequestContext;
 use crate::core::jit::{self, ConstValueExecutor, OPHash, Pos, Positioned};
 
-#[derive(Clone)]
+// #[derive(Clone)]
 pub struct JITExecutor {
     app_ctx: Arc<AppContext>,
     req_ctx: Arc<RequestContext>,
     operation_id: OperationId,
+    sender: Arc<Mutex<Sender>>,
 }
 
 impl JITExecutor {
@@ -27,8 +30,9 @@ impl JITExecutor {
         app_ctx: Arc<AppContext>,
         req_ctx: Arc<RequestContext>,
         operation_id: OperationId,
+        sender: Sender,
     ) -> Self {
-        Self { app_ctx, req_ctx, operation_id }
+        Self { app_ctx, req_ctx, operation_id, sender: Arc::new(Mutex::new(sender)) }
     }
 
     #[inline(always)]
@@ -99,6 +103,7 @@ impl JITExecutor {
                     .insert(hash.clone(), exec.plan.clone());
                 exec
             };
+            let exec = exec.with_sender(self.sender.clone());
 
             let is_const = exec.plan.is_const;
             let is_protected = exec.plan.is_protected;
@@ -116,7 +121,11 @@ impl JITExecutor {
                     .insert(hash, response.clone());
             }
 
-            response
+            // let bytes = Bytes::from(response.body.to_vec());
+            // let mut sender = self.sender.lock().await;
+            // let result = sender.send_data(bytes).await.unwrap();
+
+            AnyResponse::default()
         }
     }
 

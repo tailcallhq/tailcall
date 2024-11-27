@@ -20,6 +20,14 @@ impl IrId {
     pub fn new(id: usize) -> Self {
         Self(id)
     }
+
+    pub fn as_usize(&self) -> usize {
+        self.0
+    }
+
+    pub fn to_string(&self) -> String {
+        self.0.to_string()
+    }
 }
 
 #[derive(Clone, Debug, Display)]

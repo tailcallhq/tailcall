@@ -1,8 +1,12 @@
 use std::sync::Arc;
 
 use async_graphql_value::{ConstValue, Value};
+use bytes::Bytes;
 use futures_util::future::join_all;
+use hyper::body::Sender;
+use serde_json_borrow::ObjectAsVec;
 use tailcall_valid::Validator;
+use tokio::sync::Mutex;
 
 use super::context::Context;
 use super::exec::{Executor, IRExecutor};
@@ -20,11 +24,12 @@ use crate::core::Transform;
 /// A specialized executor that executes with async_graphql::Value
 pub struct ConstValueExecutor {
     pub plan: OperationPlan<Value>,
+    pub sender: Option<Arc<Mutex<Sender>>>,
 }
 
 impl From<OperationPlan<Value>> for ConstValueExecutor {
     fn from(plan: OperationPlan<Value>) -> Self {
-        Self { plan }
+        Self { plan, sender: None }
     }
 }
 
@@ -32,6 +37,10 @@ impl ConstValueExecutor {
     pub fn try_new(request: &Request<ConstValue>, app_ctx: &Arc<AppContext>) -> Result<Self> {
         let plan = request.create_plan(&app_ctx.blueprint)?;
         Ok(Self::from(plan))
+    }
+
+    pub fn with_sender(self, sender: Arc<Mutex<Sender>>) -> Self {
+        Self { sender: Some(sender), ..self }
     }
 
     pub async fn execute<'a>(
@@ -94,21 +103,94 @@ impl ConstValueExecutor {
         let vars = request.variables.clone();
         let exe = Executor::new(&plan, exec);
         let store = exe.store().await;
-        let synth = Synth::new(&plan, store, vars);
+        let synth = Synth::new(&plan, store, vars.clone());
 
         let resp: Response<serde_json_borrow::Value> = exe.execute(&synth).await;
+        let resp = if plan.deferred_fields.is_empty() {
+            resp
+        } else {
+            let mut pending_values = Vec::new();
+            for field in plan.deferred_fields.iter() {
+                let mut obj_vec = ObjectAsVec::default();
+                if let Some(IR::Deferred { id, ir, path }) = &field.ir {
+                    let s_path = path
+                        .into_iter()
+                        .map(|v| serde_json_borrow::Value::Str(std::borrow::Cow::Borrowed(v)))
+                        .collect::<Vec<_>>();
 
+                    obj_vec.insert(
+                        "id",
+                        serde_json_borrow::Value::Str(std::borrow::Cow::Owned(id.to_string())),
+                    );
+                    obj_vec.insert(
+                        "label",
+                        serde_json_borrow::Value::Str(std::borrow::Cow::Owned(id.to_string())),
+                    );
+                    obj_vec.insert("path", serde_json_borrow::Value::Array(s_path));
+                }
+                pending_values.push(serde_json_borrow::Value::Object(obj_vec));
+            }
 
-        // add the pending to response.
+            if pending_values.len() > 0 {
+                resp.has_next(Some(true))
+                    .pending(Some(serde_json_borrow::Value::Array(pending_values)))
+            } else {
+                resp
+            }
+        };
 
-        if is_introspection_query {
-            let async_req = async_graphql::Request::from(request).only_introspection();
+        let response: AnyResponse<Vec<u8>> = if is_introspection_query {
+            let async_req = async_graphql::Request::from(request.clone()).only_introspection();
             let async_resp = app_ctx.execute(async_req).await;
 
             resp.merge_with(&async_resp).into()
         } else {
             resp.into()
+        };
+
+        {
+            let local_sender = self.sender.clone().unwrap();
+            let mut sender = local_sender.lock().await;
+            let bytes = Bytes::from(response.body.to_vec());
+            let _ = sender.send_data(bytes.clone()).await.unwrap();
         }
+
+        // resposible for execution deferred fields.
+        for field in plan.deferred_fields.iter() {
+            let mut deferred_plan = plan.clone();
+            deferred_plan.selection.clear();
+            deferred_plan.selection.push(field.clone());
+
+            let exec = ConstValueExec::new(&deferred_plan, req_ctx);
+            let exe = Executor::new(&deferred_plan, exec);
+            let store = exe.store().await;
+            let synth = Synth::new(&deferred_plan, store, vars.clone());
+
+            let resp: Response<serde_json_borrow::Value> = exe.execute(&synth).await;
+            let response: AnyResponse<Vec<u8>> = if is_introspection_query {
+                let async_req = async_graphql::Request::from(request.clone()).only_introspection();
+                let async_resp = app_ctx.execute(async_req).await;
+                resp.merge_with(&async_resp).into()
+            } else {
+                resp.into()
+            };
+
+            let sender = self.sender.clone();
+
+            // let data = r#"{ "incremental":[ { "id": "0", "data": { "user": { "name": "Tatooine" } } } ], "completed": [{"id": "0"}], "hasNext": false }"#;
+            // let response:serde_json_borrow::Value = serde_json::from_str(data).unwrap();
+            // let bytes = serde_json::to_vec(&response).unwrap();
+            tokio::spawn(async move {
+                let mut sender = sender.clone().unwrap();
+                let mut sender = sender.lock().await;
+                let bytes = Bytes::from(response.body.to_vec());
+                let result = sender.send_data(bytes).await;
+            });
+
+            // println!("[Finder]: after {:#?}", result);
+        }
+
+        response
     }
 }
 

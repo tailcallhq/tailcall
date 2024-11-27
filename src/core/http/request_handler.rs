@@ -120,9 +120,11 @@ async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
     req: Parts,
 ) -> anyhow::Result<Response<Body>> {
     let mut response = if app_ctx.blueprint.server.enable_jit {
+        let (sender, stream_body) = Body::channel();
+
         let operation_id = request.operation_id(&req.headers);
-        let exec = JITExecutor::new(app_ctx.clone(), req_ctx.clone(), operation_id);
-        request
+        let exec = JITExecutor::new(app_ctx.clone(), req_ctx.clone(), operation_id, sender);
+        let mut _jit_response = request
             .execute_with_jit(exec)
             .await
             .set_cache_control(
@@ -130,7 +132,9 @@ async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
                 req_ctx.get_min_max_age().unwrap_or(0),
                 req_ctx.is_cache_public().unwrap_or(true),
             )
-            .into_response()?
+            .into_response()?;
+
+        Response::new(stream_body)
     } else {
         request
             .data(req_ctx.clone())

@@ -21,8 +21,11 @@ pub struct Response<Value> {
     #[serde(skip)]
     pub cache_control: CacheControl,
 
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub pending: Vec<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pending: Option<Value>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub has_next: Option<bool>
 }
 
 impl<V: Default> Default for Response<V> {
@@ -33,6 +36,7 @@ impl<V: Default> Default for Response<V> {
             extensions: Default::default(),
             cache_control: Default::default(),
             pending: Default::default(),
+            has_next: Default::default(),
         }
     }
 }
