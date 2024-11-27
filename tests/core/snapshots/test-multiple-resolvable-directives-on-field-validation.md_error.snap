@@ -1,0 +1,47 @@
+---
+source: tests/core/spec.rs
+expression: errors
+snapshot_kind: text
+---
+[
+  {
+    "message": "no value 'id' found",
+    "trace": [
+      "Query",
+      "user1",
+      "@http",
+      "query"
+    ],
+    "description": null
+  },
+  {
+    "message": "no value 'name' found",
+    "trace": [
+      "Query",
+      "user2",
+      "@http",
+      "query"
+    ],
+    "description": null
+  },
+  {
+    "message": "no value 'address' found",
+    "trace": [
+      "Query",
+      "user3",
+      "@http",
+      "query"
+    ],
+    "description": null
+  },
+  {
+    "message": "no argument 'id' found",
+    "trace": [
+      "Query",
+      "user3",
+      "@graphQL",
+      "args"
+    ],
+    "description": null
+  }
+]

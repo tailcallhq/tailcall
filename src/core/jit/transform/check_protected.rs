@@ -25,6 +25,7 @@ pub fn is_protected(ir: &IR) -> bool {
         IR::Protect(_, _) => true,
         IR::Map(map) => is_protected(&map.input),
         IR::Pipe(ir, ir1) => is_protected(ir) || is_protected(ir1),
+        IR::Merge(vec) => vec.iter().all(is_protected),
         IR::Discriminate(_, ir) => is_protected(ir),
         IR::Entity(hash_map) => hash_map.values().any(is_protected),
         IR::Service(_) => false,

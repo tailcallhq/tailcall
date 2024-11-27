@@ -5,16 +5,15 @@ use prost_reflect::FieldDescriptor;
 use tailcall_valid::{Valid, ValidationError, Validator};
 
 use super::apply_select;
-use crate::core::blueprint::{BlueprintError, FieldDefinition};
+use crate::core::blueprint::BlueprintError;
 use crate::core::config::group_by::GroupBy;
-use crate::core::config::{Config, ConfigModule, Field, GraphQLOperationType, Grpc, Resolver};
+use crate::core::config::{Config, ConfigModule, Field, GraphQLOperationType, Grpc};
 use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
 use crate::core::grpc::request_template::RequestTemplate;
+use crate::core::helpers;
 use crate::core::ir::model::{IO, IR};
 use crate::core::json::JsonSchema;
 use crate::core::mustache::Mustache;
-use crate::core::try_fold::TryFold;
-use crate::core::{config, helpers};
 
 fn to_url(grpc: &Grpc, method: &GrpcMethod) -> Valid<Mustache, String> {
     Valid::succeed(grpc.url.as_str()).and_then(|base_url| {
@@ -240,37 +239,6 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, BlueprintError> {
             (io, &grpc.select)
         })
         .and_then(apply_select)
-}
-
-pub fn update_grpc<'a>(
-    operation_type: &'a GraphQLOperationType,
-) -> TryFold<
-    'a,
-    (&'a ConfigModule, &'a Field, &'a config::Type, &'a str),
-    FieldDefinition,
-    BlueprintError,
-> {
-    TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, BlueprintError>::new(
-        |(config_module, field, type_of, _name), b_field| {
-            let Some(Resolver::Grpc(grpc)) = &field.resolver else {
-                return Valid::succeed(b_field);
-            };
-
-            compile_grpc(CompileGrpc {
-                config_module,
-                operation_type,
-                field,
-                grpc,
-                validate_with_schema: true,
-            })
-            .map(|resolver| b_field.resolver(Some(resolver)))
-            .and_then(|b_field| {
-                b_field
-                    .validate_field(type_of, config_module)
-                    .map_to(b_field)
-            })
-        },
-    )
 }
 
 #[cfg(test)]
