@@ -1,15 +1,19 @@
 use tailcall_valid::{Valid, Validator};
 
-use crate::core::blueprint::{Auth, FieldDefinition, Provider};
+use crate::core::blueprint::{Auth, BlueprintError, FieldDefinition, Provider};
 use crate::core::config::{self, ConfigModule, Field};
 use crate::core::ir::model::IR;
 use crate::core::try_fold::TryFold;
 
 pub fn update_protected<'a>(
     type_name: &'a str,
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
+) -> TryFold<
+    'a,
+    (&'a ConfigModule, &'a Field, &'a config::Type, &'a str),
+    FieldDefinition,
+    BlueprintError,
+> {
+    TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, BlueprintError>::new(
         |(config, field, type_, _), mut b_field| {
             if field.protected.is_some() // check the field itself has marked as protected
                 || type_.protected.is_some() // check the type that contains current field
@@ -19,13 +23,11 @@ pub fn update_protected<'a>(
                     .is_some()
             {
                 if config.input_types().contains(type_name) {
-                    return Valid::fail("Input types can not be protected".to_owned());
+                    return Valid::fail(BlueprintError::InputTypesCannotBeProtected);
                 }
 
                 if !config.extensions().has_auth() {
-                    return Valid::fail(
-                        "@protected operator is used but there is no @link definitions for auth providers".to_owned(),
-                    );
+                    return Valid::fail(BlueprintError::ProtectedOperatorNoAuthProviders);
                 }
 
                 // Used to collect the providers that are used in the field
@@ -58,7 +60,7 @@ pub fn update_protected<'a>(
                     if let Some(provider) = providers.get(id) {
                         Valid::succeed(Auth::Provider(provider.clone()))
                     } else {
-                        Valid::fail(format!("Auth provider {} not found", id))
+                        Valid::fail(BlueprintError::AuthProviderNotFound(id.clone()))
                     }
                 })
                 .map(|provider| {
