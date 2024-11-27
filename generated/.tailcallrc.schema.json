@@ -400,81 +400,13 @@
     },
     "Field": {
       "description": "A field definition containing all the metadata information about resolving a field.",
-      "type": "object",
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "http"
-          ],
-          "properties": {
-            "http": {
-              "$ref": "#/definitions/Http"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "grpc"
-          ],
-          "properties": {
-            "grpc": {
-              "$ref": "#/definitions/Grpc"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "graphql"
-          ],
-          "properties": {
-            "graphql": {
-              "$ref": "#/definitions/GraphQL"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "call"
-          ],
-          "properties": {
-            "call": {
-              "$ref": "#/definitions/Call"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "js"
-          ],
-          "properties": {
-            "js": {
-              "$ref": "#/definitions/JS"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "expr"
-          ],
-          "properties": {
-            "expr": {
-              "$ref": "#/definitions/Expr"
-            }
-          },
-          "additionalProperties": false
-        }
+      "type": [
+        "object",
+        "array"
       ],
+      "items": {
+        "$ref": "#/definitions/Resolver"
+      },
       "properties": {
         "args": {
           "description": "Map of argument name and its definition.",
@@ -1074,6 +1006,82 @@
         }
       }
     },
+    "Resolver": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "http"
+          ],
+          "properties": {
+            "http": {
+              "$ref": "#/definitions/Http"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "grpc"
+          ],
+          "properties": {
+            "grpc": {
+              "$ref": "#/definitions/Grpc"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "graphql"
+          ],
+          "properties": {
+            "graphql": {
+              "$ref": "#/definitions/GraphQL"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "call"
+          ],
+          "properties": {
+            "call": {
+              "$ref": "#/definitions/Call"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "js"
+          ],
+          "properties": {
+            "js": {
+              "$ref": "#/definitions/JS"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "expr"
+          ],
+          "properties": {
+            "expr": {
+              "$ref": "#/definitions/Expr"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
     "RootSchema": {
       "type": "object",
       "properties": {
@@ -1389,81 +1397,13 @@
     },
     "Type": {
       "description": "Represents a GraphQL type. A type can be an object, interface, enum or scalar.",
-      "type": "object",
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "http"
-          ],
-          "properties": {
-            "http": {
-              "$ref": "#/definitions/Http"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "grpc"
-          ],
-          "properties": {
-            "grpc": {
-              "$ref": "#/definitions/Grpc"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "graphql"
-          ],
-          "properties": {
-            "graphql": {
-              "$ref": "#/definitions/GraphQL"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "call"
-          ],
-          "properties": {
-            "call": {
-              "$ref": "#/definitions/Call"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "js"
-          ],
-          "properties": {
-            "js": {
-              "$ref": "#/definitions/JS"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "expr"
-          ],
-          "properties": {
-            "expr": {
-              "$ref": "#/definitions/Expr"
-            }
-          },
-          "additionalProperties": false
-        }
+      "type": [
+        "object",
+        "array"
       ],
+      "items": {
+        "$ref": "#/definitions/Resolver"
+      },
       "required": [
         "fields"
       ],

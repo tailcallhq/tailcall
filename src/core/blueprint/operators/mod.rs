@@ -8,6 +8,7 @@ mod http;
 mod js;
 mod modify;
 mod protected;
+mod resolver;
 mod select;
 
 pub use apollo_federation::*;
@@ -20,4 +21,5 @@ pub use http::*;
 pub use js::*;
 pub use modify::*;
 pub use protected::*;
+pub use resolver::*;
 pub use select::*;

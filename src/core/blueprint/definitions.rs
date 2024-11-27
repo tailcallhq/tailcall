@@ -111,14 +111,19 @@ fn process_field_within_type(
     let path_resolver_error_handler = context.path_resolver_error_handler;
 
     if let Some(next_field) = type_info.fields.get(field_name) {
-        if let Some(resolver) = &next_field.resolver {
-            return path_resolver_error_handler(
-                &resolver.directive_name(),
-                field.type_of.name(),
-                field_name,
-                context.original_path,
-            )
-            .and(process_path(ProcessPathContext {
+        if !next_field.resolvers.is_empty() {
+            let mut valid = Valid::succeed(field.type_of.clone());
+
+            for resolver in next_field.resolvers.iter() {
+                valid = valid.and(path_resolver_error_handler(
+                    &resolver.directive_name(),
+                    field.type_of.name(),
+                    field_name,
+                    context.original_path,
+                ));
+            }
+
+            return valid.and(process_path(ProcessPathContext {
                 type_info,
                 is_required,
                 config_module,
@@ -464,12 +469,13 @@ fn to_fields(
                 &add_field.name,
             )
             .and_then(|field_definition| {
-                let added_field_path = match source_field.resolver {
-                    Some(_) => add_field.path[1..]
+                let added_field_path = if source_field.resolvers.is_empty() {
+                    add_field.path.clone()
+                } else {
+                    add_field.path[1..]
                         .iter()
                         .map(|s| s.to_owned())
-                        .collect::<Vec<_>>(),
-                    None => add_field.path.clone(),
+                        .collect::<Vec<_>>()
                 };
                 let invalid_path_handler = |field_name: &str,
                                             _added_field_path: &[String],
@@ -537,13 +543,8 @@ pub fn to_field_definition(
     name: &str,
 ) -> Valid<FieldDefinition, BlueprintError> {
     update_args()
-        .and(update_http().trace(config::Http::trace_name().as_str()))
-        .and(update_grpc(operation_type).trace(config::Grpc::trace_name().as_str()))
-        .and(update_const_field().trace(config::Expr::trace_name().as_str()))
-        .and(update_js_field().trace(config::JS::trace_name().as_str()))
-        .and(update_graphql(operation_type).trace(config::GraphQL::trace_name().as_str()))
+        .and(update_resolver(operation_type, object_name))
         .and(update_modify().trace(config::Modify::trace_name().as_str()))
-        .and(update_call(operation_type, object_name).trace(config::Call::trace_name().as_str()))
         .and(fix_dangling_resolvers())
         .and(update_cache_resolvers())
         .and(update_protected(object_name).trace(Protected::trace_name().as_str()))

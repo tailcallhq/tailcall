@@ -6,7 +6,7 @@ type Query {
   users: [User] @http(url: "http://jsonplaceholder.typicode.com/users")
   user(id: Int!): User @http(url: "http://jsonplaceholder.typicode.com/users/{{.args.id}}")
   addComment(postId: Int!, comment: CommentInput!): Boolean
-    @http(url: "http://jsonplaceholder.typicode.com/add-comment")
+    @http(url: "http://jsonplaceholder.typicode.com/add-comment", method: POST)
 }
 
 enum Role {

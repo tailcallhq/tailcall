@@ -1,0 +1,36 @@
+---
+source: tests/core/spec.rs
+expression: response
+snapshot_kind: text
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "user1": {
+        "name": "from request 1",
+        "address": {
+          "street": "street request 1",
+          "city": "city request 1"
+        }
+      },
+      "user2": {
+        "name": "name expr 2",
+        "address": {
+          "street": "street request 2",
+          "city": "city request 2"
+        }
+      },
+      "user3": {
+        "name": "name request 3",
+        "address": {
+          "street": "Street from the graphql response",
+          "city": "city request 3"
+        }
+      }
+    }
+  }
+}

@@ -17,7 +17,7 @@ use super::directive::Directive;
 use super::from_document::from_document;
 use super::{
     AddField, Alias, Cache, Call, Discriminate, Expr, GraphQL, Grpc, Http, Link, Modify, Omit,
-    Protected, Resolver, Server, Telemetry, Upstream, JS,
+    Protected, Resolver, ResolverSet, Server, Telemetry, Upstream, JS,
 };
 use crate::core::config::npo::QueryPath;
 use crate::core::config::source::Source;
@@ -117,7 +117,7 @@ pub struct Type {
     ///
     /// Apollo federation entity resolver.
     #[serde(flatten, default, skip_serializing_if = "is_default")]
-    pub resolver: Option<Resolver>,
+    pub resolvers: ResolverSet,
     ///
     /// Any additional directives
     #[serde(default, skip_serializing_if = "is_default")]
@@ -226,7 +226,7 @@ pub struct Field {
     ///
     /// Resolver for the field
     #[serde(flatten, default, skip_serializing_if = "is_default")]
-    pub resolver: Option<Resolver>,
+    pub resolvers: ResolverSet,
 
     ///
     /// Any additional directives
@@ -243,14 +243,15 @@ impl MergeRight for Field {
 
 impl Field {
     pub fn has_resolver(&self) -> bool {
-        self.resolver.is_some()
+        !self.resolvers.is_empty()
     }
 
     pub fn has_batched_resolver(&self) -> bool {
-        self.resolver
-            .as_ref()
-            .map(Resolver::is_batched)
-            .unwrap_or(false)
+        if self.resolvers.is_empty() {
+            false
+        } else {
+            self.resolvers.iter().all(Resolver::is_batched)
+        }
     }
 
     pub fn int() -> Self {
@@ -693,6 +694,7 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     use super::*;
+    use crate::core::config::Resolver;
     use crate::core::directive::DirectiveCodec;
 
     #[test]
@@ -700,18 +702,16 @@ mod tests {
         let f1 = Field { ..Default::default() };
 
         let f2 = Field {
-            resolver: Some(Resolver::Http(Http {
+            resolvers: Resolver::Http(Http {
                 batch_key: vec!["id".to_string()],
                 ..Default::default()
-            })),
+            })
+            .into(),
             ..Default::default()
         };
 
         let f3 = Field {
-            resolver: Some(Resolver::Http(Http {
-                batch_key: vec![],
-                ..Default::default()
-            })),
+            resolvers: Resolver::Http(Http { batch_key: vec![], ..Default::default() }).into(),
             ..Default::default()
         };
 
