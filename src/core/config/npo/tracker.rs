@@ -304,6 +304,14 @@ mod tests {
     }
 
     #[test]
+    fn test_jsonplaceholder() {
+        let config = include_config!("fixtures/jsonplaceholder.graphql").unwrap();
+        let actual = config.n_plus_one();
+
+        insta::assert_snapshot!(actual);
+    }
+
+    #[test]
     fn test_key_holder() {
         let mut holder = KeyHolder::new();
         holder.append("query");
