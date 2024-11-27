@@ -11,6 +11,8 @@ mod union;
 mod scalar;
 mod enum_ty;
 mod input_object_ty;
+pub(super) mod resolvers;
+mod populate_resolvers;
 
 
 pub(super) type Error = String;

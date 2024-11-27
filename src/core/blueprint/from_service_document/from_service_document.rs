@@ -33,10 +33,9 @@ impl BlueprintMetadata {
                 |blueprint| blueprint.definitions,
             );
 
-        let result = schema
+        schema
             .and(definitions)
-            .try_fold(&doc, Blueprint::default());
-        result
+            .try_fold(&doc, Blueprint::default())
     }
 
     fn to_schema(&self) -> TryFold<ServiceDocument, blueprint::SchemaDefinition, super::Error> {
