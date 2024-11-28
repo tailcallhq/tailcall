@@ -3,6 +3,7 @@ use template_validation::validate_argument;
 
 use crate::core::blueprint::*;
 use crate::core::config::group_by::GroupBy;
+use crate::core::config::Field;
 use crate::core::endpoint::Endpoint;
 use crate::core::http::{HttpFilter, Method, RequestTemplate};
 use crate::core::ir::model::{IO, IR};
