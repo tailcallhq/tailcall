@@ -133,21 +133,26 @@ async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
         use futures::channel::mpsc;
         use futures::StreamExt;
         use std::sync::Arc;
-        use tokio::sync::oneshot;
+        // use tokio::sync::oneshot;
 
         // Create a channel to stop the JIT execution
-        let (stop_tx, stop_rx) = oneshot::channel::<()>();
+        // let (stop_tx, stop_rx) = oneshot::channel::<()>();
 
         // Create a channel to stream the response
         let (tx, mut rx) = mpsc::channel(0);
         let tx = Arc::new(RwLock::new(Some(tx)));
 
+        // spec_header and spec_footer are used to wrap the response
+        let spec_header = Bytes::from("\n--graphql\ncontent-type: application/json\n\n");
+        // spec footer is sent at the end of the entire response.
+        let spec_footer = Bytes::from("\n--graphql--");
+
         let streamed_body = stream! {
             while let Some(item) = rx.next().await {
                 match item {
                     Ok(bytes) => {
-                        println!("Received Bytes");
-                        yield Ok::<_, Infallible>(bytes)
+                        yield Ok::<_, Infallible>(spec_header.clone());
+                        yield Ok::<_, Infallible>(bytes);
                     },
                     Err(err) => {
                         tracing::error!("Error while executing JIT: {:?}", err);
@@ -155,9 +160,9 @@ async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
                     }
                 }
             }
+            yield Ok::<_, Infallible>(spec_footer);
         };
 
-        println!("[Finder]: before wrap_stream");
         let body = Body::wrap_stream(streamed_body);
 
         let cloned_app_ctx = app_ctx.clone();
@@ -168,10 +173,11 @@ async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
             let _result = exec.execute(request).await;
         });
 
-        // Monitor connection for closure
-        let response = Response::new(body);
-
-        println!("[Finder]: before returning response");
+        let mut response = Response::new(body);
+        response.headers_mut().insert(
+            header::CONTENT_TYPE,
+            HeaderValue::from_static(r#"multipart/mixed;boundary="graphql";deferSpec=20220824"#),
+        );
         return Ok(response);
     } else {
         request
