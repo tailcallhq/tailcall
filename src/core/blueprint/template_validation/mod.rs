@@ -64,25 +64,13 @@ mod test {
 
     use super::validate_argument;
     use crate::core::blueprint::BlueprintError;
-    use crate::core::config::Config;
     use crate::core::Mustache;
+    use crate::include_config;
 
     #[test]
     fn test_recursive_case() {
-        let sdl = r#"
-            schema @server(port: 8000)  {
-                query: Query
-            }
-            type Query {
-                posts(id: PostData): Int @http(url: "upstream.com", query: [{key: "id", value: "{{.args.id.data}}"}])
-            }
-            type PostData {
-                author: String
-                data: PostData
-            }
-        "#;
-
-        let config = Config::from_sdl(sdl).to_result().unwrap();
+        let config = include_config!("../fixture/recursive-arg.graphql");
+        let config = config.unwrap();
         let template = Mustache::parse("{{.args.id.data}}");
         let field = config
             .find_type("Query")
