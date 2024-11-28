@@ -9,7 +9,7 @@ use super::context::Context;
 use super::exec::{Executor, IRExecutor};
 use super::graphql_error::GraphQLError;
 use super::{
-    transform, AnyResponse, BuildError, CompletedTasks, Error, Incremental, IncrementalItem,
+    transform, AnyResponse, BuildError, CompletedTasks, Error, IncrementalResponse, IncrementalItem,
     OperationPlan, Pending, Request, Response, Result,
 };
 use crate::core::app_context::AppContext;
@@ -178,7 +178,7 @@ impl ConstValueExecutor {
                     let synth = Synth::new(&deferred_plan, store, vars);
 
                     let resp: Response<serde_json_borrow::Value> = exe.execute(&synth).await;
-                    let response: Incremental<serde_json_borrow::Value> = if is_introspection_query
+                    let response: IncrementalResponse<serde_json_borrow::Value> = if is_introspection_query
                     {
                         // let async_req = async_graphql::Request::from(request).only_introspection();
                         // let async_resp = app_ctx.execute(async_req).await;
@@ -188,7 +188,7 @@ impl ConstValueExecutor {
                         if let Some(IR::Deferred { id, .. }) = &field.ir {
                             let item = IncrementalItem::new(id.as_u64(), resp.data);
                             let completed = CompletedTasks::new(id.to_string());
-                            Incremental::new(vec![item], vec![completed])
+                            IncrementalResponse::new(vec![item], vec![completed], resp.errors)
                         } else {
                             resp.into()
                         }

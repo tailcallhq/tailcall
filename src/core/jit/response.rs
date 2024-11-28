@@ -226,28 +226,42 @@ impl<Body> BatchResponse<Body> {
 
 #[derive(Clone, Setters, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct Incremental<Value> {
+pub struct IncrementalResponse<Value> {
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub incremental: Vec<IncrementalItem<Value>>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub completed: Vec<CompletedTasks>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub errors: Vec<GraphQLError>,
     pub has_next: bool,
 }
 
-impl<V> Incremental<V> {
-    pub fn new(incremental: Vec<IncrementalItem<V>>, completed: Vec<CompletedTasks>) -> Self {
-        Self { incremental, completed, has_next: false }
+impl<V> IncrementalResponse<V> {
+    pub fn new(
+        incremental: Vec<IncrementalItem<V>>,
+        completed: Vec<CompletedTasks>,
+        errors: Vec<GraphQLError>,
+    ) -> Self {
+        Self { incremental, completed, has_next: false, errors }
     }
 }
 
-impl<V: Serialize> Incremental<V> {
+impl<V: Serialize> IncrementalResponse<V> {
     pub fn to_bytes(&self) -> Bytes {
         Bytes::from(serde_json::to_vec(&self).unwrap_or_default())
     }
 }
 
-impl<V> From<Response<V>> for Incremental<V> {
+impl<V> From<Response<V>> for IncrementalResponse<V> {
     fn from(value: Response<V>) -> Self {
+        let errors = value.errors.into_iter().map(|e| e.into()).collect();
         let data = IncrementalItem::new(0, value.data);
-        Self { incremental: vec![data], completed: vec![], has_next: false }
+        Self {
+            incremental: vec![data],
+            completed: vec![],
+            errors,
+            has_next: false,
+        }
     }
 }
 
