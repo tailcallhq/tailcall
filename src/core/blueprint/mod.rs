@@ -17,6 +17,7 @@ mod operators;
 mod schema;
 mod server;
 pub mod telemetry;
+mod template_validation;
 mod timeout;
 mod union_resolver;
 mod upstream;
