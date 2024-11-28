@@ -1,9 +1,11 @@
 use std::collections::BTreeSet;
+use std::convert::Infallible;
 use std::ops::Deref;
 use std::sync::Arc;
 
 use anyhow::Result;
 use async_graphql::ServerError;
+use bytes::Bytes;
 use hyper::header::{self, HeaderValue, CONTENT_TYPE};
 use hyper::http::request::Parts;
 use hyper::http::Method;
@@ -12,6 +14,7 @@ use opentelemetry::trace::SpanKind;
 use opentelemetry_semantic_conventions::trace::{HTTP_REQUEST_METHOD, HTTP_ROUTE};
 use prometheus::{Encoder, ProtobufEncoder, TextEncoder, TEXT_FORMAT};
 use serde::de::DeserializeOwned;
+use tokio::sync::RwLock;
 use tracing::Instrument;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
@@ -19,10 +22,10 @@ use super::request_context::RequestContext;
 use super::telemetry::{get_response_status_code, RequestCounter};
 use super::{showcase, telemetry, TAILCALL_HTTPS_ORIGIN, TAILCALL_HTTP_ORIGIN};
 use crate::core::app_context::AppContext;
-use crate::core::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
+use crate::core::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse, OperationId};
 use crate::core::blueprint::telemetry::TelemetryExporter;
 use crate::core::config::{PrometheusExporter, PrometheusFormat};
-use crate::core::jit::JITExecutor;
+use crate::core::jit::{self, JITExecutor};
 
 pub const API_URL_PREFIX: &str = "/api";
 
@@ -91,10 +94,11 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     let req_ctx = Arc::new(create_request_context(&req, app_ctx));
     let (req, body) = req.into_parts();
     let bytes = hyper::body::to_bytes(body).await?;
+
     let graphql_request = serde_json::from_slice::<T>(&bytes);
     match graphql_request {
         Ok(request) => {
-            let resp = execute_query(app_ctx, &req_ctx, request, req).await?;
+            let resp = execute_query(app_ctx, &req_ctx, request, req, bytes.clone()).await?;
             Ok(resp)
         }
         Err(err) => {
@@ -118,19 +122,50 @@ async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
     req_ctx: &Arc<RequestContext>,
     request: T,
     req: Parts,
+    bytes: Bytes,
 ) -> anyhow::Result<Response<Body>> {
     let mut response = if app_ctx.blueprint.server.enable_jit {
         let operation_id = request.operation_id(&req.headers);
-        let exec = JITExecutor::new(app_ctx.clone(), req_ctx.clone(), operation_id);
-        request
-            .execute_with_jit(exec)
-            .await
-            .set_cache_control(
-                app_ctx.blueprint.server.enable_cache_control_header,
-                req_ctx.get_min_max_age().unwrap_or(0),
-                req_ctx.is_cache_public().unwrap_or(true),
-            )
-            .into_response()?
+        let request: async_graphql::Request = serde_json::from_slice(&bytes)?;
+
+        use async_stream::stream;
+        use bytes::Bytes;
+        use futures::channel::mpsc;
+        use futures::StreamExt;
+        use std::sync::Arc;
+        use tokio::sync::Mutex;
+
+        let (tx, mut rx) = mpsc::channel(100);
+        let tx = Arc::new(RwLock::new(Some(tx)));
+
+        let streamed_body = stream! {
+            while let Some(item) = rx.next().await {
+                match item {
+                    Ok(bytes) => {
+                        println!("Received Bytes");
+                        yield Ok::<_, Infallible>(bytes)
+                    },
+                    Err(err) => {
+                        tracing::error!("Error while executing JIT: {:?}", err);
+                        yield Ok::<_, Infallible>(Bytes::new());
+                    }
+                }
+            }
+        };
+
+        println!("[Finder]: before wrap_stream");
+        let body = Body::wrap_stream(streamed_body);
+
+        let cloned_app_ctx = app_ctx.clone();
+        let cloned_req_ctx = req_ctx.clone();
+        let cloned_tx = tx.clone();
+        tokio::task::spawn(async move {
+            let exec = JITExecutor::new(cloned_app_ctx, cloned_req_ctx, operation_id, cloned_tx);
+            let _result = exec.execute(request).await;
+        });
+
+        println!("[Finder]: before returning response");
+        return Ok(Response::new(body));
     } else {
         request
             .data(req_ctx.clone())

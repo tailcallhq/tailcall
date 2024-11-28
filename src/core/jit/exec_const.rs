@@ -1,7 +1,9 @@
+use std::clone;
 use std::sync::Arc;
 
 use async_graphql_value::{ConstValue, Value};
 use futures_util::future::join_all;
+use http::request;
 use tailcall_valid::Validator;
 
 use super::context::Context;
@@ -17,14 +19,20 @@ use crate::core::jit::transform::InputResolver;
 use crate::core::json::{JsonLike, JsonLikeList};
 use crate::core::Transform;
 
+use bytes::Bytes;
+use futures::channel::mpsc;
+use futures::SinkExt;
+use tokio::sync::{Mutex, RwLock};
+
 /// A specialized executor that executes with async_graphql::Value
 pub struct ConstValueExecutor {
     pub plan: OperationPlan<Value>,
+    pub tx: Arc<RwLock<Option<mpsc::Sender<anyhow::Result<Bytes>>>>>,
 }
 
 impl From<OperationPlan<Value>> for ConstValueExecutor {
     fn from(plan: OperationPlan<Value>) -> Self {
-        Self { plan }
+        Self { plan, tx: Arc::new(RwLock::new(None)) }
     }
 }
 
@@ -34,15 +42,19 @@ impl ConstValueExecutor {
         Ok(Self::from(plan))
     }
 
+    pub fn with_tx(self, tx: Arc<RwLock<Option<mpsc::Sender<anyhow::Result<Bytes>>>>>) -> Self {
+        Self { plan: self.plan, tx: tx }
+    }
+
     pub async fn execute<'a>(
         self,
-        app_ctx: &Arc<AppContext>,
-        req_ctx: &RequestContext,
+        app_ctx: Arc<AppContext>,
+        req_ctx: Arc<RequestContext>,
         request: Request<ConstValue>,
     ) -> AnyResponse<Vec<u8>> {
         // Run all the IRs in the before chain
         if let Some(ir) = &self.plan.before {
-            let mut eval_context = EvalContext::new(req_ctx, &EmptyResolverContext {});
+            let mut eval_context = EvalContext::new(&req_ctx, &EmptyResolverContext {});
             match ir.eval(&mut eval_context).await {
                 Ok(_) => (),
                 Err(err) => {
@@ -89,26 +101,134 @@ impl ConstValueExecutor {
             }
         };
 
-        let exec = ConstValueExec::new(&plan, req_ctx);
-        // PERF: remove this particular clone?
         let vars = request.variables.clone();
-        let exe = Executor::new(&plan, exec);
-        let store = exe.store().await;
-        let synth = Synth::new(&plan, store, vars);
 
-        let resp: Response<serde_json_borrow::Value> = exe.execute(&synth).await;
+        let cloned_plan = plan.clone();
+        let cloned_req_ctx = req_ctx.clone();
+        let cloned_vars = vars.clone();
+        let cloned_req = request.clone();
+        let cloned_app_ctx = app_ctx.clone();
+        let cloned_tx = self.tx.clone();
 
+        tokio::task::spawn(async move {
+            let plan = cloned_plan;
+            let req_ctx = cloned_req_ctx;
+            let vars = cloned_vars;
+            let request = cloned_req;
+            let app_ctx = cloned_app_ctx;
+            let tx = cloned_tx;
 
-        // add the pending to response.
+            let exec = ConstValueExec::new(&plan, &req_ctx);
+            // PERF: remove this particular clone?
+            let exe = Executor::new(&plan, exec);
+            let store = exe.store().await;
+            let synth = Synth::new(&plan, store, vars.clone());
 
-        if is_introspection_query {
-            let async_req = async_graphql::Request::from(request).only_introspection();
-            let async_resp = app_ctx.execute(async_req).await;
+            let resp: Response<serde_json_borrow::Value> = exe.execute(&synth).await;
 
-            resp.merge_with(&async_resp).into()
-        } else {
-            resp.into()
-        }
+            // add the pending to response.
+            let response: AnyResponse<Vec<u8>> = if is_introspection_query {
+                let async_req = async_graphql::Request::from(request.clone()).only_introspection();
+                let async_resp = app_ctx.execute(async_req).await;
+
+                resp.merge_with(&async_resp).into()
+            } else {
+                resp.into()
+            };
+
+            let cloned_resp = response.clone();
+            let bytes = Bytes::from(cloned_resp.body.to_vec());
+
+            let tx = tx.clone();
+            let read_tx = tx.read().await;
+            if let Some(sender) = &*read_tx {
+                // Clone the sender so it can be used mutably outside the lock
+                let mut sender = sender.clone();
+                println!("Base Field: Sending response");
+                let _ = sender.send(Ok(bytes)).await;
+                println!("Base Field: Done Sending response");
+            }
+        });
+
+        // resposible for execution deferred fields.
+        let tx = self.tx.clone();
+        tokio::task::spawn(async move {
+            let cloned_req_ctx = req_ctx.clone();
+
+            for field in plan.deferred_fields.iter() {
+                let mut deferred_plan = plan.clone();
+                deferred_plan.selection.clear();
+                deferred_plan.selection.push(field.clone());
+
+                let exec = ConstValueExec::new(&deferred_plan, &cloned_req_ctx);
+                let exe = Executor::new(&deferred_plan, exec);
+                let store = exe.store().await;
+                let synth = Synth::new(&deferred_plan, store, vars.clone());
+
+                let resp: Response<serde_json_borrow::Value> = exe.execute(&synth).await;
+                let response: AnyResponse<Vec<u8>> = if is_introspection_query {
+                    let async_req =
+                        async_graphql::Request::from(request.clone()).only_introspection();
+                    let async_resp = app_ctx.execute(async_req).await;
+                    resp.merge_with(&async_resp).into()
+                } else {
+                    resp.into()
+                };
+
+                let tx = tx.clone();
+                let bytes = Bytes::from(response.body.to_vec());
+
+                let read_tx = tx.read().await;
+                if let Some(sender) = &*read_tx {
+                    // Clone the sender so it can be used mutably outside the lock
+                    let mut sender = sender.clone();
+                    println!("Deferred Field: Sending response");
+                    let _ = sender.send(Ok(bytes)).await;
+                    println!("Deferred Field: Done Sending response");
+                    let _ = tokio::time::sleep(tokio::time::Duration::from_secs(15)).await;
+                }
+            }
+        });
+
+        let tx = self.tx.clone();
+        tokio::spawn(async move {
+            let read_tx = tx.read().await;
+            if let Some(sender) = &*read_tx {
+                // Clone the sender so it can be used mutably outside the lock
+                let mut sender = sender.clone();
+
+                for i in 1..=5 {
+                    sender
+                        .send(Ok(Bytes::from(format!("Chunk {}\n", i))))
+                        .await
+                        .unwrap();
+                    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+                }
+            } else {
+                eprintln!("Sender not initialized");
+            }
+        });
+
+        let tx = self.tx.clone();
+        tokio::spawn(async move {
+            let read_tx = tx.read().await;
+            if let Some(sender) = &*read_tx {
+                // Clone the sender so it can be used mutably outside the lock
+                let mut sender = sender.clone();
+
+                for i in 1..=5 {
+                    sender
+                        .send(Ok(Bytes::from(format!("Chunk {}\n", i))))
+                        .await
+                        .unwrap();
+                    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+                }
+            } else {
+                eprintln!("Sender not initialized");
+            }
+        });
+
+        AnyResponse::default()
     }
 }
 

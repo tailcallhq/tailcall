@@ -14,7 +14,7 @@ use tailcall_hasher::TailcallHasher;
 use super::jit::{BatchResponse as JITBatchResponse, JITExecutor};
 
 #[derive(PartialEq, Eq, Clone, Hash, Debug)]
-pub struct OperationId(u64);
+pub struct OperationId(pub u64);
 
 #[async_trait::async_trait]
 pub trait GraphQLRequestLike: Hash + Send {

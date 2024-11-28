@@ -15,11 +15,16 @@ use crate::core::async_graphql_hyper::OperationId;
 use crate::core::http::RequestContext;
 use crate::core::jit::{self, ConstValueExecutor, OPHash, Pos, Positioned};
 
-#[derive(Clone)]
+use bytes::Bytes;
+use futures::channel::mpsc;
+use tokio::sync::{Mutex, RwLock};
+
+// #[derive(Clone)]
 pub struct JITExecutor {
     app_ctx: Arc<AppContext>,
     req_ctx: Arc<RequestContext>,
     operation_id: OperationId,
+    tx: Arc<RwLock<Option<mpsc::Sender<anyhow::Result<Bytes>>>>>,
 }
 
 impl JITExecutor {
@@ -27,8 +32,9 @@ impl JITExecutor {
         app_ctx: Arc<AppContext>,
         req_ctx: Arc<RequestContext>,
         operation_id: OperationId,
+        tx: Arc<RwLock<Option<mpsc::Sender<anyhow::Result<Bytes>>>>>,
     ) -> Self {
-        Self { app_ctx, req_ctx, operation_id }
+        Self { app_ctx, req_ctx, operation_id, tx }
     }
 
     #[inline(always)]
@@ -37,7 +43,7 @@ impl JITExecutor {
         exec: ConstValueExecutor,
         jit_request: jit::Request<ConstValue>,
     ) -> AnyResponse<Vec<u8>> {
-        exec.execute(&self.app_ctx, &self.req_ctx, jit_request)
+        exec.execute(self.app_ctx.clone(), self.req_ctx.clone(), jit_request)
             .await
     }
 
@@ -99,6 +105,8 @@ impl JITExecutor {
                     .insert(hash.clone(), exec.plan.clone());
                 exec
             };
+
+            let exec = exec.with_tx(self.tx.clone());
 
             let is_const = exec.plan.is_const;
             let is_protected = exec.plan.is_protected;

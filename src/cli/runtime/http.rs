@@ -148,6 +148,10 @@ impl HttpIO for NativeHttp {
             *request.version_mut() = reqwest::Version::HTTP_2;
         }
 
+        if request.url().path().contains("posts") {
+            let _ = tokio::time::sleep(Duration::from_secs(5)).await;
+        }
+
         let mut req_counter = RequestCounter::new(self.enable_telemetry, &request);
 
         if self.enable_telemetry {
