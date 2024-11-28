@@ -295,7 +295,7 @@ impl Builder {
                             .push(JitDirective { name: directive.name.to_string(), arguments });
                     }
 
-                    if directives.iter().find(|d| d.name == "defer").is_some() {
+                    if directives.iter().any(|d| d.name == "defer") {
                         let mut child_fields =
                             self.iter(&fragment.selection_set.node, type_of, fragments);
 

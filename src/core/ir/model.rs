@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 use std::num::NonZeroU64;
 
 use async_graphql::Value;
@@ -19,6 +19,16 @@ pub struct IrId(usize);
 impl IrId {
     pub fn new(id: usize) -> Self {
         Self(id)
+    }
+
+    pub fn as_u64(&self) -> u64 {
+        self.0 as u64
+    }
+}
+
+impl Display for IrId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
@@ -41,6 +51,7 @@ pub enum IR {
     Service(String),
     Deferred {
         id: IrId,
+        label: Option<String>,
         ir: Box<IR>,
         path: Vec<String>,
     },
@@ -70,6 +81,7 @@ pub enum IO {
         batch: bool,
         dl_id: Option<DataLoaderId>,
         dedupe: bool,
+        is_dependent: bool,
     },
     Grpc {
         req_template: grpc::RequestTemplate,
@@ -87,7 +99,7 @@ impl IO {
     pub fn is_dependent(&self) -> bool {
         match self {
             IO::Http { is_dependent, .. } => *is_dependent,
-            IO::GraphQL { .. } => true,
+            IO::GraphQL { is_dependent, .. } => *is_dependent,
             IO::Grpc { .. } => true,
             IO::Js { .. } => false,
         }
@@ -199,8 +211,8 @@ impl IR {
                             .collect(),
                     ),
                     IR::Service(sdl) => IR::Service(sdl),
-                    IR::Deferred { ir, path, id } => {
-                        IR::Deferred { ir: Box::new(ir.modify(modifier)), path, id }
+                    IR::Deferred { ir, path, id, label } => {
+                        IR::Deferred { ir: Box::new(ir.modify(modifier)), path, id, label }
                     }
                 }
             }

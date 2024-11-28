@@ -35,7 +35,7 @@ mod tests {
             let executor = ConstValueExecutor::try_new(&request, &self.app_ctx)?;
 
             let resp = executor
-                .execute(&self.app_ctx, &self.req_ctx, request)
+                .execute(self.app_ctx.clone(), self.req_ctx.clone(), request)
                 .await;
 
             let resp = Arc::into_inner(resp.body).unwrap();

@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use bytes::Bytes;
 use derive_setters::Setters;
 use serde::Serialize;
 
@@ -10,6 +11,7 @@ use crate::core::jit;
 use crate::core::json::{JsonLike, JsonObjectLike};
 
 #[derive(Clone, Setters, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct Response<Value> {
     #[serde(default)]
     pub data: Value,
@@ -22,7 +24,24 @@ pub struct Response<Value> {
     pub cache_control: CacheControl,
 
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub pending: Vec<Value>
+    pub pending: Vec<Pending>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub has_next: Option<bool>,
+}
+
+#[derive(Clone, Serialize, Debug)]
+pub struct Pending {
+    id: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    label: Option<String>,
+    path: Vec<String>,
+}
+
+impl Pending {
+    pub fn new(id: u64, label: Option<String>, path: Vec<String>) -> Self {
+        Self { id, label, path }
+    }
 }
 
 impl<V: Default> Default for Response<V> {
@@ -33,6 +52,7 @@ impl<V: Default> Default for Response<V> {
             extensions: Default::default(),
             cache_control: Default::default(),
             pending: Default::default(),
+            has_next: None,
         }
     }
 }
@@ -121,6 +141,12 @@ where
     }
 }
 
+impl AnyResponse<Vec<u8>> {
+    pub fn to_bytes(self) -> Bytes {
+        Bytes::from(self.body.to_vec())
+    }
+}
+
 impl<V: Serialize> From<Response<V>> for AnyResponse<Vec<u8>> {
     fn from(response: Response<V>) -> Self {
         Self {
@@ -141,6 +167,35 @@ impl<V: Serialize> From<Response<V>> for AnyResponse<Vec<u8>> {
 pub enum BatchResponse<Body> {
     Single(AnyResponse<Body>),
     Batch(Vec<AnyResponse<Body>>),
+}
+
+impl BatchResponse<Vec<u8>> {
+    pub fn as_bytes(&self) -> Vec<u8> {
+        let resp = match self {
+            BatchResponse::Batch(resp) => {
+                // Use iterators and collect for more efficient concatenation
+                let combined = resp
+                    .iter()
+                    .enumerate()
+                    .flat_map(|(i, r)| {
+                        let mut v = if i > 0 {
+                            vec![b',']
+                        } else {
+                            Vec::with_capacity(r.body.as_ref().len())
+                        };
+                        v.extend_from_slice(r.body.as_ref());
+                        v
+                    })
+                    .collect::<Vec<u8>>();
+
+                // Wrap the result in square brackets
+                [b"[", &combined[..], b"]"].concat()
+            }
+            BatchResponse::Single(resp) => resp.body.as_ref().to_owned(),
+        };
+
+        resp
+    }
 }
 
 impl<Body> BatchResponse<Body> {
@@ -165,6 +220,72 @@ impl<Body> BatchResponse<Body> {
                 })
             }
         }
+    }
+}
+
+// Incremental Response for `@defer`.
+
+#[derive(Clone, Setters, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct IncrementalResponse<Value> {
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub incremental: Vec<IncrementalItem<Value>>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub completed: Vec<CompletedTasks>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub errors: Vec<GraphQLError>,
+    pub has_next: bool,
+}
+
+impl<V> IncrementalResponse<V> {
+    pub fn new(
+        incremental: Vec<IncrementalItem<V>>,
+        completed: Vec<CompletedTasks>,
+        errors: Vec<GraphQLError>,
+    ) -> Self {
+        Self { incremental, completed, has_next: false, errors }
+    }
+}
+
+impl<V: Serialize> IncrementalResponse<V> {
+    pub fn to_bytes(&self) -> Bytes {
+        Bytes::from(serde_json::to_vec(&self).unwrap_or_default())
+    }
+}
+
+impl<V> From<Response<V>> for IncrementalResponse<V> {
+    fn from(value: Response<V>) -> Self {
+        let errors = value.errors;
+        let data = IncrementalItem::new(0, value.data);
+        Self {
+            incremental: vec![data],
+            completed: vec![],
+            errors,
+            has_next: false,
+        }
+    }
+}
+
+#[derive(Clone, Serialize, Debug)]
+pub struct CompletedTasks {
+    id: String,
+}
+
+impl CompletedTasks {
+    pub fn new(id: String) -> Self {
+        Self { id }
+    }
+}
+
+#[derive(Clone, Setters, Serialize, Debug)]
+pub struct IncrementalItem<Value> {
+    pub id: u64,
+    pub data: Value,
+}
+
+impl<V> IncrementalItem<V> {
+    pub fn new(id: u64, data: V) -> Self {
+        Self { id, data }
     }
 }
 

@@ -7,7 +7,7 @@ use crate::core::config::{
     Config, ConfigModule, Field, GraphQL, GraphQLOperationType, Resolver, Type,
 };
 use crate::core::graphql::RequestTemplate;
-use crate::core::helpers;
+use crate::core::{helpers, Mustache};
 use crate::core::ir::model::{IO, IR};
 use crate::core::ir::RelatedFields;
 use crate::core::try_fold::TryFold;
@@ -82,7 +82,13 @@ pub fn compile_graphql(
             let field_name = graphql.name.clone();
             let batch = graphql.batch;
             let dedupe = graphql.dedupe.unwrap_or_default();
-            IR::IO(IO::GraphQL { req_template, field_name, batch, dl_id: None, dedupe })
+            let is_dependent = if let Some(args) = graphql.args.as_ref() {
+                args.iter().any(|arg| Mustache::parse(&arg.value).expression_contains("value"))
+            }else{
+                false
+            };
+
+            IR::IO(IO::GraphQL { req_template, field_name, batch, dl_id: None, dedupe, is_dependent })
         })
 }
 

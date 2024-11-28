@@ -82,7 +82,7 @@ impl AppContext {
                                     result
                                 }
 
-                                IO::GraphQL { req_template, field_name, batch, dedupe, .. } => {
+                                IO::GraphQL { req_template, field_name, batch, dedupe, is_dependent, .. } => {
                                     let dedupe = *dedupe;
                                     let graphql_data_loader =
                                         GraphqlDataLoader::new(runtime.clone(), *batch)
@@ -96,6 +96,7 @@ impl AppContext {
                                         batch: *batch,
                                         dl_id: Some(DataLoaderId::new(gql_data_loaders.len())),
                                         dedupe,
+                                        is_dependent: *is_dependent,
                                     }));
 
                                     gql_data_loaders.push(graphql_data_loader);

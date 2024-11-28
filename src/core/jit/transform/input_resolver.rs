@@ -87,7 +87,7 @@ where
             min_cache_ttl: self.plan.min_cache_ttl,
             selection,
             before: self.plan.before,
-            deferred_fields: deferred_fields,
+            deferred_fields,
         })
     }
 
