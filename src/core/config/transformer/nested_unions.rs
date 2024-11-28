@@ -15,10 +15,10 @@ impl Transform for NestedUnions {
     type Error = String;
 
     fn transform(&self, mut config: Config) -> Valid<Config, String> {
-        let visitor = Visitor { unions: &config.unions };
+        let visitor = Visitor { unions: &config.schema_config.unions };
 
         visitor.visit().map(|unions| {
-            config.unions = unions;
+            config.schema_config.unions = unions;
             config
         })
     }

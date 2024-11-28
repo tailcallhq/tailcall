@@ -35,14 +35,14 @@ impl Transform for Subgraph {
     type Error = String;
 
     fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
-        if !config.server.get_enable_federation() {
+        if !config.runtime_config.server.get_enable_federation() {
             // if federation is disabled don't process the config
             return Valid::succeed(config);
         }
-        let config_types = config.types.clone();
+        let config_types = config.schema_config.types.clone();
         let mut resolver_by_type = BTreeMap::new();
 
-        let valid = Valid::from_iter(config.types.iter_mut(), |(type_name, ty)| {
+        let valid = Valid::from_iter(config.schema_config.types.iter_mut(), |(type_name, ty)| {
             if let Some(resolver) = &ty.resolver {
                 resolver_by_type.insert(type_name.clone(), resolver.clone());
 
@@ -68,7 +68,7 @@ impl Transform for Subgraph {
             return valid.map_to(config);
         }
 
-        let service_field = Field { type_of: "String".to_string().into(), ..Default::default() };
+        let service_field = Field { ty_of: "String".to_string().into(), ..Default::default() };
 
         let service_type = config::Type {
             fields: [("sdl".to_string(), service_field)].into_iter().collect(),
@@ -77,23 +77,24 @@ impl Transform for Subgraph {
 
         // type that represents the response for service
         config
+            .schema_config
             .types
             .insert(SERVICE_TYPE_NAME.to_owned(), service_type);
 
-        let query_type_name = match config.schema.query.as_ref() {
+        let query_type_name = match config.schema_config.schema.query.as_ref() {
             Some(name) => name,
             None => {
-                config.schema.query = Some("Query".to_string());
+                config.schema_config.schema.query = Some("Query".to_string());
                 "Query"
             }
         };
 
-        let query_type = config.types.entry(query_type_name.to_owned()).or_default();
+        let query_type = config.schema_config.types.entry(query_type_name.to_owned()).or_default();
 
         query_type.fields.insert(
             SERVICE_FIELD_NAME.to_string(),
             Field {
-                type_of: Type::from(SERVICE_TYPE_NAME.to_owned()).into_required(),
+                ty_of: Type::from(SERVICE_TYPE_NAME.to_owned()).into_required(),
                 doc: Some("Apollo federation Query._service resolver".to_string()),
                 resolver: Some(Resolver::ApolloFederation(ApolloFederation::Service)),
                 ..Default::default()
@@ -110,14 +111,16 @@ impl Transform for Subgraph {
 
             // union that wraps any possible types for entities
             config
+                .schema_config
                 .unions
                 .insert(UNION_ENTITIES_NAME.to_owned(), entity_union);
             // any scalar for argument `representations`
             config
+                .schema_config
                 .types
                 .insert(ENTITIES_TYPE_NAME.to_owned(), config::Type::default());
 
-            let query_type = config.types.entry(query_type_name.to_owned()).or_default();
+            let query_type = config.schema_config.types.entry(query_type_name.to_owned()).or_default();
 
             let arg = Arg {
                 type_of: Type::from(ENTITIES_TYPE_NAME.to_string())
@@ -130,7 +133,7 @@ impl Transform for Subgraph {
             query_type.fields.insert(
                 ENTITIES_FIELD_NAME.to_string(),
                 Field {
-                    type_of: Type::from(UNION_ENTITIES_NAME.to_owned())
+                    ty_of: Type::from(UNION_ENTITIES_NAME.to_owned())
                         .into_list()
                         .into_required(),
                     args: [(ENTITIES_ARG_NAME.to_owned(), arg)].into_iter().collect(),
@@ -227,7 +230,7 @@ impl KeysExtractor {
                         index, key, current_type
                     ));
                 }
-                current_type = type_def.fields[key].type_of.name();
+                current_type = type_def.fields[key].ty_of.name();
             } else {
                 return Valid::fail(format!("Type '{}' not found in config", current_type));
             }

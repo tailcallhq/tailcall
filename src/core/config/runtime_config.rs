@@ -2,6 +2,7 @@ use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use tailcall_macros::MergeRight;
 use crate::core::config::{Link, Server, Telemetry, Upstream};
+use crate::core::is_default;
 
 #[derive(
     Serialize,

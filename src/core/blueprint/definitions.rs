@@ -114,7 +114,7 @@ fn process_field_within_type(
         if let Some(resolver) = &next_field.resolver {
             return path_resolver_error_handler(
                 &resolver.directive_name(),
-                field.type_of.name(),
+                field.ty_of.name(),
                 field_name,
                 context.original_path,
             )
@@ -130,8 +130,8 @@ fn process_field_within_type(
             }));
         }
 
-        let next_is_required = is_required && !next_field.type_of.is_nullable();
-        if scalar::Scalar::is_predefined(next_field.type_of.name()) {
+        let next_is_required = is_required && !next_field.ty_of.is_nullable();
+        if scalar::Scalar::is_predefined(next_field.ty_of.name()) {
             return process_path(ProcessPathContext {
                 type_info,
                 config_module,
@@ -144,7 +144,7 @@ fn process_field_within_type(
             });
         }
 
-        if let Some(next_type_info) = config_module.find_type(next_field.type_of.name()) {
+        if let Some(next_type_info) = config_module.schema_config.find_type(next_field.ty_of.name()) {
             return process_path(ProcessPathContext {
                 config_module,
                 invalid_path_handler,
@@ -156,7 +156,7 @@ fn process_field_within_type(
                 original_path: context.original_path,
             })
             .and_then(|of_type| {
-                if next_field.type_of.is_list() {
+                if next_field.ty_of.is_list() {
                     Valid::succeed(Type::List { of_type: Box::new(of_type), non_null: is_required })
                 } else {
                     Valid::succeed(of_type)
@@ -195,7 +195,7 @@ fn process_path(context: ProcessPathContext) -> Valid<Type, BlueprintError> {
         if field_name.parse::<usize>().is_ok() {
             let mut modified_field = field.clone();
             // TODO: does it required?
-            modified_field.type_of = modified_field.type_of.into_single();
+            modified_field.ty_of = modified_field.ty_of.into_single();
             return process_path(ProcessPathContext {
                 config_module,
                 type_info,
@@ -211,7 +211,7 @@ fn process_path(context: ProcessPathContext) -> Valid<Type, BlueprintError> {
             .fields
             .get(field_name)
             .map(|_| type_info)
-            .or_else(|| config_module.find_type(field.type_of.name()));
+            .or_else(|| config_module.schema_config.find_type(field.ty_of.name()));
 
         if let Some(type_info) = target_type_info {
             return process_field_within_type(ProcessFieldWithinTypeContext {
@@ -230,9 +230,9 @@ fn process_path(context: ProcessPathContext) -> Valid<Type, BlueprintError> {
     }
 
     Valid::succeed(if is_required {
-        field.type_of.clone().into_required()
+        field.ty_of.clone().into_required()
     } else {
-        field.type_of.clone().into_nullable()
+        field.ty_of.clone().into_nullable()
     })
 }
 
@@ -291,7 +291,7 @@ fn update_args<'a>() -> TryFold<
                 name: name.to_string(),
                 description: field.doc.clone(),
                 args,
-                of_type: field.type_of.clone(),
+                of_type: field.ty_of.clone(),
                 directives: to_directives(&field.directives),
                 resolver: None,
                 default_value: field.default_value.clone(),
@@ -345,7 +345,7 @@ pub fn fix_dangling_resolvers<'a>() -> TryFold<
         move |(config, field, _, name), mut b_field| {
             let mut set = HashSet::new();
             if !field.has_resolver()
-                && validate_field_has_resolver(name, field, &config.types, &mut set).is_succeed()
+                && validate_field_has_resolver(name, field, &config.schema_config.types, &mut set).is_succeed()
             {
                 b_field = b_field.resolver(Some(IR::Dynamic(DynamicValue::Value(
                     ConstValue::Object(Default::default()),
@@ -377,8 +377,8 @@ pub fn update_cache_resolvers<'a>() -> TryFold<
 }
 
 fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), BlueprintError> {
-    let field_type = field.type_of.name();
-    if !scalar::Scalar::is_predefined(field_type) && !config.contains(field_type) {
+    let field_type = field.ty_of.name();
+    if !scalar::Scalar::is_predefined(field_type) && !config.schema_config.contains(field_type) {
         Valid::fail(BlueprintError::UndeclaredTypeFound(field_type.clone()))
     } else {
         Valid::succeed(())
@@ -391,6 +391,7 @@ fn to_fields(
     config_module: &ConfigModule,
 ) -> Valid<Vec<FieldDefinition>, BlueprintError> {
     let operation_type = if config_module
+        .schema_config
         .schema
         .mutation
         .as_deref()
@@ -558,7 +559,7 @@ pub fn to_field_definition(
 
 pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, BlueprintError> {
     TryFold::<ConfigModule, Vec<Definition>, BlueprintError>::new(|config_module, _| {
-        Valid::from_iter(config_module.types.iter(), |(name, type_)| {
+        Valid::from_iter(config_module.schema_config.types.iter(), |(name, type_)| {
             if type_.scalar() {
                 to_scalar_type_definition(name).trace(name)
             } else {
@@ -579,11 +580,11 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, Bluepr
             }
         })
         .map(|mut types| {
-            types.extend(config_module.unions.iter().map(to_union_type_definition));
+            types.extend(config_module.schema_config.unions.iter().map(to_union_type_definition));
             types
         })
         .fuse(Valid::from_iter(
-            config_module.enums.iter(),
+            config_module.schema_config.enums.iter(),
             |(name, type_)| {
                 if type_.variants.is_empty() {
                     Valid::fail(BlueprintError::NoVariantsFoundForEnum)

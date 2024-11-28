@@ -97,14 +97,16 @@ impl InferTypeName {
         let mut new_name_mappings: HashMap<String, String> = HashMap::new();
         // Filter out root operation types and types with non-auto-generated names
         let types_to_be_processed = config
+            .schema_config
             .types
             .iter()
             .filter(|(type_name, _)| {
-                !config.is_root_operation_type(type_name) && Self::is_auto_generated(type_name)
+                !config.schema_config.is_root_operation_type(type_name) && Self::is_auto_generated(type_name)
             })
             .collect::<Vec<_>>();
 
         let mut used_type_names = config
+            .schema_config
             .types
             .iter()
             .filter(|(ty_name, _)| !Self::is_auto_generated(ty_name))
@@ -119,7 +121,7 @@ impl InferTypeName {
                 fields: type_
                     .fields
                     .iter()
-                    .map(|(k, v)| (k.clone(), v.type_of.name().to_owned()))
+                    .map(|(k, v)| (k.clone(), v.ty_of.name().to_owned()))
                     .collect(),
             };
 
@@ -130,7 +132,7 @@ impl InferTypeName {
                     Ok(answer) => {
                         let name = &answer.suggestions.join(", ");
                         for name in answer.suggestions {
-                            if config.types.contains_key(&name) || used_type_names.contains(&name) {
+                            if config.schema_config.types.contains_key(&name) || used_type_names.contains(&name) {
                                 continue;
                             }
                             used_type_names.insert(name.clone());

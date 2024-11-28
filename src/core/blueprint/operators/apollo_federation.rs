@@ -27,7 +27,7 @@ pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, B
             // Fake field that is required for validation in some cases
             // TODO: should be a proper way to run the validation both
             // on types and fields
-            let field = &Field { type_of: Type::from(type_name.clone()), ..Default::default() };
+            let field = &Field { ty_of: Type::from(type_name.clone()), ..Default::default() };
 
             // TODO: make this code reusable in other operators like call
             let ir = match resolver {
@@ -94,7 +94,7 @@ pub fn compile_service(mut sdl: String) -> Valid<IR, BlueprintError> {
 
 pub fn update_federation<'a>() -> TryFoldConfig<'a, Blueprint> {
     TryFoldConfig::<Blueprint>::new(|config_module, mut blueprint| {
-        if !config_module.server.get_enable_federation() {
+        if !config_module.runtime_config.server.get_enable_federation() {
             return Valid::succeed(blueprint);
         }
 
@@ -113,7 +113,7 @@ pub fn update_federation<'a>() -> TryFoldConfig<'a, Blueprint> {
                 return Valid::fail(BlueprintError::QueryTypeNotObject);
             };
 
-            let Some(config_type) = config_module.types.get(&query_name) else {
+            let Some(config_type) = config_module.schema_config.types.get(&query_name) else {
                 return Valid::fail(BlueprintError::TypeNotFoundInConfig(query_name.clone()));
             };
 

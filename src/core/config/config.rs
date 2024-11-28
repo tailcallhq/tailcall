@@ -1,26 +1,18 @@
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
-use std::fmt::{self, Display};
+use std::collections::HashSet;
 
 use anyhow::Result;
 use async_graphql::parser::types::ServiceDocument;
-use derive_setters::Setters;
-use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use strum::IntoEnumIterator;
 use tailcall_typedefs_common::directive_definition::DirectiveDefinition;
 use tailcall_typedefs_common::input_definition::InputDefinition;
 use tailcall_typedefs_common::ServiceDocumentBuilder;
 use tailcall_valid::{Valid, Validator};
 
-use super::directive::Directive;
 use super::from_document::from_document;
-use super::{AddField, Alias, Cache, Call, Discriminate, Expr, GraphQL, Grpc, Http, Link, Modify, Omit, Protected, Resolver, Server, Telemetry, Upstream, JS, SchemaConfig};
-use crate::core::config::npo::QueryPath;
+use super::{AddField, Alias, Cache, Call, Discriminate, Expr, GraphQL, Grpc, Http, Link, Modify, Omit, Protected, Server, Telemetry, Upstream, JS, SchemaConfig};
 use crate::core::config::runtime_config::RuntimeConfig;
 use crate::core::config::source::Source;
-use crate::core::is_default;
-use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
 use crate::core::scalar::Scalar;
 
@@ -28,18 +20,32 @@ use crate::core::scalar::Scalar;
 #[derive(
     Clone,
     Debug,
-    Setters,
+    Default,
     PartialEq,
     Eq,
     schemars::JsonSchema,
-    MergeRight,
 )]
-pub enum Config {
-    SchemaConfig(SchemaConfig),
-    RuntimeConfig(RuntimeConfig),
+pub struct Config {
+    pub schema_config: SchemaConfig,
+    pub runtime_config: RuntimeConfig,
+}
+
+impl MergeRight for Config {
+    fn merge_right(mut self, other: Self) -> Self {
+        self.schema_config = self.schema_config.merge_right(other.schema_config);
+
+        self
+    }
 }
 
 impl Config {
+
+    pub fn schema_config(&self) -> &SchemaConfig {
+        &self.schema_config
+    }
+    pub fn runtime_config(&self) -> &RuntimeConfig {
+        &self.runtime_config
+    }
 
     pub fn from_json(json: &str) -> Result<Self> {
         Ok(serde_json::from_str(json)?)

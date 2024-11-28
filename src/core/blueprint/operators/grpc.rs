@@ -52,7 +52,7 @@ fn to_operation(
 }
 
 fn json_schema_from_field(config: &Config, field: &Field) -> FieldSchema {
-    let field_schema = crate::core::blueprint::to_json_schema(&field.type_of, config);
+    let field_schema = crate::core::blueprint::to_json_schema(&field.ty_of, config);
     let args_schema = crate::core::blueprint::to_json_schema_for_args(&field.args, config);
     FieldSchema { args: args_schema, field: field_schema }
 }
@@ -209,7 +209,7 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, BlueprintError> {
             let validation = if validate_with_schema {
                 let field_schema = json_schema_from_field(config_module, field);
                 if grpc.batch_key.is_empty() {
-                    validate_schema(field_schema, &operation, field.type_of.name()).unit()
+                    validate_schema(field_schema, &operation, field.ty_of.name()).unit()
                 } else {
                     validate_group_by(&field_schema, &operation, grpc.batch_key.clone()).unit()
                 }

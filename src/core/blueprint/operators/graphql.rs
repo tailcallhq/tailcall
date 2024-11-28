@@ -23,7 +23,7 @@ fn create_related_fields(
     }
     visited.insert(type_name.to_string());
 
-    if let Some(type_) = config.find_type(type_name) {
+    if let Some(type_) = config.schema_config.find_type(type_name) {
         for (name, field) in &type_.fields {
             if !field.has_resolver() {
                 if let Some(modify) = &field.modify {
@@ -32,7 +32,7 @@ fn create_related_fields(
                             modified_name.clone(),
                             (
                                 name.clone(),
-                                create_related_fields(config, field.type_of.name(), visited),
+                                create_related_fields(config, field.ty_of.name(), visited),
                             ),
                         );
                     }
@@ -41,13 +41,13 @@ fn create_related_fields(
                         name.clone(),
                         (
                             name.clone(),
-                            create_related_fields(config, field.type_of.name(), visited),
+                            create_related_fields(config, field.ty_of.name(), visited),
                         ),
                     );
                 }
             }
         }
-    } else if let Some(union_) = config.find_union(type_name) {
+    } else if let Some(union_) = config.schema_config.find_union(type_name) {
         for type_name in &union_.types {
             map.extend(create_related_fields(config, type_name, visited).0);
         }
@@ -102,7 +102,7 @@ pub fn update_graphql<'a>(
                 return Valid::succeed(b_field);
             };
 
-            compile_graphql(config, operation_type, field.type_of.name(), graphql)
+            compile_graphql(config, operation_type, field.ty_of.name(), graphql)
                 .map(|resolver| b_field.resolver(Some(resolver)))
                 .and_then(|b_field| b_field.validate_field(type_of, config).map_to(b_field))
         },

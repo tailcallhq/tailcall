@@ -34,7 +34,7 @@ impl Transform for UnionInputType {
 
         let new_types = visitor.visit();
 
-        config.types = new_types;
+        config.schema_config.types = new_types;
 
         Valid::succeed(config)
     }
@@ -73,7 +73,7 @@ impl<'cfg> Visitor<'cfg> {
     /// or replace the field set for the type if any of the arguments use
     /// a union somewhere down the fields tree.
     fn visit(mut self) -> BTreeMap<String, Type> {
-        for (type_name, type_) in &self.config.types {
+        for (type_name, type_) in &self.config.schema_config.types {
             let fields = type_
                 .fields
                 .iter()
@@ -112,7 +112,7 @@ impl<'cfg> Visitor<'cfg> {
         // avoid endless recursion
         self.visited_types.insert(type_name);
 
-        if let Some(union_) = self.config.unions.get(type_name) {
+        if let Some(union_) = self.config.schema_config.unions.get(type_name) {
             // if the type is union process the nested types recursively
             for type_name in &union_.types {
                 self.collect_nested_unions_for_type(type_name);
@@ -133,10 +133,10 @@ impl<'cfg> Visitor<'cfg> {
 
             self.union_presence
                 .insert(type_name, UnionPresence::Union(types.into_iter().collect()));
-        } else if let Some(type_) = self.config.types.get(type_name) {
+        } else if let Some(type_) = self.config.schema_config.types.get(type_name) {
             // first, recursively walk over nested fields to see if there any nested unions
             for field in type_.fields.values() {
-                self.collect_nested_unions_for_type(field.type_of.name());
+                self.collect_nested_unions_for_type(field.ty_of.name());
             }
 
             // store any fields that contain union
@@ -146,7 +146,7 @@ impl<'cfg> Visitor<'cfg> {
             // to multiple types. As separate loop to bypass borrow checker
             for (field_name, field) in &type_.fields {
                 if let Some(UnionPresence::Union(union_types)) =
-                    self.union_presence.get(field.type_of.name())
+                    self.union_presence.get(field.ty_of.name())
                 {
                     union_fields.push((field_name, union_types));
                 }
@@ -260,7 +260,7 @@ impl<'cfg> Visitor<'cfg> {
                     .get_mut(*field_name)
                     .expect("Only available fields could be in list of union_fields");
 
-                field.type_of = field.type_of.clone().with_name(union_type.to_owned());
+                field.ty_of = field.ty_of.clone().with_name(union_type.to_owned());
 
                 inner_create(type_name, new_type, union_fields, result);
             }

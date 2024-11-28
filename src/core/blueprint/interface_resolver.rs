@@ -33,12 +33,12 @@ pub fn update_interface_resolver<'a>(
 {
     TryFold::<(&ConfigModule, &Field, &Type, &str), FieldDefinition, BlueprintError>::new(
         |(config, field, _, _), mut b_field| {
-            let Some(interface_types) = config.interfaces_types_map().get(field.type_of.name())
+            let Some(interface_types) = config.interfaces_types_map().get(field.ty_of.name())
             else {
                 return Valid::succeed(b_field);
             };
 
-            compile_interface_resolver(field.type_of.name(), interface_types, &field.discriminate)
+            compile_interface_resolver(field.ty_of.name(), interface_types, &field.discriminate)
                 .map(|discriminator| {
                     b_field.resolver = Some(
                         b_field

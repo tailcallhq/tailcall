@@ -10,6 +10,7 @@ pub use resolver::*;
 pub use source::*;
 pub use url_query::*;
 pub use schema_config::*;
+pub use runtime_config::*;
 
 mod apollo;
 mod config;

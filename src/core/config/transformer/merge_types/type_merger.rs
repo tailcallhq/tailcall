@@ -49,7 +49,7 @@ impl TypeMerger {
         // them.
         for type_name_1 in types.iter() {
             let type_name_1 = type_name_1.as_str();
-            if let Some(type_info_1) = config.types.get(type_name_1) {
+            if let Some(type_info_1) = config.schema_config.types.get(type_name_1) {
                 if visited_types.contains(type_name_1) {
                     continue;
                 }
@@ -65,7 +65,7 @@ impl TypeMerger {
                         continue;
                     }
 
-                    if let Some(type_info_2) = config.types.get(type_name_2) {
+                    if let Some(type_info_2) = config.schema_config.types.get(type_name_2) {
                         let threshold = mergeable_types.get_threshold(type_name_1, type_name_2);
                         visited_types.insert(type_name_1.to_owned());
                         let is_similar = stat_gen
@@ -101,7 +101,7 @@ impl TypeMerger {
             let merged_type_name = format!("{}M{}", PREFIX, merge_counter);
             let mut did_we_merge = false;
             for type_name in same_types {
-                if let Some(type_) = config.types.get(type_name.as_str()) {
+                if let Some(type_) = config.schema_config.types.get(type_name.as_str()) {
                     type_to_merge_type_mapping.insert(type_name.clone(), merged_type_name.clone());
                     merged_into = merge_type(type_, merged_into);
                     did_we_merge = true;
@@ -109,7 +109,7 @@ impl TypeMerger {
             }
 
             if did_we_merge {
-                config.types.insert(merged_type_name, merged_into);
+                config.schema_config.types.insert(merged_type_name, merged_into);
                 merge_counter += 1;
             }
         }
@@ -119,13 +119,13 @@ impl TypeMerger {
         }
 
         // step 3: replace typeof of fields with newly merged types.
-        for type_info in config.types.values_mut() {
+        for type_info in config.schema_config.types.values_mut() {
             for actual_field in type_info.fields.values_mut() {
                 if let Some(merged_into_type_name) =
-                    type_to_merge_type_mapping.get(actual_field.type_of.name())
+                    type_to_merge_type_mapping.get(actual_field.ty_of.name())
                 {
-                    actual_field.type_of = actual_field
-                        .type_of
+                    actual_field.ty_of = actual_field
+                        .ty_of
                         .clone()
                         .with_name(merged_into_type_name.to_string());
                 }
@@ -156,7 +156,7 @@ impl TypeMerger {
         }
 
         // replace the merged types in union as well.
-        for union_type_ in config.unions.values_mut() {
+        for union_type_ in config.schema_config.unions.values_mut() {
             // Collect changes to be made
             let mut types_to_remove = HashSet::new();
             let mut types_to_add = HashSet::new();
@@ -178,7 +178,7 @@ impl TypeMerger {
         }
 
         // replace the merged types in union as well.
-        for union_type_ in config.unions.values_mut() {
+        for union_type_ in config.schema_config.unions.values_mut() {
             union_type_.types = union_type_
                 .types
                 .iter()
@@ -194,7 +194,7 @@ impl TypeMerger {
         // step 4: remove all merged types.
         let unused_types: HashSet<_> = type_to_merge_type_mapping.keys().cloned().collect();
         let repeat_merging = !unused_types.is_empty();
-        config = config.remove_types(unused_types);
+        config.schema_config = config.schema_config.remove_types(unused_types);
 
         if repeat_merging {
             return self.merger(merge_counter, config);
@@ -220,10 +220,10 @@ fn merge_type(type_: &Type, mut merge_into: Type) -> Type {
             .entry(key.to_owned())
             .and_modify(|existing_field| {
                 let mut merged_field = existing_field.clone().merge_right(new_field.clone());
-                if existing_field.type_of.name() == &Scalar::JSON.to_string()
-                    || new_field.type_of.name() == &Scalar::JSON.to_string()
+                if existing_field.ty_of.name() == &Scalar::JSON.to_string()
+                    || new_field.ty_of.name() == &Scalar::JSON.to_string()
                 {
-                    merged_field.type_of = Scalar::JSON.to_string().into();
+                    merged_field.ty_of = Scalar::JSON.to_string().into();
                 }
                 *existing_field = merged_field;
             })
@@ -253,9 +253,9 @@ mod test {
 
     #[test]
     fn test_cyclic_merge_case() -> anyhow::Result<()> {
-        let str_field = Field { type_of: "String".to_owned().into(), ..Default::default() };
-        let int_field = Field { type_of: "Int".to_owned().into(), ..Default::default() };
-        let bool_field = Field { type_of: "Boolean".to_owned().into(), ..Default::default() };
+        let str_field = Field { ty_of: "String".to_owned().into(), ..Default::default() };
+        let int_field = Field { ty_of: "Int".to_owned().into(), ..Default::default() };
+        let bool_field = Field { ty_of: "Boolean".to_owned().into(), ..Default::default() };
 
         let mut ty1 = Type::default();
         ty1.fields.insert("body".to_string(), str_field.clone());
@@ -267,7 +267,7 @@ mod test {
         let mut ty2 = Type::default();
         ty2.fields.insert(
             "t1".to_string(),
-            Field { type_of: "T1".to_string().into(), ..Default::default() },
+            Field { ty_of: "T1".to_string().into(), ..Default::default() },
         );
         ty2.fields
             .insert("is_verified".to_string(), bool_field.clone());
@@ -276,20 +276,20 @@ mod test {
 
         let mut config = Config::default();
 
-        config.types.insert("T1".to_string(), ty1);
-        config.types.insert("T2".to_string(), ty2);
+        config.schema_config.types.insert("T1".to_string(), ty1);
+        config.schema_config.types.insert("T2".to_string(), ty2);
 
         let mut q_type = Type::default();
         q_type.fields.insert(
             "q1".to_string(),
-            Field { type_of: "T1".to_string().into(), ..Default::default() },
+            Field { ty_of: "T1".to_string().into(), ..Default::default() },
         );
         q_type.fields.insert(
             "q2".to_string(),
-            Field { type_of: "T2".to_string().into(), ..Default::default() },
+            Field { ty_of: "T2".to_string().into(), ..Default::default() },
         );
 
-        config.types.insert("Query".to_owned(), q_type);
+        config.schema_config.types.insert("Query".to_owned(), q_type);
         config = config.query("Query");
 
         config = TypeMerger::new(0.5).transform(config).to_result()?;
@@ -301,11 +301,11 @@ mod test {
 
     #[test]
     fn test_type_merger() -> anyhow::Result<()> {
-        let str_field = Field { type_of: "String".to_owned().into(), ..Default::default() };
-        let int_field = Field { type_of: "Int".to_owned().into(), ..Default::default() };
-        let bool_field = Field { type_of: "Boolean".to_owned().into(), ..Default::default() };
-        let float_field = Field { type_of: "Float".to_owned().into(), ..Default::default() };
-        let id_field = Field { type_of: "ID".to_owned().into(), ..Default::default() };
+        let str_field = Field { ty_of: "String".to_owned().into(), ..Default::default() };
+        let int_field = Field { ty_of: "Int".to_owned().into(), ..Default::default() };
+        let bool_field = Field { ty_of: "Boolean".to_owned().into(), ..Default::default() };
+        let float_field = Field { ty_of: "Float".to_owned().into(), ..Default::default() };
+        let id_field = Field { ty_of: "ID".to_owned().into(), ..Default::default() };
 
         let mut ty = Type::default();
         ty.fields.insert("f1".to_string(), str_field.clone());
@@ -315,37 +315,37 @@ mod test {
         ty.fields.insert("f5".to_string(), id_field.clone());
 
         let mut config = Config::default();
-        config.types.insert("T1".to_string(), ty.clone());
-        config.types.insert("T2".to_string(), ty.clone());
-        config.types.insert("T3".to_string(), ty.clone());
-        config.types.insert("T4".to_string(), ty.clone());
+        config.schema_config.types.insert("T1".to_string(), ty.clone());
+        config.schema_config.types.insert("T2".to_string(), ty.clone());
+        config.schema_config.types.insert("T3".to_string(), ty.clone());
+        config.schema_config.types.insert("T4".to_string(), ty.clone());
 
         let mut q_type = Type::default();
         q_type.fields.insert(
             "q1".to_string(),
-            Field { type_of: "T1".to_string().into(), ..Default::default() },
+            Field { ty_of: "T1".to_string().into(), ..Default::default() },
         );
         q_type.fields.insert(
             "q2".to_string(),
-            Field { type_of: "T2".to_string().into(), ..Default::default() },
+            Field { ty_of: "T2".to_string().into(), ..Default::default() },
         );
         q_type.fields.insert(
             "q3".to_string(),
-            Field { type_of: "T3".to_string().into(), ..Default::default() },
+            Field { ty_of: "T3".to_string().into(), ..Default::default() },
         );
         q_type.fields.insert(
             "q4".to_string(),
-            Field { type_of: "T4".to_string().into(), ..Default::default() },
+            Field { ty_of: "T4".to_string().into(), ..Default::default() },
         );
 
-        config.types.insert("Query".to_owned(), q_type);
+        config.schema_config.types.insert("Query".to_owned(), q_type);
         config = config.query("Query");
 
-        assert_eq!(config.types.len(), 5);
+        assert_eq!(config.schema_config.types.len(), 5);
 
         config = TypeMerger::new(1.0).transform(config).to_result()?;
 
-        assert_eq!(config.types.len(), 2);
+        assert_eq!(config.schema_config.types.len(), 2);
         insta::assert_snapshot!(config.to_sdl());
         Ok(())
     }
@@ -376,8 +376,8 @@ mod test {
 
     #[test]
     fn test_fail_when_scalar_field_not_match() {
-        let str_field = Field { type_of: "String".to_owned().into(), ..Default::default() };
-        let int_field = Field { type_of: "Int".to_owned().into(), ..Default::default() };
+        let str_field = Field { ty_of: "String".to_owned().into(), ..Default::default() };
+        let int_field = Field { ty_of: "Int".to_owned().into(), ..Default::default() };
 
         let mut ty1 = Type::default();
         ty1.fields.insert("a".to_string(), int_field.clone());
@@ -390,8 +390,8 @@ mod test {
         ty2.fields.insert("c".to_string(), str_field.clone());
 
         let mut config = Config::default();
-        config.types.insert("T1".to_string(), ty1);
-        config.types.insert("T2".to_string(), ty2);
+        config.schema_config.types.insert("T1".to_string(), ty1);
+        config.schema_config.types.insert("T2".to_string(), ty2);
 
         let config = TypeMerger::new(0.5).transform(config).to_result().unwrap();
         insta::assert_snapshot!(config.to_sdl());
@@ -399,7 +399,7 @@ mod test {
 
     #[test]
     fn test_interface_types() {
-        let int_field = Field { type_of: "Int".to_owned().into(), ..Default::default() };
+        let int_field = Field { ty_of: "Int".to_owned().into(), ..Default::default() };
 
         let mut ty1 = Type::default();
         ty1.fields.insert("a".to_string(), int_field.clone());
@@ -414,9 +414,9 @@ mod test {
         ty3.implements.insert("B".to_string());
 
         let mut config = Config::default();
-        config.types.insert("A".to_string(), ty1);
-        config.types.insert("B".to_string(), ty2);
-        config.types.insert("C".to_string(), ty3);
+        config.schema_config.types.insert("A".to_string(), ty1);
+        config.schema_config.types.insert("B".to_string(), ty2);
+        config.schema_config.types.insert("C".to_string(), ty3);
 
         let config = TypeMerger::default().transform(config).to_result().unwrap();
         insta::assert_snapshot!(config.to_sdl());

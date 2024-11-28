@@ -67,7 +67,7 @@ pub fn compile_call(
                 object_name,
                 config_module,
                 type_of,
-                field.type_of.name(),
+                field.ty_of.name(),
             )
             .and_then(|b_field| {
                 if b_field.resolver.is_none() {
@@ -137,7 +137,7 @@ fn get_field_and_field_name<'a>(
     )
     .and_then(|(type_name, field_name)| {
         Valid::from_option(
-            config_module.config().find_type(&type_name),
+            config_module.config().schema_config.find_type(&type_name),
             BlueprintError::TypeNotFoundInConfig(type_name.clone()),
         )
         .and_then(|query_type| {

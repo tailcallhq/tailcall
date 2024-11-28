@@ -31,11 +31,11 @@ pub fn update_union_resolver<'a>(
 {
     TryFold::<(&ConfigModule, &Field, &Type, &str), FieldDefinition, BlueprintError>::new(
         |(config, field, _, _), mut b_field| {
-            let Some(union_definition) = config.find_union(field.type_of.name()) else {
+            let Some(union_definition) = config.schema_config.find_union(field.ty_of.name()) else {
                 return Valid::succeed(b_field);
             };
 
-            compile_union_resolver(field.type_of.name(), union_definition, &field.discriminate).map(
+            compile_union_resolver(field.ty_of.name(), union_definition, &field.discriminate).map(
                 |discriminator| {
                     b_field.resolver = Some(
                         b_field

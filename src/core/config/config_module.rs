@@ -35,9 +35,9 @@ struct Cache {
 
 impl From<Config> for Cache {
     fn from(value: Config) -> Self {
-        let input_types = value.input_types();
-        let output_types = value.output_types();
-        let interfaces_types_map = value.interfaces_types_map();
+        let input_types = value.schema_config.input_types();
+        let output_types = value.schema_config.output_types();
+        let interfaces_types_map = value.schema_config.interfaces_types_map();
 
         Cache {
             config: value,

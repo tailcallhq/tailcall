@@ -17,10 +17,10 @@ pub struct MergeableTypes {
 impl MergeableTypes {
     pub fn new(config: &Config, threshold: f32) -> Self {
         Self {
-            input_types: config.input_types(),
-            union_types: config.union_types(),
-            output_types: config.output_types(),
-            interface_types: config.interfaces_types_map().keys().cloned().collect(),
+            input_types: config.schema_config.input_types(),
+            union_types: config.schema_config.union_types(),
+            output_types: config.schema_config.output_types(),
+            interface_types: config.schema_config.interfaces_types_map().keys().cloned().collect(),
             threshold,
         }
     }

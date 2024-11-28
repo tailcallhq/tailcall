@@ -3,7 +3,7 @@ use std::fmt::{Display, Formatter};
 
 use tailcall_chunk::Chunk;
 
-use crate::core::config::{Config, SchemaConfig};
+use crate::core::config::SchemaConfig;
 
 ///
 /// Represents a list of query paths that can issue a N + 1 query
@@ -137,10 +137,10 @@ impl<'a> PathTracker<'a> {
                     } else {
                         let mut visited = visited.clone();
                         visited.insert((type_name, field_name));
-                        let is_list = is_list | field.type_of.is_list();
+                        let is_list = is_list | field.ty_of.is_list();
                         chunks = chunks.concat(self.iter(
                             path,
-                            TypeName::new(field.type_of.name()),
+                            TypeName::new(field.ty_of.name()),
                             is_list,
                             visited,
                         ))

@@ -20,7 +20,7 @@ impl OperationTypeGenerator {
     ) -> Valid<Config, String> {
         let type_of = Type::from(root_type.to_owned());
         let mut field = Field {
-            type_of: if request_sample.res_body.is_array() {
+            ty_of: if request_sample.res_body.is_array() {
                 type_of.into_list()
             } else {
                 type_of
@@ -57,7 +57,7 @@ impl OperationTypeGenerator {
             .operation_type
             .to_string()
             .to_case(Case::Pascal);
-        if let Some(type_) = config.types.get_mut(req_op.as_str()) {
+        if let Some(type_) = config.schema_config.types.get_mut(req_op.as_str()) {
             type_
                 .fields
                 .insert(request_sample.field_name.to_owned(), field);
@@ -65,7 +65,7 @@ impl OperationTypeGenerator {
             let mut ty = config::Type::default();
             ty.fields
                 .insert(request_sample.field_name.to_owned(), field);
-            config.types.insert(req_op.to_owned(), ty);
+            config.schema_config.types.insert(req_op.to_owned(), ty);
         }
 
         Valid::succeed(config)
@@ -110,11 +110,11 @@ mod test {
         let mut fields = BTreeMap::default();
         fields.insert(
             "post".to_owned(),
-            Field { type_of: "Int".to_owned().into(), ..Default::default() },
+            Field { ty_of: "Int".to_owned().into(), ..Default::default() },
         );
 
         let type_ = Type { fields, ..Default::default() };
-        config.types.insert("Query".to_owned(), type_);
+        config.schema_config.types.insert("Query".to_owned(), type_);
 
         let config = OperationTypeGenerator
             .generate(&sample, "T44", &NameGenerator::new("Input"), config)

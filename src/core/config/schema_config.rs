@@ -6,9 +6,11 @@ use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall_macros::MergeRight;
-use crate::core::config::{AddField, Alias, Cache, Config, Directive, Discriminate, GraphQL, Http, Modify, Omit, Protected, QueryPath, Resolver};
+use crate::core::config::{AddField, Alias, Cache, Directive, Discriminate, Modify, Omit, Protected, QueryPath, Resolver};
 use crate::core::merge_right::MergeRight;
 use crate::core::scalar::Scalar;
+use crate::core::is_default;
+use std::collections::HashMap;
 
 #[derive(
     Serialize,
@@ -91,7 +93,7 @@ impl Display for Type {
         writeln!(f, "{{")?;
 
         for (field_name, field) in &self.fields {
-            writeln!(f, "  {}: {:?},", field_name, field.type_of)?;
+            writeln!(f, "  {}: {:?},", field_name, field.ty_of)?;
         }
         writeln!(f, "}}")
     }
@@ -144,7 +146,7 @@ pub struct Field {
     ///
     /// Refers to the type of the value the field can be resolved to.
     #[serde(rename = "type", default, skip_serializing_if = "is_default")]
-    pub type_of: crate::core::Type,
+    pub ty_of: crate::core::Type,
 
     ///
     /// Map of argument name and its definition.
@@ -216,23 +218,23 @@ impl Field {
     }
 
     pub fn int() -> Self {
-        Self { type_of: "Int".to_string().into(), ..Default::default() }
+        Self { ty_of: "Int".to_string().into(), ..Default::default() }
     }
 
     pub fn string() -> Self {
-        Self { type_of: "String".to_string().into(), ..Default::default() }
+        Self { ty_of: "String".to_string().into(), ..Default::default() }
     }
 
     pub fn float() -> Self {
-        Self { type_of: "Float".to_string().into(), ..Default::default() }
+        Self { ty_of: "Float".to_string().into(), ..Default::default() }
     }
 
     pub fn boolean() -> Self {
-        Self { type_of: "Boolean".to_string().into(), ..Default::default() }
+        Self { ty_of: "Boolean".to_string().into(), ..Default::default() }
     }
 
     pub fn id() -> Self {
-        Self { type_of: "ID".to_string().into(), ..Default::default() }
+        Self { ty_of: "ID".to_string().into(), ..Default::default() }
     }
 
     pub fn is_omitted(&self) -> bool {
@@ -386,8 +388,8 @@ impl SchemaConfig {
         } else if let Some(type_) = self.find_type(type_of) {
             types.insert(type_of.into());
             for (_, field) in type_.fields.iter() {
-                if !types.contains(field.type_of.name()) && !self.is_scalar(field.type_of.name()) {
-                    types = self.find_connections(field.type_of.name(), types);
+                if !types.contains(field.ty_of.name()) && !self.is_scalar(field.ty_of.name()) {
+                    types = self.find_connections(field.ty_of.name(), types);
                 }
             }
         } else if self.find_enum(type_of).is_some() {
@@ -551,7 +553,7 @@ impl SchemaConfig {
                 set.insert(type_name);
                 for field in typ.fields.values() {
                     stack.extend(field.args.values().map(|arg| arg.type_of.name().to_owned()));
-                    stack.push(field.type_of.name().clone());
+                    stack.push(field.ty_of.name().clone());
                 }
                 for interface in typ.implements.iter() {
                     stack.push(interface.clone())

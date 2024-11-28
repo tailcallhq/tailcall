@@ -60,8 +60,8 @@ impl Transform for AmbiguousType {
     type Value = Config;
     type Error = String;
     fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
-        let mut input_types = config.input_types();
-        let mut output_types = config.output_types();
+        let mut input_types = config.schema_config.input_types();
+        let mut output_types = config.schema_config.output_types();
         Valid::from_iter(input_types.intersection(&output_types), |current_name| {
             // Iterate over intersection of input and output types
             let resolution = (self.resolver)(current_name);
@@ -74,7 +74,7 @@ impl Transform for AmbiguousType {
                 .trace(current_name)
             } else {
                 let mut resolution_map = HashMap::new();
-                if let Some(ty) = config.types.get(current_name) {
+                if let Some(ty) = config.schema_config.types.get(current_name) {
                     resolution_map = insert_resolution(resolution_map, current_name, resolution);
                     for field in ty.fields.values() {
                         for args in field.args.values() {
@@ -103,36 +103,36 @@ impl Transform for AmbiguousType {
                 let input_name = &resolution.input;
                 let output_name = &resolution.output;
 
-                let og_ty = config.types.get(current_name).cloned();
+                let og_ty = config.schema_config.types.get(current_name).cloned();
 
                 // remove old types
-                config.types.remove(current_name);
+                config.schema_config.types.remove(current_name);
                 input_types.remove(current_name);
                 output_types.remove(current_name);
 
                 // add new types
                 if let Some(og_ty) = og_ty {
-                    config.types.insert(input_name.clone(), og_ty.clone());
+                    config.schema_config.types.insert(input_name.clone(), og_ty.clone());
                     input_types.insert(input_name.clone());
 
-                    config.types.insert(output_name.clone(), og_ty);
+                    config.schema_config.types.insert(output_name.clone(), og_ty);
                     output_types.insert(output_name.clone());
                 }
             }
-            let keys = config.types.keys().cloned().collect::<Vec<_>>();
+            let keys = config.schema_config.types.keys().cloned().collect::<Vec<_>>();
 
             for k in keys {
-                if let Some(ty) = config.types.get_mut(&k) {
+                if let Some(ty) = config.schema_config.types.get_mut(&k) {
                     for field in ty.fields.values_mut() {
-                        if let Some(resolution) = resolution_map.get(field.type_of.name()) {
+                        if let Some(resolution) = resolution_map.get(field.ty_of.name()) {
                             if output_types.contains(&k) {
-                                field.type_of = field
-                                    .type_of
+                                field.ty_of = field
+                                    .ty_of
                                     .clone()
                                     .with_name(resolution.output.to_owned());
                             } else if input_types.contains(&k) {
-                                field.type_of =
-                                    field.type_of.clone().with_name(resolution.input.to_owned());
+                                field.ty_of =
+                                    field.ty_of.clone().with_name(resolution.input.to_owned());
                             }
                         }
                         for arg in field.args.values_mut() {
@@ -166,7 +166,7 @@ mod tests {
     fn build_qry(mut config: Config) -> Config {
         let mut query = config::Type::default();
         let mut field1 = crate::core::config::Field {
-            type_of: "Type1".to_string().into(),
+            ty_of: "Type1".to_string().into(),
             ..Default::default()
         };
 
@@ -185,12 +185,12 @@ mod tests {
         field1.args.insert("arg2".to_string(), arg2);
 
         let mut field2 = field1.clone();
-        field2.type_of = "Type2".to_string().into();
+        field2.ty_of = "Type2".to_string().into();
 
         query.fields.insert("field1".to_string(), field1);
         query.fields.insert("field2".to_string(), field2);
 
-        config.types.insert("Query".to_string(), query);
+        config.schema_config.types.insert("Query".to_string(), query);
         config = config.query("Query");
 
         config
@@ -207,26 +207,26 @@ mod tests {
 
         type1.fields.insert(
             "name".to_string(),
-            crate::core::config::Field::default().type_of("String".to_string().into()),
+            crate::core::config::Field::default().ty_of("String".to_string().into()),
         );
 
         type2.fields.insert(
             "ty1".to_string(),
-            crate::core::config::Field::default().type_of("Type1".to_string().into()),
+            crate::core::config::Field::default().ty_of("Type1".to_string().into()),
         );
 
         type3.fields.insert(
             "ty1".to_string(),
-            crate::core::config::Field::default().type_of("Type1".to_string().into()),
+            crate::core::config::Field::default().ty_of("Type1".to_string().into()),
         );
         type3.fields.insert(
             "ty2".to_string(),
-            crate::core::config::Field::default().type_of("Type2".to_string().into()),
+            crate::core::config::Field::default().ty_of("Type2".to_string().into()),
         );
 
-        config.types.insert("Type1".to_string(), type1);
-        config.types.insert("Type2".to_string(), type2);
-        config.types.insert("Type3".to_string(), type3);
+        config.schema_config.types.insert("Type1".to_string(), type1);
+        config.schema_config.types.insert("Type2".to_string(), type2);
+        config.schema_config.types.insert("Type3".to_string(), type3);
 
         config = build_qry(config);
 
@@ -260,7 +260,7 @@ mod tests {
             .to_result()?;
 
         // remove links since they break snapshot tests
-        config.links = Default::default();
+        config.runtime_config.links = Default::default();
 
         assert_snapshot!(config.to_sdl());
         Ok(())

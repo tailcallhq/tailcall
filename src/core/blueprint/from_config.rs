@@ -35,7 +35,7 @@ pub fn config_blueprint<'a>() -> TryFold<'a, ConfigModule, Blueprint, BlueprintE
     });
 
     let links = TryFoldConfig::<Blueprint>::new(|config_module, blueprint| {
-        Valid::from(Links::try_from(config_module.links.clone())).map_to(blueprint)
+        Valid::from(Links::try_from(config_module.runtime_config.links.clone())).map_to(blueprint)
     });
 
     let opentelemetry = to_opentelemetry().transform::<Blueprint>(
@@ -82,14 +82,14 @@ pub fn to_json_schema_for_args(args: &IndexMap<String, Arg>, config: &Config) ->
 pub fn to_json_schema(type_of: &Type, config: &Config) -> JsonSchema {
     let json_schema = match type_of {
         Type::Named { name, .. } => {
-            let type_ = config.find_type(name);
-            let type_enum_ = config.find_enum(name);
+            let type_ = config.schema_config.find_type(name);
+            let type_enum_ = config.schema_config.find_enum(name);
 
             if let Some(type_) = type_ {
                 let mut schema_fields = BTreeMap::new();
                 for (name, field) in type_.fields.iter() {
                     if field.resolver.is_none() {
-                        schema_fields.insert(name.clone(), to_json_schema(&field.type_of, config));
+                        schema_fields.insert(name.clone(), to_json_schema(&field.ty_of, config));
                     }
                 }
                 JsonSchema::Obj(schema_fields)

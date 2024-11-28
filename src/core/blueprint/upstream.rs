@@ -54,7 +54,7 @@ impl TryFrom<&ConfigModule> for Upstream {
     type Error = ValidationError<crate::core::blueprint::BlueprintError>;
 
     fn try_from(config_module: &ConfigModule) -> Result<Self, Self::Error> {
-        let config_upstream = config_module.upstream.clone();
+        let config_upstream = config_module.runtime_config.upstream.clone();
 
         let mut allowed_headers = config_upstream.get_allowed_headers();
 

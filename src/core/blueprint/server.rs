@@ -85,7 +85,7 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
     type Error = ValidationError<crate::core::blueprint::BlueprintError>;
 
     fn try_from(config_module: config::ConfigModule) -> Result<Self, Self::Error> {
-        let config_server = config_module.server.clone();
+        let config_server = config_module.runtime_config.server.clone();
 
         let http_server = match config_server.clone().get_version() {
             HttpVersion::HTTP2 => {
@@ -160,6 +160,7 @@ fn to_script(
             Valid::succeed(Some(Script {
                 source: script.clone(),
                 timeout: config_module
+                    .runtime_config
                     .server
                     .script
                     .clone()

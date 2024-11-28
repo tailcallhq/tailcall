@@ -42,7 +42,7 @@ impl<'a> CandidateConvergence<'a> {
             let candidates_to_consider = candidate_list.iter().filter(|(candidate_name, _)| {
                 let candidate_type_name = candidate_name.to_case(Case::Pascal);
                 !converged_candidate_set.contains(&candidate_type_name)
-                    && !self.config.types.contains_key(&candidate_type_name)
+                    && !self.config.schema_config.types.contains_key(&candidate_type_name)
             });
 
             // Find the candidate with the highest frequency and priority
@@ -76,9 +76,9 @@ impl<'a> CandidateGeneration<'a> {
     /// This method iterates over the configuration and collects candidate type
     /// names for each type.
     fn generate(mut self) -> CandidateConvergence<'a> {
-        for (type_name, type_info) in self.config.types.iter() {
+        for (type_name, type_info) in self.config.schema_config.types.iter() {
             for (field_name, field_info) in type_info.fields.iter() {
-                if self.config.is_scalar(field_info.type_of.name())
+                if self.config.schema_config.is_scalar(field_info.ty_of.name())
                     || field_name.starts_with(PREFIX)
                 {
                     // If field type is scalar or auto generated then ignore type name inference.
@@ -87,7 +87,7 @@ impl<'a> CandidateGeneration<'a> {
 
                 let inner_map = self
                     .candidates
-                    .entry(field_info.type_of.name().to_owned())
+                    .entry(field_info.ty_of.name().to_owned())
                     .or_default();
 
                 let singularized_candidate = pluralizer::pluralize(field_name, 1, false);
@@ -98,7 +98,7 @@ impl<'a> CandidateGeneration<'a> {
                     // in order to infer the types correctly, always prioritize the non-operation
                     // types but final selection will still depend upon the
                     // frequency.
-                    let priority = match self.config.is_root_operation_type(type_name) {
+                    let priority = match self.config.schema_config.is_root_operation_type(type_name) {
                         true => 0,
                         false => 1,
                     };

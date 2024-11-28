@@ -58,7 +58,7 @@ impl Context {
 
     /// Resolves the actual name and inserts the type.
     fn insert_type(mut self, name: String, ty: config::Type) -> Self {
-        self.config.types.insert(name.to_string(), ty);
+        self.config.schema_config.types.insert(name.to_string(), ty);
         self
     }
 
@@ -110,7 +110,7 @@ impl Context {
                 let mut field = field.clone();
 
                 // mark this field as required to force type-check on specific variant of oneof
-                field.type_of = field.type_of.into_required();
+                field.ty_of = field.ty_of.into_required();
 
                 // add new field specific to this variant of oneof field
                 new_type.fields.insert(field_name.clone(), field);
@@ -137,7 +137,7 @@ impl Context {
         // to actually create union and use just this type
         if union_types.len() == 1 {
             let (_, ty) = union_types.pop().unwrap();
-            self.config.types.insert(type_name, ty);
+            self.config.schema_config.types.insert(type_name, ty);
             return self;
         }
 
@@ -152,8 +152,8 @@ impl Context {
         }
 
         // base interface type
-        self.config.types.insert(interface_name, base_type);
-        self.config.unions.insert(type_name, union_);
+        self.config.schema_config.types.insert(interface_name, base_type);
+        self.config.schema_config.unions.insert(type_name, union_);
 
         self
     }
@@ -211,6 +211,7 @@ impl Context {
                 .collect();
 
             self.config
+                .schema_config
                 .enums
                 .insert(type_name, Enum { variants: variants_with_comments, doc });
         }
@@ -273,11 +274,11 @@ impl Context {
 
                 let mut cfg_field = Field::default();
 
-                cfg_field.type_of = match field.label() {
-                    Label::Optional => cfg_field.type_of,
+                cfg_field.ty_of = match field.label() {
+                    Label::Optional => cfg_field.ty_of,
                     // required only applicable for proto2
-                    Label::Required => cfg_field.type_of.into_required(),
-                    Label::Repeated => cfg_field.type_of.into_list(),
+                    Label::Required => cfg_field.ty_of.into_required(),
+                    Label::Repeated => cfg_field.ty_of.into_list(),
                 };
 
                 if let Some(type_name) = &field.type_name {
@@ -287,19 +288,19 @@ impl Context {
                     // before the current type
                     if self.map_types.contains(&type_name[1..]) {
                         // override type with single scalar
-                        cfg_field.type_of = "JSON".to_string().into();
+                        cfg_field.ty_of = "JSON".to_string().into();
                     } else {
                         // for non-primitive types
                         let type_of = graphql_type_from_ref(type_name)?
                             .into_object_type()
                             .to_string();
 
-                        cfg_field.type_of = cfg_field.type_of.with_name(type_of);
+                        cfg_field.ty_of = cfg_field.ty_of.with_name(type_of);
                     }
                 } else {
                     let type_of = convert_primitive_type(field.r#type().as_str_name());
 
-                    cfg_field.type_of = cfg_field.type_of.with_name(type_of);
+                    cfg_field.ty_of = cfg_field.ty_of.with_name(type_of);
                 }
 
                 let field_path =
@@ -365,7 +366,7 @@ impl Context {
                 let output_ty = get_output_type(method.output_type())?
                     .into_object_type()
                     .to_string();
-                cfg_field.type_of = cfg_field.type_of.with_name(output_ty);
+                cfg_field.ty_of = cfg_field.ty_of.with_name(output_ty);
 
                 cfg_field.resolver = Some(Resolver::Grpc(Grpc {
                     url: url.to_string(),
@@ -383,10 +384,11 @@ impl Context {
 
                 let ty = self
                     .config
+                    .schema_config
                     .types
                     .entry(self.query.clone())
                     .or_insert_with(|| {
-                        self.config.schema.query = Some(self.query.clone());
+                        self.config.schema_config.schema.query = Some(self.query.clone());
                         config::Type::default()
                     });
 

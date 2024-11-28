@@ -3,12 +3,13 @@ use std::path::Path;
 
 use anyhow::Result;
 
-use super::helpers::{GRAPHQL_RC, TAILCALL_RC, TAILCALL_RC_SCHEMA};
 use crate::cli::runtime::{confirm_and_write, create_directory, select_prompt};
-use crate::core::config::{Config, Expr, Field, Resolver, RootSchema, Source};
+use crate::core::{config, Type};
+use crate::core::config::{Config, Expr, Field, Resolver, RootSchema, SchemaConfig, Source};
 use crate::core::merge_right::MergeRight;
 use crate::core::runtime::TargetRuntime;
-use crate::core::{config, Type};
+
+use super::helpers::{GRAPHQL_RC, TAILCALL_RC, TAILCALL_RC_SCHEMA};
 
 pub(super) async fn init_command(runtime: TargetRuntime, folder_path: &str) -> Result<()> {
     create_directory(folder_path).await?;
@@ -33,7 +34,7 @@ pub(super) async fn init_command(runtime: TargetRuntime, folder_path: &str) -> R
                 &tailcall_rc.display().to_string(),
                 tailcallrc.as_bytes(),
             )
-            .await?;
+                .await?;
 
             // .graphqlrc.yml
             confirm_and_write_yml(runtime.clone(), &graphql_rc).await?;
@@ -46,7 +47,7 @@ pub(super) async fn init_command(runtime: TargetRuntime, folder_path: &str) -> R
                 &tailcall_rc_schema.display().to_string(),
                 tailcallrc_json.as_bytes(),
             )
-            .await?;
+                .await?;
         }
     }
 
@@ -86,7 +87,7 @@ async fn confirm_and_write_yml(
 
 fn main_config() -> Config {
     let field = Field {
-        type_of: Type::from("String".to_owned()).into_required(),
+        ty_of: Type::from("String".to_owned()).into_required(),
         resolver: Some(Resolver::Expr(Expr { body: "Hello, World!".into() })),
         ..Default::default()
     };
@@ -97,10 +98,11 @@ fn main_config() -> Config {
     };
 
     Config {
-        server: Default::default(),
-        upstream: Default::default(),
-        schema: RootSchema { query: Some("Query".to_string()), ..Default::default() },
-        types: BTreeMap::from([("Query".into(), query_type)]),
+        schema_config: SchemaConfig {
+            schema: RootSchema { query: Some("Query".to_string()), ..Default::default() },
+            types: BTreeMap::from([("Query".into(), query_type)]),
+            ..Default::default()
+        },
         ..Default::default()
     }
 }

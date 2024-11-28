@@ -26,14 +26,14 @@ impl Transform for SchemaGenerator<'_> {
     fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
         match self.operation_type {
             GraphQLOperationType::Query => {
-                config.schema.query = Some(
+                config.schema_config.schema.query = Some(
                     GraphQLOperationType::Query
                         .to_string()
                         .to_case(Case::Pascal),
                 );
             }
             GraphQLOperationType::Mutation => {
-                config.schema.mutation = Some(
+                config.schema_config.schema.mutation = Some(
                     GraphQLOperationType::Mutation
                         .to_string()
                         .to_case(Case::Pascal),
@@ -42,7 +42,7 @@ impl Transform for SchemaGenerator<'_> {
         }
 
         // Add allowed headers setting on upstream
-        config.upstream = config.upstream.allowed_headers(self.header_keys.to_owned());
+        config.runtime_config.upstream = config.runtime_config.upstream.allowed_headers(self.header_keys.to_owned());
 
         Valid::succeed(config)
     }
@@ -65,10 +65,10 @@ mod test {
             .transform(Default::default())
             .to_result()
             .unwrap();
-        assert!(config.schema.mutation.is_some());
-        assert_eq!(config.schema.mutation, Some("Mutation".to_owned()));
+        assert!(config.schema_config.schema.mutation.is_some());
+        assert_eq!(config.schema_config.schema.mutation, Some("Mutation".to_owned()));
 
-        assert!(config.schema.query.is_none());
+        assert!(config.schema_config.schema.query.is_none());
     }
 
     #[test]
@@ -78,10 +78,10 @@ mod test {
             .transform(Default::default())
             .to_result()
             .unwrap();
-        assert!(config.schema.query.is_some());
-        assert_eq!(config.schema.query, Some("Query".to_owned()));
+        assert!(config.schema_config.schema.query.is_some());
+        assert_eq!(config.schema_config.schema.query, Some("Query".to_owned()));
 
-        assert!(config.schema.mutation.is_none());
+        assert!(config.schema_config.schema.mutation.is_none());
     }
 
     #[test]
@@ -92,10 +92,10 @@ mod test {
             .transform(Default::default())
             .to_result()
             .unwrap();
-        assert!(config.schema.query.is_some());
-        assert_eq!(config.schema.query, Some("Query".to_owned()));
-        assert_eq!(config.upstream.allowed_headers, expected_header_keys);
+        assert!(config.schema_config.schema.query.is_some());
+        assert_eq!(config.schema_config.schema.query, Some("Query".to_owned()));
+        assert_eq!(config.runtime_config.upstream.allowed_headers, expected_header_keys);
 
-        assert!(config.schema.mutation.is_none());
+        assert!(config.schema_config.schema.mutation.is_none());
     }
 }

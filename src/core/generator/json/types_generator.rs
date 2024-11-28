@@ -36,10 +36,10 @@ impl TypeMerger {
         for current_type in type_list {
             for (key, new_field) in current_type.fields {
                 if let Some(existing_field) = ty.fields.get(&key) {
-                    if existing_field.type_of.name().is_empty()
-                        || existing_field.type_of.name() == &Scalar::Empty.to_string()
-                        || (existing_field.type_of.name() == &Scalar::JSON.to_string()
-                            && new_field.type_of.name() != &Scalar::Empty.to_string())
+                    if existing_field.ty_of.name().is_empty()
+                        || existing_field.ty_of.name() == &Scalar::Empty.to_string()
+                        || (existing_field.ty_of.name() == &Scalar::JSON.to_string()
+                            && new_field.ty_of.name() != &Scalar::Empty.to_string())
                     {
                         ty.fields.insert(key, new_field);
                     }
@@ -63,7 +63,7 @@ impl<'a> TypeGenerator<'a> {
 
     fn generate_scalar(&self, config: &mut Config) -> Scalar {
         let any_scalar = Scalar::JSON;
-        if config.types.contains_key(&any_scalar.name()) {
+        if config.schema_config.types.contains_key(&any_scalar.name()) {
             return any_scalar;
         }
         any_scalar
@@ -80,23 +80,23 @@ impl<'a> TypeGenerator<'a> {
                 // if object, array is empty or object has in-compatible fields then
                 // generate scalar for it.
                 Field {
-                    type_of: self.generate_scalar(config).to_string().into(),
+                    ty_of: self.generate_scalar(config).to_string().into(),
                     ..Default::default()
                 }
             } else {
                 let mut field = Field::default();
                 if is_primitive(json_val) {
-                    field.type_of = to_gql_type(json_val).into();
+                    field.ty_of = to_gql_type(json_val).into();
                 } else {
                     let type_name = self.generate_types(json_val, config);
-                    field.type_of = type_name.into();
+                    field.ty_of = type_name.into();
                 }
                 field
             };
-            field.type_of = if json_val.is_array() {
-                field.type_of.into_list()
+            field.ty_of = if json_val.is_array() {
+                field.ty_of.into_list()
             } else {
-                field.type_of
+                field.ty_of
             };
 
             ty.fields.insert(json_property.to_string(), field);
@@ -131,6 +131,7 @@ impl<'a> TypeGenerator<'a> {
                     let merged_type = TypeMerger::merge_fields(object_types);
                     let generate_type_name = self.type_name_generator.next();
                     config
+                        .schema_config
                         .types
                         .insert(generate_type_name.to_owned(), merged_type);
                     return generate_type_name;
@@ -145,7 +146,7 @@ impl<'a> TypeGenerator<'a> {
                 }
                 let ty = self.create_type_from_object(json_obj, config);
                 let generate_type_name = self.type_name_generator.next();
-                config.types.insert(generate_type_name.to_owned(), ty);
+                config.schema_config.types.insert(generate_type_name.to_owned(), ty);
                 generate_type_name
             }
             other => to_gql_type(other),

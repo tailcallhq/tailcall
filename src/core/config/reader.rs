@@ -42,6 +42,7 @@ impl ConfigReader {
     ) -> anyhow::Result<ConfigModule> {
         let links: Vec<Link> = config_module
             .config()
+            .runtime_config
             .links
             .clone()
             .iter()
@@ -72,7 +73,7 @@ impl ConfigReader {
                         config_module.unify(ConfigModule::from(config.clone()))
                     });
 
-                    if !config.links.is_empty() {
+                    if !config.runtime_config.links.is_empty() {
                         let cfg_module = self
                             .ext_links(ConfigModule::from(config), Path::new(&link.src).parent())
                             .await?;
@@ -217,6 +218,7 @@ impl ConfigReader {
         let reader_ctx = ConfigReaderContext {
             runtime: &self.runtime,
             vars: &config
+                .runtime_config
                 .server
                 .vars
                 .iter()
@@ -224,7 +226,7 @@ impl ConfigReader {
                 .collect(),
             headers: Default::default(),
         };
-        config.telemetry.render_mustache(&reader_ctx)?;
+        config.runtime_config.telemetry.render_mustache(&reader_ctx)?;
 
         // Create initial config set & extend it with the links
         self.ext_links(ConfigModule::from(config), parent_dir).await
@@ -262,7 +264,7 @@ mod reader_tests {
         let runtime = crate::core::runtime::test::init(None);
 
         let mut cfg = Config::default();
-        cfg.schema.query = Some("Test".to_string());
+        cfg.schema_config.schema.query = Some("Test".to_string());
         cfg = cfg.types([("Test", Type::default())].to_vec());
 
         let server = start_mock_server();
@@ -298,7 +300,7 @@ mod reader_tests {
                 .iter()
                 .map(|i| i.to_string())
                 .collect::<Vec<String>>(),
-            c.types
+            c.schema_config.types
                 .keys()
                 .map(|i| i.to_string())
                 .collect::<Vec<String>>()
@@ -326,7 +328,7 @@ mod reader_tests {
                 .iter()
                 .map(|i| i.to_string())
                 .collect::<Vec<String>>(),
-            c.types
+            c.schema_config.types
                 .keys()
                 .map(|i| i.to_string())
                 .collect::<Vec<String>>()

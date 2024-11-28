@@ -24,8 +24,8 @@ pub fn compile_http(
         .when(|| !http.batch_key.is_empty() && http.method != Method::GET)
         .and(
             Valid::<(), BlueprintError>::fail(BlueprintError::IncorrectBatchingUsage).when(|| {
-                (config_module.upstream.get_delay() < 1
-                    || config_module.upstream.get_max_size() < 1)
+                (config_module.runtime_config.upstream.get_delay() < 1
+                    || config_module.runtime_config.upstream.get_max_size() < 1)
                     && !http.batch_key.is_empty()
             }),
         )
@@ -63,7 +63,7 @@ pub fn compile_http(
             let http_filter = http
                 .on_request
                 .clone()
-                .or(config_module.upstream.on_request.clone())
+                .or(config_module.runtime_config.upstream.on_request.clone())
                 .map(|on_request| HttpFilter { on_request });
 
             let io = if !http.batch_key.is_empty() && http.method == Method::GET {
@@ -108,7 +108,7 @@ pub fn update_http<'a>() -> TryFold<
                 return Valid::succeed(b_field);
             };
 
-            compile_http(config_module, http, field.type_of.is_list())
+            compile_http(config_module, http, field.ty_of.is_list())
                 .map(|resolver| b_field.resolver(Some(resolver)))
                 .and_then(|b_field| {
                     b_field

@@ -30,32 +30,32 @@ impl Transform for RenameTypes {
 
         // Ensure all types exist in the configuration
         Valid::from_iter(self.0.iter(), |(existing_name, suggested_name)| {
-            if config.types.contains_key(existing_name)
-                || config.enums.contains_key(existing_name)
-                || config.unions.contains_key(existing_name)
+            if config.schema_config.types.contains_key(existing_name)
+                || config.schema_config.enums.contains_key(existing_name)
+                || config.schema_config.unions.contains_key(existing_name)
             {
                 // handle for the types.
-                if let Some(type_info) = config.types.remove(existing_name) {
-                    config.types.insert(suggested_name.to_string(), type_info);
+                if let Some(type_info) = config.schema_config.types.remove(existing_name) {
+                    config.schema_config.types.insert(suggested_name.to_string(), type_info);
                     lookup.insert(existing_name.clone(), suggested_name.clone());
 
                     // edge case where type is of operation type.
-                    if config.schema.query == Some(existing_name.clone()) {
-                        config.schema.query = Some(suggested_name.clone());
-                    } else if config.schema.mutation == Some(existing_name.clone()) {
-                        config.schema.mutation = Some(suggested_name.clone());
+                    if config.schema_config.schema.query == Some(existing_name.clone()) {
+                        config.schema_config.schema.query = Some(suggested_name.clone());
+                    } else if config.schema_config.schema.mutation == Some(existing_name.clone()) {
+                        config.schema_config.schema.mutation = Some(suggested_name.clone());
                     }
                 }
 
                 // handle for the enums.
-                if let Some(type_info) = config.enums.remove(existing_name) {
-                    config.enums.insert(suggested_name.to_string(), type_info);
+                if let Some(type_info) = config.schema_config.enums.remove(existing_name) {
+                    config.schema_config.enums.insert(suggested_name.to_string(), type_info);
                     lookup.insert(existing_name.clone(), suggested_name.clone());
                 }
 
                 // handle for the union.
-                if let Some(type_info) = config.unions.remove(existing_name) {
-                    config.unions.insert(suggested_name.to_string(), type_info);
+                if let Some(type_info) = config.schema_config.unions.remove(existing_name) {
+                    config.schema_config.unions.insert(suggested_name.to_string(), type_info);
                     lookup.insert(existing_name.clone(), suggested_name.clone());
                 }
 
@@ -68,12 +68,12 @@ impl Transform for RenameTypes {
             }
         })
         .map(|_| {
-            for type_ in config.types.values_mut() {
+            for type_ in config.schema_config.types.values_mut() {
                 for field_ in type_.fields.values_mut() {
                     // replace type of field.
-                    if let Some(suggested_name) = lookup.get(field_.type_of.name()) {
-                        field_.type_of =
-                            field_.type_of.clone().with_name(suggested_name.to_owned());
+                    if let Some(suggested_name) = lookup.get(field_.ty_of.name()) {
+                        field_.ty_of =
+                            field_.ty_of.clone().with_name(suggested_name.to_owned());
                     }
                     // replace type of argument.
                     for arg_ in field_.args.values_mut() {
@@ -98,7 +98,7 @@ impl Transform for RenameTypes {
             }
 
             // replace in the union as well.
-            for union_type_ in config.unions.values_mut() {
+            for union_type_ in config.schema_config.unions.values_mut() {
                 // Collect changes to be made
                 let mut types_to_remove = HashSet::new();
                 let mut types_to_add = HashSet::new();
@@ -120,7 +120,7 @@ impl Transform for RenameTypes {
             }
 
             // replace in union as well.
-            for union_type_ in config.unions.values_mut() {
+            for union_type_ in config.schema_config.unions.values_mut() {
                 union_type_.types = union_type_
                     .types
                     .iter()

@@ -91,7 +91,7 @@ impl Generator {
     ) -> anyhow::Result<Config> {
         let descriptor_set = resolve_file_descriptor_set(metadata.descriptor_set.clone())?;
         let mut config = from_proto(&[descriptor_set], operation_name, url)?;
-        config.links.push(Link {
+        config.runtime_config.links.push(Link {
             id: None,
             src: metadata.path.to_owned(),
             type_of: LinkType::Protobuf,

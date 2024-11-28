@@ -1,6 +1,6 @@
 use colored::*;
 
-use crate::core::config::{Config, QueryPath};
+use crate::core::config::{QueryPath, SchemaConfig};
 
 pub struct Fmt {}
 
@@ -21,7 +21,7 @@ impl Fmt {
         Fmt::meta(&n_plus_one_info.to_string())
     }
 
-    pub fn log_n_plus_one(show_npo: bool, config: &Config) {
+    pub fn log_n_plus_one(show_npo: bool, config: &SchemaConfig) {
         let n_plus_one_info = config.n_plus_one();
         let mut message = format!("N + 1 detected: {}", n_plus_one_info.size());
 

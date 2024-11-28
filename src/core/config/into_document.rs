@@ -15,11 +15,11 @@ fn transform_default_value(value: Option<serde_json::Value>) -> Option<ConstValu
 fn config_document(config: &Config) -> ServiceDocument {
     let mut definitions = Vec::new();
     let mut directives = vec![
-        pos(config.server.to_directive()),
-        pos(config.upstream.to_directive()),
+        pos(config.runtime_config.server.to_directive()),
+        pos(config.runtime_config.upstream.to_directive()),
     ];
 
-    directives.extend(config.links.iter().map(|link| {
+    directives.extend(config.runtime_config.links.iter().map(|link| {
         let mut directive = link.to_directive();
 
         let type_directive = (
@@ -43,22 +43,24 @@ fn config_document(config: &Config) -> ServiceDocument {
     let schema_definition = SchemaDefinition {
         extend: false,
         directives,
-        query: config.schema.query.clone().map(|name| pos(Name::new(name))),
+        query: config.schema_config.schema.query.clone().map(|name| pos(Name::new(name))),
         mutation: config
+            .schema_config
             .schema
             .mutation
             .clone()
             .map(|name| pos(Name::new(name))),
         subscription: config
+            .schema_config
             .schema
             .subscription
             .clone()
             .map(|name| pos(Name::new(name))),
     };
     definitions.push(TypeSystemDefinition::Schema(pos(schema_definition)));
-    let interface_types = config.interfaces_types_map();
-    let input_types = config.input_types();
-    for (type_name, type_def) in config.types.iter() {
+    let interface_types = config.schema_config.interfaces_types_map();
+    let input_types = config.schema_config.input_types();
+    for (type_name, type_def) in config.schema_config.types.iter() {
         let kind = if interface_types.contains_key(type_name) {
             TypeKind::Interface(InterfaceType {
                 implements: type_def
@@ -71,7 +73,7 @@ fn config_document(config: &Config) -> ServiceDocument {
                     .clone()
                     .iter()
                     .map(|(name, field)| {
-                        let type_of = &field.type_of;
+                        let type_of = &field.ty_of;
                         let directives = field_directives(field);
                         pos(FieldDefinition {
                             description: field.doc.clone().map(pos),
@@ -89,7 +91,7 @@ fn config_document(config: &Config) -> ServiceDocument {
                     .fields
                     .iter()
                     .map(|(name, field)| {
-                        let type_of = &field.type_of;
+                        let type_of = &field.ty_of;
                         let directives = field_directives(field);
 
                         pos(async_graphql::parser::types::InputValueDefinition {
@@ -116,7 +118,7 @@ fn config_document(config: &Config) -> ServiceDocument {
                     .fields
                     .iter()
                     .map(|(name, field)| {
-                        let type_of = &field.type_of;
+                        let type_of = &field.ty_of;
                         let directives = field_directives(field);
 
                         let args_map = field.args.clone();
@@ -159,7 +161,7 @@ fn config_document(config: &Config) -> ServiceDocument {
             kind,
         })));
     }
-    for (name, union) in config.unions.iter() {
+    for (name, union) in config.schema_config.unions.iter() {
         definitions.push(TypeSystemDefinition::Type(pos(TypeDefinition {
             extend: false,
             description: None,
@@ -175,7 +177,7 @@ fn config_document(config: &Config) -> ServiceDocument {
         })));
     }
 
-    for (name, values) in config.enums.iter() {
+    for (name, values) in config.schema_config.enums.iter() {
         definitions.push(TypeSystemDefinition::Type(pos(TypeDefinition {
             extend: false,
             description: values.doc.clone().map(pos),

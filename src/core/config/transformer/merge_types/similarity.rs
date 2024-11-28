@@ -1,9 +1,10 @@
 use tailcall_valid::{Valid, Validator};
 
-use super::pair_map::PairMap;
-use super::pair_set::PairSet;
 use crate::core::config::{Config, Type};
 use crate::core::scalar::Scalar;
+
+use super::pair_map::PairMap;
+use super::pair_set::PairSet;
 
 /// Given Two types,it tells similarity between two types based on a specified
 /// threshold.
@@ -59,10 +60,10 @@ impl<'a> Similarity<'a> {
 
             for (field_name_1, field_1) in type_1.fields.iter() {
                 if let Some(field_2) = type_2.fields.get(field_name_1) {
-                    let field_1_type_of = field_1.type_of.name();
-                    let field_2_type_of = field_2.type_of.name();
+                    let field_1_type_of = field_1.ty_of.name();
+                    let field_2_type_of = field_2.ty_of.name();
 
-                    if config.is_scalar(field_1_type_of) && config.is_scalar(field_2_type_of) {
+                    if config.schema_config.is_scalar(field_1_type_of) && config.schema_config.is_scalar(field_2_type_of) {
                         // if field type_of is scalar and they don't match then we can't merge
                         // types.
                         let json_scalar = &Scalar::JSON.to_string();
@@ -70,7 +71,7 @@ impl<'a> Similarity<'a> {
                             || field_1_type_of == json_scalar
                             || field_2_type_of == json_scalar
                         {
-                            if field_1.type_of.is_list() == field_2.type_of.is_list() {
+                            if field_1.ty_of.is_list() == field_2.ty_of.is_list() {
                                 same_field_count += 1;
                             } else {
                                 return Valid::fail("Type merge failed: The fields have different list types and cannot be merged.".to_string());
@@ -84,15 +85,15 @@ impl<'a> Similarity<'a> {
                     } else if field_1_type_of == field_2_type_of {
                         // in order to consider the fields to be exactly same.
                         // it's output type must match (we can ignore the required bounds).
-                        if field_1.type_of.is_list() == field_2.type_of.is_list() {
+                        if field_1.ty_of.is_list() == field_2.ty_of.is_list() {
                             // if they're of both of list type then they're probably of same type.
                             same_field_count += 1;
                         } else {
                             // If the list properties don't match, we cannot merge these types.
                             return Valid::fail("Type merge failed: The fields have different list types and cannot be merged.".to_string());
                         }
-                    } else if let Some(type_1) = config.types.get(field_1_type_of) {
-                        if let Some(type_2) = config.types.get(field_2_type_of) {
+                    } else if let Some(type_1) = config.schema_config.types.get(field_1_type_of) {
+                        if let Some(type_2) = config.schema_config.types.get(field_2_type_of) {
                             if visited_type.contains(field_1_type_of, field_2_type_of) {
                                 // it's cyclic type, return true as they're the same.
                                 return Valid::succeed(true);
@@ -140,65 +141,66 @@ impl<'a> Similarity<'a> {
 mod test {
     use tailcall_valid::Validator;
 
-    use super::Similarity;
-    use crate::core::config::{config, Config, Field};
+    use crate::core::config::{Config, Field, schema_config};
     use crate::core::Type;
+
+    use super::Similarity;
 
     #[test]
     fn should_return_error_when_same_field_has_different_scalar_type() {
-        let mut foo1 = config::Type::default();
+        let mut foo1 = schema_config::Type::default();
         foo1.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Int".to_owned().into(), ..Default::default() },
+            Field { ty_of: "Int".to_owned().into(), ..Default::default() },
         );
         foo1.fields.insert(
             "b".to_owned(),
-            Field { type_of: "String".to_owned().into(), ..Default::default() },
+            Field { ty_of: "String".to_owned().into(), ..Default::default() },
         );
         foo1.fields.insert(
             "c".to_owned(),
-            Field { type_of: "Bar1".to_owned().into(), ..Default::default() },
+            Field { ty_of: "Bar1".to_owned().into(), ..Default::default() },
         );
 
-        let mut foo2 = config::Type::default();
+        let mut foo2 = schema_config::Type::default();
         foo2.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Int".to_owned().into(), ..Default::default() },
+            Field { ty_of: "Int".to_owned().into(), ..Default::default() },
         );
         foo2.fields.insert(
             "b".to_owned(),
-            Field { type_of: "Float".to_owned().into(), ..Default::default() },
+            Field { ty_of: "Float".to_owned().into(), ..Default::default() },
         );
         foo2.fields.insert(
             "c".to_owned(),
-            Field { type_of: "Bar2".to_owned().into(), ..Default::default() },
+            Field { ty_of: "Bar2".to_owned().into(), ..Default::default() },
         );
 
-        let mut bar1 = config::Type::default();
+        let mut bar1 = schema_config::Type::default();
         bar1.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Int".to_owned().into(), ..Default::default() },
+            Field { ty_of: "Int".to_owned().into(), ..Default::default() },
         );
         bar1.fields.insert(
             "c".to_owned(),
-            Field { type_of: "Float".to_owned().into(), ..Default::default() },
+            Field { ty_of: "Float".to_owned().into(), ..Default::default() },
         );
 
-        let mut bar2 = config::Type::default();
+        let mut bar2 = schema_config::Type::default();
         bar2.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Int".to_owned().into(), ..Default::default() },
+            Field { ty_of: "Int".to_owned().into(), ..Default::default() },
         );
         bar2.fields.insert(
             "c".to_owned(),
-            Field { type_of: "String".to_owned().into(), ..Default::default() },
+            Field { ty_of: "String".to_owned().into(), ..Default::default() },
         );
 
         let mut cfg: Config = Config::default();
-        cfg.types.insert("Foo1".to_owned(), foo1.to_owned());
-        cfg.types.insert("Foo2".to_owned(), foo2.to_owned());
-        cfg.types.insert("Bar1".to_owned(), bar1);
-        cfg.types.insert("Bar2".to_owned(), bar2);
+        cfg.schema_config.types.insert("Foo1".to_owned(), foo1.to_owned());
+        cfg.schema_config.types.insert("Foo2".to_owned(), foo2.to_owned());
+        cfg.schema_config.types.insert("Bar1".to_owned(), bar1);
+        cfg.schema_config.types.insert("Bar2".to_owned(), bar2);
 
         let mut gen = Similarity::new(&cfg);
         let is_similar = gen
@@ -210,35 +212,35 @@ mod test {
 
     #[test]
     fn test_cyclic_type() {
-        let mut foo1 = config::Type::default();
+        let mut foo1 = schema_config::Type::default();
         foo1.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Bar1".to_owned().into(), ..Default::default() },
+            Field { ty_of: "Bar1".to_owned().into(), ..Default::default() },
         );
 
-        let mut foo2 = config::Type::default();
+        let mut foo2 = schema_config::Type::default();
         foo2.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Bar2".to_owned().into(), ..Default::default() },
+            Field { ty_of: "Bar2".to_owned().into(), ..Default::default() },
         );
 
-        let mut bar1 = config::Type::default();
+        let mut bar1 = schema_config::Type::default();
         bar1.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Foo1".to_owned().into(), ..Default::default() },
+            Field { ty_of: "Foo1".to_owned().into(), ..Default::default() },
         );
 
-        let mut bar2 = config::Type::default();
+        let mut bar2 = schema_config::Type::default();
         bar2.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Foo2".to_owned().into(), ..Default::default() },
+            Field { ty_of: "Foo2".to_owned().into(), ..Default::default() },
         );
 
         let mut cfg: Config = Config::default();
-        cfg.types.insert("Foo1".to_owned(), foo1.to_owned());
-        cfg.types.insert("Foo2".to_owned(), foo2.to_owned());
-        cfg.types.insert("Bar1".to_owned(), bar1);
-        cfg.types.insert("Bar2".to_owned(), bar2);
+        cfg.schema_config.types.insert("Foo1".to_owned(), foo1.to_owned());
+        cfg.schema_config.types.insert("Foo2".to_owned(), foo2.to_owned());
+        cfg.schema_config.types.insert("Bar1".to_owned(), bar1);
+        cfg.schema_config.types.insert("Bar2".to_owned(), bar2);
 
         let mut gen = Similarity::new(&cfg);
         let is_similar = gen
@@ -251,48 +253,48 @@ mod test {
 
     #[test]
     fn test_nested_types() {
-        let mut foo1 = config::Type::default();
+        let mut foo1 = schema_config::Type::default();
         foo1.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Bar1".to_owned().into(), ..Default::default() },
+            Field { ty_of: "Bar1".to_owned().into(), ..Default::default() },
         );
 
-        let mut foo2 = config::Type::default();
+        let mut foo2 = schema_config::Type::default();
         foo2.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Bar2".to_owned().into(), ..Default::default() },
+            Field { ty_of: "Bar2".to_owned().into(), ..Default::default() },
         );
 
-        let mut bar1 = config::Type::default();
+        let mut bar1 = schema_config::Type::default();
         bar1.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Far1".to_owned().into(), ..Default::default() },
+            Field { ty_of: "Far1".to_owned().into(), ..Default::default() },
         );
 
-        let mut bar2 = config::Type::default();
+        let mut bar2 = schema_config::Type::default();
         bar2.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Far2".to_owned().into(), ..Default::default() },
+            Field { ty_of: "Far2".to_owned().into(), ..Default::default() },
         );
 
-        let mut far1 = config::Type::default();
+        let mut far1 = schema_config::Type::default();
         far1.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Int".to_owned().into(), ..Default::default() },
+            Field { ty_of: "Int".to_owned().into(), ..Default::default() },
         );
-        let mut far2 = config::Type::default();
+        let mut far2 = schema_config::Type::default();
         far2.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Int".to_owned().into(), ..Default::default() },
+            Field { ty_of: "Int".to_owned().into(), ..Default::default() },
         );
 
         let mut cfg: Config = Config::default();
-        cfg.types.insert("Foo1".to_owned(), foo1.to_owned());
-        cfg.types.insert("Foo2".to_owned(), foo2.to_owned());
-        cfg.types.insert("Bar1".to_owned(), bar1);
-        cfg.types.insert("Bar2".to_owned(), bar2);
-        cfg.types.insert("Far1".to_owned(), far1);
-        cfg.types.insert("Far2".to_owned(), far2);
+        cfg.schema_config.types.insert("Foo1".to_owned(), foo1.to_owned());
+        cfg.schema_config.types.insert("Foo2".to_owned(), foo2.to_owned());
+        cfg.schema_config.types.insert("Bar1".to_owned(), bar1);
+        cfg.schema_config.types.insert("Bar2".to_owned(), bar2);
+        cfg.schema_config.types.insert("Far1".to_owned(), far1);
+        cfg.schema_config.types.insert("Far2".to_owned(), far2);
 
         let mut gen = Similarity::new(&cfg);
         let is_similar = gen
@@ -306,13 +308,13 @@ mod test {
     #[test]
     fn test_required_and_optional_fields() {
         let required_int_field = Field {
-            type_of: Type::from("Int".to_owned()).into_required(),
+            ty_of: Type::from("Int".to_owned()).into_required(),
             ..Default::default()
         };
 
-        let optional_int_field = Field { type_of: "Int".to_owned().into(), ..Default::default() };
+        let optional_int_field = Field { ty_of: "Int".to_owned().into(), ..Default::default() };
 
-        let mut ty1 = config::Type::default();
+        let mut ty1 = schema_config::Type::default();
         ty1.fields
             .insert("a".to_string(), required_int_field.clone());
         ty1.fields
@@ -320,7 +322,7 @@ mod test {
         ty1.fields
             .insert("c".to_string(), required_int_field.clone());
 
-        let mut ty2 = config::Type::default();
+        let mut ty2 = schema_config::Type::default();
         ty2.fields
             .insert("a".to_string(), optional_int_field.clone());
         ty2.fields
@@ -329,8 +331,8 @@ mod test {
             .insert("c".to_string(), optional_int_field.clone());
 
         let mut config = Config::default();
-        config.types.insert("Foo".to_string(), ty1.clone());
-        config.types.insert("Bar".to_string(), ty2.clone());
+        config.schema_config.types.insert("Foo".to_string(), ty1.clone());
+        config.schema_config.types.insert("Bar".to_string(), ty2.clone());
 
         let types_equal = Similarity::new(&config)
             .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
@@ -342,26 +344,26 @@ mod test {
     #[test]
     fn test_required_list_of_optional_int_vs_optional_list() {
         let required_int_field = Field {
-            type_of: Type::from("Int".to_owned()).into_list().into_required(),
+            ty_of: Type::from("Int".to_owned()).into_list().into_required(),
             ..Default::default()
         };
 
         let optional_int_field = Field {
-            type_of: Type::from("Int".to_owned()).into_list(),
+            ty_of: Type::from("Int".to_owned()).into_list(),
             ..Default::default()
         };
 
-        let mut ty1 = config::Type::default();
+        let mut ty1 = schema_config::Type::default();
         ty1.fields
             .insert("a".to_string(), required_int_field.clone());
 
-        let mut ty2 = config::Type::default();
+        let mut ty2 = schema_config::Type::default();
         ty2.fields
             .insert("a".to_string(), optional_int_field.clone());
 
         let mut config = Config::default();
-        config.types.insert("Foo".to_string(), ty1.clone());
-        config.types.insert("Bar".to_string(), ty2.clone());
+        config.schema_config.types.insert("Foo".to_string(), ty1.clone());
+        config.schema_config.types.insert("Bar".to_string(), ty2.clone());
 
         let types_equal = Similarity::new(&config)
             .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
@@ -373,26 +375,26 @@ mod test {
     #[test]
     fn test_list_of_required_int_vs_required_list() {
         let required_int_field = Field {
-            type_of: Type::from("Int".to_owned()).into_required().into_list(),
+            ty_of: Type::from("Int".to_owned()).into_required().into_list(),
             ..Default::default()
         };
 
         let optional_int_field = Field {
-            type_of: Type::from("Int".to_owned()).into_required().into_list(),
+            ty_of: Type::from("Int".to_owned()).into_required().into_list(),
             ..Default::default()
         };
 
-        let mut ty1 = config::Type::default();
+        let mut ty1 = schema_config::Type::default();
         ty1.fields
             .insert("a".to_string(), required_int_field.clone());
 
-        let mut ty2 = config::Type::default();
+        let mut ty2 = schema_config::Type::default();
         ty2.fields
             .insert("a".to_string(), optional_int_field.clone());
 
         let mut config = Config::default();
-        config.types.insert("Foo".to_string(), ty1.clone());
-        config.types.insert("Bar".to_string(), ty2.clone());
+        config.schema_config.types.insert("Foo".to_string(), ty1.clone());
+        config.schema_config.types.insert("Bar".to_string(), ty2.clone());
 
         let types_equal = Similarity::new(&config)
             .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
@@ -404,21 +406,21 @@ mod test {
     #[test]
     fn test_list_of_required_int_vs_list_of_required_int() {
         let required_int_field = Field {
-            type_of: Type::from("Int".to_owned()).into_required().into_list(),
+            ty_of: Type::from("Int".to_owned()).into_required().into_list(),
             ..Default::default()
         };
 
-        let mut ty1 = config::Type::default();
+        let mut ty1 = schema_config::Type::default();
         ty1.fields
             .insert("a".to_string(), required_int_field.clone());
 
-        let mut ty2 = config::Type::default();
+        let mut ty2 = schema_config::Type::default();
         ty2.fields
             .insert("a".to_string(), required_int_field.clone());
 
         let mut config = Config::default();
-        config.types.insert("Foo".to_string(), ty1.clone());
-        config.types.insert("Bar".to_string(), ty2.clone());
+        config.schema_config.types.insert("Foo".to_string(), ty1.clone());
+        config.schema_config.types.insert("Bar".to_string(), ty2.clone());
 
         let types_equal = Similarity::new(&config)
             .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
@@ -430,21 +432,21 @@ mod test {
     #[test]
     fn test_required_list_vs_required_list() {
         let required_int_field = Field {
-            type_of: Type::from("Int".to_owned()).into_list().into_required(),
+            ty_of: Type::from("Int".to_owned()).into_list().into_required(),
             ..Default::default()
         };
 
-        let mut ty1 = config::Type::default();
+        let mut ty1 = schema_config::Type::default();
         ty1.fields
             .insert("a".to_string(), required_int_field.clone());
 
-        let mut ty2 = config::Type::default();
+        let mut ty2 = schema_config::Type::default();
         ty2.fields
             .insert("a".to_string(), required_int_field.clone());
 
         let mut config = Config::default();
-        config.types.insert("Foo".to_string(), ty1.clone());
-        config.types.insert("Bar".to_string(), ty2.clone());
+        config.schema_config.types.insert("Foo".to_string(), ty1.clone());
+        config.schema_config.types.insert("Bar".to_string(), ty2.clone());
 
         let types_equal = Similarity::new(&config)
             .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
@@ -456,24 +458,24 @@ mod test {
     #[test]
     fn test_required_list_of_required_int_vs_required_list_of_required_int() {
         let required_int_field = Field {
-            type_of: Type::from("Int".to_owned())
+            ty_of: Type::from("Int".to_owned())
                 .into_required()
                 .into_list()
                 .into_required(),
             ..Default::default()
         };
 
-        let mut ty1 = config::Type::default();
+        let mut ty1 = schema_config::Type::default();
         ty1.fields
             .insert("a".to_string(), required_int_field.clone());
 
-        let mut ty2 = config::Type::default();
+        let mut ty2 = schema_config::Type::default();
         ty2.fields
             .insert("a".to_string(), required_int_field.clone());
 
         let mut config = Config::default();
-        config.types.insert("Foo".to_string(), ty1.clone());
-        config.types.insert("Bar".to_string(), ty2.clone());
+        config.schema_config.types.insert("Foo".to_string(), ty1.clone());
+        config.schema_config.types.insert("Bar".to_string(), ty2.clone());
 
         let types_equal = Similarity::new(&config)
             .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
@@ -485,27 +487,27 @@ mod test {
     #[test]
     fn test_merge_incompatible_list_and_non_list_fields() {
         // Define fields
-        let int_field = Field { type_of: "Int".to_owned().into(), ..Default::default() };
+        let int_field = Field { ty_of: "Int".to_owned().into(), ..Default::default() };
         let list_int_field = Field {
-            type_of: Type::from("Int".to_owned()).into_list(),
+            ty_of: Type::from("Int".to_owned()).into_list(),
             ..Default::default()
         };
 
         // Define types Foo and Bar
-        let mut foo = config::Type::default();
+        let mut foo = schema_config::Type::default();
         foo.fields.insert("a".to_string(), int_field.clone());
         foo.fields.insert("b".to_string(), int_field.clone());
         foo.fields.insert("c".to_string(), list_int_field.clone());
 
-        let mut bar = config::Type::default();
+        let mut bar = schema_config::Type::default();
         bar.fields.insert("a".to_string(), int_field.clone());
         bar.fields.insert("b".to_string(), int_field.clone());
         bar.fields.insert("c".to_string(), int_field.clone());
 
         // Create configuration with Foo and Bar types
         let mut config = Config::default();
-        config.types.insert("Foo".to_owned(), foo.clone());
-        config.types.insert("Bar".to_owned(), bar.clone());
+        config.schema_config.types.insert("Foo".to_owned(), foo.clone());
+        config.schema_config.types.insert("Bar".to_owned(), bar.clone());
 
         // Calculate similarity between Foo and Bar
         let result = Similarity::new(&config)
@@ -532,8 +534,8 @@ mod test {
 
         let result = similarity
             .similarity(
-                ("B", config.types.get("B").unwrap()),
-                ("A", config.types.get("A").unwrap()),
+                ("B", config.schema_config.types.get("B").unwrap()),
+                ("A", config.schema_config.types.get("A").unwrap()),
                 0.9,
             )
             .to_result()

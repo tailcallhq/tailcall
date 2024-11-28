@@ -23,7 +23,7 @@ impl<'a> MustachePartsValidator<'a> {
             let field = type_of.fields.get(item).ok_or_else(|| {
                 BlueprintError::NoValueFound(parts[0..parts.len() - len + 1].join("."))
             })?;
-            let val_type = &field.type_of;
+            let val_type = &field.ty_of;
 
             if !is_query && val_type.is_nullable() {
                 return Err(BlueprintError::ValueIsNullableType(item.clone()));
@@ -35,6 +35,7 @@ impl<'a> MustachePartsValidator<'a> {
 
             type_of = self
                 .config
+                .schema_config
                 .find_type(val_type.name())
                 .ok_or_else(|| BlueprintError::NoTypeFound(parts.join(".")))?;
 
@@ -84,7 +85,7 @@ impl<'a> MustachePartsValidator<'a> {
                 }
             }
             "vars" => {
-                if !config.server.vars.iter().any(|vars| vars.key == tail) {
+                if !config.runtime_config.server.vars.iter().any(|vars| vars.key == tail) {
                     return Valid::fail(BlueprintError::VarNotSetInServerConfig(tail.to_string()));
                 }
             }
@@ -197,11 +198,11 @@ mod test {
         t1_type.fields.insert(
             "numbers".to_owned(),
             Field {
-                type_of: Type::from("Int".to_owned()).into_list(),
+                ty_of: Type::from("Int".to_owned()).into_list(),
                 ..Default::default()
             },
         );
-        config.types.insert("T1".to_string(), t1_type);
+        config.schema_config.types.insert("T1".to_string(), t1_type);
 
         let type_ = Type::List {
             of_type: Box::new(Type::Named { name: "Int".to_string(), non_null: false }),
@@ -231,7 +232,7 @@ mod test {
         let (config, field_def) = initialize_test_config_and_field();
 
         let parts_validator =
-            MustachePartsValidator::new(config.types.get("T1").unwrap(), &config, &field_def);
+            MustachePartsValidator::new(config.schema_config.types.get("T1").unwrap(), &config, &field_def);
         let validation_result =
             parts_validator.validate(&["args".to_string(), "q".to_string()], true);
 
@@ -243,7 +244,7 @@ mod test {
         let (config, field_def) = initialize_test_config_and_field();
 
         let parts_validator =
-            MustachePartsValidator::new(config.types.get("T1").unwrap(), &config, &field_def);
+            MustachePartsValidator::new(config.schema_config.types.get("T1").unwrap(), &config, &field_def);
         let validation_result =
             parts_validator.validate(&["args".to_string(), "q".to_string()], false);
 

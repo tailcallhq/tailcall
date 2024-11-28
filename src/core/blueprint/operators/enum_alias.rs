@@ -16,7 +16,7 @@ pub fn update_enum_alias<'a>() -> TryFold<
 > {
     TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, BlueprintError>::new(
         |(config, field, _, _), mut b_field| {
-            let enum_type = config.enums.get(field.type_of.name());
+            let enum_type = config.schema_config.enums.get(field.ty_of.name());
             if let Some(enum_type) = enum_type {
                 let has_alias = enum_type.variants.iter().any(|v| v.alias.is_some());
                 if !has_alias {
