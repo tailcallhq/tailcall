@@ -7,7 +7,9 @@ use tailcall_valid::Validator;
 use super::context::Context;
 use super::exec::{Executor, IRExecutor};
 use super::graphql_error::GraphQLError;
-use super::{transform, AnyResponse, BuildError, Error, OperationPlan, Request, Response, Result};
+use super::{
+    transform, AnyResponse, BuildError, Error, OperationPlan, Pending, Request, Response, Result,
+};
 use crate::core::app_context::AppContext;
 use crate::core::http::RequestContext;
 use crate::core::ir::model::IR;
@@ -108,6 +110,19 @@ impl ConstValueExecutor {
         let synth = Synth::new(&plan, store, vars.clone());
 
         let resp: Response<serde_json_borrow::Value> = exe.execute(&synth).await;
+
+        // add `pending` and `has_next` to response.
+        let resp = if !plan.deferred_fields.is_empty() {
+            let mut pending_tasks = Vec::with_capacity(plan.deferred_fields.len());
+            for field in plan.deferred_fields.iter() {
+                if let Some(IR::Deferred { id, path, .. }) = &field.ir {
+                    pending_tasks.push(Pending::new(id.as_u64(), id.to_string(), path.to_owned()));
+                }
+            }
+            resp.pending(pending_tasks).has_next(Some(true))
+        } else {
+            resp
+        };
 
         // add the pending to response.
         let response: AnyResponse<Vec<u8>> = if is_introspection_query {

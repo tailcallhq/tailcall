@@ -11,6 +11,7 @@ use crate::core::jit;
 use crate::core::json::{JsonLike, JsonObjectLike};
 
 #[derive(Clone, Setters, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct Response<Value> {
     #[serde(default)]
     pub data: Value,
@@ -23,7 +24,23 @@ pub struct Response<Value> {
     pub cache_control: CacheControl,
 
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub pending: Vec<Value>,
+    pub pending: Vec<Pending>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub has_next: Option<bool>
+}
+
+#[derive(Clone, Serialize, Debug)]
+pub struct Pending {
+    id: u64,
+    label: String,
+    path: Vec<String>,
+}
+
+impl Pending {
+    pub fn new(id: u64, label: String, path: Vec<String>) -> Self {
+        Self { id, label, path }
+    }
 }
 
 impl<V: Default> Default for Response<V> {
@@ -34,6 +51,7 @@ impl<V: Default> Default for Response<V> {
             extensions: Default::default(),
             cache_control: Default::default(),
             pending: Default::default(),
+            has_next: None,
         }
     }
 }

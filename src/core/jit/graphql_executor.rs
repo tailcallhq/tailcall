@@ -19,7 +19,6 @@ use bytes::Bytes;
 use futures::channel::mpsc;
 use tokio::sync::RwLock;
 
-// #[derive(Clone)]
 pub struct JITExecutor {
     app_ctx: Arc<AppContext>,
     req_ctx: Arc<RequestContext>,
