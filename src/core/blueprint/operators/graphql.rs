@@ -2,15 +2,12 @@ use std::collections::{HashMap, HashSet};
 
 use tailcall_valid::{Valid, Validator};
 
-use crate::core::blueprint::{BlueprintError, FieldDefinition};
-use crate::core::config::{
-    Config, ConfigModule, Field, GraphQL, GraphQLOperationType, Resolver, Type,
-};
+use crate::core::blueprint::BlueprintError;
+use crate::core::config::{Config, ConfigModule, GraphQL, GraphQLOperationType};
 use crate::core::graphql::RequestTemplate;
 use crate::core::helpers;
 use crate::core::ir::model::{IO, IR};
 use crate::core::ir::RelatedFields;
-use crate::core::try_fold::TryFold;
 
 fn create_related_fields(
     config: &Config,
@@ -90,21 +87,4 @@ pub fn compile_graphql(
             let dedupe = graphql.dedupe.unwrap_or_default();
             IR::IO(IO::GraphQL { req_template, field_name, batch, dl_id: None, dedupe })
         })
-}
-
-pub fn update_graphql<'a>(
-    operation_type: &'a GraphQLOperationType,
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a Type, &'a str), FieldDefinition, BlueprintError>
-{
-    TryFold::<(&ConfigModule, &Field, &Type, &'a str), FieldDefinition, BlueprintError>::new(
-        |(config, field, type_of, _), b_field| {
-            let Some(Resolver::Graphql(graphql)) = &field.resolver else {
-                return Valid::succeed(b_field);
-            };
-
-            compile_graphql(config, operation_type, field.type_of.name(), graphql)
-                .map(|resolver| b_field.resolver(Some(resolver)))
-                .and_then(|b_field| b_field.validate_field(type_of, config).map_to(b_field))
-        },
-    )
 }

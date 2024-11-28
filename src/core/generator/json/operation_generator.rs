@@ -30,9 +30,7 @@ impl OperationTypeGenerator {
 
         // generate required http directive.
         let http_directive_gen = HttpDirectiveGenerator::new(&request_sample.url);
-        field.resolver = Some(Resolver::Http(
-            http_directive_gen.generate_http_directive(&mut field),
-        ));
+        let mut http_resolver = http_directive_gen.generate_http_directive(&mut field);
 
         if let GraphQLOperationType::Mutation = request_sample.operation_type {
             // generate the input type.
@@ -42,15 +40,17 @@ impl OperationTypeGenerator {
             let prefix = format!("{}Input", PREFIX);
             let arg_name_gen = NameGenerator::new(prefix.as_str());
             let arg_name = arg_name_gen.next();
-            if let Some(Resolver::Http(http)) = &mut field.resolver {
-                http.body = Some(format!("{{{{.args.{}}}}}", arg_name));
-                http.method = request_sample.method.to_owned();
-            }
+
+            http_resolver.body = Some(format!("{{{{.args.{}}}}}", arg_name));
+            http_resolver.method = request_sample.method.to_owned();
+
             field.args.insert(
                 arg_name,
                 Arg { type_of: root_ty.into(), ..Default::default() },
             );
         }
+
+        field.resolvers = Resolver::Http(http_resolver).into();
 
         // if type is already present, then append the new field to it else create one.
         let req_op = request_sample
