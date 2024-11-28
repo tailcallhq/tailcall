@@ -1,9 +1,7 @@
-use std::clone;
 use std::sync::Arc;
 
 use async_graphql_value::{ConstValue, Value};
 use futures_util::future::join_all;
-use http::request;
 use tailcall_valid::Validator;
 
 use super::context::Context;
@@ -22,7 +20,7 @@ use crate::core::Transform;
 use bytes::Bytes;
 use futures::channel::mpsc;
 use futures::SinkExt;
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::RwLock;
 
 /// A specialized executor that executes with async_graphql::Value
 pub struct ConstValueExecutor {

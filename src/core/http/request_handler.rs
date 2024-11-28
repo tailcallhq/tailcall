@@ -22,10 +22,10 @@ use super::request_context::RequestContext;
 use super::telemetry::{get_response_status_code, RequestCounter};
 use super::{showcase, telemetry, TAILCALL_HTTPS_ORIGIN, TAILCALL_HTTP_ORIGIN};
 use crate::core::app_context::AppContext;
-use crate::core::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse, OperationId};
+use crate::core::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::core::blueprint::telemetry::TelemetryExporter;
 use crate::core::config::{PrometheusExporter, PrometheusFormat};
-use crate::core::jit::{self, JITExecutor};
+use crate::core::jit::JITExecutor;
 
 pub const API_URL_PREFIX: &str = "/api";
 
@@ -133,7 +133,6 @@ async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
         use futures::channel::mpsc;
         use futures::StreamExt;
         use std::sync::Arc;
-        use tokio::sync::Mutex;
 
         let (tx, mut rx) = mpsc::channel(100);
         let tx = Arc::new(RwLock::new(Some(tx)));

@@ -17,7 +17,7 @@ use crate::core::jit::{self, ConstValueExecutor, OPHash, Pos, Positioned};
 
 use bytes::Bytes;
 use futures::channel::mpsc;
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::RwLock;
 
 // #[derive(Clone)]
 pub struct JITExecutor {
