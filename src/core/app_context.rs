@@ -50,12 +50,7 @@ impl AppContext {
                         expr.modify(&mut |expr| match expr {
                             IR::IO(io) => match io {
                                 IO::Http {
-                                    req_template,
-                                    group_by,
-                                    http_filter,
-                                    is_list,
-                                    dedupe,
-                                    ..
+                                    req_template, group_by, is_list, dedupe, hook, ..
                                 } => {
                                     let is_list = *is_list;
                                     let dedupe = *dedupe;
@@ -70,7 +65,7 @@ impl AppContext {
                                         req_template: req_template.clone(),
                                         group_by: group_by.clone(),
                                         dl_id: Some(DataLoaderId::new(http_data_loaders.len())),
-                                        http_filter: http_filter.clone(),
+                                        hook: hook.clone(),
                                         is_list,
                                         dedupe,
                                     }));
@@ -101,7 +96,7 @@ impl AppContext {
                                     result
                                 }
 
-                                IO::Grpc { req_template, group_by, dedupe, .. } => {
+                                IO::Grpc { req_template, group_by, dedupe, hook, .. } => {
                                     let dedupe = *dedupe;
                                     let data_loader = GrpcDataLoader {
                                         runtime: runtime.clone(),
@@ -117,6 +112,7 @@ impl AppContext {
                                         group_by: group_by.clone(),
                                         dl_id: Some(DataLoaderId::new(grpc_data_loaders.len())),
                                         dedupe,
+                                        hook: hook.clone(),
                                     }));
 
                                     grpc_data_loaders.push(data_loader);

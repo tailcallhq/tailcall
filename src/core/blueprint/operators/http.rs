@@ -4,8 +4,9 @@ use crate::core::blueprint::*;
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::{Field, Resolver};
 use crate::core::endpoint::Endpoint;
-use crate::core::http::{HttpFilter, Method, RequestTemplate};
+use crate::core::http::{Method, RequestTemplate};
 use crate::core::ir::model::{IO, IR};
+use crate::core::js_hooks::JsHooks;
 use crate::core::try_fold::TryFold;
 use crate::core::{config, helpers, Mustache};
 
@@ -62,11 +63,7 @@ pub fn compile_http(
                 .clone()
                 .or(config_module.upstream.on_request.clone());
             let on_response_body = http.on_response_body.clone();
-
-            let http_filter = HttpFilter::default()
-                .on_request(on_request)
-                .on_response_body(on_response_body)
-                .none_if_empty();
+            let hook = JsHooks::try_new(on_request, on_response_body).ok();
 
             let io = if !http.batch_key.is_empty() && http.method == Method::GET {
                 // Find a query parameter that contains a reference to the {{.value}} key
@@ -79,18 +76,18 @@ pub fn compile_http(
                     req_template,
                     group_by: Some(GroupBy::new(http.batch_key.clone(), key)),
                     dl_id: None,
-                    http_filter,
                     is_list,
                     dedupe,
+                    hook,
                 })
             } else {
                 IR::IO(IO::Http {
                     req_template,
                     group_by: None,
                     dl_id: None,
-                    http_filter,
                     is_list,
                     dedupe,
+                    hook,
                 })
             };
             (io, &http.select)
