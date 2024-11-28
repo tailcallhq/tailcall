@@ -47,7 +47,7 @@ directive @call(
   of the previous step is passed as input to the next step.
   """
   steps: [Step]
-) on FIELD_DEFINITION | OBJECT
+) repeatable on FIELD_DEFINITION | OBJECT
 
 """
 The `@expr` operators allows you to specify an expression that can evaluate to a 
@@ -55,7 +55,7 @@ value. The expression can be a static value or built form a Mustache template. s
 """
 directive @expr(
   body: JSON
-) on FIELD_DEFINITION | OBJECT
+) repeatable on FIELD_DEFINITION | OBJECT
 
 """
 The @graphQL operator allows to specify GraphQL API server request to fetch data 
@@ -95,7 +95,7 @@ directive @graphQL(
   This refers URL of the API.
   """
   url: String!
-) on FIELD_DEFINITION | OBJECT
+) repeatable on FIELD_DEFINITION | OBJECT
 
 """
 The @grpc operator indicates that a field or node is backed by a gRPC API.For instance, 
@@ -155,7 +155,7 @@ directive @grpc(
   This refers to URL of the API.
   """
   url: String!
-) on FIELD_DEFINITION | OBJECT
+) repeatable on FIELD_DEFINITION | OBJECT
 
 """
 The @http operator indicates that a field or node is backed by a REST API.For instance, 
@@ -241,11 +241,11 @@ directive @http(
   This refers to URL of the API.
   """
   url: String!
-) on FIELD_DEFINITION | OBJECT
+) repeatable on FIELD_DEFINITION | OBJECT
 
 directive @js(
   name: String!
-) on FIELD_DEFINITION | OBJECT
+) repeatable on FIELD_DEFINITION | OBJECT
 
 """
 The @link directive allows you to import external resources, such as configuration 
@@ -1050,14 +1050,41 @@ enum Method {
 }
 
 enum LinkType {
+  """
+  Points to another Tailcall Configuration file. The imported configuration will be merged into the importing configuration.
+  """
   Config
+  """
+  Points to a Protobuf file. The imported Protobuf file will be used by the `@grpc` directive. If your API exposes a reflection endpoint, you should set the type to `Grpc` instead.
+  """
   Protobuf
+  """
+  Points to a JS file. The imported JS file will be used by the `@js` directive.
+  """
   Script
+  """
+  Points to a Cert file. The imported Cert file will be used by the server to serve over HTTPS.
+  """
   Cert
+  """
+  Points to a Key file. The imported Key file will be used by the server to serve over HTTPS.
+  """
   Key
+  """
+  A trusted document that contains GraphQL operations (queries, mutations) that can be exposed a REST API using the `@rest` directive.
+  """
   Operation
+  """
+  Points to a Htpasswd file. The imported Htpasswd file will be used by the server to authenticate users.
+  """
   Htpasswd
+  """
+  Points to a Jwks file. The imported Jwks file will be used by the server to authenticate users.
+  """
   Jwks
+  """
+  Points to a reflection endpoint. The imported reflection endpoint will be used by the `@grpc` directive to resolve data from gRPC services.
+  """
   Grpc
 }
 

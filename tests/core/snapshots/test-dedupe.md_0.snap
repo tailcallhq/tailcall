@@ -1,0 +1,40 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "posts": [
+        {
+          "id": 1,
+          "userId": 1,
+          "user": {
+            "id": 1,
+            "name": "user-1"
+          },
+          "duplicateUser": {
+            "id": 1,
+            "name": "user-1"
+          }
+        },
+        {
+          "id": 2,
+          "userId": 2,
+          "user": {
+            "id": 2,
+            "name": "user-2"
+          },
+          "duplicateUser": {
+            "id": 2,
+            "name": "user-2"
+          }
+        }
+      ]
+    }
+  }
+}

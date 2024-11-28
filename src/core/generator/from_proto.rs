@@ -367,7 +367,7 @@ impl Context {
                     .to_string();
                 cfg_field.type_of = cfg_field.type_of.with_name(output_ty);
 
-                cfg_field.resolver = Some(Resolver::Grpc(Grpc {
+                cfg_field.resolvers = Resolver::Grpc(Grpc {
                     url: url.to_string(),
                     body,
                     batch_key: vec![],
@@ -376,7 +376,8 @@ impl Context {
                     dedupe: None,
                     select: None,
                     on_response_body: None,
-                }));
+                })
+                .into();
 
                 let method_path =
                     PathBuilder::new(&path).extend(PathField::Method, method_index as i32);

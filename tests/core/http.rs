@@ -101,6 +101,11 @@ impl HttpIO for Http {
                 self.spec_path
             ))?;
 
+        if let Some(delay) = execution_mock.mock.delay {
+            // add delay to the request if there's a delay in the mock.
+            let _ = tokio::time::sleep(tokio::time::Duration::from_millis(delay)).await;
+        }
+
         execution_mock.actual_hits.fetch_add(1, Ordering::Relaxed);
 
         // Clone the response from the mock to avoid borrowing issues.

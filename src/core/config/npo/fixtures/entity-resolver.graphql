@@ -1,0 +1,47 @@
+schema @server @upstream {
+  query: Query
+}
+
+type T1 @http(url: "") {
+  t1: Int
+}
+
+type T2 @http(url: "") {
+  t2: [N] @http(url: "")
+}
+
+type T3 @http(url: "", batchKey: ["id"]) {
+  t3: [N] @http(url: "")
+}
+
+type T4 @http(url: "", batchKey: ["id"]) {
+  t4: [N] @http(url: "", batchKey: ["id"])
+}
+
+type T5 @http(url: "", batchKey: ["id"]) {
+  t5: [String] @http(url: "", batchKey: ["id"])
+}
+
+type T6 @http(url: "", batchKey: ["id"]) {
+  t6: [Int]
+}
+
+type N {
+  n: [Int] @http(url: "")
+}
+
+type Query {
+  x: String
+  t1: T1 @http(url: "")
+  t2: T2 @http(url: "")
+  t3: T3 @http(url: "")
+  t4: T4 @http(url: "")
+  t5: T5 @http(url: "")
+  t6: T6 @http(url: "")
+  t1_ls: [T1] @http(url: "")
+  t2_ls: [T2] @http(url: "")
+  t3_ls: [T3] @http(url: "")
+  t4_ls: [T4] @http(url: "")
+  t5_ls: [T5] @http(url: "")
+  t6_ls: [T6] @http(url: "")
+}

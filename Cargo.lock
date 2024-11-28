@@ -643,7 +643,7 @@ dependencies = [
  "bitflags 2.6.0",
  "cexpr",
  "clang-sys",
- "itertools 0.10.5",
+ "itertools 0.12.1",
  "lazy_static",
  "lazycell",
  "log",
@@ -1019,12 +1019,6 @@ dependencies = [
 
 [[package]]
 name = "convert_case"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6245d59a3e82a7fc217c5828a6692dbc6dfb63a0c8c90495621f7b9d79704a0e"
-
-[[package]]
-name = "convert_case"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec182b0ca2f35d8fc196cf3404988fd8b8c739a4d270ff118a398feb0cbec1ca"
@@ -1357,19 +1351,6 @@ checksum = "870368c3fb35b8031abb378861d4460f573b92238ec2152c927a21f77e3e0127"
 dependencies = [
  "derive_builder_core",
  "syn 1.0.109",
-]
-
-[[package]]
-name = "derive_more"
-version = "0.99.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f33878137e4dafd7fa914ad4e259e18a4e8e532b9617a2d0150262bf53abfce"
-dependencies = [
- "convert_case 0.4.0",
- "proc-macro2",
- "quote",
- "rustc_version",
- "syn 2.0.86",
 ]
 
 [[package]]
@@ -1822,7 +1803,7 @@ version = "0.1.7-wip"
 source = "git+https://github.com/laststylebender14/rust-genai.git?rev=63a542ce20132503c520f4e07108e0d768f243c3#63a542ce20132503c520f4e07108e0d768f243c3"
 dependencies = [
  "bytes",
- "derive_more 1.0.0",
+ "derive_more",
  "eventsource-stream",
  "futures",
  "reqwest 0.12.7",
@@ -2868,7 +2849,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4979f22fdb869068da03c9f7528f8297c6fd2606bc3a4affe42e6a823fdb8da4"
 dependencies = [
  "cfg-if",
- "windows-targets 0.48.5",
+ "windows-targets 0.52.6",
 ]
 
 [[package]]
@@ -4682,7 +4663,7 @@ version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7c602d3f35d1a5725235ef874b9a9e24232534e34fe610d53657e24c6c37572d"
 dependencies = [
- "convert_case 0.6.0",
+ "convert_case",
  "fnv",
  "ident_case",
  "indexmap 2.6.0",
@@ -5461,13 +5442,13 @@ dependencies = [
  "chrono",
  "clap",
  "colored",
- "convert_case 0.6.0",
+ "convert_case",
  "criterion",
  "ctrlc",
  "dashmap",
  "datatest-stable",
  "derive-getters",
- "derive_more 0.99.18",
+ "derive_more",
  "derive_setters",
  "dotenvy",
  "exitcode",
@@ -5589,9 +5570,9 @@ dependencies = [
 
 [[package]]
 name = "tailcall-chunk"
-version = "0.2.5"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d684c265789778d9b76a268b079bca63dd8801d695e3c1d7f41df78e7a7adb4f"
+checksum = "2ce6ff6d7f5d6382f5486437dc3ba1e8b0105d34b45666a396263763b7ffe8df"
 
 [[package]]
 name = "tailcall-cloudflare"
@@ -5620,8 +5601,8 @@ dependencies = [
 name = "tailcall-fixtures"
 version = "0.1.0"
 dependencies = [
- "convert_case 0.6.0",
- "derive_more 0.99.18",
+ "convert_case",
+ "derive_more",
  "indenter",
 ]
 
@@ -5673,8 +5654,8 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "chrono",
- "convert_case 0.6.0",
- "derive_more 0.99.18",
+ "convert_case",
+ "derive_more",
  "http 0.2.12",
  "lazy_static",
  "machineid-rs",
@@ -5721,7 +5702,7 @@ dependencies = [
 name = "tailcall-upstream-grpc"
 version = "0.1.0"
 dependencies = [
- "derive_more 0.99.18",
+ "derive_more",
  "headers",
  "http 0.2.12",
  "http-body-util",
