@@ -17,7 +17,7 @@ use super::directive::Directive;
 use super::from_document::from_document;
 use super::{
     AddField, Alias, Cache, Call, Discriminate, Expr, GraphQL, Grpc, Http, Link, Modify, Omit,
-    Protected, Resolver, ResolverSet, Server, Telemetry, Upstream, JS,
+    Protected, ResolverSet, Server, Telemetry, Upstream, JS,
 };
 use crate::core::config::npo::QueryPath;
 use crate::core::config::source::Source;
@@ -137,14 +137,11 @@ impl Display for Type {
 
 impl Type {
     pub fn has_resolver(&self) -> bool {
-        self.resolver.is_some()
+        self.resolvers.has_resolver()
     }
 
     pub fn has_batched_resolver(&self) -> bool {
-        self.resolver
-            .as_ref()
-            .map(Resolver::is_batched)
-            .unwrap_or(false)
+        self.resolvers.is_batched()
     }
 
     pub fn fields(mut self, fields: Vec<(&str, Field)>) -> Self {
@@ -254,15 +251,11 @@ impl MergeRight for Field {
 
 impl Field {
     pub fn has_resolver(&self) -> bool {
-        !self.resolvers.is_empty()
+        self.resolvers.has_resolver()
     }
 
     pub fn has_batched_resolver(&self) -> bool {
-        if self.resolvers.is_empty() {
-            false
-        } else {
-            self.resolvers.iter().all(Resolver::is_batched)
-        }
+        self.resolvers.is_batched()
     }
 
     pub fn int() -> Self {
