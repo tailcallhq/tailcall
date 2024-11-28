@@ -5,15 +5,15 @@ use super::worker::WorkerRequest;
 use super::{worker, WorkerIO};
 use crate::core::http::Response;
 
-#[derive(Clone, Debug)]
 /// User can configure the hooks on directive
 /// for the requests.
-pub struct JsHooks {
+#[derive(Clone, Debug)]
+pub struct WorkerHooks {
     pub on_request: Option<String>,
     pub on_response: Option<String>,
 }
 
-impl JsHooks {
+impl WorkerHooks {
     pub fn try_new(
         on_request: Option<String>,
         on_response: Option<String>,

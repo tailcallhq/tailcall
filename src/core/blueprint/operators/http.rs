@@ -7,7 +7,7 @@ use crate::core::config::Field;
 use crate::core::endpoint::Endpoint;
 use crate::core::http::{Method, RequestTemplate};
 use crate::core::ir::model::{IO, IR};
-use crate::core::js_hooks::JsHooks;
+use crate::core::worker::WorkerHooks;
 use crate::core::{config, helpers, Mustache};
 
 pub fn compile_http(
@@ -74,7 +74,7 @@ pub fn compile_http(
                 .clone()
                 .or(config_module.upstream.on_request.clone());
             let on_response_body = http.on_response_body.clone();
-            let hook = JsHooks::try_new(on_request, on_response_body).ok();
+            let hook = WorkerHooks::try_new(on_request, on_response_body).ok();
 
             let io = if !http.batch_key.is_empty() && http.method == Method::GET {
                 // Find a query parameter that contains a reference to the {{.value}} key

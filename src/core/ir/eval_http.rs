@@ -14,7 +14,7 @@ use crate::core::http::{
     cache_policy, DataLoaderRequest, HttpDataLoader, RequestTemplate, Response,
 };
 use crate::core::ir::Error;
-use crate::core::js_hooks::JsHooks;
+use crate::core::worker::WorkerHooks;
 use crate::core::json::JsonLike;
 use crate::core::{grpc, http, worker, WorkerIO};
 
@@ -22,7 +22,7 @@ pub struct WorkerContext<'a> {
     pub worker: &'a Arc<dyn WorkerIO<worker::Event, worker::Command>>,
     pub js_worker:
         &'a Arc<dyn WorkerIO<async_graphql_value::ConstValue, async_graphql_value::ConstValue>>,
-    pub js_hooks: &'a JsHooks,
+    pub js_hooks: &'a WorkerHooks,
 }
 
 impl<'a> WorkerContext<'a> {
@@ -31,7 +31,7 @@ impl<'a> WorkerContext<'a> {
         js_worker: &'a Arc<
             dyn WorkerIO<async_graphql_value::ConstValue, async_graphql_value::ConstValue>,
         >,
-        js_hooks: &'a JsHooks,
+        js_hooks: &'a WorkerHooks,
     ) -> Self {
         Self { worker, js_worker, js_hooks }
     }

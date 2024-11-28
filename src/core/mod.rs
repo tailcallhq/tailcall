@@ -22,7 +22,7 @@ pub mod helpers;
 pub mod http;
 pub mod ir;
 pub mod jit;
-pub mod js_hooks;
+pub mod worker;
 pub mod json;
 mod lift;
 pub mod merge_right;
