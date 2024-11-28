@@ -57,3 +57,46 @@ pub fn validate_argument(
     })
     .unit()
 }
+
+#[cfg(test)]
+mod test {
+    use tailcall_valid::{Valid, Validator};
+
+    use super::validate_argument;
+    use crate::core::blueprint::BlueprintError;
+    use crate::core::config::Config;
+    use crate::core::Mustache;
+
+    #[test]
+    fn test_recursive_case() {
+        let sdl = r#"
+            schema @server(port: 8000)  {
+                query: Query
+            }
+            type Query {
+                posts(id: PostData): Int @http(url: "upstream.com", query: [{key: "id", value: "{{.args.id.data}}"}])
+            }
+            type PostData {
+                author: String
+                data: PostData
+            }
+        "#;
+
+        let config = Config::from_sdl(sdl).to_result().unwrap();
+        let template = Mustache::parse("{{.args.id.data}}");
+        let field = config
+            .find_type("Query")
+            .and_then(|ty| ty.fields.get("posts"))
+            .unwrap();
+        let validation_result = validate_argument(&config, template, field);
+
+        assert!(validation_result.is_fail());
+        assert_eq!(
+            validation_result,
+            Valid::fail(BlueprintError::ValueIsNotOfScalarType(
+                "PostData".to_string()
+            ))
+            .trace("id")
+        );
+    }
+}
