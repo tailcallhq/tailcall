@@ -1,16 +1,16 @@
 use std::fmt::Display;
 
-use derive_more::{DebugCustom, From};
+use derive_more::{Debug, From};
 
-#[derive(From, DebugCustom)]
+#[derive(From, Debug)]
 pub enum Error {
-    #[debug(fmt = "Std Fmt Error: {}", _0)]
+    #[debug("Std Fmt Error: {}", _0)]
     StdFmt(std::fmt::Error),
 
-    #[debug(fmt = "Std IO Error: {}", _0)]
+    #[debug("Std IO Error: {}", _0)]
     IO(std::io::Error),
 
-    #[debug(fmt = "Failed to resolve filename: {}", _0)]
+    #[debug("Failed to resolve filename: {}", _0)]
     FilenameNotResolved(String),
 }
 

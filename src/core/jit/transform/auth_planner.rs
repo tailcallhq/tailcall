@@ -78,5 +78,8 @@ pub fn update_ir(ir: &mut IR, vec: &mut Vec<Auth>) {
         IR::Discriminate(_, ir) => {
             update_ir(ir, vec);
         }
+        IR::Merge(irs) => {
+            irs.iter_mut().for_each(|ir| update_ir(ir, vec));
+        }
     }
 }

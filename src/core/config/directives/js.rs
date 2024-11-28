@@ -12,7 +12,7 @@ use tailcall_macros::{DirectiveDefinition, InputDefinition};
     DirectiveDefinition,
     InputDefinition,
 )]
-#[directive_definition(locations = "FieldDefinition, Object", lowercase_name)]
+#[directive_definition(repeatable, locations = "FieldDefinition, Object", lowercase_name)]
 pub struct JS {
     pub name: String,
 }

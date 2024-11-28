@@ -28,6 +28,10 @@ mod default {
         1
     }
 
+    pub fn concurrency() -> usize {
+        1
+    }
+
     pub fn assert_hits() -> bool {
         true
     }
@@ -42,6 +46,8 @@ pub struct Mock {
     pub assert_hits: bool,
     #[serde(default = "default::expected_hits")]
     pub expected_hits: usize,
+    #[serde(default)]
+    pub delay: Option<u64>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
@@ -57,6 +63,8 @@ pub struct APIRequest {
     pub test_traces: bool,
     #[serde(default)]
     pub test_metrics: bool,
+    #[serde(default = "default::concurrency")]
+    pub concurrency: usize,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

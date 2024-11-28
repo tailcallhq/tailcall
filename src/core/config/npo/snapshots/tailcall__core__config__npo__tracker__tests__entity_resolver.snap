@@ -1,0 +1,15 @@
+---
+source: src/core/config/npo/tracker.rs
+expression: actual
+snapshot_kind: text
+---
+query { t2 { t2 { n } } }
+query { t2_ls { t2 } }
+query { t3 { t3 { n } } }
+query { t3_ls { t3 } }
+query { t4 { t4 { n } } }
+query { t4_ls { t4 { n } } }
+query { __entities(representations: [{ __typename: "T1"}]) }
+query { __entities(representations: [{ __typename: "T2"}]) }
+query { __entities(representations: [{ __typename: "T3"}]) { t3 } }
+query { __entities(representations: [{ __typename: "T4"}]) { t4 { n } } }

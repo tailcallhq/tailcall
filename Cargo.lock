@@ -643,7 +643,7 @@ dependencies = [
  "bitflags 2.6.0",
  "cexpr",
  "clang-sys",
- "itertools 0.10.5",
+ "itertools 0.12.1",
  "lazy_static",
  "lazycell",
  "log",
@@ -1019,12 +1019,6 @@ dependencies = [
 
 [[package]]
 name = "convert_case"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6245d59a3e82a7fc217c5828a6692dbc6dfb63a0c8c90495621f7b9d79704a0e"
-
-[[package]]
-name = "convert_case"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec182b0ca2f35d8fc196cf3404988fd8b8c739a4d270ff118a398feb0cbec1ca"
@@ -1361,19 +1355,6 @@ dependencies = [
 
 [[package]]
 name = "derive_more"
-version = "0.99.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f33878137e4dafd7fa914ad4e259e18a4e8e532b9617a2d0150262bf53abfce"
-dependencies = [
- "convert_case 0.4.0",
- "proc-macro2",
- "quote",
- "rustc_version",
- "syn 2.0.86",
-]
-
-[[package]]
-name = "derive_more"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4a9b99b9cbbe49445b21764dc0625032a89b145a2642e67603e1c936f5458d05"
@@ -1646,9 +1627,9 @@ checksum = "0ce7134b9999ecaf8bcd65542e436736ef32ddca1b3e06094cb6ec5755203b80"
 
 [[package]]
 name = "flate2"
-version = "1.0.34"
+version = "1.0.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1b589b4dc103969ad3cf85c950899926ec64300a1a46d76c03a6072957036f0"
+checksum = "c936bfdafb507ebbf50b8074c54fa31c5be9a1e7e5f467dd659697041407d07c"
 dependencies = [
  "crc32fast",
  "miniz_oxide",
@@ -1822,7 +1803,7 @@ version = "0.1.7-wip"
 source = "git+https://github.com/laststylebender14/rust-genai.git?rev=63a542ce20132503c520f4e07108e0d768f243c3#63a542ce20132503c520f4e07108e0d768f243c3"
 dependencies = [
  "bytes",
- "derive_more 1.0.0",
+ "derive_more",
  "eventsource-stream",
  "futures",
  "reqwest 0.12.7",
@@ -2454,7 +2435,7 @@ dependencies = [
  "http 1.1.0",
  "hyper 1.4.1",
  "hyper-util",
- "rustls 0.23.16",
+ "rustls 0.23.18",
  "rustls-pki-types",
  "tokio",
  "tokio-rustls 0.26.0",
@@ -2868,7 +2849,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4979f22fdb869068da03c9f7528f8297c6fd2606bc3a4affe42e6a823fdb8da4"
 dependencies = [
  "cfg-if",
- "windows-targets 0.48.5",
+ "windows-targets 0.52.6",
 ]
 
 [[package]]
@@ -4314,7 +4295,7 @@ dependencies = [
  "quinn-proto",
  "quinn-udp",
  "rustc-hash 2.0.0",
- "rustls 0.23.16",
+ "rustls 0.23.18",
  "socket2",
  "thiserror",
  "tokio",
@@ -4331,7 +4312,7 @@ dependencies = [
  "rand",
  "ring",
  "rustc-hash 2.0.0",
- "rustls 0.23.16",
+ "rustls 0.23.18",
  "slab",
  "thiserror",
  "tinyvec",
@@ -4578,7 +4559,7 @@ dependencies = [
  "percent-encoding",
  "pin-project-lite",
  "quinn",
- "rustls 0.23.16",
+ "rustls 0.23.18",
  "rustls-pemfile 2.1.3",
  "rustls-pki-types",
  "serde",
@@ -4682,7 +4663,7 @@ version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7c602d3f35d1a5725235ef874b9a9e24232534e34fe610d53657e24c6c37572d"
 dependencies = [
- "convert_case 0.6.0",
+ "convert_case",
  "fnv",
  "ident_case",
  "indexmap 2.6.0",
@@ -4771,9 +4752,9 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.23.16"
+version = "0.23.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eee87ff5d9b36712a58574e12e9f0ea80f915a5b0ac518d322b24a465617925e"
+checksum = "9c9cc1d47e243d655ace55ed38201c19ae02c148ae56412ab8750e8f0166ab7f"
 dependencies = [
  "once_cell",
  "ring",
@@ -5461,13 +5442,13 @@ dependencies = [
  "chrono",
  "clap",
  "colored",
- "convert_case 0.6.0",
+ "convert_case",
  "criterion",
  "ctrlc",
  "dashmap",
  "datatest-stable",
  "derive-getters",
- "derive_more 0.99.18",
+ "derive_more",
  "derive_setters",
  "dotenvy",
  "exitcode",
@@ -5527,7 +5508,7 @@ dependencies = [
  "reqwest-middleware",
  "resource",
  "rquickjs",
- "rustls 0.23.16",
+ "rustls 0.23.18",
  "rustls-pemfile 1.0.4",
  "rustls-pki-types",
  "schemars",
@@ -5589,9 +5570,9 @@ dependencies = [
 
 [[package]]
 name = "tailcall-chunk"
-version = "0.2.5"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d684c265789778d9b76a268b079bca63dd8801d695e3c1d7f41df78e7a7adb4f"
+checksum = "5d244d8876e9677c9699d5254b72366c9249760d73a8b7295d1fb3eb6333f682"
 
 [[package]]
 name = "tailcall-cloudflare"
@@ -5620,8 +5601,8 @@ dependencies = [
 name = "tailcall-fixtures"
 version = "0.1.0"
 dependencies = [
- "convert_case 0.6.0",
- "derive_more 0.99.18",
+ "convert_case",
+ "derive_more",
  "indenter",
 ]
 
@@ -5673,8 +5654,8 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "chrono",
- "convert_case 0.6.0",
- "derive_more 0.99.18",
+ "convert_case",
+ "derive_more",
  "http 0.2.12",
  "lazy_static",
  "machineid-rs",
@@ -5721,7 +5702,7 @@ dependencies = [
 name = "tailcall-upstream-grpc"
 version = "0.1.0"
 dependencies = [
- "derive_more 0.99.18",
+ "derive_more",
  "headers",
  "http 0.2.12",
  "http-body-util",
@@ -6028,7 +6009,7 @@ version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c7bc40d0e5a97695bb96e27995cd3a08538541b0a846f65bba7a359f36700d4"
 dependencies = [
- "rustls 0.23.16",
+ "rustls 0.23.18",
  "rustls-pki-types",
  "tokio",
 ]

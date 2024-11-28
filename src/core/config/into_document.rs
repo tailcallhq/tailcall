@@ -213,21 +213,14 @@ fn into_directives(
 }
 
 fn field_directives(field: &crate::core::config::Field) -> Vec<Positioned<ConstDirective>> {
-    let directives = vec![
-        field
-            .resolver
-            .as_ref()
-            .and_then(|d| d.to_directive())
-            .map(pos),
-        field.modify.as_ref().map(|d| pos(d.to_directive())),
-        field.omit.as_ref().map(|d| pos(d.to_directive())),
-        field.cache.as_ref().map(|d| pos(d.to_directive())),
-        field.protected.as_ref().map(|d| pos(d.to_directive())),
-    ];
-
-    directives
-        .into_iter()
-        .flatten()
+    field
+        .resolvers
+        .iter()
+        .filter_map(|resolver| resolver.to_directive().map(pos))
+        .chain(field.modify.as_ref().map(|d| pos(d.to_directive())))
+        .chain(field.omit.as_ref().map(|d| pos(d.to_directive())))
+        .chain(field.cache.as_ref().map(|d| pos(d.to_directive())))
+        .chain(field.protected.as_ref().map(|d| pos(d.to_directive())))
         .chain(into_directives(&field.directives))
         .collect()
 }
@@ -251,10 +244,9 @@ fn type_directives(type_def: &crate::core::config::Type) -> Vec<Positioned<Const
         )
         .chain(
             type_def
-                .resolver
-                .as_ref()
-                .and_then(|resolver| resolver.to_directive())
-                .map(pos),
+                .resolvers
+                .iter()
+                .filter_map(|resolver| resolver.to_directive().map(pos)),
         )
         .chain(into_directives(&type_def.directives))
         .collect::<Vec<_>>()

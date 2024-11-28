@@ -1,0 +1,29 @@
+schema @server @upstream {
+  query: Query
+}
+
+type T1 {
+  t1: Int
+}
+
+type T2 {
+  t2: [N] @http(url: "")
+}
+
+type T3 {
+  t3: [N] @http(url: "", batchKey: ["id"])
+}
+
+type N {
+  n: Int @http(url: "")
+}
+
+type Query {
+  x: String
+  t1: T1 @http(url: "")
+  t2: T2 @http(url: "")
+  t3: T3 @http(url: "")
+  t1_ls: [T1] @http(url: "")
+  t2_ls: [T2] @http(url: "")
+  t3_ls: [T3] @http(url: "")
+}
