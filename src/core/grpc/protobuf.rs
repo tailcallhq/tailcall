@@ -242,6 +242,7 @@ impl ProtobufOperation {
 #[cfg(test)]
 pub mod tests {
     use std::path::Path;
+    use std::sync::Arc;
 
     use anyhow::Result;
     use prost_reflect::Value;
@@ -252,19 +253,25 @@ pub mod tests {
     use crate::core::blueprint::GrpcMethod;
     use crate::core::config::reader::ConfigReader;
     use crate::core::config::{Config, Field, Grpc, Link, LinkType, Resolver, Type};
+    use crate::core::Mustache;
 
     pub async fn get_proto_file(path: &str) -> Result<FileDescriptorSet> {
-        let runtime = crate::core::runtime::test::init(None);
-        let reader = ConfigReader::init(runtime);
-
         let id = Path::new(path)
             .file_stem()
             .map(|s| s.to_string_lossy().to_string())
             .unwrap_or_default();
 
+        let mut runtime = crate::core::runtime::test::init(None);
+        let env = crate::core::runtime::test::TestEnvIO::init();
+        env.set("PROTO_ID", &id);
+        env.set("PROTO_PATH", path);
+        runtime.env = Arc::new(env);
+
+        let reader = ConfigReader::init(runtime);
+
         let mut config = Config::default().links(vec![Link {
-            id: Some(id.clone()),
-            src: path.to_string(),
+            id: Some(Mustache::parse("{{.env.PROTO_ID}}")),
+            src: Mustache::parse("{{.env.PROTO_PATH}}"),
             type_of: LinkType::Protobuf,
             headers: None,
             meta: None,

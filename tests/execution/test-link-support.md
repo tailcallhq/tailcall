@@ -1,7 +1,3 @@
----
-identity: true
----
-
 # test-link-support
 
 ```protobuf @file:news.proto
@@ -28,7 +24,7 @@ message NewsId {
 schema
   @server(port: 8000)
   @upstream(batch: {delay: 10, headers: [], maxSize: 1000})
-  @link(id: "news", src: "news.proto", meta: {description: "Test"}, type: Protobuf) {
+  @link(id: "{{.env.PROTO_ID}}", src: "{{.env.PROTO_FILE}}", meta: {description: "{{.env.DESCRIPTION}}"}, type: Protobuf) {
   query: Query
 }
 
@@ -47,5 +43,13 @@ type NewsData {
 type Query {
   newsById(news: NewsInput!): News!
     @grpc(url: "http://localhost:50051", body: "{{.args.news}}", method: "news.NewsService.GetNews")
+}
+```
+
+```json @env
+{
+  "PROTO_ID": "news",
+  "PROTO_FILE": "news.proto",
+  "DESCRIPTION": "Test"
 }
 ```

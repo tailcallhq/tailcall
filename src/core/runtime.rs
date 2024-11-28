@@ -43,12 +43,12 @@ impl TargetRuntime {
 #[cfg(test)]
 pub mod test {
     use std::borrow::Cow;
-    use std::collections::HashMap;
     use std::sync::Arc;
     use std::time::Duration;
 
     use anyhow::{anyhow, Result};
     use async_graphql::Value;
+    use dashmap::DashMap;
     use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
     use hyper::body::Bytes;
     use reqwest::Client;
@@ -158,19 +158,22 @@ pub mod test {
     }
 
     #[derive(Clone)]
-    struct TestEnvIO {
-        vars: HashMap<String, String>,
+    pub struct TestEnvIO {
+        vars: DashMap<String, String>,
     }
 
     impl EnvIO for TestEnvIO {
         fn get(&self, key: &str) -> Option<Cow<'_, str>> {
-            self.vars.get(key).map(Cow::from)
+            self.vars.get(key).map(|v| Cow::Owned(v.value().clone()))
         }
     }
 
     impl TestEnvIO {
         pub fn init() -> Self {
             Self { vars: std::env::vars().collect() }
+        }
+        pub fn set(&self, key: &str, value: &str) {
+            self.vars.insert(key.to_string(), value.to_string());
         }
     }
 

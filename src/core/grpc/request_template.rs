@@ -130,6 +130,7 @@ impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
 mod tests {
     use std::borrow::Cow;
     use std::collections::HashSet;
+    use std::sync::Arc;
 
     use derive_setters::Setters;
     use http::header::{HeaderMap, HeaderName, HeaderValue};
@@ -149,14 +150,18 @@ mod tests {
 
     async fn get_protobuf_op() -> ProtobufOperation {
         let test_file = protobuf::GREETINGS;
-
         let id = "greetings".to_string();
 
-        let runtime = crate::core::runtime::test::init(None);
+        let mut runtime = crate::core::runtime::test::init(None);
+        let env = crate::core::runtime::test::TestEnvIO::init();
+        env.set("PROTO_ID", "greetings");
+        env.set("GREETINGS_PROTO", test_file);
+        runtime.env = Arc::new(env);
+
         let reader = ConfigReader::init(runtime);
         let mut config = Config::default().links(vec![Link {
-            id: Some(id.clone()),
-            src: test_file.to_string(),
+            id: Some(Mustache::parse("{{.env.PROTO_ID}}")),
+            src: Mustache::parse("{{.env.GREETINGS_PROTO}}"),
             type_of: LinkType::Protobuf,
             headers: None,
             meta: None,

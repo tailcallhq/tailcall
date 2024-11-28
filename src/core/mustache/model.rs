@@ -1,12 +1,36 @@
 use std::fmt::Display;
 
-#[derive(Debug, Clone, PartialEq, Hash, Default)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Default, schemars::JsonSchema)]
 pub struct Mustache(Vec<Segment>);
 
-#[derive(Debug, Clone, PartialEq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, schemars::JsonSchema)]
 pub enum Segment {
     Literal(String),
     Expression(Vec<String>),
+}
+
+impl<'de> Deserialize<'de> for Mustache {
+    fn deserialize<D>(deserializer: D) -> Result<Mustache, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = serde_json::Value::deserialize(deserializer)?;
+        Ok(Mustache::parse(
+            s.as_str()
+                .ok_or(serde::de::Error::custom("expected string"))?,
+        ))
+    }
+}
+
+impl Serialize for Mustache {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.to_string().serialize(serializer)
+    }
 }
 
 impl<A: IntoIterator<Item = Segment>> From<A> for Mustache {

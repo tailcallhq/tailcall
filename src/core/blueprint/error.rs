@@ -3,7 +3,7 @@ use std::net::AddrParseError;
 use async_graphql::dynamic::SchemaError;
 use tailcall_valid::{Cause, ValidationError};
 
-use crate::core::Errata;
+use crate::core::{Errata, Mustache};
 
 #[derive(Debug, thiserror::Error)]
 pub enum BlueprintError {
@@ -95,7 +95,7 @@ pub enum BlueprintError {
     LinkSrcCannotBeEmpty,
 
     #[error("Duplicated id: {0}")]
-    Duplicated(String),
+    Duplicated(Mustache),
 
     #[error("Only one script link is allowed")]
     OnlyOneScriptLinkAllowed,

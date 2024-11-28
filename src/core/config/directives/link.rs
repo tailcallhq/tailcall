@@ -1,8 +1,10 @@
 use serde::{Deserialize, Serialize};
 use tailcall_macros::DirectiveDefinition;
 
+use crate::core::blueprint::DynamicValue;
 use crate::core::config::KeyValue;
-use crate::core::is_default;
+use crate::core::path::PathString;
+use crate::core::{is_default, Mustache};
 
 #[derive(
     Default,
@@ -75,12 +77,12 @@ pub struct Link {
     ///
     /// The id of the link. It is used to reference the link in the schema.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub id: Option<String>,
+    pub id: Option<Mustache>,
     ///
     /// The source of the link. It can be a URL or a path to a file.
     /// If a path is provided, it is relative to the file that imports the link.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub src: String,
+    pub src: Mustache,
     ///
     /// The type of the link. It can be `Config`, or `Protobuf`.
     #[serde(default, skip_serializing_if = "is_default", rename = "type")]
@@ -88,9 +90,21 @@ pub struct Link {
     ///
     /// Custom headers for gRPC reflection server.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub headers: Option<Vec<KeyValue>>,
+    pub headers: Option<Vec<LinkHeaders>>,
     ///
     /// Additional metadata pertaining to the linked resource.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub meta: Option<serde_json::Value>,
+    pub meta: Option<DynamicValue<serde_json::Value>>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default, Eq, PartialEq, schemars::JsonSchema)]
+pub struct LinkHeaders {
+    pub key: String,
+    pub value: Mustache,
+}
+
+impl LinkHeaders {
+    pub fn render(&self, value: &impl PathString) -> KeyValue {
+        KeyValue { key: self.key.to_owned(), value: self.value.render(value) }
+    }
 }

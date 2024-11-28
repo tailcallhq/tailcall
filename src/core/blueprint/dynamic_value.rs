@@ -1,15 +1,91 @@
 use async_graphql_value::{ConstValue, Name};
 use indexmap::IndexMap;
+use schemars::gen::SchemaGenerator;
+use schemars::schema::Schema;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Value;
 
 use crate::core::mustache::Mustache;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DynamicValue<A> {
     Value(A),
     Mustache(Mustache),
     Object(IndexMap<Name, DynamicValue<A>>),
     Array(Vec<DynamicValue<A>>),
+}
+
+impl schemars::JsonSchema for DynamicValue<Value> {
+    fn schema_name() -> String {
+        "DynamicValue".to_string()
+    }
+
+    fn json_schema(gen: &mut SchemaGenerator) -> Schema {
+        
+        gen.subschema_for::<DynamicValue<Value>>()
+    }
+}
+
+impl From<Value> for DynamicValue<Value> {
+    fn from(value: Value) -> Self {
+        match value {
+            Value::Object(map) => {
+                let converted_map = map
+                    .into_iter()
+                    .map(|(key, val)| (Name::new(key), DynamicValue::from(val)))
+                    .collect();
+                DynamicValue::Object(converted_map)
+            }
+            Value::Array(vec) => {
+                let converted_vec = vec.into_iter().map(DynamicValue::from).collect();
+                DynamicValue::Array(converted_vec)
+            }
+            Value::String(s) => {
+                let mustache = Mustache::parse(&s);
+                if mustache.segments().len() == 1 {
+                    DynamicValue::Mustache(mustache)
+                } else {
+                    DynamicValue::Value(Value::String(s))
+                }
+            }
+            _ => DynamicValue::Value(value),
+        }
+    }
+}
+
+impl Into<Value> for DynamicValue<Value> {
+    fn into(self) -> Value {
+        match self {
+            DynamicValue::Value(val) => val,
+            DynamicValue::Mustache(mustache) => Value::String(mustache.to_string()),
+            DynamicValue::Object(map) => Value::Object(
+                map.into_iter()
+                    .map(|(key, val)| (key.to_string(), val.into()))
+                    .collect(),
+            ),
+            DynamicValue::Array(vec) => Value::Array(vec.into_iter().map(Into::into).collect()),
+        }
+    }
+}
+
+impl Serialize for DynamicValue<Value> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let value: Value = self.clone().into(); // Convert `DynamicValue` into `Value`
+        value.serialize(serializer) // Serialize the resulting `Value`
+    }
+}
+
+impl<'de> Deserialize<'de> for DynamicValue<Value> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value = Value::deserialize(deserializer)?; // Deserialize into `Value`
+        Ok(DynamicValue::from(value)) // Convert `Value` into `DynamicValue`
+    }
 }
 
 impl<A: Default> Default for DynamicValue<A> {
@@ -123,6 +199,8 @@ impl TryFrom<&Value> for DynamicValue<ConstValue> {
 
 #[cfg(test)]
 mod test {
+    use serde_json::json;
+
     use super::*;
 
     #[test]
@@ -158,5 +236,21 @@ mod test {
         let value: DynamicValue<ConstValue> = DynamicValue::Value(ConstValue::Null).prepend("args");
         let expected: DynamicValue<ConstValue> = DynamicValue::Value(ConstValue::Null);
         assert_eq!(value, expected);
+    }
+
+    #[test]
+    fn test_dynamic_val_from_serde() {
+        let json_value = json!({
+            "key1": "{{ .foo }}",
+            "key2": [42, "{{ .bar }}"],
+            "key3": "just a string"
+        });
+
+        // Deserialize from JSON to DynamicValue
+        let dynamic_value: DynamicValue<Value> = DynamicValue::from(json_value.clone());
+
+        let serialized_json: Value = dynamic_value.into();
+
+        assert_eq!(json_value, serialized_json);
     }
 }

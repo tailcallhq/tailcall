@@ -14,6 +14,7 @@ use crate::core::http::Method;
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoMetadata;
 use crate::core::transform::{Transform, TransformerOps};
+use crate::core::Mustache;
 
 /// Generator offers an abstraction over the actual config generators and allows
 /// to generate the single config from multiple sources. i.e (Protobuf and Json)
@@ -93,7 +94,7 @@ impl Generator {
         let mut config = from_proto(&[descriptor_set], operation_name, url)?;
         config.links.push(Link {
             id: None,
-            src: metadata.path.to_owned(),
+            src: Mustache::parse("{{.env.GRPC_REFLECTION}}"),
             type_of: LinkType::Protobuf,
             headers: None,
             meta: None,

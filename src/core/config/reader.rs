@@ -9,6 +9,7 @@ use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType, PrivateKey};
 use crate::core::config::{Config, ConfigReaderContext, Source};
+use crate::core::is_default;
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::{Cached, Resource, ResourceReader};
 use crate::core::rest::EndpointSet;
@@ -46,7 +47,7 @@ impl ConfigReader {
             .clone()
             .iter()
             .filter_map(|link| {
-                if link.src.is_empty() {
+                if is_default(&link.src) {
                     return None;
                 }
                 Some(link.to_owned())
@@ -61,7 +62,16 @@ impl ConfigReader {
         let mut config_module = Valid::succeed(config_module);
 
         for link in links.iter() {
-            let path = Self::resolve_path(&link.src, parent_dir);
+            let reader_ctx = ConfigReaderContext {
+                runtime: &self.runtime,
+                vars: &Default::default(),
+                headers: Default::default(),
+            };
+
+            let src = link.src.render(&reader_ctx);
+            let link_id = link.id.as_ref().map(|v| v.render(&reader_ctx));
+
+            let path = Self::resolve_path(&src, parent_dir);
 
             match link.type_of {
                 LinkType::Config => {
@@ -74,7 +84,7 @@ impl ConfigReader {
 
                     if !config.links.is_empty() {
                         let cfg_module = self
-                            .ext_links(ConfigModule::from(config), Path::new(&link.src).parent())
+                            .ext_links(ConfigModule::from(config), Path::new(&src).parent())
                             .await?;
                         config_module =
                             config_module.and_then(|config_module| config_module.unify(cfg_module));
@@ -111,7 +121,7 @@ impl ConfigReader {
 
                     extensions
                         .htpasswd
-                        .push(Content { id: link.id.clone(), content });
+                        .push(Content { id: link_id.clone(), content });
                 }
                 LinkType::Jwks => {
                     let source = self.resource_reader.read_file(path).await?;
@@ -120,15 +130,16 @@ impl ConfigReader {
                     let de = &mut serde_json::Deserializer::from_str(&content);
 
                     extensions.jwks.push(Content {
-                        id: link.id.clone(),
+                        id: link_id.clone(),
                         content: serde_path_to_error::deserialize(de)?,
                     })
                 }
                 LinkType::Grpc => {
-                    let meta = self
-                        .proto_reader
-                        .fetch(link.src.as_str(), link.headers.clone())
-                        .await?;
+                    let headers = link
+                        .headers
+                        .as_ref()
+                        .map(|v| v.iter().map(|v| v.render(&reader_ctx)).collect::<Vec<_>>());
+                    let meta = self.proto_reader.fetch(src, headers).await?;
 
                     for m in meta {
                         extensions.add_proto(m);

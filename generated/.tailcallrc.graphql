@@ -244,20 +244,20 @@ directive @link(
   """
   Custom headers for gRPC reflection server.
   """
-  headers: [KeyValue]
+  headers: [LinkHeaders]
   """
   The id of the link. It is used to reference the link in the schema.
   """
-  id: String
+  id: Mustache
   """
   Additional metadata pertaining to the linked resource.
   """
-  meta: JSON
+  meta: DynamicValue
   """
   The source of the link. It can be a URL or a path to a file. If a path is provided, 
   it is relative to the file that imports the link.
   """
-  src: String!
+  src: Mustache
   """
   The type of the link. It can be `Config`, or `Protobuf`.
   """
@@ -638,6 +638,24 @@ input Schema {
   Arr: Schema
   Opt: Schema
   Enum: [String!]
+}
+
+input DynamicValue {
+
+}
+
+input LinkHeaders {
+  key: String!
+  value: Mustache
+}
+
+input Mustache {
+
+}
+
+input Segment {
+  Literal: String!
+  Expression: [String!]
 }
 
 """

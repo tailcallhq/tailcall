@@ -3,6 +3,7 @@ use tailcall_valid::{Valid, ValidationError, Validator};
 use super::BlueprintError;
 use crate::core::config::{Link, LinkType};
 use crate::core::directive::DirectiveCodec;
+use crate::core::Mustache;
 
 pub struct Links;
 
@@ -13,7 +14,7 @@ impl TryFrom<Vec<Link>> for Links {
         Valid::from_iter(links.iter().enumerate(), |(pos, link)| {
             Valid::succeed(link.to_owned())
                 .and_then(|link| {
-                    if link.src.is_empty() {
+                    if link.src == Mustache::default() {
                         Valid::fail(BlueprintError::LinkSrcCannotBeEmpty)
                     } else {
                         Valid::succeed(link)

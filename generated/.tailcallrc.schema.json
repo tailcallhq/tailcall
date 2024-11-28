@@ -350,6 +350,9 @@
       },
       "additionalProperties": false
     },
+    "DynamicValue": {
+      "$ref": "#/definitions/DynamicValue"
+    },
     "Email": {
       "title": "Email",
       "description": "Field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address."
@@ -804,22 +807,38 @@
             "null"
           ],
           "items": {
-            "$ref": "#/definitions/KeyValue"
+            "$ref": "#/definitions/LinkHeaders"
           }
         },
         "id": {
           "description": "The id of the link. It is used to reference the link in the schema.",
-          "type": [
-            "string",
-            "null"
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Mustache"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "meta": {
-          "description": "Additional metadata pertaining to the linked resource."
+          "description": "Additional metadata pertaining to the linked resource.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/DynamicValue"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "src": {
           "description": "The source of the link. It can be a URL or a path to a file. If a path is provided, it is relative to the file that imports the link.",
-          "type": "string"
+          "allOf": [
+            {
+              "$ref": "#/definitions/Mustache"
+            }
+          ]
         },
         "type": {
           "description": "The type of the link. It can be `Config`, or `Protobuf`.",
@@ -831,6 +850,21 @@
         }
       },
       "additionalProperties": false
+    },
+    "LinkHeaders": {
+      "type": "object",
+      "required": [
+        "key",
+        "value"
+      ],
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/definitions/Mustache"
+        }
+      }
     },
     "LinkType": {
       "oneOf": [
@@ -930,6 +964,12 @@
         }
       },
       "additionalProperties": false
+    },
+    "Mustache": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Segment"
+      }
     },
     "Omit": {
       "description": "Used to omit a field from public consumption.",
@@ -1130,6 +1170,37 @@
           "minimum": 0.0
         }
       }
+    },
+    "Segment": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Literal"
+          ],
+          "properties": {
+            "Literal": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Expression"
+          ],
+          "properties": {
+            "Expression": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
     },
     "Server": {
       "description": "The `@server` directive, when applied at the schema level, offers a comprehensive set of server configurations. It dictates how the server behaves and helps tune tailcall for various use-cases.",

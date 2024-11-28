@@ -53,6 +53,7 @@ impl DataLoaderRequest {
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeSet;
+    use std::sync::Arc;
 
     use http::header::{HeaderMap, HeaderName, HeaderValue};
     use pretty_assertions::assert_eq;
@@ -65,12 +66,13 @@ mod tests {
     use crate::core::config::{Config, Field, Grpc, Link, LinkType, Resolver, Type};
     use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::core::grpc::request_template::RenderedRequestTemplate;
+    use crate::core::Mustache;
 
     pub async fn get_protobuf_op() -> ProtobufOperation {
         let test_file = protobuf::GREETINGS;
         let mut config = Config::default().links(vec![Link {
             id: None,
-            src: test_file.to_string(),
+            src: Mustache::parse("{{.env.GREETINGS_PROTO}}"),
             type_of: LinkType::Protobuf,
             headers: None,
             meta: None,
@@ -89,7 +91,11 @@ mod tests {
             )]),
         );
 
-        let runtime = crate::core::runtime::test::init(None);
+        let mut runtime = crate::core::runtime::test::init(None);
+        let env = crate::core::runtime::test::TestEnvIO::init();
+        env.set("GREETINGS_PROTO", test_file);
+        runtime.env = Arc::new(env);
+
         let reader = ConfigReader::init(runtime);
         let config_module = reader.resolve(config, None).await.unwrap();
 
