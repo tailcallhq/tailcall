@@ -1,3 +1,4 @@
+use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
 
 use async_graphql_value::{ConstValue, Value};
@@ -8,7 +9,8 @@ use super::context::Context;
 use super::exec::{Executor, IRExecutor};
 use super::graphql_error::GraphQLError;
 use super::{
-    transform, AnyResponse, BuildError, Error, OperationPlan, Pending, Request, Response, Result,
+    transform, AnyResponse, BuildError, CompletedTasks, Error, Incremental, IncrementalItem,
+    OperationPlan, Pending, Request, Response, Result,
 };
 use crate::core::app_context::AppContext;
 use crate::core::http::RequestContext;
@@ -136,17 +138,19 @@ impl ConstValueExecutor {
 
         let bytes = response.to_bytes();
         let tx = self.tx.clone();
-        tokio::spawn(async move {
+        {
+            // Process base response first.
             let read_tx = tx.read().await;
             if let Some(sender) = &*read_tx {
                 // Clone the sender so it can be used mutably outside the lock
                 let mut sender = sender.clone();
                 let _ = sender.send(Ok(bytes)).await.unwrap();
             }
-        });
+        }
 
         // resposible for execution deferred fields.
         let tx = self.tx.clone();
+        let total_deferred_fields = Arc::new(AtomicUsize::new(plan.deferred_fields.len()));
 
         let cloned_plan = plan.clone();
         let futures: Vec<_> = plan
@@ -155,11 +159,12 @@ impl ConstValueExecutor {
             .map(|field| {
                 let tx = tx.clone();
                 let is_introspection_query = is_introspection_query.clone();
-                let request = request.clone();
-                let app_ctx = app_ctx.clone();
+                // let request = request.clone();
+                // let app_ctx = app_ctx.clone();
                 let vars = vars.clone();
                 let cloned_plan = cloned_plan.clone();
                 let cloned_req_ctx = req_ctx.clone();
+                let total_deferred_fields_ = total_deferred_fields.clone();
 
                 async move {
                     let mut deferred_plan = cloned_plan.clone();
@@ -173,13 +178,25 @@ impl ConstValueExecutor {
                     let synth = Synth::new(&deferred_plan, store, vars);
 
                     let resp: Response<serde_json_borrow::Value> = exe.execute(&synth).await;
-                    let response: AnyResponse<Vec<u8>> = if is_introspection_query {
-                        let async_req = async_graphql::Request::from(request).only_introspection();
-                        let async_resp = app_ctx.execute(async_req).await;
-                        resp.merge_with(&async_resp).into()
-                    } else {
+                    let response: Incremental<serde_json_borrow::Value> = if is_introspection_query
+                    {
+                        // let async_req = async_graphql::Request::from(request).only_introspection();
+                        // let async_resp = app_ctx.execute(async_req).await;
+                        // resp.merge_with(&async_resp).into()
                         resp.into()
+                    } else {
+                        if let Some(IR::Deferred { id, .. }) = &field.ir {
+                            let item = IncrementalItem::new(id.as_u64(), resp.data);
+                            let completed = CompletedTasks::new(id.to_string());
+                            Incremental::new(vec![item], vec![completed])
+                        } else {
+                            resp.into()
+                        }
                     };
+                    total_deferred_fields_.fetch_sub(1, std::sync::atomic::Ordering::Relaxed);
+                    let response = response.has_next(
+                        total_deferred_fields_.load(std::sync::atomic::Ordering::Relaxed) > 0,
+                    );
 
                     let bytes = response.to_bytes();
                     let read_tx = tx.read().await;

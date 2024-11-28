@@ -27,7 +27,7 @@ pub struct Response<Value> {
     pub pending: Vec<Pending>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub has_next: Option<bool>
+    pub has_next: Option<bool>,
 }
 
 #[derive(Clone, Serialize, Debug)]
@@ -219,6 +219,58 @@ impl<Body> BatchResponse<Body> {
                 })
             }
         }
+    }
+}
+
+// Incremental Response for `@defer`.
+
+#[derive(Clone, Setters, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Incremental<Value> {
+    pub incremental: Vec<IncrementalItem<Value>>,
+    pub completed: Vec<CompletedTasks>,
+    pub has_next: bool,
+}
+
+impl<V> Incremental<V> {
+    pub fn new(incremental: Vec<IncrementalItem<V>>, completed: Vec<CompletedTasks>) -> Self {
+        Self { incremental, completed, has_next: false }
+    }
+}
+
+impl<V: Serialize> Incremental<V> {
+    pub fn to_bytes(&self) -> Bytes {
+        Bytes::from(serde_json::to_vec(&self).unwrap_or_default())
+    }
+}
+
+impl<V> From<Response<V>> for Incremental<V> {
+    fn from(value: Response<V>) -> Self {
+        let data = IncrementalItem::new(0, value.data);
+        Self { incremental: vec![data], completed: vec![], has_next: false }
+    }
+}
+
+#[derive(Clone, Setters, Serialize, Debug)]
+pub struct CompletedTasks {
+    id: String,
+}
+
+impl CompletedTasks {
+    pub fn new(id: String) -> Self {
+        Self { id }
+    }
+}
+
+#[derive(Clone, Setters, Serialize, Debug)]
+pub struct IncrementalItem<Value> {
+    pub id: u64,
+    pub data: Value,
+}
+
+impl<V> IncrementalItem<V> {
+    pub fn new(id: u64, data: V) -> Self {
+        Self { id, data }
     }
 }
 
