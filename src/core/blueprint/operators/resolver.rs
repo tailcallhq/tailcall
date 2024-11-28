@@ -25,7 +25,7 @@ pub fn compile_resolver(
             config_module,
             http,
             // inner resolver should resolve only single instance of type, not a list
-            field.type_of.is_list(),
+            field,
         )
         .trace(config::Http::trace_name().as_str()),
         Resolver::Grpc(grpc) => compile_grpc(super::CompileGrpc {

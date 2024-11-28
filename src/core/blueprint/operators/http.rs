@@ -1,7 +1,9 @@
 use tailcall_valid::{Valid, Validator};
+use template_validation::validate_argument;
 
 use crate::core::blueprint::*;
 use crate::core::config::group_by::GroupBy;
+use crate::core::config::Field;
 use crate::core::endpoint::Endpoint;
 use crate::core::http::{HttpFilter, Method, RequestTemplate};
 use crate::core::ir::model::{IO, IR};
@@ -10,8 +12,9 @@ use crate::core::{config, helpers, Mustache};
 pub fn compile_http(
     config_module: &config::ConfigModule,
     http: &config::Http,
-    is_list: bool,
+    field: &Field,
 ) -> Valid<IR, BlueprintError> {
+    let is_list = field.type_of.is_list();
     let dedupe = http.dedupe.unwrap_or_default();
     let mustache_headers = match helpers::headers::to_mustache_headers(&http.headers).to_result() {
         Ok(mustache_headers) => Valid::succeed(mustache_headers),
@@ -26,6 +29,13 @@ pub fn compile_http(
                     || config_module.upstream.get_max_size() < 1)
                     && !http.batch_key.is_empty()
             }),
+        )
+        .and(
+            Valid::from_iter(http.query.iter(), |query| {
+                validate_argument(config_module, Mustache::parse(query.value.as_str()), field)
+            })
+            .unit()
+            .trace("query"),
         )
         .and(Valid::succeed(http.url.as_str()))
         .zip(mustache_headers)
