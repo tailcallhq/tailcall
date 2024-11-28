@@ -643,7 +643,7 @@ dependencies = [
  "bitflags 2.6.0",
  "cexpr",
  "clang-sys",
- "itertools 0.10.5",
+ "itertools 0.12.1",
  "lazy_static",
  "lazycell",
  "log",
@@ -2849,7 +2849,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4979f22fdb869068da03c9f7528f8297c6fd2606bc3a4affe42e6a823fdb8da4"
 dependencies = [
  "cfg-if",
- "windows-targets 0.48.5",
+ "windows-targets 0.52.6",
 ]
 
 [[package]]
@@ -5570,9 +5570,9 @@ dependencies = [
 
 [[package]]
 name = "tailcall-chunk"
-version = "0.2.5"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d684c265789778d9b76a268b079bca63dd8801d695e3c1d7f41df78e7a7adb4f"
+checksum = "5d244d8876e9677c9699d5254b72366c9249760d73a8b7295d1fb3eb6333f682"
 
 [[package]]
 name = "tailcall-cloudflare"

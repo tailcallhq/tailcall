@@ -17,7 +17,7 @@ use crate::core::is_default;
     InputDefinition,
     DirectiveDefinition,
 )]
-#[directive_definition(locations = "FieldDefinition, Object")]
+#[directive_definition(repeatable, locations = "FieldDefinition, Object")]
 #[serde(rename_all = "camelCase")]
 #[serde(deny_unknown_fields)]
 /// The @grpc operator indicates that a field or node is backed by a gRPC API.

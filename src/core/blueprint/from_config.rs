@@ -88,7 +88,7 @@ pub fn to_json_schema(type_of: &Type, config: &Config) -> JsonSchema {
             if let Some(type_) = type_ {
                 let mut schema_fields = BTreeMap::new();
                 for (name, field) in type_.fields.iter() {
-                    if field.resolver.is_none() {
+                    if field.resolvers.is_empty() {
                         schema_fields.insert(name.clone(), to_json_schema(&field.type_of, config));
                     }
                 }

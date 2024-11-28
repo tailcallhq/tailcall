@@ -1,0 +1,21 @@
+schema @server(port: 8030) {
+  query: Query
+}
+
+type Query {
+  version: Int! @expr(body: 1)
+  foo: [Foo!]! @expr(body: [{fizz: "buzz"}])
+  bar: [Foo!]! @expr(body: [{fizz: "buzz"}])
+  buzz: [Foo!]! @expr(body: [{fizz: "buzz"}])
+}
+
+type Foo {
+  fizz: String!
+  c: Int
+}
+
+type Foo {
+  fizz: String!
+  c: Int
+  spam: [String!]! @http(url: "https://example.com/spam", query: [{key: "id", value: "{{.value.fizz}}"}])
+}

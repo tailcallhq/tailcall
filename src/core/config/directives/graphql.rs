@@ -16,7 +16,7 @@ use crate::core::is_default;
     DirectiveDefinition,
     InputDefinition,
 )]
-#[directive_definition(locations = "FieldDefinition, Object")]
+#[directive_definition(repeatable, locations = "FieldDefinition, Object")]
 #[serde(deny_unknown_fields)]
 /// The @graphQL operator allows to specify GraphQL API server request to fetch
 /// data from.

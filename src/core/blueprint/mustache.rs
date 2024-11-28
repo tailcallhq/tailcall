@@ -2,6 +2,7 @@ use tailcall_valid::{Valid, Validator};
 
 use super::{BlueprintError, FieldDefinition};
 use crate::core::config::{self, Config};
+use crate::core::directive::DirectiveCodec;
 use crate::core::ir::model::{IO, IR};
 use crate::core::scalar;
 
@@ -99,6 +100,79 @@ impl<'a> MustachePartsValidator<'a> {
 
         Valid::succeed(())
     }
+
+    fn validate_resolver(&self, resolver: &IR) -> Valid<(), BlueprintError> {
+        match resolver {
+            IR::Merge(resolvers) => {
+                Valid::from_iter(resolvers, |resolver| self.validate_resolver(resolver)).unit()
+            }
+            IR::IO(IO::Http { req_template, .. }) => {
+                Valid::from_iter(req_template.root_url.expression_segments(), |parts| {
+                    self.validate(parts, false).trace("path")
+                })
+                .and(Valid::from_iter(req_template.query.clone(), |query| {
+                    let mustache = &query.value;
+
+                    Valid::from_iter(mustache.expression_segments(), |parts| {
+                        self.validate(parts, true).trace("query")
+                    })
+                }))
+                .unit()
+                .trace(config::Http::trace_name().as_str())
+            }
+            IR::IO(IO::GraphQL { req_template, .. }) => {
+                Valid::from_iter(req_template.headers.clone(), |(_, mustache)| {
+                    Valid::from_iter(mustache.expression_segments(), |parts| {
+                        self.validate(parts, true).trace("headers")
+                    })
+                })
+                .and_then(|_| {
+                    if let Some(args) = &req_template.operation_arguments {
+                        Valid::from_iter(args, |(_, mustache)| {
+                            Valid::from_iter(mustache.expression_segments(), |parts| {
+                                self.validate(parts, true).trace("args")
+                            })
+                        })
+                    } else {
+                        Valid::succeed(Default::default())
+                    }
+                })
+                .unit()
+                .trace(config::GraphQL::trace_name().as_str())
+            }
+            IR::IO(IO::Grpc { req_template, .. }) => {
+                Valid::from_iter(req_template.url.expression_segments(), |parts| {
+                    self.validate(parts, false).trace("path")
+                })
+                .and(
+                    Valid::from_iter(req_template.headers.clone(), |(_, mustache)| {
+                        Valid::from_iter(mustache.expression_segments(), |parts| {
+                            self.validate(parts, true).trace("headers")
+                        })
+                    })
+                    .unit(),
+                )
+                .and_then(|_| {
+                    if let Some(body) = &req_template.body {
+                        if let Some(mustache) = &body.mustache {
+                            Valid::from_iter(mustache.expression_segments(), |parts| {
+                                self.validate(parts, true).trace("body")
+                            })
+                        } else {
+                            // TODO: needs review
+                            Valid::succeed(Default::default())
+                        }
+                    } else {
+                        Valid::succeed(Default::default())
+                    }
+                })
+                .unit()
+                .trace(config::Grpc::trace_name().as_str())
+            }
+            // TODO: add validation for @expr
+            _ => Valid::succeed(()),
+        }
+    }
 }
 
 impl FieldDefinition {
@@ -116,67 +190,8 @@ impl FieldDefinition {
         let parts_validator = MustachePartsValidator::new(type_of, config, self);
 
         match &self.resolver {
-            Some(IR::IO(IO::Http { req_template, .. })) => {
-                Valid::from_iter(req_template.root_url.expression_segments(), |parts| {
-                    parts_validator.validate(parts, false).trace("path")
-                })
-                .and(Valid::from_iter(req_template.query.clone(), |query| {
-                    let mustache = &query.value;
-
-                    Valid::from_iter(mustache.expression_segments(), |parts| {
-                        parts_validator.validate(parts, true).trace("query")
-                    })
-                }))
-                .unit()
-            }
-            Some(IR::IO(IO::GraphQL { req_template, .. })) => {
-                Valid::from_iter(req_template.headers.clone(), |(_, mustache)| {
-                    Valid::from_iter(mustache.expression_segments(), |parts| {
-                        parts_validator.validate(parts, true).trace("headers")
-                    })
-                })
-                .and_then(|_| {
-                    if let Some(args) = &req_template.operation_arguments {
-                        Valid::from_iter(args, |(_, mustache)| {
-                            Valid::from_iter(mustache.expression_segments(), |parts| {
-                                parts_validator.validate(parts, true).trace("args")
-                            })
-                        })
-                    } else {
-                        Valid::succeed(Default::default())
-                    }
-                })
-                .unit()
-            }
-            Some(IR::IO(IO::Grpc { req_template, .. })) => {
-                Valid::from_iter(req_template.url.expression_segments(), |parts| {
-                    parts_validator.validate(parts, false).trace("path")
-                })
-                .and(
-                    Valid::from_iter(req_template.headers.clone(), |(_, mustache)| {
-                        Valid::from_iter(mustache.expression_segments(), |parts| {
-                            parts_validator.validate(parts, true).trace("headers")
-                        })
-                    })
-                    .unit(),
-                )
-                .and_then(|_| {
-                    if let Some(body) = &req_template.body {
-                        if let Some(mustache) = &body.mustache {
-                            Valid::from_iter(mustache.expression_segments(), |parts| {
-                                parts_validator.validate(parts, true).trace("body")
-                            })
-                        } else {
-                            // TODO: needs review
-                            Valid::succeed(Default::default())
-                        }
-                    } else {
-                        Valid::succeed(Default::default())
-                    }
-                })
-                .unit()
-            }
-            _ => Valid::succeed(()),
+            Some(resolver) => parts_validator.validate_resolver(resolver),
+            None => Valid::succeed(()),
         }
     }
 }

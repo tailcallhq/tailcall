@@ -1,0 +1,23 @@
+schema @server @upstream {
+  query: Query
+}
+
+type Root {
+  nested: Nested1
+  nested_list: [Nested1]
+}
+
+type Nested1 {
+  a: DeepNested @http(url: "")
+  b: DeepNested @http(url: "", batchKey: ["id"])
+  c: DeepNested @http(url: "")
+  d: [DeepNested] @http(url: "")
+}
+
+type DeepNested {
+  test: [String] @http(url: "")
+}
+
+type Query {
+  root: Root @http(url: "")
+}
