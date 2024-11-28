@@ -1,0 +1,27 @@
+schema @server @upstream(batch: {delay: 1}) {
+  query: Query
+}
+
+type Query {
+  users: [User] @http(url: "https://jsonplaceholder.typicode.com/users")
+  posts: [Post] @http(url: "https://jsonplaceholder.typicode.com/posts")
+}
+
+type User {
+  id: ID!
+  name: String!
+  posts: [Post] @http(url: "https://jsonplaceholder.typicode.com/posts?userId={{.value.id}}")
+}
+
+type Post {
+  id: ID!
+  title: String!
+  userId: ID!
+  user: User
+    @http(
+      url: "https://jsonplaceholder.typicode.com/users"
+      query: [{key: "id", value: "{{.value.userId}}"}]
+      batchKey: ["id"]
+      dedupe: true
+    )
+}

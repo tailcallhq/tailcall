@@ -1,0 +1,6 @@
+---
+source: src/core/config/npo/tracker.rs
+expression: actual
+---
+query { posts { user { posts } } }
+query { users { posts } }

@@ -102,11 +102,53 @@ impl Display for FieldName<'_> {
     }
 }
 
+/// Highly optimized structure to hold a key.
+pub struct KeyHolder {
+    buffer: String,
+    separator: Vec<usize>,
+}
+
+impl KeyHolder {
+    pub fn new() -> Self {
+        KeyHolder { buffer: String::default(), separator: Vec::new() }
+    }
+
+    /// Appends a path to the key.
+    pub fn append(&mut self, path: &str) {
+        if !self.buffer.is_empty() {
+            // Append the separator only if the buffer isn't empty.
+            self.separator.push(self.buffer.len());
+            self.buffer.push('.');
+        }
+        self.buffer.push_str(path);
+    }
+
+    /// Removes the last segment of the key.
+    pub fn pop(&mut self) {
+        if let Some(index) = self.separator.pop() {
+            self.buffer.truncate(index);
+        } else {
+            self.clear();
+        }
+    }
+
+    /// Returns the current key as a `&str`.
+    pub fn key(&self) -> &str {
+        &self.buffer
+    }
+
+    /// Clears the key entirely.
+    pub fn clear(&mut self) {
+        self.buffer.clear();
+        self.separator.clear();
+    }
+}
+
 /// A module that tracks the query paths that can issue a N + 1 calls to
 /// upstream.
 pub struct PathTracker<'a> {
     config: &'a Config,
-    cache: HashMap<(TypeName<'a>, bool), Chunk<Chunk<FieldName<'a>>>>,
+    cache: HashMap<String, Chunk<Chunk<FieldName<'a>>>>,
 }
 
 impl<'a> PathTracker<'a> {
@@ -115,14 +157,15 @@ impl<'a> PathTracker<'a> {
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn iter(
+    fn iter_inner(
         &mut self,
         path: Chunk<FieldName<'a>>,
         type_name: TypeName<'a>,
         is_list: bool,
         visited: HashSet<(TypeName<'a>, FieldName<'a>)>,
+        key_holder: &mut KeyHolder,
     ) -> Chunk<Chunk<FieldName<'a>>> {
-        if let Some(chunks) = self.cache.get(&(type_name, is_list)) {
+        if let Some(chunks) = self.cache.get(key_holder.key()) {
             return chunks.clone();
         }
 
@@ -131,6 +174,7 @@ impl<'a> PathTracker<'a> {
             for (name, field) in type_of.fields.iter() {
                 let field_name = FieldName::new(name);
                 let path = path.clone().append(field_name);
+                key_holder.append(name);
                 if !visited.contains(&(type_name, field_name)) {
                     if is_list && field.has_resolver() && !field.has_batched_resolver() {
                         chunks = chunks.append(path.clone());
@@ -138,30 +182,42 @@ impl<'a> PathTracker<'a> {
                         let mut visited = visited.clone();
                         visited.insert((type_name, field_name));
                         let is_list = is_list | field.type_of.is_list();
-                        chunks = chunks.concat(self.iter(
+                        chunks = chunks.concat(self.iter_inner(
                             path,
                             TypeName::new(field.type_of.name()),
                             is_list,
                             visited,
+                            key_holder,
                         ))
                     }
                 }
+                key_holder.pop();
             }
         }
 
-        self.cache.insert((type_name, is_list), chunks.clone());
+        self.cache
+            .insert(key_holder.key().to_owned(), chunks.clone());
         chunks
+    }
+
+    fn iter(
+        &mut self,
+        path: Chunk<FieldName<'a>>,
+        type_name: TypeName<'a>,
+    ) -> Chunk<Chunk<FieldName<'a>>> {
+        self.iter_inner(
+            path,
+            type_name,
+            false,
+            HashSet::new(),
+            &mut KeyHolder::new(),
+        )
     }
 
     fn find_chunks(&mut self) -> Chunk<Chunk<FieldName<'a>>> {
         match &self.config.schema.query {
             None => Chunk::default(),
-            Some(query) => self.iter(
-                Chunk::default(),
-                TypeName::new(query.as_str()),
-                false,
-                HashSet::new(),
-            ),
+            Some(query) => self.iter(Chunk::default(), TypeName::new(query.as_str())),
         }
     }
 
@@ -172,6 +228,7 @@ impl<'a> PathTracker<'a> {
 
 #[cfg(test)]
 mod tests {
+    use super::KeyHolder;
     use crate::include_config;
 
     #[macro_export]
@@ -244,5 +301,28 @@ mod tests {
         let actual = config.n_plus_one();
 
         insta::assert_snapshot!(actual);
+    }
+
+    #[test]
+    fn test_jsonplaceholder() {
+        let config = include_config!("fixtures/jsonplaceholder.graphql").unwrap();
+        let actual = config.n_plus_one();
+
+        insta::assert_snapshot!(actual);
+    }
+
+    #[test]
+    fn test_key_holder() {
+        let mut holder = KeyHolder::new();
+        holder.append("query");
+        holder.append("user");
+
+        assert_eq!(holder.key(), "query.user");
+        holder.pop();
+        assert_eq!(holder.key(), "query");
+        holder.pop();
+        assert_eq!(holder.key(), "");
+        holder.pop();
+        assert_eq!(holder.key(), "");
     }
 }
