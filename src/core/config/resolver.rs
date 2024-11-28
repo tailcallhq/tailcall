@@ -60,6 +60,20 @@ impl Resolver {
 #[derive(Default, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 pub struct ResolverSet(pub Vec<Resolver>);
 
+impl ResolverSet {
+    pub fn has_resolver(&self) -> bool {
+        !self.0.is_empty()
+    }
+
+    pub fn is_batched(&self) -> bool {
+        if self.0.is_empty() {
+            false
+        } else {
+            self.0.iter().all(Resolver::is_batched)
+        }
+    }
+}
+
 // Implement custom serializer to provide backward compatibility for JSON/YAML
 // formats when converting config to config file. In case the only one resolver
 // is defined serialize it as flatten structure instead of `resolvers: []`
