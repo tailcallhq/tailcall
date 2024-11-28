@@ -82,8 +82,11 @@ impl JITExecutor {
         let hash = Self::req_hash(&request);
 
         async move {
-            if let Some(response) = self.app_ctx.const_execution_cache.get(&hash) {
-                return response.clone();
+            if self.tx.read().await.is_none() {
+                // if it's not a streaming request, check if we have a cached response.
+                if let Some(response) = self.app_ctx.const_execution_cache.get(&hash) {
+                    return response.clone();
+                }
             }
 
             let jit_request = jit::Request::from(request);
@@ -108,6 +111,7 @@ impl JITExecutor {
 
             let is_const = exec.plan.is_const;
             let is_protected = exec.plan.is_protected;
+            let is_defered_cacheable = exec.plan.deferred_fields.is_empty();
 
             let response = if exec.plan.can_dedupe() {
                 self.dedupe_and_exec(exec, jit_request).await
@@ -116,7 +120,9 @@ impl JITExecutor {
             };
 
             // Cache the response if it's constant and not wrapped with protected.
-            if is_const && !is_protected {
+            // defered fields are not cached, they're streamed.
+            // TODO: we can add support for it.
+            if is_const && is_defered_cacheable && !is_protected {
                 self.app_ctx
                     .const_execution_cache
                     .insert(hash, response.clone());
