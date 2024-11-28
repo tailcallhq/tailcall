@@ -4,7 +4,7 @@ expression: errors
 ---
 [
   {
-    "message": "Invalid Argument defined in field 'invalidArgument'.",
+    "message": "too few parts in template",
     "trace": [
       "Query",
       "invalidArgument",
@@ -14,7 +14,7 @@ expression: errors
     "description": null
   },
   {
-    "message": "Type 'Nested' is not a scalar type.",
+    "message": "value 'Nested' is not of a scalar type",
     "trace": [
       "Query",
       "invalidArgumentType",
@@ -25,7 +25,7 @@ expression: errors
     "description": null
   },
   {
-    "message": "Argument 'criterias' not found in field 'unknownArgument'.",
+    "message": "no argument 'criterias' found",
     "trace": [
       "Query",
       "unknownArgument",
@@ -36,7 +36,7 @@ expression: errors
     "description": null
   },
   {
-    "message": "Type 'Criteria' not found in config.",
+    "message": "Cannot find type Criteria in the config",
     "trace": [
       "Query",
       "unknownArgumentType",
@@ -47,7 +47,7 @@ expression: errors
     "description": null
   },
   {
-    "message": "Field 'unknown_field' not found in type 'Nested'.",
+    "message": "field unknown_field not found",
     "trace": [
       "Query",
       "unknownField",

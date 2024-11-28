@@ -33,7 +33,7 @@ pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, B
             let ir = match resolver {
                 // TODO: there are `validate_field` for field, but not for types
                 // implement validation as shared entity and use it for types
-                Resolver::Http(http) => compile_http(config_module, http, field, None),
+                Resolver::Http(http) => compile_http(config_module, http, field),
                 Resolver::Grpc(grpc) => compile_grpc(super::CompileGrpc {
                     config_module,
                     operation_type: &GraphQLOperationType::Query,
