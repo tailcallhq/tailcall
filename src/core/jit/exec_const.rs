@@ -119,9 +119,7 @@ impl ConstValueExecutor {
             resp.into()
         };
 
-        let cloned_resp = response.clone();
-        let bytes = Bytes::from(cloned_resp.body.to_vec());
-
+        let bytes = response.to_bytes();
         let tx = self.tx.clone();
         tokio::spawn(async move {
             let read_tx = tx.read().await;
@@ -168,8 +166,7 @@ impl ConstValueExecutor {
                         resp.into()
                     };
 
-                    let bytes = Bytes::from(response.body.to_vec());
-
+                    let bytes = response.to_bytes();
                     let read_tx = tx.read().await;
                     if let Some(sender) = &*read_tx {
                         let mut sender = sender.clone();

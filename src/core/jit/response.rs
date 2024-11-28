@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use bytes::Bytes;
 use derive_setters::Setters;
 use serde::Serialize;
 
@@ -118,6 +119,12 @@ where
             cache_control: Default::default(),
             is_ok: true,
         }
+    }
+}
+
+impl AnyResponse<Vec<u8>> {
+    pub fn to_bytes(self) -> Bytes {
+        Bytes::from(self.body.to_vec())
     }
 }
 
