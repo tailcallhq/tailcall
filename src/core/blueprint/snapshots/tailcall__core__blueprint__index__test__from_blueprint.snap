@@ -38,10 +38,12 @@ Index {
                                                 Mustache(
                                                     [
                                                         Expression(
-                                                            [
-                                                                "args",
-                                                                "input",
-                                                            ],
+                                                            Expression(
+                                                                [
+                                                                    "args",
+                                                                    "input",
+                                                                ],
+                                                            ),
                                                         ),
                                                     ],
                                                 ),
@@ -107,10 +109,12 @@ Index {
                                                 Mustache(
                                                     [
                                                         Expression(
-                                                            [
-                                                                "args",
-                                                                "input",
-                                                            ],
+                                                            Expression(
+                                                                [
+                                                                    "args",
+                                                                    "input",
+                                                                ],
+                                                            ),
                                                         ),
                                                     ],
                                                 ),
@@ -185,10 +189,12 @@ Index {
                                                 Mustache(
                                                     [
                                                         Expression(
-                                                            [
-                                                                "args",
-                                                                "input",
-                                                            ],
+                                                            Expression(
+                                                                [
+                                                                    "args",
+                                                                    "input",
+                                                                ],
+                                                            ),
                                                         ),
                                                     ],
                                                 ),
@@ -266,10 +272,12 @@ Index {
                                                 Mustache(
                                                     [
                                                         Expression(
-                                                            [
-                                                                "args",
-                                                                "input",
-                                                            ],
+                                                            Expression(
+                                                                [
+                                                                    "args",
+                                                                    "input",
+                                                                ],
+                                                            ),
                                                         ),
                                                     ],
                                                 ),
@@ -653,10 +661,12 @@ Index {
                                                         value: Mustache(
                                                             [
                                                                 Expression(
-                                                                    [
-                                                                        "args",
-                                                                        "term",
-                                                                    ],
+                                                                    Expression(
+                                                                        [
+                                                                            "args",
+                                                                            "term",
+                                                                        ],
+                                                                    ),
                                                                 ),
                                                             ],
                                                         ),
@@ -724,10 +734,12 @@ Index {
                                                         "http://jsonplaceholder.typicode.com/users/",
                                                     ),
                                                     Expression(
-                                                        [
-                                                            "args",
-                                                            "id",
-                                                        ],
+                                                        Expression(
+                                                            [
+                                                                "args",
+                                                                "id",
+                                                            ],
+                                                        ),
                                                     ),
                                                 ],
                                             ),
@@ -812,10 +824,12 @@ Index {
                                                         value: Mustache(
                                                             [
                                                                 Expression(
-                                                                    [
-                                                                        "args",
-                                                                        "term",
-                                                                    ],
+                                                                    Expression(
+                                                                        [
+                                                                            "args",
+                                                                            "term",
+                                                                        ],
+                                                                    ),
                                                                 ),
                                                             ],
                                                         ),
@@ -895,10 +909,12 @@ Index {
                                                         "http://jsonplaceholder.typicode.com/users/",
                                                     ),
                                                     Expression(
-                                                        [
-                                                            "args",
-                                                            "id",
-                                                        ],
+                                                        Expression(
+                                                            [
+                                                                "args",
+                                                                "id",
+                                                            ],
+                                                        ),
                                                     ),
                                                 ],
                                             ),

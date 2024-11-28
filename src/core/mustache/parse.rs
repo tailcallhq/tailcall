@@ -88,14 +88,14 @@ mod tests {
     #[test]
     fn test_to_string() {
         let expectations = vec![
-            r"/users/{{value.id}}/todos",
-            r"http://localhost:8090/{{foo.bar}}/api/{{hello.world}}/end",
-            r"http://localhost:{{args.port}}",
-            r"/users/{{value.userId}}",
-            r"/bar?id={{args.id}}&flag={{args.flag}}",
-            r"/foo?id={{value.id}}",
-            r"{{value.d}}",
-            r"/posts/{{args.id}}",
+            r"/users/{{.value.id}}/todos",
+            r"http://localhost:8090/{{.foo.bar}}/api/{{.hello.world}}/end",
+            r"http://localhost:{{.args.port}}",
+            r"/users/{{.value.userId}}",
+            r"/bar?id={{.args.id}}&flag={{.args.flag}}",
+            r"/foo?id={{.value.id}}",
+            r"{{.value.d}}",
+            r"/posts/{{.args.id}}",
             r"http://localhost:8000",
         ];
 
