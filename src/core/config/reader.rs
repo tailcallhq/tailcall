@@ -40,6 +40,12 @@ impl ConfigReader {
         config_module: ConfigModule,
         parent_dir: Option<&'async_recursion Path>,
     ) -> anyhow::Result<ConfigModule> {
+        let reader_ctx = ConfigReaderContext {
+            runtime: &self.runtime,
+            vars: &Default::default(),
+            headers: Default::default(),
+        };
+
         let links: Vec<Link> = config_module
             .config()
             .links
@@ -67,7 +73,11 @@ impl ConfigReader {
                 LinkType::Config => {
                     let source = self.resource_reader.read_file(path).await?;
                     let content = source.content;
-                    let config = Config::from_source(Source::detect(&source.path)?, &content)?;
+                    let config = Config::from_source_resolved(
+                        Source::detect(&source.path)?,
+                        &content,
+                        &reader_ctx,
+                    )?;
                     config_module = config_module.and_then(|config_module| {
                         config_module.unify(ConfigModule::from(config.clone()))
                     });
@@ -184,6 +194,12 @@ impl ConfigReader {
         &self,
         files: &[T],
     ) -> anyhow::Result<ConfigModule> {
+        let reader_ctx = ConfigReaderContext {
+            runtime: &self.runtime,
+            vars: &Default::default(),
+            headers: Default::default(),
+        };
+
         let files = self.resource_reader.read_files(files).await?;
         let mut config_module = Valid::succeed(ConfigModule::default());
 
@@ -194,7 +210,7 @@ impl ConfigReader {
             // Create initial config module
             let new_config_module = self
                 .resolve(
-                    Config::from_source(source, schema)?,
+                    Config::from_source_resolved(source, schema, &reader_ctx)?,
                     Path::new(&file.path).parent(),
                 )
                 .await?;

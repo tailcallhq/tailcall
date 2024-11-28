@@ -1,12 +1,39 @@
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
+use std::ops::Deref;
 
 #[derive(Debug, Clone, PartialEq, Hash, Default)]
 pub struct Mustache(Vec<Segment>);
 
 #[derive(Debug, Clone, PartialEq, Hash)]
+pub struct Expression(Vec<String>);
+
+impl Deref for Expression {
+    type Target = Vec<String>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl Expression {
+    pub fn new(expr: Vec<String>) -> Self {
+        Self(expr)
+    }
+    pub fn insert(&mut self, index: usize, value: String) {
+        self.0.insert(index, value);
+    }
+}
+
+impl Display for Expression {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{{{{.{}}}}}", self.0.join("."))
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Hash)]
 pub enum Segment {
     Literal(String),
-    Expression(Vec<String>),
+    Expression(Expression),
 }
 
 impl<A: IntoIterator<Item = Segment>> From<A> for Mustache {
@@ -41,7 +68,7 @@ impl Mustache {
         self.segments()
             .iter()
             .filter_map(|seg| match seg {
-                Segment::Expression(parts) => Some(parts),
+                Segment::Expression(parts) => Some(parts.deref()),
                 _ => None,
             })
             .collect()
@@ -62,7 +89,7 @@ impl Display for Mustache {
             .iter()
             .map(|segment| match segment {
                 Segment::Literal(text) => text.clone(),
-                Segment::Expression(parts) => format!("{{{{{}}}}}", parts.join(".")),
+                Segment::Expression(parts) => parts.to_string(),
             })
             .collect::<Vec<String>>()
             .join("");

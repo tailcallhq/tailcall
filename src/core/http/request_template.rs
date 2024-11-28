@@ -300,6 +300,10 @@ impl<'a, A: PathValue> Eval<'a> for ValueStringEval<A> {
             })
             .next() // Return the first value that is found
     }
+
+    fn eval_strict(&'a self, mustache: &'a Mustache, in_value: &'a Self::In) -> Self::Out {
+        self.eval(mustache, in_value)
+    }
 }
 
 #[cfg(test)]
