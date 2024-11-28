@@ -133,8 +133,13 @@ async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
         use futures::channel::mpsc;
         use futures::StreamExt;
         use std::sync::Arc;
+        use tokio::sync::oneshot;
 
-        let (tx, mut rx) = mpsc::channel(100);
+        // Create a channel to stop the JIT execution
+        let (stop_tx, stop_rx) = oneshot::channel::<()>();
+
+        // Create a channel to stream the response
+        let (tx, mut rx) = mpsc::channel(0);
         let tx = Arc::new(RwLock::new(Some(tx)));
 
         let streamed_body = stream! {
@@ -163,8 +168,11 @@ async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
             let _result = exec.execute(request).await;
         });
 
+        // Monitor connection for closure
+        let response = Response::new(body);
+
         println!("[Finder]: before returning response");
-        return Ok(Response::new(body));
+        return Ok(response);
     } else {
         request
             .data(req_ctx.clone())

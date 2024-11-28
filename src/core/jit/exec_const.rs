@@ -108,42 +108,44 @@ impl ConstValueExecutor {
         let cloned_app_ctx = app_ctx.clone();
         let cloned_tx = self.tx.clone();
 
-        tokio::task::spawn(async move {
-            let plan = cloned_plan;
-            let req_ctx = cloned_req_ctx;
-            let vars = cloned_vars;
-            let request = cloned_req;
-            let app_ctx = cloned_app_ctx;
-            let tx = cloned_tx;
+        // tokio::task::spawn(async move {
+        let plan = cloned_plan;
+        let req_ctx = cloned_req_ctx;
+        let vars = cloned_vars;
+        let request = cloned_req;
+        let app_ctx = cloned_app_ctx;
+        let tx = cloned_tx;
 
-            let exec = ConstValueExec::new(&plan, &req_ctx);
-            // PERF: remove this particular clone?
-            let exe = Executor::new(&plan, exec);
-            let store = exe.store().await;
-            let synth = Synth::new(&plan, store, vars.clone());
+        let exec = ConstValueExec::new(&plan, &req_ctx);
+        // PERF: remove this particular clone?
+        let exe = Executor::new(&plan, exec);
+        let store = exe.store().await;
+        let synth = Synth::new(&plan, store, vars.clone());
 
-            let resp: Response<serde_json_borrow::Value> = exe.execute(&synth).await;
+        let resp: Response<serde_json_borrow::Value> = exe.execute(&synth).await;
 
-            // add the pending to response.
-            let response: AnyResponse<Vec<u8>> = if is_introspection_query {
-                let async_req = async_graphql::Request::from(request.clone()).only_introspection();
-                let async_resp = app_ctx.execute(async_req).await;
+        // add the pending to response.
+        let response: AnyResponse<Vec<u8>> = if is_introspection_query {
+            let async_req = async_graphql::Request::from(request.clone()).only_introspection();
+            let async_resp = app_ctx.execute(async_req).await;
 
-                resp.merge_with(&async_resp).into()
-            } else {
-                resp.into()
-            };
+            resp.merge_with(&async_resp).into()
+        } else {
+            resp.into()
+        };
 
-            let cloned_resp = response.clone();
-            let bytes = Bytes::from(cloned_resp.body.to_vec());
+        let cloned_resp = response.clone();
+        let bytes = Bytes::from(cloned_resp.body.to_vec());
 
-            let tx = tx.clone();
+        let tx = tx.clone();
+
+        tokio::spawn(async move {
             let read_tx = tx.read().await;
             if let Some(sender) = &*read_tx {
                 // Clone the sender so it can be used mutably outside the lock
                 let mut sender = sender.clone();
                 println!("Base Field: Sending response");
-                let _ = sender.send(Ok(bytes)).await;
+                let _ = sender.send(Ok(bytes)).await.unwrap();
                 println!("Base Field: Done Sending response");
             }
         });
@@ -181,50 +183,50 @@ impl ConstValueExecutor {
                     // Clone the sender so it can be used mutably outside the lock
                     let mut sender = sender.clone();
                     println!("Deferred Field: Sending response");
-                    let _ = sender.send(Ok(bytes)).await;
+                    let _ = sender.send(Ok(bytes)).await.unwrap();
                     println!("Deferred Field: Done Sending response");
                     let _ = tokio::time::sleep(tokio::time::Duration::from_secs(15)).await;
                 }
             }
         });
 
-        let tx = self.tx.clone();
-        tokio::spawn(async move {
-            let read_tx = tx.read().await;
-            if let Some(sender) = &*read_tx {
-                // Clone the sender so it can be used mutably outside the lock
-                let mut sender = sender.clone();
+        // let tx = self.tx.clone();
+        // tokio::spawn(async move {
+        //     let read_tx = tx.read().await;
+        //     if let Some(sender) = &*read_tx {
+        //         // Clone the sender so it can be used mutably outside the lock
+        //         let mut sender = sender.clone();
 
-                for i in 1..=5 {
-                    sender
-                        .send(Ok(Bytes::from(format!("Chunk {}\n", i))))
-                        .await
-                        .unwrap();
-                    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-                }
-            } else {
-                eprintln!("Sender not initialized");
-            }
-        });
+        //         for i in 1..=5 {
+        //             sender
+        //                 .send(Ok(Bytes::from(format!("Chunk {}\n", i))))
+        //                 .await
+        //                 .unwrap();
+        //             tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+        //         }
+        //     } else {
+        //         eprintln!("Sender not initialized");
+        //     }
+        // });
 
-        let tx = self.tx.clone();
-        tokio::spawn(async move {
-            let read_tx = tx.read().await;
-            if let Some(sender) = &*read_tx {
-                // Clone the sender so it can be used mutably outside the lock
-                let mut sender = sender.clone();
+        // let tx = self.tx.clone();
+        // tokio::spawn(async move {
+        //     let read_tx = tx.read().await;
+        //     if let Some(sender) = &*read_tx {
+        //         // Clone the sender so it can be used mutably outside the lock
+        //         let mut sender = sender.clone();
 
-                for i in 1..=5 {
-                    sender
-                        .send(Ok(Bytes::from(format!("Chunk {}\n", i))))
-                        .await
-                        .unwrap();
-                    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-                }
-            } else {
-                eprintln!("Sender not initialized");
-            }
-        });
+        //         for i in 1..=5 {
+        //             sender
+        //                 .send(Ok(Bytes::from(format!("Chunk {}\n", i))))
+        //                 .await
+        //                 .unwrap();
+        //             tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+        //         }
+        //     } else {
+        //         eprintln!("Sender not initialized");
+        //     }
+        // });
 
         AnyResponse::default()
     }
