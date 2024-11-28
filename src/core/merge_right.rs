@@ -1,5 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
+use indexmap::IndexMap;
 use prost_reflect::prost_types::FileDescriptorProto;
 
 pub trait MergeRight {
@@ -78,9 +79,52 @@ where
     }
 }
 
+impl<K, V> MergeRight for IndexMap<K, V>
+where
+    K: Eq + std::hash::Hash,
+    V: MergeRight + Default,
+{
+    fn merge_right(mut self, other: Self) -> Self {
+        use indexmap::map::Entry;
+
+        for (other_name, other_value) in other {
+            match self.entry(other_name) {
+                Entry::Occupied(mut occupied_entry) => {
+                    // try to support insertion order while merging index maps.
+                    // if value is present on left, present it's position
+                    // and if value is present only on the right then
+                    // add it to the end of left map preserving the iteration order of the right map
+                    let value = std::mem::take(occupied_entry.get_mut());
+
+                    *occupied_entry.get_mut() = value.merge_right(other_value);
+                }
+                Entry::Vacant(vacant_entry) => {
+                    vacant_entry.insert(other_value);
+                }
+            }
+        }
+        self
+    }
+}
+
 impl MergeRight for FileDescriptorProto {
     fn merge_right(self, other: Self) -> Self {
         other
+    }
+}
+
+impl MergeRight for async_graphql_value::ConstValue {
+    fn merge_right(self, other: Self) -> Self {
+        use async_graphql_value::ConstValue;
+        match (self, other) {
+            (ConstValue::List(a), ConstValue::List(b)) => ConstValue::List(a.merge_right(b)),
+            (ConstValue::List(mut vec), other) => {
+                vec.push(other);
+                ConstValue::List(vec)
+            }
+            (ConstValue::Object(a), ConstValue::Object(b)) => ConstValue::Object(a.merge_right(b)),
+            (_, other) => other,
+        }
     }
 }
 
@@ -135,9 +179,11 @@ impl MergeRight for serde_yaml::Value {
 mod tests {
     use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
+    use serde_json::json;
+
     use super::MergeRight;
 
-    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
     struct Test(u32);
 
     impl From<u32> for Test {
@@ -335,5 +381,100 @@ mod tests {
                 (4, Test::from(4))
             ])
         );
+    }
+
+    #[test]
+    fn test_index_map() {
+        use indexmap::IndexMap;
+
+        let l: IndexMap<u32, Test> = IndexMap::from_iter(vec![]);
+        let r: IndexMap<u32, Test> = IndexMap::from_iter(vec![]);
+        assert_eq!(l.merge_right(r), IndexMap::<_, _>::from_iter(vec![]));
+
+        let l: IndexMap<u32, Test> =
+            IndexMap::from_iter(vec![(1, Test::from(1)), (2, Test::from(2))]);
+        let r: IndexMap<u32, Test> = IndexMap::from_iter(vec![]);
+        assert_eq!(
+            l.merge_right(r),
+            IndexMap::<_, _>::from_iter(vec![(1, Test::from(1)), (2, Test::from(2))])
+        );
+
+        let l: IndexMap<u32, Test> = IndexMap::from_iter(vec![]);
+        let r: IndexMap<u32, Test> =
+            IndexMap::from_iter(vec![(3, Test::from(3)), (4, Test::from(4))]);
+        assert_eq!(
+            l.merge_right(r),
+            IndexMap::<_, _>::from_iter(vec![(3, Test::from(3)), (4, Test::from(4))])
+        );
+
+        let l: IndexMap<u32, Test> =
+            IndexMap::from_iter(vec![(1, Test::from(1)), (2, Test::from(2))]);
+        let r: IndexMap<u32, Test> = IndexMap::from_iter(vec![
+            (2, Test::from(5)),
+            (3, Test::from(3)),
+            (4, Test::from(4)),
+        ]);
+        assert_eq!(
+            l.merge_right(r),
+            IndexMap::<_, _>::from_iter(vec![
+                (1, Test::from(1)),
+                (2, Test::from(7)),
+                (3, Test::from(3)),
+                (4, Test::from(4))
+            ])
+        );
+    }
+
+    #[test]
+    fn test_const_value() {
+        use async_graphql_value::ConstValue;
+
+        let a: ConstValue = serde_json::from_value(json!({
+                "a": null,
+                "b": "string",
+                "c": 32,
+                "d": [1, 2, 3],
+                "e": {
+                    "ea": null,
+                    "eb": "string e",
+                    "ec": 88,
+                    "ed": {}
+                }
+        }))
+        .unwrap();
+
+        let b: ConstValue = serde_json::from_value(json!({
+            "a": true,
+            "b": "another",
+            "c": 48,
+            "d": [4, 5, 6],
+            "e": {
+                "ec": 108,
+                "ed": {
+                    "eda": false
+                }
+            },
+            "f": "new f"
+        }))
+        .unwrap();
+
+        let expected: ConstValue = serde_json::from_value(json!({
+            "a": true,
+            "b": "another",
+            "c": 48,
+            "d": [1, 2, 3, 4, 5, 6],
+            "e": {
+                "ea": null,
+                "eb": "string e",
+                "ec": 108,
+                "ed": {
+                    "eda": false
+                }
+            },
+            "f": "new f"
+        }))
+        .unwrap();
+
+        assert_eq!(a.merge_right(b), expected);
     }
 }

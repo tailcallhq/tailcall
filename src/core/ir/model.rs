@@ -25,6 +25,8 @@ pub enum IR {
     Protect(Auth, Box<IR>),
     Map(Map),
     Pipe(Box<IR>, Box<IR>),
+    /// Merges the result of multiple IRs together
+    Merge(Vec<IR>),
     Discriminate(Discriminator, Box<IR>),
     /// Apollo Federation _entities resolver
     Entity(HashMap<String, IR>),
@@ -196,6 +198,9 @@ impl IR {
                             .collect(),
                     ),
                     IR::Service(sdl) => IR::Service(sdl),
+                    IR::Merge(vec) => {
+                        IR::Merge(vec.into_iter().map(|ir| ir.modify(modifier)).collect())
+                    }
                 }
             }
         }

@@ -11,6 +11,7 @@ use super::model::{Cache, CacheKey, Map, IR};
 use super::{Error, EvalContext, ResolverContextLike, TypedValue};
 use crate::core::auth::verify::{AuthVerifier, Verify};
 use crate::core::json::{JsonLike, JsonObjectLike};
+use crate::core::merge_right::MergeRight;
 use crate::core::serde_value_ext::ValueExt;
 
 impl IR {
@@ -95,6 +96,24 @@ impl IR {
                     let ctx = &mut ctx.with_args(args);
                     second.eval(ctx).await
                 }
+                IR::Merge(vec) => {
+                    let results: Vec<_> = join_all(vec.iter().map(|ir| {
+                        let mut ctx = ctx.clone();
+
+                        async move { ir.eval(&mut ctx).await }
+                    }))
+                    .await
+                    .into_iter()
+                    .collect::<Result<_, _>>()?;
+
+                    // TODO: This is a very opinionated merge. We should allow users to customize
+                    // how they would like to merge the values. In future we should support more
+                    // merging capabilities by adding an additional parameter to `Merge`.
+                    Ok(results
+                        .into_iter()
+                        .reduce(|acc, result| acc.merge_right(result))
+                        .unwrap_or_default())
+                }
                 IR::Discriminate(discriminator, expr) => expr
                     .eval(ctx)
                     .await
@@ -148,5 +167,74 @@ impl IR {
                 }
             }
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    mod merge {
+        use serde_json::json;
+
+        use super::*;
+        use crate::core::blueprint::{Blueprint, DynamicValue};
+        use crate::core::http::RequestContext;
+        use crate::core::ir::EmptyResolverContext;
+
+        #[tokio::test]
+        async fn test_const_values() {
+            let a = DynamicValue::Value(
+                ConstValue::from_json(json!({
+                    "a": 1,
+                    "c": {
+                        "ca": false
+                    }
+                }))
+                .unwrap(),
+            );
+
+            let b = DynamicValue::Value(
+                ConstValue::from_json(json!({
+                    "b": 2,
+                    "c": {
+                        "cb": 23
+                    }
+                }))
+                .unwrap(),
+            );
+
+            let c = DynamicValue::Value(
+                ConstValue::from_json(json!({
+                    "c" : {
+                        "ca": true,
+                        "cc": [1, 2]
+                    },
+                    "d": "additional"
+                }))
+                .unwrap(),
+            );
+
+            let ir = IR::Merge([a, b, c].into_iter().map(IR::Dynamic).collect());
+            let runtime = crate::cli::runtime::init(&Blueprint::default());
+            let req_ctx = RequestContext::new(runtime);
+            let res_ctx = EmptyResolverContext {};
+            let mut eval_ctx = EvalContext::new(&req_ctx, &res_ctx);
+
+            let actual = ir.eval(&mut eval_ctx).await.unwrap();
+            let expected = ConstValue::from_json(json!({
+                "a": 1,
+                "b": 2,
+                "c": {
+                    "ca": true,
+                    "cb": 23,
+                    "cc": [1, 2]
+                },
+                "d": "additional"
+            }))
+            .unwrap();
+
+            assert_eq!(actual, expected);
+        }
     }
 }

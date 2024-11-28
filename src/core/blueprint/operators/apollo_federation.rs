@@ -4,8 +4,8 @@ use std::fmt::Write;
 use async_graphql::parser::types::ServiceDocument;
 use tailcall_valid::{Valid, Validator};
 
-use super::{compile_call, compile_expr, compile_graphql, compile_grpc, compile_http, compile_js};
-use crate::core::blueprint::{Blueprint, Definition, TryFoldConfig};
+use super::{compile_resolver, CompileResolver};
+use crate::core::blueprint::{Blueprint, BlueprintError, Definition, TryFoldConfig};
 use crate::core::config::{
     ApolloFederation, ConfigModule, EntityResolver, Field, GraphQLOperationType, Resolver,
 };
@@ -13,11 +13,11 @@ use crate::core::ir::model::IR;
 use crate::core::Type;
 
 pub struct CompileEntityResolver<'a> {
-    config_module: &'a ConfigModule,
-    entity_resolver: &'a EntityResolver,
+    pub config_module: &'a ConfigModule,
+    pub entity_resolver: &'a EntityResolver,
 }
 
-pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, String> {
+pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, BlueprintError> {
     let CompileEntityResolver { config_module, entity_resolver } = inputs;
     let mut resolver_by_type = HashMap::new();
 
@@ -31,45 +31,26 @@ pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, S
 
             // TODO: make this code reusable in other operators like call
             let ir = match resolver {
-                // TODO: there are `validate_field` for field, but not for types
-                // implement validation as shared entity and use it for types
-                Resolver::Http(http) => compile_http(
-                    config_module,
-                    http,
-                    // inner resolver should resolve only single instance of type, not a list
-                    false,
-                ),
-                Resolver::Grpc(grpc) => compile_grpc(super::CompileGrpc {
-                    config_module,
-                    operation_type: &GraphQLOperationType::Query,
-                    field,
-                    grpc,
-                    validate_with_schema: true,
-                }),
-                Resolver::Graphql(graphql) => compile_graphql(
-                    config_module,
-                    &GraphQLOperationType::Query,
-                    type_name,
-                    graphql,
-                ),
-                Resolver::Call(call) => {
-                    compile_call(config_module, call, &GraphQLOperationType::Query, type_name)
-                }
-                Resolver::Js(js) => {
-                    compile_js(super::CompileJs { js, script: &config_module.extensions().script })
-                }
-                Resolver::Expr(expr) => {
-                    compile_expr(super::CompileExpr { config_module, field, expr, validate: true })
-                }
                 Resolver::ApolloFederation(federation) => match federation {
                     ApolloFederation::EntityResolver(entity_resolver) => {
                         compile_entity_resolver(CompileEntityResolver { entity_resolver, ..inputs })
                     }
-                    ApolloFederation::Service => Valid::fail(
-                        "Apollo federation resolvers can't be a part of entity resolver"
-                            .to_string(),
-                    ),
+                    ApolloFederation::Service => {
+                        Valid::fail(BlueprintError::ApolloFederationResolversNoPartOfEntityResolver)
+                    }
                 },
+                resolver => {
+                    let inputs = CompileResolver {
+                        config_module,
+                        field,
+                        operation_type: &GraphQLOperationType::Query,
+                        object_name: type_name,
+                    };
+
+                    compile_resolver(&inputs, resolver).and_then(|resolver| {
+                        Valid::from_option(resolver, BlueprintError::NoResolverFoundInSchema)
+                    })
+                }
             };
 
             ir.map(|ir| {
@@ -80,7 +61,7 @@ pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, S
     .map_to(IR::Entity(resolver_by_type))
 }
 
-pub fn compile_service(mut sdl: String) -> Valid<IR, String> {
+pub fn compile_service(mut sdl: String) -> Valid<IR, BlueprintError> {
     writeln!(sdl).ok();
 
     // Mark subgraph as Apollo federation v2 compatible according to [docs](https://www.apollographql.com/docs/apollo-server/using-federation/apollo-subgraph-setup/#2-opt-in-to-federation-2)
@@ -111,11 +92,11 @@ pub fn update_federation<'a>() -> TryFoldConfig<'a, Blueprint> {
             }
 
             let Definition::Object(mut obj) = def else {
-                return Valid::fail("Query type is not an object inside the blueprint".to_string());
+                return Valid::fail(BlueprintError::QueryTypeNotObject);
             };
 
             let Some(config_type) = config_module.types.get(&query_name) else {
-                return Valid::fail(format!("Cannot find type {query_name} in the config"));
+                return Valid::fail(BlueprintError::TypeNotFoundInConfig(query_name.clone()));
             };
 
             Valid::from_iter(obj.fields.iter_mut(), |b_field| {
@@ -123,10 +104,15 @@ pub fn update_federation<'a>() -> TryFoldConfig<'a, Blueprint> {
                 let name = &b_field.name;
                 Valid::from_option(
                     config_type.fields.get(name),
-                    format!("Cannot find field {name} in the type"),
+                    BlueprintError::FieldNotFoundInType(name.clone()),
                 )
                 .and_then(|field| {
-                    let Some(Resolver::ApolloFederation(federation)) = &field.resolver else {
+                    let federation = field
+                        .resolvers
+                        .iter()
+                        .find(|&resolver| matches!(resolver, Resolver::ApolloFederation(_)));
+
+                    let Some(Resolver::ApolloFederation(federation)) = federation else {
                         return Valid::succeed(b_field);
                     };
 
