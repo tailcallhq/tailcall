@@ -61,8 +61,6 @@ impl<A: Clone + Debug> Transform for DeferPlanner<A> {
 
         plan.deferred_fields = deferred_fields;
 
-        println!("{:?}", plan.deferred_fields);
-
         Valid::succeed(plan)
     }
 }

@@ -133,10 +133,6 @@ async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
         use futures::channel::mpsc;
         use futures::StreamExt;
         use std::sync::Arc;
-        // use tokio::sync::oneshot;
-
-        // Create a channel to stop the JIT execution
-        // let (stop_tx, stop_rx) = oneshot::channel::<()>();
 
         // Create a channel to stream the response
         let (tx, mut rx) = mpsc::channel(0);
