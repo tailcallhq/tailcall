@@ -53,6 +53,8 @@ impl<A: Clone + Debug> Transform for DeferPlanner<A> {
                 .map_or(true, |ir| !matches!(ir, IR::Deferred { .. }))
         });
 
+        println!("defered sequence plan: {:#?} ", deferred_fields);
+
         plan.deferred_fields = deferred_fields;
 
         Valid::succeed(plan)

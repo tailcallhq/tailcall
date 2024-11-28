@@ -129,8 +129,8 @@ async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
         let operation_id = request.operation_id(&req.headers);
         let gql_request: async_graphql::Request = serde_json::from_slice(&bytes)?;
 
-        // TODO: this is temporary check and will work in all cases
-        // we need to know if query contains @defer directive before we call executor method.
+        // TODO: this is temporary check and will not work in all cases
+        // we need to know if query contains @defer directive and it's valid before we call executor method.
         if !gql_request.query.contains("@defer") {
             let exec = JITExecutor::new(
                 app_ctx.clone(),
