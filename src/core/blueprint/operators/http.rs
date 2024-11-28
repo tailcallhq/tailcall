@@ -63,23 +63,22 @@ pub fn compile_http(
                 .or(config_module.upstream.on_request.clone())
                 .map(|on_request| HttpFilter { on_request });
 
+            // Find a query parameter that contains a reference to the {{.value}} key
+            let key = http.query.iter().find_map(|q| {
+                Mustache::parse(&q.value)
+                    .expression_contains("value")
+                    .then(|| q.key.clone())
+            });
+
             // check if the resolver is independent or not.
-            let is_dependent = http
-                .query
-                .iter()
-                .any(|q| q.value.contains("{{.value") || q.value.contains("{{value"))
+            let is_dependent = key.is_none()
                 || http
                     .body
                     .as_ref()
-                    .map_or(false, |b| b.contains("{{.value") || b.contains("{{value"));
+                    .map(|b| Mustache::parse(b).expression_contains("value"))
+                    .unwrap_or(false);
 
             let io = if !http.batch_key.is_empty() && http.method == Method::GET {
-                // Find a query parameter that contains a reference to the {{.value}} key
-                let key = http.query.iter().find_map(|q| {
-                    Mustache::parse(&q.value)
-                        .expression_contains("value")
-                        .then(|| q.key.clone())
-                });
                 IR::IO(IO::Http {
                     req_template,
                     group_by: Some(GroupBy::new(http.batch_key.clone(), key)),

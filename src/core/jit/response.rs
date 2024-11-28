@@ -33,12 +33,13 @@ pub struct Response<Value> {
 #[derive(Clone, Serialize, Debug)]
 pub struct Pending {
     id: u64,
-    label: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    label: Option<String>,
     path: Vec<String>,
 }
 
 impl Pending {
-    pub fn new(id: u64, label: String, path: Vec<String>) -> Self {
+    pub fn new(id: u64, label: Option<String>, path: Vec<String>) -> Self {
         Self { id, label, path }
     }
 }

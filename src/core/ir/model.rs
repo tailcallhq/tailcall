@@ -51,6 +51,7 @@ pub enum IR {
     Service(String),
     Deferred {
         id: IrId,
+        label: Option<String>,
         ir: Box<IR>,
         path: Vec<String>,
     },
@@ -80,6 +81,7 @@ pub enum IO {
         batch: bool,
         dl_id: Option<DataLoaderId>,
         dedupe: bool,
+        is_dependent: bool,
     },
     Grpc {
         req_template: grpc::RequestTemplate,
@@ -97,7 +99,7 @@ impl IO {
     pub fn is_dependent(&self) -> bool {
         match self {
             IO::Http { is_dependent, .. } => *is_dependent,
-            IO::GraphQL { .. } => true,
+            IO::GraphQL { is_dependent, .. } => *is_dependent,
             IO::Grpc { .. } => true,
             IO::Js { .. } => false,
         }
@@ -209,8 +211,8 @@ impl IR {
                             .collect(),
                     ),
                     IR::Service(sdl) => IR::Service(sdl),
-                    IR::Deferred { ir, path, id } => {
-                        IR::Deferred { ir: Box::new(ir.modify(modifier)), path, id }
+                    IR::Deferred { ir, path, id, label } => {
+                        IR::Deferred { ir: Box::new(ir.modify(modifier)), path, id, label }
                     }
                 }
             }

@@ -1,4 +1,5 @@
 use std::convert::Infallible;
+use std::fmt::Display;
 use std::marker::PhantomData;
 
 use tailcall_valid::Valid;
@@ -27,7 +28,7 @@ fn check_dependent_irs(ir: &IR) -> bool {
     }
 }
 
-impl<A> WrapDefer<A> {
+impl<A: Display> WrapDefer<A> {
     pub fn new() -> Self {
         Self { _marker: PhantomData, defer_id: Counter::new(0) }
     }
@@ -37,17 +38,32 @@ impl<A> WrapDefer<A> {
         path.push(field.output_name.clone());
         for selection in field.selection.iter_mut() {
             if let Some(ir) = std::mem::take(&mut selection.ir) {
-                let ir = if selection.directives.iter().any(|d| d.name == "defer")
-                    && !check_dependent_irs(&ir)
-                {
-                    IR::Deferred {
-                        ir: Box::new(ir),
-                        path: path.clone(),
-                        id: IrId::new(self.defer_id.next()),
-                    }
-                } else {
-                    ir
-                };
+                let ir =
+                    if let Some(_defer) = selection.directives.iter().find(|d| d.name == "defer") {
+                        let condition = _defer
+                            .arguments
+                            .iter()
+                            .find(|(k, _)| k == "if")
+                            .map(|(_, v)| v.to_string() == "true")
+                            .unwrap_or(true);
+                        let label = _defer
+                            .arguments
+                            .iter()
+                            .find(|(k, _)| k == "label")
+                            .map(|(_, v)| v.to_string());
+                        if condition && !check_dependent_irs(&ir) {
+                            IR::Deferred {
+                                ir: Box::new(ir),
+                                path: path.clone(),
+                                id: IrId::new(self.defer_id.next()),
+                                label,
+                            }
+                        } else {
+                            ir
+                        }
+                    } else {
+                        ir
+                    };
                 selection.ir = Some(ir);
             }
 
@@ -58,19 +74,33 @@ impl<A> WrapDefer<A> {
     }
 }
 
-impl<A> Transform for WrapDefer<A> {
+impl<A: Display> Transform for WrapDefer<A> {
     type Value = OperationPlan<A>;
     type Error = Infallible;
     fn transform(&self, mut plan: Self::Value) -> Valid<Self::Value, Self::Error> {
         plan.selection.iter_mut().for_each(|f| {
             if let Some(ir) = std::mem::take(&mut f.ir) {
-                let ir = if f.directives.iter().any(|d| d.name == "defer")
-                    && !check_dependent_irs(&ir)
-                {
-                    IR::Deferred {
-                        ir: Box::new(ir),
-                        path: vec![],
-                        id: IrId::new(self.defer_id.next()),
+                let ir = if let Some(_defer) = f.directives.iter().find(|d| d.name == "defer") {
+                    let condition = _defer
+                        .arguments
+                        .iter()
+                        .find(|(k, _)| k == "if")
+                        .map(|(_, v)| v.to_string() == "true")
+                        .unwrap_or(true);   // defaults to true
+                    let label = _defer
+                        .arguments
+                        .iter()
+                        .find(|(k, _)| k == "label")
+                        .map(|(_, v)| v.to_string());
+                    if condition && !check_dependent_irs(&ir) {
+                        IR::Deferred {
+                            ir: Box::new(ir),
+                            path: vec![],
+                            id: IrId::new(self.defer_id.next()),
+                            label,
+                        }
+                    } else {
+                        ir
                     }
                 } else {
                     ir

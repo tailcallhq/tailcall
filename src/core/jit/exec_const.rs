@@ -112,12 +112,26 @@ impl ConstValueExecutor {
 
         let resp: Response<serde_json_borrow::Value> = exe.execute(&synth).await;
 
+        // if there are not deferered fields then execute it normal manner.
+        if plan.deferred_fields.is_empty() {
+            let response = if is_introspection_query {
+                let async_req = async_graphql::Request::from(request).only_introspection();
+                let async_resp = app_ctx.execute(async_req).await;
+
+                resp.merge_with(&async_resp).into()
+            } else {
+                resp.into()
+            };
+
+            return response;
+        }
+
         // add `pending` and `has_next` to response.
         let resp = if !plan.deferred_fields.is_empty() {
             let mut pending_tasks = Vec::with_capacity(plan.deferred_fields.len());
             for field in plan.deferred_fields.iter() {
-                if let Some(IR::Deferred { id, path, .. }) = &field.ir {
-                    pending_tasks.push(Pending::new(id.as_u64(), id.to_string(), path.to_owned()));
+                if let Some(IR::Deferred { id, path, label, .. }) = &field.ir {
+                    pending_tasks.push(Pending::new(id.as_u64(), label.clone(), path.to_owned()));
                 }
             }
             resp.pending(pending_tasks).has_next(Some(true))

@@ -127,56 +127,79 @@ async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
 ) -> anyhow::Result<Response<Body>> {
     let mut response = if app_ctx.blueprint.server.enable_jit {
         let operation_id = request.operation_id(&req.headers);
-        let request: async_graphql::Request = serde_json::from_slice(&bytes)?;
+        let gql_request: async_graphql::Request = serde_json::from_slice(&bytes)?;
 
-        use std::sync::Arc;
+        // TODO: this is temporary check and will work in all cases
+        // we need to know if query contains @defer directive before we call executor method.
+        if !gql_request.query.contains("@defer") {
+            let exec = JITExecutor::new(
+                app_ctx.clone(),
+                req_ctx.clone(),
+                operation_id,
+                Arc::new(RwLock::new(None)),
+            );
+            request
+                .execute_with_jit(exec)
+                .await
+                .set_cache_control(
+                    app_ctx.blueprint.server.enable_cache_control_header,
+                    req_ctx.get_min_max_age().unwrap_or(0),
+                    req_ctx.is_cache_public().unwrap_or(true),
+                )
+                .into_response()?
+        } else {
+            use std::sync::Arc;
 
-        use async_stream::stream;
-        use bytes::Bytes;
-        use futures::channel::mpsc;
-        use futures::StreamExt;
+            use async_stream::stream;
+            use bytes::Bytes;
+            use futures::channel::mpsc;
+            use futures::StreamExt;
 
-        // Create a channel to stream the response
-        let (tx, mut rx) = mpsc::channel(0);
-        let tx = Arc::new(RwLock::new(Some(tx)));
+            // Create a channel to stream the response
+            let (tx, mut rx) = mpsc::channel(0);
+            let tx = Arc::new(RwLock::new(Some(tx)));
 
-        // spec_header and spec_footer are used to wrap the response
-        let spec_header = Bytes::from("\n--graphql\ncontent-type: application/json\n\n");
-        // spec footer is sent at the end of the entire response.
-        let spec_footer = Bytes::from("\n--graphql--");
+            // spec_header and spec_footer are used to wrap the response
+            let spec_header = Bytes::from("\n--graphql\ncontent-type: application/json\n\n");
+            // spec footer is sent at the end of the entire response.
+            let spec_footer = Bytes::from("\n--graphql--");
 
-        let streamed_body = stream! {
-            while let Some(item) = rx.next().await {
-                match item {
-                    Ok(bytes) => {
-                        yield Ok::<_, Infallible>(spec_header.clone());
-                        yield Ok::<_, Infallible>(bytes);
-                    },
-                    Err(err) => {
-                        tracing::error!("Error while executing JIT: {:?}", err);
-                        yield Ok::<_, Infallible>(Bytes::new());
+            let streamed_body = stream! {
+                while let Some(item) = rx.next().await {
+                    match item {
+                        Ok(bytes) => {
+                            yield Ok::<_, Infallible>(spec_header.clone());
+                            yield Ok::<_, Infallible>(bytes);
+                        },
+                        Err(err) => {
+                            tracing::error!("Error while executing JIT: {:?}", err);
+                            yield Ok::<_, Infallible>(Bytes::new());
+                        }
                     }
                 }
-            }
-            yield Ok::<_, Infallible>(spec_footer);
-        };
+                yield Ok::<_, Infallible>(spec_footer);
+            };
 
-        let body = Body::wrap_stream(streamed_body);
+            let body = Body::wrap_stream(streamed_body);
 
-        let cloned_app_ctx = app_ctx.clone();
-        let cloned_req_ctx = req_ctx.clone();
-        let cloned_tx = tx.clone();
-        tokio::task::spawn(async move {
-            let exec = JITExecutor::new(cloned_app_ctx, cloned_req_ctx, operation_id, cloned_tx);
-            let _result = exec.execute(request).await;
-        });
+            let cloned_app_ctx = app_ctx.clone();
+            let cloned_req_ctx = req_ctx.clone();
+            let cloned_tx = tx.clone();
+            tokio::task::spawn(async move {
+                let exec =
+                    JITExecutor::new(cloned_app_ctx, cloned_req_ctx, operation_id, cloned_tx);
+                let _result = exec.execute(gql_request).await;
+            });
 
-        let mut response = Response::new(body);
-        response.headers_mut().insert(
-            header::CONTENT_TYPE,
-            HeaderValue::from_static(r#"multipart/mixed;boundary="graphql";deferSpec=20220824"#),
-        );
-        return Ok(response);
+            let mut response = Response::new(body);
+            response.headers_mut().insert(
+                header::CONTENT_TYPE,
+                HeaderValue::from_static(
+                    r#"multipart/mixed;boundary="graphql";deferSpec=20220824"#,
+                ),
+            );
+            return Ok(response);
+        }
     } else {
         request
             .data(req_ctx.clone())
