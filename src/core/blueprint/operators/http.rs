@@ -71,7 +71,10 @@ pub fn compile_http(
             });
 
             // check if the resolver is independent or not.
-            let is_dependent = key.is_none()
+            let is_dependent = http
+                .query
+                .iter()
+                .any(|q| Mustache::parse(&q.value).expression_contains("value"))
                 || http
                     .body
                     .as_ref()

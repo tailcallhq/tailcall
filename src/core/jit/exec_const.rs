@@ -113,7 +113,7 @@ impl ConstValueExecutor {
         let resp: Response<serde_json_borrow::Value> = exe.execute(&synth).await;
 
         // if there are not deferered fields then execute it normal manner.
-        if plan.deferred_fields.is_empty() {
+        if self.tx.read().await.is_none() {
             let response = if is_introspection_query {
                 let async_req = async_graphql::Request::from(request).only_introspection();
                 let async_resp = app_ctx.execute(async_req).await;
