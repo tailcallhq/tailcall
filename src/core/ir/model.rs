@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 use std::num::NonZeroU64;
 
 use async_graphql::Value;
@@ -21,12 +21,14 @@ impl IrId {
         Self(id)
     }
 
-    pub fn to_string(&self) -> String {
-        self.0.to_string()
-    }
-
     pub fn as_u64(&self) -> u64 {
         self.0 as u64
+    }
+}
+
+impl Display for IrId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 

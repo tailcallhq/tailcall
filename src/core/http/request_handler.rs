@@ -117,6 +117,7 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
     app_ctx: &Arc<AppContext>,
     req_ctx: &Arc<RequestContext>,
@@ -128,11 +129,12 @@ async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
         let operation_id = request.operation_id(&req.headers);
         let request: async_graphql::Request = serde_json::from_slice(&bytes)?;
 
+        use std::sync::Arc;
+
         use async_stream::stream;
         use bytes::Bytes;
         use futures::channel::mpsc;
         use futures::StreamExt;
-        use std::sync::Arc;
 
         // Create a channel to stream the response
         let (tx, mut rx) = mpsc::channel(0);

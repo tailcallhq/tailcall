@@ -2,15 +2,19 @@ use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
 
 use async_graphql_value::{ConstValue, Value};
+use bytes::Bytes;
+use futures::channel::mpsc;
+use futures::SinkExt;
 use futures_util::future::join_all;
 use tailcall_valid::Validator;
+use tokio::sync::RwLock;
 
 use super::context::Context;
 use super::exec::{Executor, IRExecutor};
 use super::graphql_error::GraphQLError;
 use super::{
-    transform, AnyResponse, BuildError, CompletedTasks, Error, IncrementalResponse, IncrementalItem,
-    OperationPlan, Pending, Request, Response, Result,
+    transform, AnyResponse, BuildError, CompletedTasks, Error, IncrementalItem,
+    IncrementalResponse, OperationPlan, Pending, Request, Response, Result,
 };
 use crate::core::app_context::AppContext;
 use crate::core::http::RequestContext;
@@ -20,11 +24,6 @@ use crate::core::jit::synth::Synth;
 use crate::core::jit::transform::InputResolver;
 use crate::core::json::{JsonLike, JsonLikeList};
 use crate::core::Transform;
-
-use bytes::Bytes;
-use futures::channel::mpsc;
-use futures::SinkExt;
-use tokio::sync::RwLock;
 
 /// A specialized executor that executes with async_graphql::Value
 pub struct ConstValueExecutor {
@@ -45,7 +44,7 @@ impl ConstValueExecutor {
     }
 
     pub fn with_tx(self, tx: Arc<RwLock<Option<mpsc::Sender<anyhow::Result<Bytes>>>>>) -> Self {
-        Self { plan: self.plan, tx: tx }
+        Self { plan: self.plan, tx }
     }
 
     pub async fn execute<'a>(
@@ -144,7 +143,7 @@ impl ConstValueExecutor {
             if let Some(sender) = &*read_tx {
                 // Clone the sender so it can be used mutably outside the lock
                 let mut sender = sender.clone();
-                let _ = sender.send(Ok(bytes)).await.unwrap();
+                sender.send(Ok(bytes)).await.unwrap();
             }
         }
 
@@ -158,7 +157,6 @@ impl ConstValueExecutor {
             .into_iter()
             .map(|field| {
                 let tx = tx.clone();
-                let is_introspection_query = is_introspection_query.clone();
                 // let request = request.clone();
                 // let app_ctx = app_ctx.clone();
                 let vars = vars.clone();
@@ -178,21 +176,20 @@ impl ConstValueExecutor {
                     let synth = Synth::new(&deferred_plan, store, vars);
 
                     let resp: Response<serde_json_borrow::Value> = exe.execute(&synth).await;
-                    let response: IncrementalResponse<serde_json_borrow::Value> = if is_introspection_query
-                    {
-                        // let async_req = async_graphql::Request::from(request).only_introspection();
-                        // let async_resp = app_ctx.execute(async_req).await;
-                        // resp.merge_with(&async_resp).into()
-                        resp.into()
-                    } else {
-                        if let Some(IR::Deferred { id, .. }) = &field.ir {
+                    let response: IncrementalResponse<serde_json_borrow::Value> =
+                        if is_introspection_query {
+                            // let async_req =
+                            // async_graphql::Request::from(request).only_introspection();
+                            // let async_resp = app_ctx.execute(async_req).await;
+                            // resp.merge_with(&async_resp).into()
+                            resp.into()
+                        } else if let Some(IR::Deferred { id, .. }) = &field.ir {
                             let item = IncrementalItem::new(id.as_u64(), resp.data);
                             let completed = CompletedTasks::new(id.to_string());
                             IncrementalResponse::new(vec![item], vec![completed], resp.errors)
                         } else {
                             resp.into()
-                        }
-                    };
+                        };
                     total_deferred_fields_.fetch_sub(1, std::sync::atomic::Ordering::Relaxed);
                     let response = response.has_next(
                         total_deferred_fields_.load(std::sync::atomic::Ordering::Relaxed) > 0,
@@ -202,7 +199,7 @@ impl ConstValueExecutor {
                     let read_tx = tx.read().await;
                     if let Some(sender) = &*read_tx {
                         let mut sender = sender.clone();
-                        let _ = sender.send(Ok(bytes)).await.unwrap();
+                        sender.send(Ok(bytes)).await.unwrap();
                     }
                 }
             })

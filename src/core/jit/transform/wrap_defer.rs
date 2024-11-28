@@ -1,13 +1,12 @@
-use std::{convert::Infallible, marker::PhantomData};
+use std::convert::Infallible;
+use std::marker::PhantomData;
 
 use tailcall_valid::Valid;
 
-use crate::core::{
-    counter::{Count, Counter},
-    ir::model::{IrId, IR},
-    jit::{Field, OperationPlan},
-    Transform,
-};
+use crate::core::counter::{Count, Counter};
+use crate::core::ir::model::{IrId, IR};
+use crate::core::jit::{Field, OperationPlan};
+use crate::core::Transform;
 
 pub struct WrapDefer<A> {
     _marker: PhantomData<A>,
@@ -38,11 +37,7 @@ impl<A> WrapDefer<A> {
         path.push(field.output_name.clone());
         for selection in field.selection.iter_mut() {
             if let Some(ir) = std::mem::take(&mut selection.ir) {
-                let ir = if selection
-                    .directives
-                    .iter()
-                    .find(|d| d.name == "defer")
-                    .is_some()
+                let ir = if selection.directives.iter().any(|d| d.name == "defer")
                     && !check_dependent_irs(&ir)
                 {
                     IR::Deferred {
@@ -69,7 +64,7 @@ impl<A> Transform for WrapDefer<A> {
     fn transform(&self, mut plan: Self::Value) -> Valid<Self::Value, Self::Error> {
         plan.selection.iter_mut().for_each(|f| {
             if let Some(ir) = std::mem::take(&mut f.ir) {
-                let ir = if f.directives.iter().find(|d| d.name == "defer").is_some()
+                let ir = if f.directives.iter().any(|d| d.name == "defer")
                     && !check_dependent_irs(&ir)
                 {
                     IR::Deferred {

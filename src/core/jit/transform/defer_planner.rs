@@ -1,12 +1,12 @@
-use std::{convert::Infallible, fmt::Debug, marker::PhantomData};
+use std::convert::Infallible;
+use std::fmt::Debug;
+use std::marker::PhantomData;
 
 use tailcall_valid::Valid;
 
-use crate::core::{
-    ir::model::IR,
-    jit::{Field, OperationPlan},
-    Transform,
-};
+use crate::core::ir::model::IR;
+use crate::core::jit::{Field, OperationPlan};
+use crate::core::Transform;
 
 pub struct DeferPlanner<A>(PhantomData<A>);
 
@@ -20,11 +20,8 @@ impl<A> DeferPlanner<A> {
 fn move_deferred_fields<A: Clone>(field: &mut Field<A>) -> Vec<Field<A>> {
     let mut deferred_fields = Vec::new();
     for selection in field.selection.iter_mut() {
-        match selection.ir {
-            Some(IR::Deferred { .. }) => {
-                deferred_fields.push(selection.clone());
-            }
-            _ => {}
+        if let Some(IR::Deferred { .. }) = selection.ir {
+            deferred_fields.push(selection.clone());
         }
         deferred_fields.extend(move_deferred_fields(selection));
     }
@@ -44,11 +41,8 @@ impl<A: Clone + Debug> Transform for DeferPlanner<A> {
     fn transform(&self, mut plan: Self::Value) -> Valid<Self::Value, Self::Error> {
         let mut deferred_fields = Vec::new();
         for field in plan.selection.iter_mut() {
-            match field.ir {
-                Some(IR::Deferred { .. }) => {
-                    deferred_fields.push(field.clone());
-                }
-                _ => {}
+            if let Some(IR::Deferred { .. }) = field.ir {
+                deferred_fields.push(field.clone());
             }
 
             deferred_fields.extend(move_deferred_fields(field));

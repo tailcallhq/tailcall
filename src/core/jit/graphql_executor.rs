@@ -5,19 +5,18 @@ use std::sync::Arc;
 
 use async_graphql::{BatchRequest, Value};
 use async_graphql_value::{ConstValue, Extensions};
+use bytes::Bytes;
+use futures::channel::mpsc;
 use futures_util::stream::FuturesOrdered;
 use futures_util::StreamExt;
 use tailcall_hasher::TailcallHasher;
+use tokio::sync::RwLock;
 
 use super::{AnyResponse, BatchResponse, Response};
 use crate::core::app_context::AppContext;
 use crate::core::async_graphql_hyper::OperationId;
 use crate::core::http::RequestContext;
 use crate::core::jit::{self, ConstValueExecutor, OPHash, Pos, Positioned};
-
-use bytes::Bytes;
-use futures::channel::mpsc;
-use tokio::sync::RwLock;
 
 pub struct JITExecutor {
     app_ctx: Arc<AppContext>,

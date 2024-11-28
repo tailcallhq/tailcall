@@ -35,7 +35,7 @@ fn check_cache(ir: &IR) -> Option<NonZeroU64> {
             }
             ttl
         }
-        IR::Deferred{ir, ..} => check_cache(ir),
+        IR::Deferred { ir, .. } => check_cache(ir),
         IR::Dynamic(_) | IR::ContextPath(_) | IR::Map(_) | IR::Service(_) => None,
     }
 }

@@ -64,7 +64,11 @@ pub fn compile_http(
                 .map(|on_request| HttpFilter { on_request });
 
             // check if the resolver is independent or not.
-            let is_dependent = http.query.iter().any(|q| q.value.contains("{{.value") || q.value.contains("{{value")) || http
+            let is_dependent = http
+                .query
+                .iter()
+                .any(|q| q.value.contains("{{.value") || q.value.contains("{{value"))
+                || http
                     .body
                     .as_ref()
                     .map_or(false, |b| b.contains("{{.value") || b.contains("{{value"));

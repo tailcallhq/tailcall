@@ -254,7 +254,7 @@ impl<V: Serialize> IncrementalResponse<V> {
 
 impl<V> From<Response<V>> for IncrementalResponse<V> {
     fn from(value: Response<V>) -> Self {
-        let errors = value.errors.into_iter().map(|e| e.into()).collect();
+        let errors = value.errors;
         let data = IncrementalItem::new(0, value.data);
         Self {
             incremental: vec![data],
@@ -265,7 +265,7 @@ impl<V> From<Response<V>> for IncrementalResponse<V> {
     }
 }
 
-#[derive(Clone, Setters, Serialize, Debug)]
+#[derive(Clone, Serialize, Debug)]
 pub struct CompletedTasks {
     id: String,
 }
