@@ -98,15 +98,6 @@ impl<'a, A: Path + 'a> Eval<'a> for PathEval<&'a A> {
     }
 }
 
-impl<'a, A: Path + 'a> EvalStrict<'a> for PathEval<&'a A> {
-    type In = &'a A;
-    type Out = Vec<Exit<'a, A>>;
-
-    fn eval_strict(&'a self, mustache: &'a Mustache, in_value: &'a Self::In) -> Self::Out {
-        self.eval(mustache, in_value)
-    }
-}
-
 pub struct PathGraphqlEval<A>(std::marker::PhantomData<A>);
 
 impl<A> PathGraphqlEval<A> {
@@ -131,32 +122,26 @@ impl<A: PathGraphql> Eval<'_> for PathGraphqlEval<A> {
     }
 }
 
-impl<A: PathGraphql> EvalStrict<'_> for PathGraphqlEval<A> {
-    type In = A;
-    type Out = String;
-
-    fn eval_strict(&'_ self, mustache: &'_ Mustache, in_value: &'_ Self::In) -> Self::Out {
-        mustache
-            .segments()
-            .iter()
-            .map(|segment| match segment {
-                Segment::Literal(text) => text.to_string(),
-                Segment::Expression(parts) => in_value.path_graphql(parts).unwrap_or(
-                    Mustache::from(vec![Segment::Expression(parts.to_vec())]).to_string(),
-                ),
-            })
-            .collect()
-    }
-}
-
 impl Mustache {
     // TODO: drop these methods and directly use the eval implementations
     pub fn render(&self, value: &impl PathString) -> String {
         PathStringEval::new().eval(self, value)
     }
 
-    pub fn render_strict(&self, value: &impl PathString) -> String {
-        PathStringEval::new().eval_strict(self, value)
+    pub fn partial_render(&self, value: &impl PathString) -> String {
+        self
+            .segments()
+            .iter()
+            .map(|segment| match segment {
+                Segment::Literal(text) => text.to_string(),
+                Segment::Expression(parts) => value
+                    .path_string(parts)
+                    .map(|v| v.to_string())
+                    .unwrap_or(
+                        Mustache::from(vec![Segment::Expression(parts.to_vec())]).to_string(),
+                    ),
+            })
+            .collect()
     }
 
     pub fn render_graphql(&self, value: &impl PathGraphql) -> String {

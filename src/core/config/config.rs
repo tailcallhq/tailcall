@@ -453,7 +453,7 @@ impl Config {
         reader_ctx: &ConfigReaderContext,
     ) -> Result<Self> {
         let mustache = Mustache::parse(schema);
-        let schema = mustache.render_strict(reader_ctx);
+        let schema = mustache.partial_render(reader_ctx);
         Self::from_source(source, &schema)
     }
 
