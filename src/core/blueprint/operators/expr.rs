@@ -36,7 +36,8 @@ pub fn compile_expr(inputs: CompileExpr) -> Valid<IR, String> {
     let validate = inputs.validate;
 
     Valid::from(
-        DynamicValue::try_from(&value.clone()).map_err(|e:anyhow::Error| ValidationError::new(e.to_string())),
+        DynamicValue::try_from(&value.clone())
+            .map_err(|e: anyhow::Error| ValidationError::new(e.to_string())),
     )
     .and_then(|value| {
         if !value.is_const() {

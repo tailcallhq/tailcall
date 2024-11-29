@@ -25,14 +25,14 @@ type User {
     @http(
       url: "https://jsonplaceholder.typicode.com/posts"
       method: POST
-      body: {userId:"{{.value.id}}",title:"foo",body:"bar"}
+      body: {userId: "{{.value.id}}", title: "foo", body: "bar"}
       batchKey: ["userId"]
     )
   comments: [Comment]
     @http(
       url: "https://jsonplaceholder.typicode.com/comments"
       method: POST
-      body: {title:"foo",body:"bar", meta: { information: { userId: "{{.value.id}}"}}}
+      body: {title: "foo", body: "bar", meta: {information: {userId: "{{.value.id}}"}}}
       batchKey: ["userId"]
     )
 }
@@ -40,7 +40,6 @@ type User {
 type Comment {
   id: Int
 }
-
 ```
 
 ```yml @mock
@@ -87,9 +86,9 @@ type Comment {
     url: https://jsonplaceholder.typicode.com/comments
     body:
       [
-        { "title": "foo", "body": "bar", "meta": { "information": { "userId": 1 } } },
-        { "title": "foo", "body": "bar", "meta": { "information": { "userId": 2 } } },
-        { "title": "foo", "body": "bar", "meta": { "information": { "userId": 3 } } }
+        {"title": "foo", "body": "bar", "meta": {"information": {"userId": 1}}},
+        {"title": "foo", "body": "bar", "meta": {"information": {"userId": 2}}},
+        {"title": "foo", "body": "bar", "meta": {"information": {"userId": 3}}},
       ]
   response:
     status: 200

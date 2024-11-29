@@ -53,7 +53,7 @@ impl HttpDataLoader {
 fn get_key<'a, T: JsonLike<'a> + Display>(value: &'a T, path: &[String]) -> anyhow::Result<String> {
     value
         .get_path(path)
-        .and_then(|k| Some(k.to_string()))
+        .map(|k| k.to_string())
         .ok_or_else(|| anyhow::anyhow!("Unable to find key {} in body", path.join(".")))
 }
 

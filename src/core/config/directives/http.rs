@@ -40,7 +40,8 @@ pub struct Http {
     #[serde(default, skip_serializing_if = "is_default")]
     /// The body of the API call. It's used for methods like POST or PUT that
     /// send data to the server. You can pass it as a static object or use a
-    /// Mustache template to substitute variables from the GraphQL variables.
+    /// Mustache template with object to substitute variables from the GraphQL
+    /// variables.
     pub body: Option<Value>,
 
     #[serde(default, skip_serializing_if = "is_default")]

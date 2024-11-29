@@ -8,15 +8,16 @@ pub fn apply_select(input: (IR, &Option<Value>)) -> Valid<IR, String> {
     let (mut ir, select) = input;
 
     if let Some(select_value) = select {
-        let dynamic_value: DynamicValue<async_graphql::Value> = match DynamicValue::try_from(select_value) {
-            Ok(dynamic_value) => dynamic_value.prepend("args"),
-            Err(e) => {
-                return Valid::fail_with(
-                    format!("syntax error when parsing `{:?}`", select),
-                    e.to_string(),
-                )
-            }
-        };
+        let dynamic_value: DynamicValue<async_graphql::Value> =
+            match DynamicValue::try_from(select_value) {
+                Ok(dynamic_value) => dynamic_value.prepend("args"),
+                Err(e) => {
+                    return Valid::fail_with(
+                        format!("syntax error when parsing `{:?}`", select),
+                        e.to_string(),
+                    )
+                }
+            };
 
         ir = ir.pipe(IR::Dynamic(dynamic_value));
         Valid::succeed(ir)

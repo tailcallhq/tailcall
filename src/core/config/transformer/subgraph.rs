@@ -475,7 +475,9 @@ mod tests {
         fn test_extract_http() {
             let http = Http {
                 url: "http://tailcall.run/users/{{.value.id}}".to_string(),
-                body: Some(serde_json::Value::String(r#"{ "obj": "{{.value.obj}}"} "#.to_string())),
+                body: Some(serde_json::Value::String(
+                    r#"{ "obj": "{{.value.obj}}"} "#.to_string(),
+                )),
                 headers: vec![KeyValue {
                     key: "{{.value.header.key}}".to_string(),
                     value: "{{.value.header.value}}".to_string(),

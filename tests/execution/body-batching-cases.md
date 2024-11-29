@@ -16,12 +16,7 @@ type Foo {
   a: Int
   b: Int
   bar: Bar
-    @http(
-      url: "http://jsonplaceholder.typicode.com/bar"
-      method: POST
-      body: {id: "{{.value.a}}"}
-      batchKey: ["a"]
-    )
+    @http(url: "http://jsonplaceholder.typicode.com/bar", method: POST, body: {id: "{{.value.a}}"}, batchKey: ["a"])
 }
 
 type Bar {
@@ -37,7 +32,7 @@ type User {
     @http(
       url: "http://jsonplaceholder.typicode.com/posts"
       method: POST
-      body: {userId:"{{.value.id}}",title:"title",body:"body"}
+      body: {userId: "{{.value.id}}", title: "title", body: "body"}
       batchKey: ["userId"]
     )
 }
@@ -51,7 +46,7 @@ type Post {
     @http(
       url: "http://jsonplaceholder.typicode.com/users"
       method: POST
-      body: {key:"id",value:"{{.value.userId}}"}
+      body: {key: "id", value: "{{.value.userId}}"}
       batchKey: ["id"]
     )
 }

@@ -6,7 +6,8 @@ use reqwest::Request;
 use serde::{Deserialize, Serialize};
 
 use super::error::{Error, Result};
-use crate::core::{ir::RequestWrapper, is_default, Response};
+use crate::core::ir::RequestWrapper;
+use crate::core::{is_default, Response};
 
 #[derive(Serialize, Deserialize, Default, Debug, PartialEq, Eq)]
 pub enum Scheme {

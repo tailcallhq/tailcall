@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use super::request_wrapper::RequestWrapper;
 use async_graphql::from_value;
 use reqwest::Request;
 use tailcall_valid::Validator;
 
 use super::model::DataLoaderId;
+use super::request_wrapper::RequestWrapper;
 use super::{EvalContext, ResolverContextLike};
 use crate::core::data_loader::{DataLoader, Loader};
 use crate::core::grpc::protobuf::ProtobufOperation;
@@ -107,8 +107,7 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
                             .request_mut()
                             .url_mut()
                             .set_path(w_response.headers()["location"].as_str());
-                        self.execute_with_worker(request, worker, http_filter)
-                            .await
+                        self.execute_with_worker(request, worker, http_filter).await
                     } else {
                         Ok(w_response.try_into()?)
                     }

@@ -67,22 +67,21 @@ pub fn compile_http(
                 if let Some(keys) = keys {
                     // only one dynamic value allowed in body for batching to work.
                     if keys.len() != 1 {
-                        return Valid::fail(
+                        Valid::fail(
                             "POST request batching requires exactly one dynamic value in the request body."
                                 .to_string(),
-                        ).trace("body");
+                        ).trace("body")
                     }else{
-                        Valid::succeed((request_template, keys.get(0).cloned()))
+                        Valid::succeed((request_template, keys.first().cloned()))
                     }
                 }else{
-                    return Valid::fail(
+                    Valid::fail(
                         "POST request batching requires exactly one dynamic value in the request body."
                             .to_string(),
-                    ).trace("body");
+                    ).trace("body")
                 }
             } else {
                 Valid::succeed((request_template, None))
-                
             }
         })
         .map(|(req_template, body_key)| {
@@ -116,7 +115,6 @@ pub fn compile_http(
                 let body_path = body_key.map(|v| {
                     v.into_iter().map(|v| v.to_string()).collect::<Vec<_>>()
                 }).unwrap_or_default();
-                    
                 IR::IO(IO::Http {
                     req_template,
                     group_by: Some(GroupBy::new(http.batch_key.clone(), key).with_body_path(body_path)),
@@ -162,7 +160,7 @@ pub fn update_http<'a>(
 
 /// extracts the keys from the json representation, if the value is of mustache
 /// template type.
-fn extract_expression_paths<'a>(json: &'a serde_json::Value) -> Vec<Vec<Cow<'a, str>>> {
+fn extract_expression_paths(json: &serde_json::Value) -> Vec<Vec<Cow<'_, str>>> {
     fn extract_paths<'a>(
         json: &'a serde_json::Value,
         path: &mut Vec<Cow<'a, str>>,
@@ -217,7 +215,14 @@ mod test {
         let json = serde_json::from_str(json).unwrap();
         let keys = extract_expression_paths(&json);
         assert_eq!(keys.len(), 3);
-        assert_eq!(keys, vec![vec!["userId"], vec!["nested", "other"], vec![ "meta", "0", "value"]]);
+        assert_eq!(
+            keys,
+            vec![
+                vec!["userId"],
+                vec!["nested", "other"],
+                vec!["meta", "0", "value"]
+            ]
+        );
     }
 
     #[test]

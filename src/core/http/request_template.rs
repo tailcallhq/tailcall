@@ -234,7 +234,7 @@ impl TryFrom<Endpoint> for RequestTemplate {
         let body = endpoint
             .body
             .as_ref()
-            .map(|body| DynamicValue::try_from(body))
+            .map(DynamicValue::try_from)
             .transpose()?;
         let encoding = endpoint.encoding.clone();
 
@@ -637,8 +637,8 @@ mod tests {
     // fn test_body_template() {
     //     let tmpl = RequestTemplate::new("http://localhost:3000")
     //         .unwrap()
-    //         .body_path(Some(DynamicValue::Mustache(Mustache::parse("{{foo.bar}}"))));
-    //     let ctx = Context::default().value(json!({
+    //         .body_path(Some(DynamicValue::Mustache(Mustache::parse("{{foo.bar}}"
+    // ))));     let ctx = Context::default().value(json!({
     //       "foo": {
     //         "bar": "baz"
     //       }
@@ -652,8 +652,8 @@ mod tests {
     //     let tmpl = RequestTemplate::new("http://localhost:3000")
     //         .unwrap()
     //         .encoding(crate::core::config::Encoding::ApplicationJson)
-    //         .body_path(Some(DynamicValue::Mustache(Mustache::parse("{{foo.bar}}"))));
-    //     let ctx = Context::default().value(json!({
+    //         .body_path(Some(DynamicValue::Mustache(Mustache::parse("{{foo.bar}}"
+    // ))));     let ctx = Context::default().value(json!({
     //       "foo": {
     //         "bar": "baz"
     //       }
@@ -813,9 +813,9 @@ mod tests {
         // fn test_with_string() {
         //     let tmpl = RequestTemplate::form_encoded_url("http://localhost:3000")
         //         .unwrap()
-        //         .body_path(Some(DynamicValue::Mustache(Mustache::parse("{{foo.bar}}"))));
-        //     let ctx = Context::default().value(json!({"foo": {"bar": "baz"}}));
-        //     let request_body = tmpl.to_body(&ctx);
+        //         .body_path(Some(DynamicValue::Mustache(Mustache::parse("{{foo.bar}}"
+        // ))));     let ctx = Context::default().value(json!({"foo": {"bar":
+        // "baz"}}));     let request_body = tmpl.to_body(&ctx);
         //     let body = request_body.unwrap();
         //     assert_eq!(body, "baz");
         // }
