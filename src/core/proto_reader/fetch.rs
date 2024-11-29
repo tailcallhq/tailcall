@@ -169,8 +169,7 @@ impl GrpcReflection {
             operation_type: Default::default(),
         };
 
-        let vars = Default::default();
-        let ctx = ConfigReaderContext::new(&self.target_runtime, &vars);
+        let ctx = ConfigReaderContext::new(&self.target_runtime);
 
         let req = req_template.render(&ctx)?.to_request()?;
         let resp = self.target_runtime.http2_only.execute(req).await?;

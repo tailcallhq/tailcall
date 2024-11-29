@@ -1,21 +1,24 @@
 use std::borrow::Cow;
 use std::collections::BTreeMap;
-
+use derive_setters::Setters;
 use http::header::HeaderMap;
 
 use crate::core::has_headers::HasHeaders;
 use crate::core::path::PathString;
 use crate::core::runtime::TargetRuntime;
 
+
+#[derive(Setters)]
 pub struct ConfigReaderContext<'a> {
     pub runtime: &'a TargetRuntime,
-    pub vars: &'a BTreeMap<String, String>,
+    #[setters(strip_option)]
+    pub vars: Option<&'a BTreeMap<String, String>>,
     pub headers: HeaderMap,
 }
 
 impl<'a> ConfigReaderContext<'a> {
-    pub fn new(runtime: &'a TargetRuntime, vars: &'a BTreeMap<String, String>) -> Self {
-        Self { runtime, vars, headers: Default::default() }
+    pub fn new(runtime: &'a TargetRuntime) -> Self {
+        Self { runtime, vars: None, headers: Default::default() }
     }
 }
 
@@ -27,7 +30,7 @@ impl PathString for ConfigReaderContext<'_> {
 
         path.split_first()
             .and_then(|(head, tail)| match head.as_ref() {
-                "vars" => self.vars.get(tail[0].as_ref()).map(|v| v.into()),
+                "vars" => self.vars?.get(tail[0].as_ref()).map(|v| v.into()),
                 "env" => self.runtime.env.get(tail[0].as_ref()),
                 _ => None,
             })
@@ -55,12 +58,12 @@ mod tests {
             "ENV_VAL".to_owned(),
         )]));
 
-        let vars = [("VAR_1".to_owned(), "VAR_VAL".to_owned())]
+        let vars = &[("VAR_1".to_owned(), "VAR_VAL".to_owned())]
             .iter()
             .cloned()
             .collect();
 
-        let reader_context = ConfigReaderContext::new(&runtime, &vars);
+        let reader_context = ConfigReaderContext::new(&runtime).vars(vars);
 
         assert_eq!(
             reader_context.path_string(&["env", "ENV_1"]),

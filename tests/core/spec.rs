@@ -192,11 +192,9 @@ async fn test_spec(spec: ExecutionSpec) {
 
     let mut runtime = runtime::create_runtime(mock_http_client.clone(), spec.env.clone(), None);
     runtime.file = Arc::new(File::new(spec.clone()));
-    let reader_ctx = ConfigReaderContext {
-        runtime: &runtime.clone(),
-        vars: &Default::default(),
-        headers: Default::default(),
-    };
+
+    let runtime_clone = runtime.clone();
+    let reader_ctx = ConfigReaderContext::new(&runtime_clone);
 
     let reader = ConfigReader::init(runtime);
 

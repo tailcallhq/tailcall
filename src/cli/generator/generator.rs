@@ -78,8 +78,7 @@ impl Generator {
 
         // While reading resolve the internal paths and mustache headers of generalized
         // config.
-        let vars = &Default::default();
-        let reader_context = ConfigReaderContext::new(&self.runtime, vars);
+        let reader_context = ConfigReaderContext::new(&self.runtime);
         config_content = Mustache::parse(&config_content).render(&reader_context);
 
         let config: Config = match source {
