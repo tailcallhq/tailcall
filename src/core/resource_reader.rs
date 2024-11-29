@@ -7,7 +7,6 @@ use futures_util::TryFutureExt;
 use tailcall_hasher::TailcallHasher;
 use url::Url;
 
-use crate::core::config::ConfigReaderContext;
 use crate::core::runtime::TargetRuntime;
 use crate::core::Mustache;
 
