@@ -8,9 +8,9 @@ use tailcall_hasher::TailcallHasher;
 use url::Url;
 
 use crate::core::mustache::PathStringEval;
+use crate::core::path::PathString;
 use crate::core::runtime::TargetRuntime;
 use crate::core::Mustache;
-use crate::core::path::PathString;
 
 /// Response of a file read operation
 #[derive(Debug)]
