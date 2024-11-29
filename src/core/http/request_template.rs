@@ -16,6 +16,7 @@ use crate::core::ir::model::{CacheKey, IoId};
 use crate::core::ir::RequestWrapper;
 use crate::core::mustache::{Eval, Mustache, Segment};
 use crate::core::path::{PathString, PathValue, ValueString};
+use crate::core::serde_value_ext::ValueExt;
 
 /// RequestTemplate is an extension of a Mustache template.
 /// Various parts of the template can be written as a mustache template.
@@ -130,7 +131,7 @@ impl RequestTemplate {
         ctx: &C,
     ) -> anyhow::Result<RequestWrapper<serde_json::Value>> {
         let body_value = if let Some(body_path) = &self.body_path {
-            let rendered_body = body_path.render(ctx);
+            let rendered_body = body_path.render_value(ctx);
             let body = rendered_body.to_string();
 
             match &self.encoding {
@@ -279,7 +280,7 @@ impl<Ctx: PathString + HasHeaders + PathValue> CacheKey<Ctx> for RequestTemplate
         }
 
         if let Some(body) = self.body_path.as_ref() {
-            body.render(ctx).hash(state)
+            body.render_value(ctx).hash(state)
         }
 
         let url = self.create_url(ctx).unwrap();

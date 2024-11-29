@@ -2,8 +2,7 @@ use async_graphql_value::{ConstValue, Name};
 use indexmap::IndexMap;
 use serde_json::Value;
 
-use crate::core::mustache::Mustache;
-use crate::core::path::PathString;
+use crate::core::{json::JsonLike, mustache::Mustache};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum DynamicValue<A> {
@@ -16,33 +15,6 @@ pub enum DynamicValue<A> {
 impl<A: Default> Default for DynamicValue<A> {
     fn default() -> Self {
         DynamicValue::Value(A::default())
-    }
-}
-
-impl DynamicValue<serde_json::Value> {
-    pub fn render(&self, ctx: &impl PathString) -> serde_json::Value {
-        match self {
-            DynamicValue::Value(v) => v.clone(),
-            DynamicValue::Mustache(m) => {
-                let rendered = m.render(ctx);
-                serde_json::from_str(rendered.as_ref())
-                    // parsing can fail when Mustache::render returns bare string and since
-                    // that string is not wrapped with quotes serde_json will fail to parse it
-                    // but, we can just use that string as is
-                    .unwrap_or_else(|_| serde_json::Value::String(rendered))
-            }
-            DynamicValue::Object(obj) => {
-                let mut out = serde_json::Map::with_capacity(obj.len());
-                for (k, v) in obj {
-                    out.insert(k.to_string(), v.render(ctx));
-                }
-                serde_json::Value::Object(out)
-            }
-            DynamicValue::Array(arr) => {
-                let out: Vec<serde_json::Value> = arr.iter().map(|v| v.render(ctx)).collect();
-                serde_json::Value::Array(out)
-            }
-        }
     }
 }
 
@@ -118,7 +90,7 @@ impl<A> DynamicValue<A> {
     }
 }
 
-impl TryFrom<&Value> for DynamicValue<Value> {
+impl<A: for<'a> JsonLike<'a>> TryFrom<&Value> for DynamicValue<A> {
     type Error = anyhow::Error;
 
     fn try_from(value: &Value) -> Result<Self, Self::Error> {
@@ -132,50 +104,19 @@ impl TryFrom<&Value> for DynamicValue<Value> {
                 Ok(DynamicValue::Object(out))
             }
             Value::Array(arr) => {
-                let out: Result<Vec<DynamicValue<Value>>, Self::Error> =
+                let out: Result<Vec<DynamicValue<A>>, Self::Error> =
                     arr.iter().map(DynamicValue::try_from).collect();
                 Ok(DynamicValue::Array(out?))
             }
             Value::String(s) => {
                 let m = Mustache::parse(s.as_str());
                 if m.is_const() {
-                    Ok(DynamicValue::Value(serde_json::from_value(value.clone())?))
+                    Ok(DynamicValue::Value(A::clone_from(value)))
                 } else {
                     Ok(DynamicValue::Mustache(m))
                 }
             }
-            _ => Ok(DynamicValue::Value(serde_json::from_value(value.clone())?)),
-        }
-    }
-}
-
-impl TryFrom<&Value> for DynamicValue<ConstValue> {
-    type Error = anyhow::Error;
-
-    fn try_from(value: &Value) -> Result<Self, Self::Error> {
-        match value {
-            Value::Object(obj) => {
-                let mut out = IndexMap::new();
-                for (k, v) in obj {
-                    let dynamic_value = DynamicValue::try_from(v)?;
-                    out.insert(Name::new(k), dynamic_value);
-                }
-                Ok(DynamicValue::Object(out))
-            }
-            Value::Array(arr) => {
-                let out: Result<Vec<DynamicValue<ConstValue>>, Self::Error> =
-                    arr.iter().map(DynamicValue::try_from).collect();
-                Ok(DynamicValue::Array(out?))
-            }
-            Value::String(s) => {
-                let m = Mustache::parse(s.as_str());
-                if m.is_const() {
-                    Ok(DynamicValue::Value(ConstValue::from_json(value.clone())?))
-                } else {
-                    Ok(DynamicValue::Mustache(m))
-                }
-            }
-            _ => Ok(DynamicValue::Value(ConstValue::from_json(value.clone())?)),
+            _ => Ok(DynamicValue::Value(A::clone_from(value))),
         }
     }
 }
