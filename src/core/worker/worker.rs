@@ -6,7 +6,7 @@ use reqwest::Request;
 use serde::{Deserialize, Serialize};
 
 use super::error::{Error, Result};
-use crate::core::{is_default, Response};
+use crate::core::{ir::RequestWrapper, is_default, Response};
 
 #[derive(Serialize, Deserialize, Default, Debug, PartialEq, Eq)]
 pub enum Scheme {
@@ -182,6 +182,13 @@ impl TryFrom<&reqwest::Request> for WorkerRequest {
 impl From<WorkerRequest> for reqwest::Request {
     fn from(val: WorkerRequest) -> Self {
         val.0
+    }
+}
+
+impl<Body: Default> From<WorkerRequest> for RequestWrapper<Body> {
+    fn from(val: WorkerRequest) -> Self {
+        // TODO: if we change the body shape in the future, we need to update this.
+        RequestWrapper::new(val.0, Default::default())
     }
 }
 

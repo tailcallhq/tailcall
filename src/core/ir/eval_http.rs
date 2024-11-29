@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use super::request_wrapper::RequestWrapper;
 use async_graphql::from_value;
 use reqwest::Request;
 use tailcall_valid::Validator;
@@ -48,19 +49,19 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         Self { evaluation_ctx, data_loader, request_template }
     }
 
-    pub fn init_request(&self) -> Result<(Request, serde_json::Value), Error> {
-        Ok(self.request_template.to_request(self.evaluation_ctx)?)
+    pub fn init_request(&self) -> Result<RequestWrapper<serde_json::Value>, Error> {
+        let inner = self.request_template.to_request(self.evaluation_ctx)?;
+        Ok(inner)
     }
 
     pub async fn execute(
         &self,
-        req: Request,
-        body: serde_json::Value,
+        req: RequestWrapper<serde_json::Value>,
     ) -> Result<Response<async_graphql::Value>, Error> {
         let ctx = &self.evaluation_ctx;
         let dl = &self.data_loader;
         let response = if dl.is_some() {
-            execute_request_with_dl(ctx, req, body, self.data_loader).await?
+            execute_request_with_dl(ctx, req, self.data_loader).await?
         } else {
             execute_raw_request(ctx, req).await?
         };
@@ -82,12 +83,11 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
     #[async_recursion::async_recursion]
     pub async fn execute_with_worker(
         &self,
-        mut request: reqwest::Request,
+        mut request: RequestWrapper<serde_json::Value>,
         worker: &Arc<dyn WorkerIO<worker::Event, worker::Command>>,
         http_filter: &HttpFilter,
-        body: serde_json::Value,
     ) -> Result<Response<async_graphql::Value>, Error> {
-        let js_request = worker::WorkerRequest::try_from(&request)?;
+        let js_request = worker::WorkerRequest::try_from(request.request())?;
         let event = worker::Event::Request(js_request);
 
         let command = worker.call(&http_filter.on_request, event).await?;
@@ -95,7 +95,7 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         match command {
             Some(command) => match command {
                 worker::Command::Request(w_request) => {
-                    let response = self.execute(w_request.into(), body).await?;
+                    let response = self.execute(w_request.into()).await?;
                     Ok(response)
                 }
                 worker::Command::Response(w_response) => {
@@ -104,16 +104,17 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
                         && w_response.headers().contains_key("location")
                     {
                         request
+                            .request_mut()
                             .url_mut()
                             .set_path(w_response.headers()["location"].as_str());
-                        self.execute_with_worker(request, worker, http_filter, body)
+                        self.execute_with_worker(request, worker, http_filter)
                             .await
                     } else {
                         Ok(w_response.try_into()?)
                     }
                 }
             },
-            None => self.execute(request, body).await,
+            None => self.execute(request).await,
         }
     }
 }
@@ -124,8 +125,7 @@ pub async fn execute_request_with_dl<
     Dl: Loader<DataLoaderRequest, Value = Response<async_graphql::Value>, Error = Arc<anyhow::Error>>,
 >(
     ctx: &EvalContext<'ctx, Ctx>,
-    req: Request,
-    body: serde_json::Value,
+    req: RequestWrapper<serde_json::Value>,
     data_loader: Option<&DataLoader<DataLoaderRequest, Dl>>,
 ) -> Result<Response<async_graphql::Value>, Error> {
     let headers = ctx
@@ -135,6 +135,8 @@ pub async fn execute_request_with_dl<
         .clone()
         .map(|s| s.headers)
         .unwrap_or_default();
+
+    let (req, body) = req.into_parts();
     let endpoint_key = crate::core::http::DataLoaderRequest::new(req, headers).with_body(body);
 
     Ok(data_loader
@@ -183,13 +185,13 @@ fn set_cookie_headers<Ctx: ResolverContextLike>(
 
 pub async fn execute_raw_request<Ctx: ResolverContextLike>(
     ctx: &EvalContext<'_, Ctx>,
-    req: Request,
+    req: RequestWrapper<serde_json::Value>,
 ) -> Result<Response<async_graphql::Value>, Error> {
     let response = ctx
         .request_ctx
         .runtime
         .http
-        .execute(req)
+        .execute(req.into_request())
         .await
         .map_err(Error::from)?
         .to_json()?;

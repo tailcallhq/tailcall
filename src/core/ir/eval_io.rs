@@ -5,7 +5,7 @@ use super::eval_http::{
     execute_request_with_dl, parse_graphql_response, set_headers, EvalHttp,
 };
 use super::model::{CacheKey, IO};
-use super::{EvalContext, ResolverContextLike};
+use super::{EvalContext, RequestWrapper, ResolverContextLike};
 use crate::core::config::GraphQLOperationType;
 use crate::core::data_loader::DataLoader;
 use crate::core::graphql::GraphqlDataLoader;
@@ -48,29 +48,29 @@ where
         IO::Http { req_template, dl_id, http_filter, .. } => {
             let worker = &ctx.request_ctx.runtime.cmd_worker;
             let eval_http = EvalHttp::new(ctx, req_template, dl_id);
-            let (request, _body) = eval_http.init_request()?;
+            let request = eval_http.init_request()?;
             let response = match (&worker, http_filter) {
                 (Some(worker), Some(http_filter)) => {
                     eval_http
-                        .execute_with_worker(request, worker, http_filter, _body)
+                        .execute_with_worker(request, worker, http_filter)
                         .await?
                 }
-                _ => eval_http.execute(request, _body).await?,
+                _ => eval_http.execute(request).await?,
             };
 
             Ok(response.body)
         }
         IO::GraphQL { req_template, field_name, dl_id, .. } => {
             let req = req_template.to_request(ctx)?;
-
+            let request = RequestWrapper::new(req, serde_json::Value::Null);
             let res = if ctx.request_ctx.upstream.batch.is_some()
                 && matches!(req_template.operation_type, GraphQLOperationType::Query)
             {
                 let data_loader: Option<&DataLoader<DataLoaderRequest, GraphqlDataLoader>> =
                     dl_id.and_then(|dl| ctx.request_ctx.gql_data_loaders.get(dl.as_usize()));
-                execute_request_with_dl(ctx, req, serde_json::Value::Null, data_loader).await?
+                execute_request_with_dl(ctx, request, data_loader).await?
             } else {
-                execute_raw_request(ctx, req).await?
+                execute_raw_request(ctx, request).await?
             };
 
             set_headers(ctx, &res);
