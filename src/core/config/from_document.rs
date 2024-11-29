@@ -245,7 +245,7 @@ where
         .fuse(to_add_fields_from_directives(directives))
         .fuse(to_federation_directives(directives))
         .map(
-            |(resolver, cache, fields, protected, added_fields, unknown_directives)| {
+            |(resolvers, cache, fields, protected, added_fields, unknown_directives)| {
                 let doc = description.to_owned().map(|pos| pos.node);
                 let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
                 config::Type {
@@ -255,7 +255,7 @@ where
                     implements,
                     cache,
                     protected,
-                    resolver,
+                    resolvers,
                     directives: unknown_directives,
                 }
             },
@@ -339,7 +339,7 @@ where
         .fuse(to_federation_directives(directives))
         .map(
             |(
-                resolver,
+                resolvers,
                 cache,
                 omit,
                 modify,
@@ -357,7 +357,7 @@ where
                 protected,
                 discriminate,
                 default_value,
-                resolver,
+                resolvers,
                 directives,
             },
         )

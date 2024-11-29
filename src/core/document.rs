@@ -252,10 +252,20 @@ fn print_type_def(type_def: &TypeDefinition) -> String {
 
 fn print_enum_value(value: &async_graphql::parser::types::EnumValueDefinition) -> String {
     let directives_str = print_pos_directives(&value.directives);
-    if directives_str.is_empty() {
+    let variant_def = if directives_str.is_empty() {
         format!("  {}", value.value)
     } else {
         format!("  {} {}", value.value, directives_str)
+    };
+
+    if let Some(desc) = &value.description {
+        format!(
+            "  \"\"\"\n  {}\n  \"\"\"\n{}",
+            desc.node.as_str(),
+            variant_def
+        )
+    } else {
+        variant_def
     }
 }
 

@@ -276,7 +276,7 @@ pub mod tests {
             "foo".to_string(),
             Type::default().fields(vec![(
                 "bar",
-                Field::default().resolver(Resolver::Grpc(grpc)),
+                Field::default().resolvers(Resolver::Grpc(grpc).into()),
             )]),
         );
         Ok(reader
