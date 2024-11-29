@@ -14,7 +14,7 @@ type Post {
 }
 
 type Query {
-  post1: Post @http(url: "http://jsonplaceholder.typicode.com/posts/{{.env.ID}}")
-  post2: Post @http(url: "http://jsonplaceholder.typicode.com/posts/{{.env.POST_ID}}")
-  post3: Post @http(url: "http://jsonplaceholder.typicode.com/posts/{{.env.NESTED_POST_ID}}")
+  post1: Post @http(url: "http://jsonplaceholder.typicode.com/posts/1")
+  post2: Post @http(url: "http://jsonplaceholder.typicode.com/posts/2")
+  post3: Post @http(url: "http://jsonplaceholder.typicode.com/posts/3")
 }
