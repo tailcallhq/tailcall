@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use tailcall_valid::{Valid, ValidationError, Validator};
 
 use crate::core::blueprint::*;
@@ -61,7 +63,7 @@ pub fn compile_http(
                 let keys = http
                     .body
                     .as_ref()
-                    .map(|b| extract_expression_keys(b, None));
+                    .map(|b| extract_expression_paths(b));
                 if let Some(keys) = keys {
                     // only one dynamic value allowed in body for batching to work.
                     if keys.len() != 1 {
@@ -102,12 +104,22 @@ pub fn compile_http(
                             .then(|| q.key.clone())
                     })
                 } else {
-                    body_key
+                    None
                 };
 
+                // notes:
+                // batch_key -> is path for response grouping.
+                // but when batching body, we can't just rely on the key i.e is dynamic key id deeply nested in then key won't suffice.
+                // so we need some path that allows to to extract the body key from request body.
+
+                // we can safetly do unwrap_or_default as validations above ensure that there'll be atleast one key when body batching is enabled.
+                let body_path = body_key.map(|v| {
+                    v.into_iter().map(|v| v.to_string()).collect::<Vec<_>>()
+                }).unwrap_or_default();
+                    
                 IR::IO(IO::Http {
                     req_template,
-                    group_by: Some(GroupBy::new(http.batch_key.clone(), key)),
+                    group_by: Some(GroupBy::new(http.batch_key.clone(), key).with_body_path(body_path)),
                     dl_id: None,
                     http_filter,
                     is_list,
@@ -150,30 +162,38 @@ pub fn update_http<'a>(
 
 /// extracts the keys from the json representation, if the value is of mustache
 /// template type.
-fn extract_expression_keys(json: &serde_json::Value, key: Option<&str>) -> Vec<String> {
-    let mut keys = vec![];
-    match json {
-        serde_json::Value::Array(arr) => {
-            arr.iter().for_each(|v| {
-                keys.extend(extract_expression_keys(v, None));
-            });
-        }
-        serde_json::Value::Object(obj) => {
-            obj.iter().for_each(|(k, v)| {
-                keys.extend(extract_expression_keys(v, Some(k)));
-            });
-        }
-        serde_json::Value::String(s) => {
-            if let Some(k) = key {
+fn extract_expression_paths<'a>(json: &'a serde_json::Value) -> Vec<Vec<Cow<'a, str>>> {
+    fn extract_paths<'a>(
+        json: &'a serde_json::Value,
+        path: &mut Vec<Cow<'a, str>>,
+    ) -> Vec<Vec<Cow<'a, str>>> {
+        let mut keys = vec![];
+        match json {
+            serde_json::Value::Array(arr) => {
+                arr.iter().enumerate().for_each(|(idx, v)| {
+                    let idx = idx.to_string();
+                    path.push(Cow::Owned(idx));
+                    keys.extend(extract_paths(v, path));
+                });
+            }
+            serde_json::Value::Object(obj) => {
+                obj.iter().for_each(|(k, v)| {
+                    path.push(Cow::Borrowed(k));
+                    keys.extend(extract_paths(v, path));
+                    path.pop();
+                });
+            }
+            serde_json::Value::String(s) => {
                 if !Mustache::parse(s).is_const() {
-                    keys.push(k.to_string());
+                    keys.push(path.to_vec());
                 }
             }
+            _ => {}
         }
-        _ => {}
+        keys
     }
 
-    keys
+    extract_paths(json, &mut Vec::new())
 }
 
 #[cfg(test)]
@@ -183,17 +203,27 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_extract_expression_keys_from_str() {
+    fn test_extract_expression_keys_from_nested_objects() {
         let json = r#"{"body":"d","userId":"{{.value.uid}}","nested":{"other":"{{test}}"}}"#;
         let json = serde_json::from_str(json).unwrap();
-        let keys = extract_expression_keys(&json, None);
-        assert_eq!(keys, vec!["userId", "other"]);
+        let keys = extract_expression_paths(&json);
+        assert_eq!(keys.len(), 2);
+        assert_eq!(keys, vec![vec!["userId"], vec!["nested", "other"]]);
+    }
+
+    #[test]
+    fn test_extract_expression_keys_from_mixed_json() {
+        let json = r#"{"body":"d","userId":"{{.value.uid}}","nested":{"other":"{{test}}"},"meta":[{"key": "id", "value": "{{.value.userId}}"}]}"#;
+        let json = serde_json::from_str(json).unwrap();
+        let keys = extract_expression_paths(&json);
+        assert_eq!(keys.len(), 3);
+        assert_eq!(keys, vec![vec!["userId"], vec!["nested", "other"], vec![ "meta", "0", "value"]]);
     }
 
     #[test]
     fn test_with_non_json_value() {
         let json = json!(r#"{{.value}}"#);
-        let keys = extract_expression_keys(&json, None);
-        assert_eq!(keys, Vec::<String>::new());
+        let keys = extract_expression_paths(&json);
+        assert!(keys.iter().all(|f| f.is_empty()));
     }
 }

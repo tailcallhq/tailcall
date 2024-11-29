@@ -50,11 +50,11 @@ impl HttpDataLoader {
     }
 }
 
-fn get_key<'a, T: JsonLike<'a> + Display>(value: &'a T, path: &str) -> anyhow::Result<String> {
+fn get_key<'a, T: JsonLike<'a> + Display>(value: &'a T, path: &[String]) -> anyhow::Result<String> {
     value
-        .get_key(path)
+        .get_path(path)
         .and_then(|k| Some(k.to_string()))
-        .ok_or_else(|| anyhow::anyhow!("Unable to find key {} in body", path))
+        .ok_or_else(|| anyhow::anyhow!("Unable to find key {} in body", path.join(".")))
 }
 
 #[async_trait::async_trait]
@@ -172,7 +172,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
                     hashmap.insert(dl_req.clone(), res);
                 }
             } else {
-                let path = group_by.key();
+                let path = group_by.body_path();
                 for dl_req in dl_requests.into_iter() {
                     // retrive the key from body
                     let request_body = dl_req.body_value().ok_or(anyhow::anyhow!(

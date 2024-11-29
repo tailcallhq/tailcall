@@ -8,6 +8,10 @@ schema
   query: Query
 }
 
+type Comment {
+  id: Int
+}
+
 type Post {
   body: String
   id: Int
@@ -20,6 +24,13 @@ type Query {
 }
 
 type User {
+  comments: [Comment]
+    @http(
+      url: "https://jsonplaceholder.typicode.com/comments"
+      body: {title: "foo", body: "bar", meta: {information: {userId: "{{.value.id}}"}}}
+      batchKey: ["userId"]
+      method: "POST"
+    )
   id: Int!
   name: String!
   posts: [Post]
