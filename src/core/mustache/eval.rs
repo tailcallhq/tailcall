@@ -6,10 +6,12 @@ pub trait Eval<'a> {
     type Out;
 
     fn eval(&'a self, mustache: &'a Mustache, in_value: &'a Self::In) -> Self::Out;
+}
 
-    /// Strictly evaluate the mustache template
-    /// In case it's unable to evaluate a template then it will not replace it
-    /// with empty string.
+pub trait EvalStrict<'a> {
+    type In;
+    type Out;
+
     fn eval_strict(&'a self, mustache: &'a Mustache, in_value: &'a Self::In) -> Self::Out;
 }
 
@@ -38,6 +40,11 @@ impl<A: PathString> Eval<'_> for PathStringEval<A> {
             })
             .collect()
     }
+}
+
+impl<A: PathString> EvalStrict<'_> for PathStringEval<A> {
+    type In = A;
+    type Out = String;
 
     fn eval_strict(&'_ self, mustache: &'_ Mustache, in_value: &'_ Self::In) -> Self::Out {
         mustache
@@ -48,7 +55,7 @@ impl<A: PathString> Eval<'_> for PathStringEval<A> {
                 Segment::Expression(parts) => in_value
                     .path_string(parts)
                     .map(|v| v.to_string())
-                    .unwrap_or(parts.to_string()),
+                    .unwrap_or(Mustache::from(vec![Segment::Expression(parts.to_vec())]).to_string()),
             })
             .collect()
     }
@@ -87,6 +94,11 @@ impl<'a, A: Path + 'a> Eval<'a> for PathEval<&'a A> {
             })
             .collect::<Vec<_>>()
     }
+}
+
+impl<'a, A: Path + 'a> EvalStrict<'a> for PathEval<&'a A> {
+    type In = &'a A;
+    type Out = Vec<Exit<'a, A>>;
 
     fn eval_strict(&'a self, mustache: &'a Mustache, in_value: &'a Self::In) -> Self::Out {
         self.eval(mustache, in_value)
@@ -115,6 +127,11 @@ impl<A: PathGraphql> Eval<'_> for PathGraphqlEval<A> {
             })
             .collect()
     }
+}
+
+impl<A: PathGraphql> EvalStrict<'_> for PathGraphqlEval<A> {
+    type In = A;
+    type Out = String;
 
     fn eval_strict(&'_ self, mustache: &'_ Mustache, in_value: &'_ Self::In) -> Self::Out {
         mustache
@@ -123,7 +140,7 @@ impl<A: PathGraphql> Eval<'_> for PathGraphqlEval<A> {
             .map(|segment| match segment {
                 Segment::Literal(text) => text.to_string(),
                 Segment::Expression(parts) => {
-                    in_value.path_graphql(parts).unwrap_or(parts.to_string())
+                    in_value.path_graphql(parts).unwrap_or(Mustache::from(vec![Segment::Expression(parts.to_vec())]).to_string())
                 }
             })
             .collect()
@@ -152,7 +169,7 @@ mod tests {
 
         use serde_json::json;
 
-        use crate::core::mustache::{Expression, Mustache, Segment};
+        use crate::core::mustache::{Mustache, Segment};
         use crate::core::path::PathString;
 
         #[test]
@@ -184,9 +201,9 @@ mod tests {
 
             let mustache = Mustache::from(vec![
                 Segment::Literal("prefix ".to_string()),
-                Segment::Expression(Expression::new(vec!["foo".to_string(), "bar".to_string()])),
+                Segment::Expression(vec!["foo".to_string(), "bar".to_string()]),
                 Segment::Literal(" middle ".to_string()),
-                Segment::Expression(Expression::new(vec!["baz".to_string(), "qux".to_string()])),
+                Segment::Expression(vec!["baz".to_string(), "qux".to_string()]),
                 Segment::Literal(" suffix".to_string()),
             ]);
 
@@ -208,7 +225,7 @@ mod tests {
 
             let mustache = Mustache::from(vec![
                 Segment::Literal("prefix ".to_string()),
-                Segment::Expression(Expression::new(vec!["foo".to_string(), "bar".to_string()])),
+                Segment::Expression(vec!["foo".to_string(), "bar".to_string()]),
                 Segment::Literal(" suffix".to_string()),
             ]);
 
@@ -249,7 +266,7 @@ mod tests {
 
             let mustache = Mustache::from(vec![
                 Segment::Literal("    ".to_string()),
-                Segment::Expression(Expression::new(vec!["foo".to_string()])),
+                Segment::Expression(vec!["foo".to_string()]),
                 Segment::Literal("    ".to_string()),
             ]);
 
@@ -258,7 +275,7 @@ mod tests {
     }
 
     mod render_graphql {
-        use crate::core::mustache::{Expression, Mustache, Segment};
+        use crate::core::mustache::{Mustache, Segment};
         use crate::core::path::PathGraphql;
 
         #[test]
@@ -281,9 +298,9 @@ mod tests {
 
             let mustache = Mustache::from(vec![
                 Segment::Literal("prefix ".to_string()),
-                Segment::Expression(Expression::new(vec!["foo".to_string(), "bar".to_string()])),
+                Segment::Expression(vec!["foo".to_string(), "bar".to_string()]),
                 Segment::Literal(" middle ".to_string()),
-                Segment::Expression(Expression::new(vec!["baz".to_string(), "qux".to_string()])),
+                Segment::Expression(vec!["baz".to_string(), "qux".to_string()]),
                 Segment::Literal(" suffix".to_string()),
             ]);
 
@@ -305,7 +322,7 @@ mod tests {
 
             let mustache = Mustache::from(vec![
                 Segment::Literal("prefix ".to_string()),
-                Segment::Expression(Expression::new(vec!["foo".to_string(), "bar".to_string()])),
+                Segment::Expression(vec!["foo".to_string(), "bar".to_string()]),
                 Segment::Literal(" suffix".to_string()),
             ]);
 

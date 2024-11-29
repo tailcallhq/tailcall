@@ -42,7 +42,7 @@ fn parse_expression(input: &str) -> IResult<&str, Segment> {
                 nom::combinator::opt(char('.')), // Optional leading dot
                 nom::multi::separated_list1(char('.'), parse_name),
             )),
-            |(_, expr_parts)| Segment::Expression(Expression::new(expr_parts)),
+            |(_, expr_parts)| Segment::Expression(expr_parts),
         ),
         tag("}}"),
     )(input)
@@ -83,7 +83,7 @@ mod tests {
 
     use pretty_assertions::assert_eq;
 
-    use crate::core::mustache::{Expression, Mustache, Segment};
+    use crate::core::mustache::{Mustache, Segment};
 
     #[test]
     fn test_to_string() {
@@ -122,10 +122,10 @@ mod tests {
         let mustache: Mustache = Mustache::parse(s);
         assert_eq!(
             mustache,
-            Mustache::from(vec![Segment::Expression(Expression::new(vec![
+            Mustache::from(vec![Segment::Expression(vec![
                 "hello".to_string(),
                 "world".to_string(),
-            ]))])
+            ])])
         );
     }
 
@@ -137,12 +137,12 @@ mod tests {
             mustache,
             Mustache::from(vec![
                 Segment::Literal("http://localhost:8090/".to_string()),
-                Segment::Expression(Expression::new(vec!["foo".to_string(), "bar".to_string()])),
+                Segment::Expression(vec!["foo".to_string(), "bar".to_string()]),
                 Segment::Literal("/api/".to_string()),
-                Segment::Expression(Expression::new(vec![
+                Segment::Expression(vec![
                     "hello".to_string(),
                     "world".to_string()
-                ])),
+                ]),
                 Segment::Literal("/end".to_string()),
             ])
         );
@@ -154,10 +154,10 @@ mod tests {
         let mustache: Mustache = Mustache::parse(s);
         assert_eq!(
             mustache,
-            Mustache::from(vec![Segment::Expression(Expression::new(vec![
+            Mustache::from(vec![Segment::Expression(vec![
                 "foo".to_string(),
                 "bar".to_string(),
-            ]))])
+            ])])
         );
     }
 
@@ -165,7 +165,7 @@ mod tests {
     fn test_parse_expression_with_valid_input() {
         let result = Mustache::parse("{{ foo.bar }} extra");
         let expected = Mustache::from(vec![
-            Segment::Expression(Expression::new(vec!["foo".to_string(), "bar".to_string()])),
+            Segment::Expression(vec!["foo".to_string(), "bar".to_string()]),
             Segment::Literal(" extra".to_string()),
         ]);
         assert_eq!(result, expected);
@@ -183,9 +183,9 @@ mod tests {
         let result = Mustache::parse("prefix {{foo.bar}} middle {{baz.qux}} suffix");
         let expected = Mustache::from(vec![
             Segment::Literal("prefix ".to_string()),
-            Segment::Expression(Expression::new(vec!["foo".to_string(), "bar".to_string()])),
+            Segment::Expression(vec!["foo".to_string(), "bar".to_string()]),
             Segment::Literal(" middle ".to_string()),
-            Segment::Expression(Expression::new(vec!["baz".to_string(), "qux".to_string()])),
+            Segment::Expression(vec!["baz".to_string(), "qux".to_string()]),
             Segment::Literal(" suffix".to_string()),
         ]);
         assert_eq!(result, expected);
@@ -201,10 +201,10 @@ mod tests {
     #[test]
     fn test_parse_segments_only_expression() {
         let result = Mustache::parse("{{foo.bar}}");
-        let expected = Mustache::from(vec![Segment::Expression(Expression::new(vec![
+        let expected = Mustache::from(vec![Segment::Expression(vec![
             "foo".to_string(),
             "bar".to_string(),
-        ]))]);
+        ])]);
         assert_eq!(result, expected);
     }
 
@@ -232,10 +232,10 @@ mod tests {
         let result = Mustache::parse("{{env.FOO}}");
         assert_eq!(
             result,
-            Mustache::from(vec![Segment::Expression(Expression::new(vec![
+            Mustache::from(vec![Segment::Expression(vec![
                 "env".to_string(),
                 "FOO".to_string(),
-            ]))])
+            ])])
         );
     }
 
@@ -244,10 +244,10 @@ mod tests {
         let result = Mustache::parse("{{env.FOO_BAR}}");
         assert_eq!(
             result,
-            Mustache::from(vec![Segment::Expression(Expression::new(vec![
+            Mustache::from(vec![Segment::Expression(vec![
                 "env".to_string(),
                 "FOO_BAR".to_string(),
-            ]))])
+            ])])
         );
     }
 
@@ -266,10 +266,10 @@ mod tests {
         let mustache: Mustache = Mustache::parse(s);
         assert_eq!(
             mustache,
-            Mustache::from(vec![Segment::Expression(Expression::new(vec![
+            Mustache::from(vec![Segment::Expression(vec![
                 "foo".to_string(),
                 "bar".to_string(),
-            ]))])
+            ])])
         );
     }
 }

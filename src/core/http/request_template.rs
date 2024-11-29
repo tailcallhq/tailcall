@@ -12,7 +12,7 @@ use crate::core::endpoint::Endpoint;
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
 use crate::core::ir::model::{CacheKey, IoId};
-use crate::core::mustache::{Eval, Mustache, Segment};
+use crate::core::mustache::{Eval, EvalStrict, Mustache, Segment};
 use crate::core::path::{PathString, PathValue, ValueString};
 
 /// RequestTemplate is an extension of a Mustache template.
@@ -300,6 +300,11 @@ impl<'a, A: PathValue> Eval<'a> for ValueStringEval<A> {
             })
             .next() // Return the first value that is found
     }
+}
+
+impl<'a, A: PathValue> EvalStrict<'a> for ValueStringEval<A> {
+    type In = A;
+    type Out = Option<ValueString<'a>>;
 
     fn eval_strict(&'a self, mustache: &'a Mustache, in_value: &'a Self::In) -> Self::Out {
         self.eval(mustache, in_value)
