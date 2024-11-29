@@ -13,6 +13,12 @@ pub struct ConfigReaderContext<'a> {
     pub headers: HeaderMap,
 }
 
+impl<'a> ConfigReaderContext<'a> {
+    pub fn new(runtime: &'a TargetRuntime, vars: &'a BTreeMap<String, String>) -> Self {
+        Self { runtime, vars, headers: Default::default() }
+    }
+}
+
 impl PathString for ConfigReaderContext<'_> {
     fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
         if path.is_empty() {
@@ -49,11 +55,15 @@ mod tests {
             "ENV_VAL".to_owned(),
         )]));
 
-        let reader_context = ConfigReaderContext {
-            runtime: &runtime,
-            vars: &BTreeMap::from_iter([("VAR_1".to_owned(), "VAR_VAL".to_owned())]),
-            headers: Default::default(),
-        };
+        let vars = [("VAR_1".to_owned(), "VAR_VAL".to_owned())]
+            .iter()
+            .cloned()
+            .collect();
+
+        let reader_context = ConfigReaderContext::new(
+            &runtime,
+            &vars,
+        );
 
         assert_eq!(
             reader_context.path_string(&["env", "ENV_1"]),

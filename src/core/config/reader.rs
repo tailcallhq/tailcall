@@ -40,11 +40,8 @@ impl ConfigReader {
         config_module: ConfigModule,
         parent_dir: Option<&'async_recursion Path>,
     ) -> anyhow::Result<ConfigModule> {
-        let reader_ctx = ConfigReaderContext {
-            runtime: &self.runtime,
-            vars: &Default::default(),
-            headers: Default::default(),
-        };
+        let vars = Default::default();
+        let reader_ctx = ConfigReaderContext::new(&self.runtime, &vars);
 
         let links: Vec<Link> = config_module
             .config()
@@ -194,11 +191,8 @@ impl ConfigReader {
         &self,
         files: &[T],
     ) -> anyhow::Result<ConfigModule> {
-        let reader_ctx = ConfigReaderContext {
-            runtime: &self.runtime,
-            vars: &Default::default(),
-            headers: Default::default(),
-        };
+        let vars = Default::default();
+        let reader_ctx = ConfigReaderContext::new(&self.runtime, &vars);
 
         let files = self
             .resource_reader
@@ -237,16 +231,16 @@ impl ConfigReader {
         parent_dir: Option<&Path>,
     ) -> anyhow::Result<ConfigModule> {
         // Setup telemetry in Config
-        let reader_ctx = ConfigReaderContext {
-            runtime: &self.runtime,
-            vars: &config
-                .server
-                .vars
-                .iter()
-                .map(|vars| (vars.key.clone(), vars.value.clone()))
-                .collect(),
-            headers: Default::default(),
-        };
+        let vars = config
+            .server
+            .vars
+            .iter()
+            .map(|vars| (vars.key.clone(), vars.value.clone()))
+            .collect();
+        let reader_ctx = ConfigReaderContext::new(
+            &self.runtime,
+            &vars,
+        );
         config.telemetry.render_mustache(&reader_ctx)?;
 
         // Create initial config set & extend it with the links
