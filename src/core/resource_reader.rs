@@ -7,9 +7,10 @@ use futures_util::TryFutureExt;
 use tailcall_hasher::TailcallHasher;
 use url::Url;
 
-use super::path::PathString;
+use crate::core::mustache::PathStringEval;
 use crate::core::runtime::TargetRuntime;
 use crate::core::Mustache;
+use crate::core::path::PathString;
 
 /// Response of a file read operation
 #[derive(Debug)]
@@ -21,7 +22,8 @@ pub struct FileRead {
 impl FileRead {
     /// Renders the content of the file using the given context
     pub fn render(mut self, context: &impl PathString) -> Self {
-        let schema = Mustache::parse(&self.content).eval_partial(context);
+        let mustache = Mustache::parse(&self.content);
+        let schema = PathStringEval::new().eval_partial(&mustache, context);
         self.content = schema;
         self
     }

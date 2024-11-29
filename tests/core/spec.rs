@@ -18,6 +18,7 @@ use tailcall::core::config::reader::ConfigReader;
 use tailcall::core::config::transformer::Required;
 use tailcall::core::config::{Config, ConfigModule, ConfigReaderContext, Source};
 use tailcall::core::http::handle_request;
+use tailcall::core::mustache::PathStringEval;
 use tailcall::core::print_schema::print_schema;
 use tailcall::core::variance::Invariant;
 use tailcall::core::Mustache;
@@ -98,7 +99,8 @@ async fn check_identity(spec: &ExecutionSpec, reader_ctx: &ConfigReaderContext<'
     if spec.check_identity {
         for (source, content) in spec.server.iter() {
             if matches!(source, Source::GraphQL) {
-                let content = Mustache::parse(content).eval_partial(reader_ctx);
+                let mustache = Mustache::parse(content);
+                let content = PathStringEval::new().eval_partial(&mustache, reader_ctx);
                 let config = Config::from_source(source.to_owned(), &content).unwrap();
                 let actual = config.to_sdl();
 
@@ -200,7 +202,8 @@ async fn test_spec(spec: ExecutionSpec) {
 
     // Resolve all configs
     let config_modules = join_all(spec.server.iter().map(|(source, content)| async {
-        let content = Mustache::parse(content).eval_partial(&reader_ctx);
+        let mustache = Mustache::parse(content);
+        let content = PathStringEval::new().eval_partial(&mustache, &reader_ctx);
 
         let config = Config::from_source(source.to_owned(), &content)?;
 

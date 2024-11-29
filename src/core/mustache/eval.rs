@@ -10,9 +10,36 @@ pub trait Eval<'a> {
 
 pub struct PathStringEval<A>(std::marker::PhantomData<A>);
 
+impl<A> Default for PathStringEval<A> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<A> PathStringEval<A> {
     pub fn new() -> Self {
         Self(std::marker::PhantomData)
+    }
+
+    /// Tries to evaluate the mustache template with the given value.
+    /// If a path/value is not found, the template will be rendered as is.
+    pub fn eval_partial(&self, mustache: &Mustache, in_value: &A) -> String
+    where
+        A: PathString,
+    {
+        mustache
+            .segments()
+            .iter()
+            .map(|segment| match segment {
+                Segment::Literal(text) => text.clone(),
+                Segment::Expression(parts) => in_value
+                    .path_string(parts)
+                    .map(|a| a.to_string())
+                    .unwrap_or(
+                        Mustache::from(vec![Segment::Expression(parts.to_vec())]).to_string(),
+                    ),
+            })
+            .collect()
     }
 }
 
@@ -98,23 +125,6 @@ impl Mustache {
     // TODO: drop these methods and directly use the eval implementations
     pub fn render(&self, value: &impl PathString) -> String {
         PathStringEval::new().eval(self, value)
-    }
-
-    /// Evaluates the mustache template with the given value, returning a
-    /// string. If a path is not found in the value, the expression is
-    /// preserved.
-    pub fn eval_partial(&self, value: &impl PathString) -> String {
-        self.segments()
-            .iter()
-            .map(|segment| match segment {
-                Segment::Literal(text) => text.to_string(),
-                Segment::Expression(parts) => {
-                    value.path_string(parts).map(|v| v.to_string()).unwrap_or(
-                        Mustache::from(vec![Segment::Expression(parts.to_vec())]).to_string(),
-                    )
-                }
-            })
-            .collect()
     }
 
     pub fn render_graphql(&self, value: &impl PathGraphql) -> String {
