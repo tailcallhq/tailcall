@@ -48,14 +48,14 @@ where
         IO::Http { req_template, dl_id, http_filter, .. } => {
             let worker = &ctx.request_ctx.runtime.cmd_worker;
             let eval_http = EvalHttp::new(ctx, req_template, dl_id);
-            let request = eval_http.init_request()?;
+            let (request, _body) = eval_http.init_request()?;
             let response = match (&worker, http_filter) {
                 (Some(worker), Some(http_filter)) => {
                     eval_http
-                        .execute_with_worker(request, worker, http_filter)
+                        .execute_with_worker(request, worker, http_filter, _body)
                         .await?
                 }
-                _ => eval_http.execute(request).await?,
+                _ => eval_http.execute(request, _body).await?,
             };
 
             Ok(response.body)
@@ -68,7 +68,7 @@ where
             {
                 let data_loader: Option<&DataLoader<DataLoaderRequest, GraphqlDataLoader>> =
                     dl_id.and_then(|dl| ctx.request_ctx.gql_data_loaders.get(dl.as_usize()));
-                execute_request_with_dl(ctx, req, data_loader).await?
+                execute_request_with_dl(ctx, req, serde_json::Value::Null, data_loader).await?
             } else {
                 execute_raw_request(ctx, req).await?
             };

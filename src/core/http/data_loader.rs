@@ -77,17 +77,11 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
 
             // Create base request
             let mut base_request = dl_requests[0].to_request();
-            // TODO: add the body as is in the DalaLoaderRequest.
-            let mut request_to_body_map = HashMap::with_capacity(dl_requests.len());
-
             if dl_requests[0].method() == reqwest::Method::POST {
                 // run only for POST requests.
                 let mut merged_body = Vec::with_capacity(dl_requests.len());
                 for req in dl_requests.iter() {
                     if let Some(body) = req.body().and_then(|b| b.as_bytes()) {
-                        let value = serde_json::from_slice::<serde_json_borrow::Value>(body)
-                            .map_err(|e| anyhow::anyhow!("Unable to deserialize body: {}", e))?;
-                        request_to_body_map.insert(req, value);
                         merged_body.push(body);
                     }
                 }
@@ -179,9 +173,14 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
                 }
             } else {
                 let path = group_by.key();
-                for (dl_req, body) in request_to_body_map.into_iter() {
+                for dl_req in dl_requests.into_iter() {
                     // retrive the key from body
-                    let extracted_value = data_extractor(&response_map, &get_key(&body, path)?);
+                    let request_body = dl_req.body_value().ok_or(anyhow::anyhow!(
+                        "Unable to find body in request {}",
+                        dl_req.url().as_str()
+                    ))?;
+                    let extracted_value =
+                        data_extractor(&response_map, &get_key(request_body, path)?);
                     let res = res.clone().body(extracted_value);
                     hashmap.insert(dl_req.clone(), res);
                 }

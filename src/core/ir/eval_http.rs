@@ -48,15 +48,19 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         Self { evaluation_ctx, data_loader, request_template }
     }
 
-    pub fn init_request(&self) -> Result<Request, Error> {
+    pub fn init_request(&self) -> Result<(Request, serde_json::Value), Error> {
         Ok(self.request_template.to_request(self.evaluation_ctx)?)
     }
 
-    pub async fn execute(&self, req: Request) -> Result<Response<async_graphql::Value>, Error> {
+    pub async fn execute(
+        &self,
+        req: Request,
+        body: serde_json::Value,
+    ) -> Result<Response<async_graphql::Value>, Error> {
         let ctx = &self.evaluation_ctx;
         let dl = &self.data_loader;
         let response = if dl.is_some() {
-            execute_request_with_dl(ctx, req, self.data_loader).await?
+            execute_request_with_dl(ctx, req, body, self.data_loader).await?
         } else {
             execute_raw_request(ctx, req).await?
         };
@@ -81,6 +85,7 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         mut request: reqwest::Request,
         worker: &Arc<dyn WorkerIO<worker::Event, worker::Command>>,
         http_filter: &HttpFilter,
+        body: serde_json::Value,
     ) -> Result<Response<async_graphql::Value>, Error> {
         let js_request = worker::WorkerRequest::try_from(&request)?;
         let event = worker::Event::Request(js_request);
@@ -90,7 +95,7 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         match command {
             Some(command) => match command {
                 worker::Command::Request(w_request) => {
-                    let response = self.execute(w_request.into()).await?;
+                    let response = self.execute(w_request.into(), body).await?;
                     Ok(response)
                 }
                 worker::Command::Response(w_response) => {
@@ -101,13 +106,14 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
                         request
                             .url_mut()
                             .set_path(w_response.headers()["location"].as_str());
-                        self.execute_with_worker(request, worker, http_filter).await
+                        self.execute_with_worker(request, worker, http_filter, body)
+                            .await
                     } else {
                         Ok(w_response.try_into()?)
                     }
                 }
             },
-            None => self.execute(request).await,
+            None => self.execute(request, body).await,
         }
     }
 }
@@ -119,6 +125,7 @@ pub async fn execute_request_with_dl<
 >(
     ctx: &EvalContext<'ctx, Ctx>,
     req: Request,
+    body: serde_json::Value,
     data_loader: Option<&DataLoader<DataLoaderRequest, Dl>>,
 ) -> Result<Response<async_graphql::Value>, Error> {
     let headers = ctx
@@ -128,7 +135,7 @@ pub async fn execute_request_with_dl<
         .clone()
         .map(|s| s.headers)
         .unwrap_or_default();
-    let endpoint_key = crate::core::http::DataLoaderRequest::new(req, headers);
+    let endpoint_key = crate::core::http::DataLoaderRequest::new(req, headers).with_body(body);
 
     Ok(data_loader
         .unwrap()
