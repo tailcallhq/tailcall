@@ -55,7 +55,9 @@ impl<A: PathString> EvalStrict<'_> for PathStringEval<A> {
                 Segment::Expression(parts) => in_value
                     .path_string(parts)
                     .map(|v| v.to_string())
-                    .unwrap_or(Mustache::from(vec![Segment::Expression(parts.to_vec())]).to_string()),
+                    .unwrap_or(
+                        Mustache::from(vec![Segment::Expression(parts.to_vec())]).to_string(),
+                    ),
             })
             .collect()
     }
@@ -139,9 +141,9 @@ impl<A: PathGraphql> EvalStrict<'_> for PathGraphqlEval<A> {
             .iter()
             .map(|segment| match segment {
                 Segment::Literal(text) => text.to_string(),
-                Segment::Expression(parts) => {
-                    in_value.path_graphql(parts).unwrap_or(Mustache::from(vec![Segment::Expression(parts.to_vec())]).to_string())
-                }
+                Segment::Expression(parts) => in_value.path_graphql(parts).unwrap_or(
+                    Mustache::from(vec![Segment::Expression(parts.to_vec())]).to_string(),
+                ),
             })
             .collect()
     }

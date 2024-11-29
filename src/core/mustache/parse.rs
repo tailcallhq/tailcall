@@ -139,10 +139,7 @@ mod tests {
                 Segment::Literal("http://localhost:8090/".to_string()),
                 Segment::Expression(vec!["foo".to_string(), "bar".to_string()]),
                 Segment::Literal("/api/".to_string()),
-                Segment::Expression(vec![
-                    "hello".to_string(),
-                    "world".to_string()
-                ]),
+                Segment::Expression(vec!["hello".to_string(), "world".to_string()]),
                 Segment::Literal("/end".to_string()),
             ])
         );

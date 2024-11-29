@@ -1,5 +1,4 @@
 use std::fmt::Display;
-use std::ops::Deref;
 
 #[derive(Debug, Clone, PartialEq, Hash, Default)]
 pub struct Mustache(Vec<Segment>);
