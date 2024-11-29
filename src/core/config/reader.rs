@@ -237,10 +237,7 @@ impl ConfigReader {
             .iter()
             .map(|vars| (vars.key.clone(), vars.value.clone()))
             .collect();
-        let reader_ctx = ConfigReaderContext::new(
-            &self.runtime,
-            &vars,
-        );
+        let reader_ctx = ConfigReaderContext::new(&self.runtime, &vars);
         config.telemetry.render_mustache(&reader_ctx)?;
 
         // Create initial config set & extend it with the links

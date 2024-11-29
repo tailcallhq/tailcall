@@ -60,10 +60,7 @@ mod tests {
             .cloned()
             .collect();
 
-        let reader_context = ConfigReaderContext::new(
-            &runtime,
-            &vars,
-        );
+        let reader_context = ConfigReaderContext::new(&runtime, &vars);
 
         assert_eq!(
             reader_context.path_string(&["env", "ENV_1"]),
