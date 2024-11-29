@@ -43,7 +43,14 @@ impl Transform for Subgraph {
         let mut resolver_by_type = BTreeMap::new();
 
         let valid = Valid::from_iter(config.types.iter_mut(), |(type_name, ty)| {
-            if let Some(resolver) = &ty.resolver {
+            if ty.resolvers.len() > 1 {
+                // TODO: should support multiple different resolvers actually, see https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/entities/define-keys#multiple-keys
+                return Valid::fail(
+                    "Only single resolver for entity is currently supported".to_string(),
+                );
+            }
+
+            if let Some(resolver) = ty.resolvers.first() {
                 resolver_by_type.insert(type_name.clone(), resolver.clone());
 
                 KeysExtractor::validate(&config_types, resolver, type_name).and_then(|_| {
@@ -95,7 +102,7 @@ impl Transform for Subgraph {
             Field {
                 type_of: Type::from(SERVICE_TYPE_NAME.to_owned()).into_required(),
                 doc: Some("Apollo federation Query._service resolver".to_string()),
-                resolver: Some(Resolver::ApolloFederation(ApolloFederation::Service)),
+                resolvers: Resolver::ApolloFederation(ApolloFederation::Service).into(),
                 ..Default::default()
             },
         );
@@ -135,9 +142,10 @@ impl Transform for Subgraph {
                         .into_required(),
                     args: [(ENTITIES_ARG_NAME.to_owned(), arg)].into_iter().collect(),
                     doc: Some("Apollo federation Query._entities resolver".to_string()),
-                    resolver: Some(Resolver::ApolloFederation(
-                        ApolloFederation::EntityResolver(entity_resolver),
-                    )),
+                    resolvers: Resolver::ApolloFederation(ApolloFederation::EntityResolver(
+                        entity_resolver,
+                    ))
+                    .into(),
                     ..Default::default()
                 },
             );

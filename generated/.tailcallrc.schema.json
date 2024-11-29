@@ -400,81 +400,13 @@
     },
     "Field": {
       "description": "A field definition containing all the metadata information about resolving a field.",
-      "type": "object",
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "http"
-          ],
-          "properties": {
-            "http": {
-              "$ref": "#/definitions/Http"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "grpc"
-          ],
-          "properties": {
-            "grpc": {
-              "$ref": "#/definitions/Grpc"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "graphql"
-          ],
-          "properties": {
-            "graphql": {
-              "$ref": "#/definitions/GraphQL"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "call"
-          ],
-          "properties": {
-            "call": {
-              "$ref": "#/definitions/Call"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "js"
-          ],
-          "properties": {
-            "js": {
-              "$ref": "#/definitions/JS"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "expr"
-          ],
-          "properties": {
-            "expr": {
-              "$ref": "#/definitions/Expr"
-            }
-          },
-          "additionalProperties": false
-        }
+      "type": [
+        "object",
+        "array"
       ],
+      "items": {
+        "$ref": "#/definitions/Resolver"
+      },
       "properties": {
         "args": {
           "description": "Map of argument name and its definition.",
@@ -897,17 +829,70 @@
       "additionalProperties": false
     },
     "LinkType": {
-      "type": "string",
-      "enum": [
-        "Config",
-        "Protobuf",
-        "Script",
-        "Cert",
-        "Key",
-        "Operation",
-        "Htpasswd",
-        "Jwks",
-        "Grpc"
+      "oneOf": [
+        {
+          "description": "Points to another Tailcall Configuration file. The imported configuration will be merged into the importing configuration.",
+          "type": "string",
+          "enum": [
+            "Config"
+          ]
+        },
+        {
+          "description": "Points to a Protobuf file. The imported Protobuf file will be used by the `@grpc` directive. If your API exposes a reflection endpoint, you should set the type to `Grpc` instead.",
+          "type": "string",
+          "enum": [
+            "Protobuf"
+          ]
+        },
+        {
+          "description": "Points to a JS file. The imported JS file will be used by the `@js` directive.",
+          "type": "string",
+          "enum": [
+            "Script"
+          ]
+        },
+        {
+          "description": "Points to a Cert file. The imported Cert file will be used by the server to serve over HTTPS.",
+          "type": "string",
+          "enum": [
+            "Cert"
+          ]
+        },
+        {
+          "description": "Points to a Key file. The imported Key file will be used by the server to serve over HTTPS.",
+          "type": "string",
+          "enum": [
+            "Key"
+          ]
+        },
+        {
+          "description": "A trusted document that contains GraphQL operations (queries, mutations) that can be exposed a REST API using the `@rest` directive.",
+          "type": "string",
+          "enum": [
+            "Operation"
+          ]
+        },
+        {
+          "description": "Points to a Htpasswd file. The imported Htpasswd file will be used by the server to authenticate users.",
+          "type": "string",
+          "enum": [
+            "Htpasswd"
+          ]
+        },
+        {
+          "description": "Points to a Jwks file. The imported Jwks file will be used by the server to authenticate users.",
+          "type": "string",
+          "enum": [
+            "Jwks"
+          ]
+        },
+        {
+          "description": "Points to a reflection endpoint. The imported reflection endpoint will be used by the `@grpc` directive to resolve data from gRPC services.",
+          "type": "string",
+          "enum": [
+            "Grpc"
+          ]
+        }
       ]
     },
     "Method": {
@@ -1016,6 +1001,82 @@
           "type": "string"
         }
       }
+    },
+    "Resolver": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "http"
+          ],
+          "properties": {
+            "http": {
+              "$ref": "#/definitions/Http"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "grpc"
+          ],
+          "properties": {
+            "grpc": {
+              "$ref": "#/definitions/Grpc"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "graphql"
+          ],
+          "properties": {
+            "graphql": {
+              "$ref": "#/definitions/GraphQL"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "call"
+          ],
+          "properties": {
+            "call": {
+              "$ref": "#/definitions/Call"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "js"
+          ],
+          "properties": {
+            "js": {
+              "$ref": "#/definitions/JS"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "expr"
+          ],
+          "properties": {
+            "expr": {
+              "$ref": "#/definitions/Expr"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
     },
     "RootSchema": {
       "type": "object",
@@ -1332,81 +1393,13 @@
     },
     "Type": {
       "description": "Represents a GraphQL type. A type can be an object, interface, enum or scalar.",
-      "type": "object",
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "http"
-          ],
-          "properties": {
-            "http": {
-              "$ref": "#/definitions/Http"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "grpc"
-          ],
-          "properties": {
-            "grpc": {
-              "$ref": "#/definitions/Grpc"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "graphql"
-          ],
-          "properties": {
-            "graphql": {
-              "$ref": "#/definitions/GraphQL"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "call"
-          ],
-          "properties": {
-            "call": {
-              "$ref": "#/definitions/Call"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "js"
-          ],
-          "properties": {
-            "js": {
-              "$ref": "#/definitions/JS"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "expr"
-          ],
-          "properties": {
-            "expr": {
-              "$ref": "#/definitions/Expr"
-            }
-          },
-          "additionalProperties": false
-        }
+      "type": [
+        "object",
+        "array"
       ],
+      "items": {
+        "$ref": "#/definitions/Resolver"
+      },
       "required": [
         "fields"
       ],

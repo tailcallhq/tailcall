@@ -1,10 +1,10 @@
 use std::str::FromStr;
 
 use http::header::{HeaderMap, HeaderName, HeaderValue};
-use tailcall_valid::{Valid, ValidationError, Validator};
+use tailcall_valid::{Valid, Validator};
 use url::Url;
 
-use super::TryFoldConfig;
+use super::{BlueprintError, TryFoldConfig};
 use crate::core::config::{
     self, Apollo, ConfigModule, KeyValue, PrometheusExporter, StdoutExporter,
 };
@@ -31,29 +31,37 @@ pub struct Telemetry {
     pub request_headers: Vec<String>,
 }
 
-fn to_url(url: &str) -> Valid<Url, String> {
-    Valid::from(Url::parse(url).map_err(|e| ValidationError::new(e.to_string()))).trace("url")
+fn to_url(url: &str) -> Valid<Url, BlueprintError> {
+    match Url::parse(url).map_err(BlueprintError::UrlParse) {
+        Ok(url) => Valid::succeed(url),
+        Err(err) => Valid::fail(err),
+    }
+    .trace("url")
 }
 
-fn to_headers(headers: Vec<KeyValue>) -> Valid<HeaderMap, String> {
+fn to_headers(headers: Vec<KeyValue>) -> Valid<HeaderMap, BlueprintError> {
     Valid::from_iter(headers.iter(), |key_value| {
-        Valid::from(
-            HeaderName::from_str(&key_value.key)
-                .map_err(|err| ValidationError::new(err.to_string())),
-        )
-        .zip(Valid::from(
-            HeaderValue::from_str(&key_value.value)
-                .map_err(|err| ValidationError::new(err.to_string())),
-        ))
+        match HeaderName::from_str(&key_value.key).map_err(BlueprintError::InvalidHeaderName) {
+            Ok(name) => Valid::succeed(name),
+            Err(err) => Valid::fail(err),
+        }
+        .zip({
+            match HeaderValue::from_str(&key_value.value)
+                .map_err(BlueprintError::InvalidHeaderValue)
+            {
+                Ok(value) => Valid::succeed(value),
+                Err(err) => Valid::fail(err),
+            }
+        })
     })
     .map(HeaderMap::from_iter)
     .trace("headers")
 }
 
-pub fn to_opentelemetry<'a>() -> TryFold<'a, ConfigModule, Telemetry, String> {
+pub fn to_opentelemetry<'a>() -> TryFold<'a, ConfigModule, Telemetry, BlueprintError> {
     TryFoldConfig::<Telemetry>::new(|config, up| {
         if let Some(export) = config.telemetry.export.as_ref() {
-            let export = match export {
+            let export: Valid<TelemetryExporter, BlueprintError> = match export {
                 config::TelemetryExporter::Stdout(config) => {
                     Valid::succeed(TelemetryExporter::Stdout(config.clone()))
                 }
@@ -80,20 +88,20 @@ pub fn to_opentelemetry<'a>() -> TryFold<'a, ConfigModule, Telemetry, String> {
     })
 }
 
-fn validate_apollo(apollo: Apollo) -> Valid<Apollo, String> {
+fn validate_apollo(apollo: Apollo) -> Valid<Apollo, BlueprintError> {
     validate_graph_ref(&apollo.graph_ref)
         .map(|_| apollo)
         .trace("apollo.graph_ref")
 }
 
-fn validate_graph_ref(graph_ref: &str) -> Valid<(), String> {
+fn validate_graph_ref(graph_ref: &str) -> Valid<(), BlueprintError> {
     let is_valid = regex::Regex::new(r"^[A-Za-z0-9-_]+@[A-Za-z0-9-_]+$")
         .unwrap()
         .is_match(graph_ref);
     if is_valid {
         Valid::succeed(())
     } else {
-        Valid::fail(format!("`graph_ref` should be in the format <graph_id>@<variant> where `graph_id` and `variant` can only contain letters, numbers, '-' and '_'. Found {graph_ref}").to_string())
+        Valid::fail(BlueprintError::InvalidGraphRef(graph_ref.to_string()))
     }
 }
 
@@ -102,13 +110,13 @@ mod tests {
     use tailcall_valid::Valid;
 
     use super::validate_graph_ref;
+    use crate::core::blueprint::BlueprintError;
 
     #[test]
     fn test_validate_graph_ref() {
         let success = || Valid::succeed(());
-        let failure = |graph_ref| {
-            Valid::fail(format!("`graph_ref` should be in the format <graph_id>@<variant> where `graph_id` and `variant` can only contain letters, numbers, '-' and '_'. Found {graph_ref}").to_string())
-        };
+        let failure =
+            |graph_ref: &str| Valid::fail(BlueprintError::InvalidGraphRef(graph_ref.to_string()));
 
         assert_eq!(validate_graph_ref("graph_id@variant"), success());
         assert_eq!(

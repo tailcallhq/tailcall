@@ -1,154 +1,146 @@
-use std::borrow::Cow;
-
-use tailcall_valid::{Valid, ValidationError, Validator};
+use regex::Regex;
+use tailcall_valid::{Valid, Validator};
+use template_validation::validate_argument;
 
 use crate::core::blueprint::*;
 use crate::core::config::group_by::GroupBy;
-use crate::core::config::{Field, Resolver};
+use crate::core::config::Field;
 use crate::core::endpoint::Endpoint;
 use crate::core::http::{HttpFilter, Method, RequestTemplate};
 use crate::core::ir::model::{IO, IR};
-use crate::core::try_fold::TryFold;
 use crate::core::{config, helpers, Mustache};
 
 pub fn compile_http(
     config_module: &config::ConfigModule,
     http: &config::Http,
-    is_list: bool,
-) -> Valid<IR, String> {
+    field: &Field,
+) -> Valid<IR, BlueprintError> {
+    let is_list = field.type_of.is_list();
     let dedupe = http.dedupe.unwrap_or_default();
+    let mustache_headers = match helpers::headers::to_mustache_headers(&http.headers).to_result() {
+        Ok(mustache_headers) => Valid::succeed(mustache_headers),
+        Err(e) => Valid::from_validation_err(BlueprintError::from_validation_string(e)),
+    };
 
-    Valid::<(), String>::fail(
-        "Batching capability was used without enabling it in upstream".to_string(),
-    )
-    .when(|| {
-        (config_module.upstream.get_delay() < 1 || config_module.upstream.get_max_size() < 1)
-            && !http.batch_key.is_empty()
-    })
-    .and(Valid::succeed(http.url.as_str()))
-    .zip(helpers::headers::to_mustache_headers(&http.headers))
-    .and_then(|(base_url, headers)| {
-        let query = http
-            .query
-            .clone()
-            .iter()
-            .map(|key_value| {
-                (
-                    key_value.key.clone(),
-                    key_value.value.clone(),
-                    key_value.skip_empty.unwrap_or_default(),
-                )
+    Valid::<(), BlueprintError>::fail(BlueprintError::IncorrectBatchingUsage)
+        .when(|| {
+            (config_module.upstream.get_delay() < 1 || config_module.upstream.get_max_size() < 1)
+                && !http.batch_key.is_empty()
+        })
+        .and(
+            Valid::from_iter(http.query.iter(), |query| {
+                validate_argument(config_module, Mustache::parse(query.value.as_str()), field)
             })
-            .collect();
-
-        RequestTemplate::try_from(
-            Endpoint::new(base_url.to_string())
-                .method(http.method.clone())
-                .query(query)
-                .body(http.body.clone())
-                .encoding(http.encoding.clone()),
+            .unit()
+            .trace("query"),
         )
-        .map(|req_tmpl| req_tmpl.headers(headers))
-        .map_err(|e| ValidationError::new(e.to_string()))
-        .into()
-    })
-    .and_then(|request_template| {
-        if !http.batch_key.is_empty() && (http.body.is_some() || http.method != Method::GET) {
-            let keys = http.body.as_ref().map(|b| extract_expression_paths(b));
-            if let Some(keys) = keys {
-                // only one dynamic value allowed in body for batching to work.
-                if keys.len() != 1 {
+        .and(Valid::succeed(http.url.as_str()))
+        .zip(mustache_headers)
+        .and_then(|(base_url, headers)| {
+            let query = http
+                .query
+                .clone()
+                .iter()
+                .map(|key_value| {
+                    (
+                        key_value.key.clone(),
+                        key_value.value.clone(),
+                        key_value.skip_empty.unwrap_or_default(),
+                    )
+                })
+                .collect();
+
+            match RequestTemplate::try_from(
+                Endpoint::new(base_url.to_string())
+                    .method(http.method.clone())
+                    .query(query)
+                    .body(http.body.clone())
+                    .encoding(http.encoding.clone()),
+            )
+            .map(|req_tmpl| req_tmpl.headers(headers))
+            {
+                Ok(data) => Valid::succeed(data),
+                Err(e) => Valid::fail(BlueprintError::Error(e)),
+            }
+        })
+        .and_then(|request_template| {
+            if !http.batch_key.is_empty() && (http.body.is_some() || http.method != Method::GET) {
+                let keys = http.body.as_ref().map(|b| extract_expression_paths(b));
+                if let Some(keys) = keys {
+                    // only one dynamic value allowed in body for batching to work.
+                    if keys.len() != 1 {
+                        Valid::fail(
+                            "request body batching requires exactly one dynamic value in the body."
+                                .to_string(),
+                        )
+                        .trace("body")
+                    } else {
+                        Valid::succeed((request_template, keys.first().cloned()))
+                    }
+                } else {
                     Valid::fail(
                         "request body batching requires exactly one dynamic value in the body."
                             .to_string(),
                     )
                     .trace("body")
-                } else {
-                    Valid::succeed((request_template, keys.first().cloned()))
                 }
             } else {
-                Valid::fail(
-                    "request body batching requires exactly one dynamic value in the body."
-                        .to_string(),
-                )
-                .trace("body")
+                Valid::succeed((request_template, None))
             }
-        } else {
-            Valid::succeed((request_template, None))
-        }
-    })
-    .map(|(req_template, body_key)| {
-        // marge http and upstream on_request
-        let http_filter = http
-            .on_request
-            .clone()
-            .or(config_module.upstream.on_request.clone())
-            .map(|on_request| HttpFilter { on_request });
+        })
+        .map(|(req_template, body_key)| {
+            // marge http and upstream on_request
+            let http_filter = http
+                .on_request
+                .clone()
+                .or(config_module.upstream.on_request.clone())
+                .map(|on_request| HttpFilter { on_request });
 
-        let group_by_clause = !http.batch_key.is_empty()
-            && (http.method == Method::GET || http.method == Method::POST);
-        let io = if group_by_clause {
-            // Find a query parameter that contains a reference to the {{.value}} key
-            let key = if http.method == Method::GET {
-                http.query.iter().find_map(|q| {
-                    Mustache::parse(&q.value)
-                        .expression_contains("value")
-                        .then(|| q.key.clone())
+            let group_by_clause = !http.batch_key.is_empty()
+                && (http.method == Method::GET || http.method == Method::POST);
+            let io = if group_by_clause {
+                // Find a query parameter that contains a reference to the {{.value}} key
+                let key = if http.method == Method::GET {
+                    http.query.iter().find_map(|q| {
+                        Mustache::parse(&q.value)
+                            .expression_contains("value")
+                            .then(|| q.key.clone())
+                    })
+                } else {
+                    None
+                };
+
+                // notes:
+                // batch_key -> is used for response grouping.
+                // but when batching body, we can't just rely on the key i.e is if dynamic key is deeply nested inside then atomic/singular key won't suffice.
+                // so we need some path that allows to to extract the body key from request body.
+                let body_path = body_key
+                    .map(|v| v.into_iter().map(|v| v.to_string()).collect::<Vec<_>>())
+                    .unwrap_or_default();
+
+                IR::IO(IO::Http {
+                    req_template,
+                    group_by: Some(
+                        GroupBy::new(http.batch_key.clone(), key).with_body_path(body_path),
+                    ),
+                    dl_id: None,
+                    http_filter,
+                    is_list,
+                    dedupe,
                 })
             } else {
-                None
-            };
-
-            // notes:
-            // batch_key -> is path for response grouping.
-            // but when batching body, we can't just rely on the key i.e is dynamic key id deeply nested in then key won't suffice.
-            // so we need some path that allows to to extract the body key from request body.
-
-            // we can safetly do unwrap_or_default as validations above ensure that there'll be atleast one key when body batching is enabled.
-            let body_path = body_key
-                .map(|v| v.into_iter().map(|v| v.to_string()).collect::<Vec<_>>())
-                .unwrap_or_default();
-            IR::IO(IO::Http {
-                req_template,
-                group_by: Some(GroupBy::new(http.batch_key.clone(), key).with_body_path(body_path)),
-                dl_id: None,
-                http_filter,
-                is_list,
-                dedupe,
-            })
-        } else {
-            IR::IO(IO::Http {
-                req_template,
-                group_by: None,
-                dl_id: None,
-                http_filter,
-                is_list,
-                dedupe,
-            })
-        };
-        (io, &http.select)
-    })
-    .and_then(apply_select)
-}
-
-pub fn update_http<'a>(
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
-        |(config_module, field, type_of, _), b_field| {
-            let Some(Resolver::Http(http)) = &field.resolver else {
-                return Valid::succeed(b_field);
-            };
-
-            compile_http(config_module, http, field.type_of.is_list())
-                .map(|resolver| b_field.resolver(Some(resolver)))
-                .and_then(|b_field| {
-                    b_field
-                        .validate_field(type_of, config_module)
-                        .map_to(b_field)
+                IR::IO(IO::Http {
+                    req_template,
+                    group_by: None,
+                    dl_id: None,
+                    http_filter,
+                    is_list,
+                    dedupe,
                 })
-        },
-    )
+            };
+            (io, &http.select)
+        })
+        .and_then(apply_select)
 }
 
 /// extracts the keys from the json representation, if the value is of mustache

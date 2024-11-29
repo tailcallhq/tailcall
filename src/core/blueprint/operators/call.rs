@@ -1,35 +1,17 @@
 use serde_json::Value;
-use tailcall_valid::{Valid, ValidationError, Validator};
+use tailcall_valid::{Valid, Validator};
 
 use crate::core::blueprint::*;
 use crate::core::config;
-use crate::core::config::{Field, GraphQLOperationType, Resolver};
+use crate::core::config::{Field, GraphQLOperationType};
 use crate::core::ir::model::IR;
-use crate::core::try_fold::TryFold;
-
-pub fn update_call<'a>(
-    operation_type: &'a GraphQLOperationType,
-    object_name: &'a str,
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
-        move |(config, field, _, _), b_field| {
-            let Some(Resolver::Call(call)) = &field.resolver else {
-                return Valid::succeed(b_field);
-            };
-
-            compile_call(config, call, operation_type, object_name)
-                .map(|resolver| b_field.resolver(Some(resolver)))
-        },
-    )
-}
 
 pub fn compile_call(
     config_module: &ConfigModule,
     call: &config::Call,
     operation_type: &GraphQLOperationType,
     object_name: &str,
-) -> Valid<IR, String> {
+) -> Valid<IR, BlueprintError> {
     Valid::from_iter(call.steps.iter(), |step| {
         get_field_and_field_name(step, config_module).and_then(|(field, field_name, type_of)| {
             let args = step.args.iter();
@@ -47,13 +29,12 @@ pub fn compile_call(
                 .collect();
 
             if empties.len().gt(&0) {
-                return Valid::fail(format!(
-                    "no argument {} found",
+                return Valid::fail(BlueprintError::ArgumentNotFound(
                     empties
                         .into_iter()
                         .map(|k| format!("'{}'", k))
                         .collect::<Vec<String>>()
-                        .join(", ")
+                        .join(", "),
                 ))
                 .trace(field_name.as_str());
             }
@@ -68,16 +49,18 @@ pub fn compile_call(
             )
             .and_then(|b_field| {
                 if b_field.resolver.is_none() {
-                    Valid::fail(format!("{} field has no resolver", field_name))
+                    Valid::fail(BlueprintError::FieldHasNoResolver(field_name.clone()))
                 } else {
                     Valid::succeed(b_field)
                 }
             })
             .fuse(
-                Valid::from(
-                    DynamicValue::try_from(&Value::Object(step.args.clone().into_iter().collect()))
-                        .map_err(|e: anyhow::Error| ValidationError::new(e.to_string())),
-                )
+                match DynamicValue::try_from(&Value::Object(
+                    step.args.clone().into_iter().collect(),
+                )) {
+                    Ok(value) => Valid::succeed(value),
+                    Err(e) => Valid::fail(BlueprintError::Error(e)),
+                }
                 .map(IR::Dynamic),
             )
             .map(|(mut b_field, args_expr)| {
@@ -102,11 +85,11 @@ pub fn compile_call(
 
                 b_field
             }),
-            "Steps can't be empty".to_string(),
+            BlueprintError::StepsCanNotBeEmpty,
         )
     })
     .and_then(|field| {
-        Valid::from_option(field.resolver, "Result resolver can't be empty".to_string())
+        Valid::from_option(field.resolver, BlueprintError::ResultResolverCanNotBeEmpty)
     })
 }
 
@@ -125,20 +108,20 @@ fn get_type_and_field(call: &config::Step) -> Option<(String, String)> {
 fn get_field_and_field_name<'a>(
     call: &'a config::Step,
     config_module: &'a ConfigModule,
-) -> Valid<(&'a Field, String, &'a config::Type), String> {
+) -> Valid<(&'a Field, String, &'a config::Type), BlueprintError> {
     Valid::from_option(
         get_type_and_field(call),
-        "call must have query or mutation".to_string(),
+        BlueprintError::CallMustHaveQueryOrMutation,
     )
     .and_then(|(type_name, field_name)| {
         Valid::from_option(
             config_module.config().find_type(&type_name),
-            format!("{} type not found on config", type_name),
+            BlueprintError::TypeNotFoundInConfig(type_name.clone()),
         )
         .and_then(|query_type| {
             Valid::from_option(
                 query_type.fields.get(&field_name),
-                format!("{} field not found", field_name),
+                BlueprintError::FieldNotFoundInType(field_name.clone()),
             )
             .fuse(Valid::succeed(field_name))
             .fuse(Valid::succeed(query_type))

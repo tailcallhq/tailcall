@@ -1,0 +1,10 @@
+schema @server(port: 8000) {
+  query: Query
+}
+type Query {
+  posts(id: PostData): Int @http(url: "upstream.com", query: [{key: "id", value: "{{.args.id.data}}"}])
+}
+type PostData {
+  author: String
+  data: PostData
+}

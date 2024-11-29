@@ -1,14 +1,27 @@
 ---
 source: tests/core/spec.rs
 expression: errors
+snapshot_kind: text
 ---
 [
   {
-    "message": "Cannot add field",
+    "message": "no value 'userId' found",
     "trace": [
       "Query",
-      "@addField"
+      "post",
+      "@http",
+      "path"
     ],
-    "description": "Path: [post, user, name] contains resolver http at [Post.user]"
+    "description": null
+  },
+  {
+    "message": "no value 'userId' found",
+    "trace": [
+      "Query",
+      "@addField",
+      "@http",
+      "path"
+    ],
+    "description": null
   }
 ]

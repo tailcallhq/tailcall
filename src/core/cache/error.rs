@@ -1,14 +1,14 @@
 use std::fmt::Display;
 use std::sync::Arc;
 
-use derive_more::{DebugCustom, From};
+use derive_more::{Debug, From};
 
-#[derive(From, DebugCustom, Clone)]
+#[derive(From, Debug, Clone)]
 pub enum Error {
-    #[debug(fmt = "Serde Json Error: {}", _0)]
+    #[debug("Serde Json Error: {}", _0)]
     SerdeJson(Arc<serde_json::Error>),
 
-    #[debug(fmt = "Kv Error: {}", _0)]
+    #[debug("Kv Error: {}", _0)]
     #[from(ignore)]
     Kv(String),
 }

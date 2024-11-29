@@ -1,0 +1,10 @@
+---
+source: src/core/config/npo/tracker.rs
+expression: actual
+snapshot_kind: text
+---
+query { root { nested { d { test } } } }
+query { root { nested_list { a } } }
+query { root { nested_list { b { test } } } }
+query { root { nested_list { c } } }
+query { root { nested_list { d } } }
