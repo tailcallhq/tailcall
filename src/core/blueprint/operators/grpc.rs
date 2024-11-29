@@ -12,9 +12,9 @@ use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
 use crate::core::grpc::request_template::RequestTemplate;
 use crate::core::helpers;
 use crate::core::ir::model::{IO, IR};
-use crate::core::worker_hooks::WorkerHooks;
 use crate::core::json::JsonSchema;
 use crate::core::mustache::Mustache;
+use crate::core::worker_hooks::WorkerHooks;
 
 fn to_url(grpc: &Grpc, method: &GrpcMethod) -> Valid<Mustache, String> {
     Valid::succeed(grpc.url.as_str()).and_then(|base_url| {

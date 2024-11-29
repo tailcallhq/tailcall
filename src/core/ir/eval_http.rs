@@ -14,8 +14,8 @@ use crate::core::http::{
     cache_policy, DataLoaderRequest, HttpDataLoader, RequestTemplate, Response,
 };
 use crate::core::ir::Error;
-use crate::core::worker_hooks::WorkerHooks;
 use crate::core::json::JsonLike;
+use crate::core::worker_hooks::WorkerHooks;
 use crate::core::{grpc, http, worker, WorkerIO};
 
 pub struct WorkerContext<'a> {
