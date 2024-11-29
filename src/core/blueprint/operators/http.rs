@@ -7,7 +7,7 @@ use crate::core::config::Field;
 use crate::core::endpoint::Endpoint;
 use crate::core::http::{Method, RequestTemplate};
 use crate::core::ir::model::{IO, IR};
-use crate::core::worker::WorkerHooks;
+use crate::core::worker_hooks::WorkerHooks;
 use crate::core::{config, helpers, Mustache};
 
 pub fn compile_http(

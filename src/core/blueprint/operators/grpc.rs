@@ -12,7 +12,7 @@ use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
 use crate::core::grpc::request_template::RequestTemplate;
 use crate::core::helpers;
 use crate::core::ir::model::{IO, IR};
-use crate::core::worker::WorkerHooks;
+use crate::core::worker_hooks::WorkerHooks;
 use crate::core::json::JsonSchema;
 use crate::core::mustache::Mustache;
 
