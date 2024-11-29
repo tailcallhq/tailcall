@@ -129,12 +129,13 @@ impl RequestTemplate {
         mut req: reqwest::Request,
         ctx: &C,
     ) -> anyhow::Result<RequestWrapper<serde_json::Value>> {
-        let mut body_value = serde_json::Value::Null;
-        if let Some(body_path) = &self.body_path {
+        let body_value = if let Some(body_path) = &self.body_path {
             let rendered_body = body_path.render(ctx);
-            body_value = rendered_body.clone();
 
-            let body = rendered_body.to_string();
+            // TODO: think about the performance implications of this.
+            // why we can't do rendered_body.to_string() directly? because it returns json formed escaped string
+            // and bcoz of most of the tests start failing.
+            let body: String = serde_json::from_str(&rendered_body.to_string())?;
             match &self.encoding {
                 Encoding::ApplicationJson => {
                     req.body_mut().replace(body.into());
@@ -150,7 +151,10 @@ impl RequestTemplate {
                     req.body_mut().replace(form_data.into());
                 }
             }
-        }
+            rendered_body
+        } else {
+            serde_json::Value::Null
+        };
         Ok(RequestWrapper::new(req, body_value))
     }
 
