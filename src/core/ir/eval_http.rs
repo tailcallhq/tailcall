@@ -95,7 +95,7 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         match command {
             Some(command) => match command {
                 worker::Command::Request(w_request) => {
-                    let response = self.execute(w_request.into()).await?;
+                    let response = self.execute(w_request.try_into()?).await?;
                     Ok(response)
                 }
                 worker::Command::Response(w_response) => {

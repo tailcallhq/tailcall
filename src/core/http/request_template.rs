@@ -151,11 +151,11 @@ impl RequestTemplate {
                     req.body_mut().replace(form_data.into());
                 }
             }
-            rendered_body
+            Some(rendered_body)
         } else {
-            serde_json::Value::Null
+            None
         };
-        Ok(RequestWrapper::new(req, body_value))
+        Ok(RequestWrapper::new(req).with_deserialzied_body(body_value))
     }
 
     /// Sets the headers for the request

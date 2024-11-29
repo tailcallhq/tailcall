@@ -17,8 +17,8 @@ impl DataLoaderRequest {
         Self { request: req, headers, body: None }
     }
 
-    pub fn with_body(self, body: serde_json::Value) -> Self {
-        Self { body: Some(body), ..self }
+    pub fn with_body(self, body: Option<serde_json::Value>) -> Self {
+        Self { body: body, ..self }
     }
 
     pub fn body_value(&self) -> Option<&serde_json::Value> {
@@ -78,8 +78,11 @@ impl Clone for DataLoaderRequest {
             req
         });
 
-        let body = self.body.clone().unwrap_or_default();
-        DataLoaderRequest::new(req, self.headers.clone()).with_body(body)
+        if let Some(body) = self.body.as_ref() {
+            DataLoaderRequest::new(req, self.headers.clone()).with_body(Some(body.clone()))
+        } else {
+            DataLoaderRequest::new(req, self.headers.clone())
+        }
     }
 }
 

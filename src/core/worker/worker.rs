@@ -3,6 +3,7 @@ use std::fmt::Display;
 
 use hyper::body::Bytes;
 use reqwest::Request;
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
 use super::error::{Error, Result};
@@ -186,10 +187,22 @@ impl From<WorkerRequest> for reqwest::Request {
     }
 }
 
-impl<Body: Default> From<WorkerRequest> for RequestWrapper<Body> {
-    fn from(val: WorkerRequest) -> Self {
-        // TODO: if we change the body shape in the future, we need to update this.
-        RequestWrapper::new(val.0, Default::default())
+impl<Body: DeserializeOwned> TryFrom<WorkerRequest> for RequestWrapper<Body> {
+    type Error = anyhow::Error;
+
+    fn try_from(value: WorkerRequest) -> std::result::Result<Self, Self::Error> {
+        let request = if let Some(body) = value.0.body() {
+            if let Some(body_bytes) = body.as_bytes() {
+                let body = serde_json::from_slice(body_bytes)?;
+                RequestWrapper::new(value.0).with_deserialzied_body(body)
+            } else {
+                RequestWrapper::new(value.0)
+            }
+        } else {
+            RequestWrapper::new(value.0)
+        };
+
+        Ok(request)
     }
 }
 

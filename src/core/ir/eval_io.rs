@@ -62,7 +62,7 @@ where
         }
         IO::GraphQL { req_template, field_name, dl_id, .. } => {
             let req = req_template.to_request(ctx)?;
-            let request = RequestWrapper::new(req, serde_json::Value::Null);
+            let request = RequestWrapper::new(req);
             let res = if ctx.request_ctx.upstream.batch.is_some()
                 && matches!(req_template.operation_type, GraphQLOperationType::Query)
             {
