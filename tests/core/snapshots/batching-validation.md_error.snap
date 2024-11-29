@@ -4,7 +4,7 @@ expression: errors
 ---
 [
   {
-    "message": "POST request batching requires exactly one dynamic value in the request body.",
+    "message": "request body batching requires exactly one dynamic value in the body.",
     "trace": [
       "Query",
       "user",
@@ -14,7 +14,7 @@ expression: errors
     "description": null
   },
   {
-    "message": "POST request batching requires exactly one dynamic value in the request body.",
+    "message": "request body batching requires exactly one dynamic value in the body.",
     "trace": [
       "Query",
       "userWithId",
@@ -24,7 +24,7 @@ expression: errors
     "description": null
   },
   {
-    "message": "GroupBy is only supported for GET/POST requests",
+    "message": "GroupBy is only supported for GET and POST requests",
     "trace": [
       "Query",
       "userWithIdTest",

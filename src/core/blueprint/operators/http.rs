@@ -22,7 +22,7 @@ pub fn compile_http(
         Err(e) => Valid::from_validation_err(BlueprintError::from_validation_string(e)),
     };
 
-    Valid::<(), BlueprintError>::fail(BlueprintError::GroupByOnlyForGet)
+    Valid::<(), BlueprintError>::fail(BlueprintError::GroupByOnlyForGetAndPost)
         .when(|| !http.batch_key.is_empty() && !matches!(http.method, Method::GET | Method::POST))
         .and(
             Valid::<(), BlueprintError>::fail(BlueprintError::IncorrectBatchingUsage).when(|| {
@@ -42,9 +42,9 @@ pub fn compile_http(
 
                     if keys == 1 {
                         Valid::succeed(())
-                    }else{
+                    } else {
                         Valid::fail(
-                            "POST request batching requires exactly one dynamic value in the request body.".to_string(),
+                            BlueprintError::RequestBatchingRequiresAtLeastOneDynamicParameter,
                         )
                     }
                 } else {
