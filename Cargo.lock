@@ -5901,9 +5901,9 @@ dependencies = [
 
 [[package]]
 name = "tailcall-valid"
-version = "0.1.2"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce2cd6de9a8f4d0daaeec878a821ce2b7d9a78e1113af372ccaa4859ed3ec96a"
+checksum = "d32dc2612dd67fdbe214cd396b388a386974d57daf732f00c2562b3b2421778d"
 dependencies = [
  "derive_setters",
  "http 1.1.0",
@@ -5911,7 +5911,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_path_to_error",
- "thiserror 2.0.3",
+ "thiserror 1.0.69",
  "wasm-bindgen",
 ]
 
