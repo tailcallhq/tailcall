@@ -23,7 +23,14 @@ impl DynamicValue<serde_json::Value> {
     pub fn render(&self, ctx: &impl PathString) -> serde_json::Value {
         match self {
             DynamicValue::Value(v) => v.clone(),
-            DynamicValue::Mustache(m) => serde_json::Value::String(m.render(ctx)),
+            DynamicValue::Mustache(m) => {
+                let rendered = m.render(ctx);
+                serde_json::from_str(rendered.as_ref())
+                    // parsing can fail when Mustache::render returns bare string and since
+                    // that string is not wrapped with quotes serde_json will fail to parse it
+                    // but, we can just use that string as is
+                    .unwrap_or_else(|_| serde_json::Value::String(rendered))
+            }
             DynamicValue::Object(obj) => {
                 let mut out = serde_json::Map::with_capacity(obj.len());
                 for (k, v) in obj {

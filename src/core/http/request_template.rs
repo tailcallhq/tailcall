@@ -131,11 +131,8 @@ impl RequestTemplate {
     ) -> anyhow::Result<RequestWrapper<serde_json::Value>> {
         let body_value = if let Some(body_path) = &self.body_path {
             let rendered_body = body_path.render(ctx);
+            let body = rendered_body.to_string();
 
-            // TODO: think about the performance implications of this.
-            // why we can't do rendered_body.to_string() directly? because it returns json formed escaped string
-            // and bcoz of most of the tests start failing.
-            let body: String = serde_json::from_str(&rendered_body.to_string())?;
             match &self.encoding {
                 Encoding::ApplicationJson => {
                     req.body_mut().replace(body.into());
@@ -143,9 +140,18 @@ impl RequestTemplate {
                 Encoding::ApplicationXWwwFormUrlencoded => {
                     // TODO: this is a performance bottleneck
                     // We first encode everything to string and then back to form-urlencoded
-                    let form_data = match serde_json::from_str::<serde_json::Value>(&body) {
-                        Ok(deserialized_data) => serde_urlencoded::to_string(deserialized_data)?,
-                        Err(_) => body,
+                    let form_data = match serde_json::from_str::<String>(&body) {
+                        Ok(raw_str) => {
+                            let form_data =
+                                match serde_json::from_str::<serde_json::Value>(&raw_str) {
+                                    Ok(deserialized_data) => {
+                                        serde_urlencoded::to_string(deserialized_data)?
+                                    }
+                                    Err(_) => body,
+                                };
+                            form_data
+                        }
+                        Err(_) => serde_urlencoded::to_string(&rendered_body)?,
                     };
 
                     req.body_mut().replace(form_data.into());
