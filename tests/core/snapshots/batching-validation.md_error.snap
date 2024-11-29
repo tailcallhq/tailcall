@@ -4,7 +4,7 @@ expression: errors
 ---
 [
   {
-    "message": "request body batching requires exactly one dynamic value in the body.",
+    "message": "Request body batching requires exactly one dynamic value in the body.",
     "trace": [
       "Query",
       "user",
@@ -14,7 +14,7 @@ expression: errors
     "description": null
   },
   {
-    "message": "request body batching requires exactly one dynamic value in the body.",
+    "message": "Request body batching requires exactly one dynamic value in the body.",
     "trace": [
       "Query",
       "userWithId",
@@ -24,7 +24,7 @@ expression: errors
     "description": null
   },
   {
-    "message": "request body batching requires exactly one dynamic value in the body.",
+    "message": "Request body batching requires exactly one dynamic value in the body.",
     "trace": [
       "Query",
       "userWithIdTest",

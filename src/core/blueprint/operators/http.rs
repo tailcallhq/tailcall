@@ -1,4 +1,5 @@
-use regex::Regex;
+use std::borrow::Cow;
+
 use tailcall_valid::{Valid, Validator};
 use template_validation::validate_argument;
 
@@ -69,20 +70,12 @@ pub fn compile_http(
                 if let Some(keys) = keys {
                     // only one dynamic value allowed in body for batching to work.
                     if keys.len() != 1 {
-                        Valid::fail(
-                            "request body batching requires exactly one dynamic value in the body."
-                                .to_string(),
-                        )
-                        .trace("body")
+                        Valid::fail(BlueprintError::BatchRequiresDynamicParameter).trace("body")
                     } else {
                         Valid::succeed((request_template, keys.first().cloned()))
                     }
                 } else {
-                    Valid::fail(
-                        "request body batching requires exactly one dynamic value in the body."
-                            .to_string(),
-                    )
-                    .trace("body")
+                    Valid::fail(BlueprintError::BatchRequiresDynamicParameter).trace("body")
                 }
             } else {
                 Valid::succeed((request_template, None))

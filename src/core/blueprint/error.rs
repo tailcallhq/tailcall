@@ -49,8 +49,8 @@ pub enum BlueprintError {
     #[error("GroupBy is only supported for GET and POST requests")]
     GroupByOnlyForGetAndPost,
 
-    #[error("request body batching requires exactly one dynamic value in the body.")]
-    RequestBatchingRequiresAtLeastOneDynamicParameter,
+    #[error("Request body batching requires exactly one dynamic value in the body.")]
+    BatchRequiresDynamicParameter,
 
     #[error("Batching capability was used without enabling it in upstream")]
     IncorrectBatchingUsage,
