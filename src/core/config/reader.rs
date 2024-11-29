@@ -71,13 +71,13 @@ impl ConfigReader {
 
             match link.type_of {
                 LinkType::Config => {
-                    let source = self.resource_reader.read_file(path).await?;
+                    let source = self
+                        .resource_reader
+                        .read_file(path)
+                        .await?
+                        .render(&reader_ctx);
                     let content = source.content;
-                    let config = Config::from_source_resolved(
-                        Source::detect(&source.path)?,
-                        &content,
-                        &reader_ctx,
-                    )?;
+                    let config = Config::from_source(Source::detect(&source.path)?, &content)?;
                     config_module = config_module.and_then(|config_module| {
                         config_module.unify(ConfigModule::from(config.clone()))
                     });
@@ -200,7 +200,14 @@ impl ConfigReader {
             headers: Default::default(),
         };
 
-        let files = self.resource_reader.read_files(files).await?;
+        let files = self
+            .resource_reader
+            .read_files(files)
+            .await?
+            .into_iter()
+            .map(|file| file.render(&reader_ctx))
+            .collect::<Vec<_>>();
+
         let mut config_module = Valid::succeed(ConfigModule::default());
 
         for file in files.iter() {
@@ -210,7 +217,7 @@ impl ConfigReader {
             // Create initial config module
             let new_config_module = self
                 .resolve(
-                    Config::from_source_resolved(source, schema, &reader_ctx)?,
+                    Config::from_source(source, schema)?,
                     Path::new(&file.path).parent(),
                 )
                 .await?;

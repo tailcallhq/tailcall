@@ -20,6 +20,7 @@ use tailcall::core::config::{Config, ConfigModule, ConfigReaderContext, Source};
 use tailcall::core::http::handle_request;
 use tailcall::core::print_schema::print_schema;
 use tailcall::core::variance::Invariant;
+use tailcall::core::Mustache;
 use tailcall_prettier::Parser;
 use tailcall_valid::{Cause, Valid, ValidationError, Validator};
 
@@ -97,8 +98,8 @@ async fn check_identity(spec: &ExecutionSpec, reader_ctx: &ConfigReaderContext<'
     if spec.check_identity {
         for (source, content) in spec.server.iter() {
             if matches!(source, Source::GraphQL) {
-                let config =
-                    Config::from_source_resolved(source.to_owned(), content, reader_ctx).unwrap();
+                let content = Mustache::parse(content).partial_render(reader_ctx);
+                let config = Config::from_source(source.to_owned(), &content).unwrap();
                 let actual = config.to_sdl();
 
                 // \r is added automatically in windows, it's safe to replace it with \n
@@ -201,7 +202,9 @@ async fn test_spec(spec: ExecutionSpec) {
 
     // Resolve all configs
     let config_modules = join_all(spec.server.iter().map(|(source, content)| async {
-        let config = Config::from_source_resolved(source.to_owned(), content, &reader_ctx)?;
+        let content = Mustache::parse(content).partial_render(&reader_ctx);
+
+        let config = Config::from_source(source.to_owned(), &content)?;
 
         reader.resolve(config, spec.path.parent()).await
     }))

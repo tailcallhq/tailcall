@@ -16,15 +16,15 @@ use tailcall_valid::{Valid, Validator};
 use super::directive::Directive;
 use super::from_document::from_document;
 use super::{
-    AddField, Alias, Cache, Call, ConfigReaderContext, Discriminate, Expr, GraphQL, Grpc, Http,
-    Link, Modify, Omit, Protected, ResolverSet, Server, Telemetry, Upstream, JS,
+    AddField, Alias, Cache, Call, Discriminate, Expr, GraphQL, Grpc, Http, Link, Modify, Omit,
+    Protected, ResolverSet, Server, Telemetry, Upstream, JS,
 };
 use crate::core::config::npo::QueryPath;
 use crate::core::config::source::Source;
+use crate::core::is_default;
 use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
 use crate::core::scalar::Scalar;
-use crate::core::{is_default, Mustache};
 
 #[derive(
     Serialize,
@@ -445,16 +445,6 @@ impl Config {
             Source::Json => Ok(Config::from_json(schema)?),
             Source::Yml => Ok(Config::from_yaml(schema)?),
         }
-    }
-
-    pub fn from_source_resolved(
-        source: Source,
-        schema: &str,
-        reader_ctx: &ConfigReaderContext,
-    ) -> Result<Self> {
-        let mustache = Mustache::parse(schema);
-        let schema = mustache.partial_render(reader_ctx);
-        Self::from_source(source, &schema)
     }
 
     pub fn n_plus_one(&self) -> QueryPath {

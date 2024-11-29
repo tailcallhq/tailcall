@@ -129,17 +129,15 @@ impl Mustache {
     }
 
     pub fn partial_render(&self, value: &impl PathString) -> String {
-        self
-            .segments()
+        self.segments()
             .iter()
             .map(|segment| match segment {
                 Segment::Literal(text) => text.to_string(),
-                Segment::Expression(parts) => value
-                    .path_string(parts)
-                    .map(|v| v.to_string())
-                    .unwrap_or(
+                Segment::Expression(parts) => {
+                    value.path_string(parts).map(|v| v.to_string()).unwrap_or(
                         Mustache::from(vec![Segment::Expression(parts.to_vec())]).to_string(),
-                    ),
+                    )
+                }
             })
             .collect()
     }

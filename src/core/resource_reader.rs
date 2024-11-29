@@ -7,13 +7,23 @@ use futures_util::TryFutureExt;
 use tailcall_hasher::TailcallHasher;
 use url::Url;
 
+use crate::core::config::ConfigReaderContext;
 use crate::core::runtime::TargetRuntime;
+use crate::core::Mustache;
 
 /// Response of a file read operation
 #[derive(Debug)]
 pub struct FileRead {
     pub content: String,
     pub path: String,
+}
+
+impl FileRead {
+    pub fn render(mut self, reader_context: &ConfigReaderContext) -> Self {
+        let schema = Mustache::parse(&self.content).partial_render(reader_context);
+        self.content = schema;
+        self
+    }
 }
 
 /// Supported Resources by Resource Reader
