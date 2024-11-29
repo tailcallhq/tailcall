@@ -4,7 +4,7 @@ expression: errors
 ---
 [
   {
-    "message": "POST request batching requires exactly one dynamic value in the request body.",
+    "message": "request body batching requires exactly one dynamic value in the body.",
     "trace": [
       "Query",
       "user",
