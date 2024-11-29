@@ -19,7 +19,7 @@ pub struct FileRead {
 }
 
 impl FileRead {
-    pub fn render(mut self, reader_context: &ConfigReaderContext) -> Self {
+    pub fn render(mut self, reader_context: &impl PathString) -> Self {
         let schema = Mustache::parse(&self.content).partial_render(reader_context);
         self.content = schema;
         self
