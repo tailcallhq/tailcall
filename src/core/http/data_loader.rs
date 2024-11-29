@@ -6,6 +6,7 @@ use std::time::Duration;
 use async_graphql::async_trait;
 use async_graphql::futures_util::future::join_all;
 use async_graphql_value::ConstValue;
+use reqwest::Request;
 
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::Batch;
@@ -57,6 +58,57 @@ fn get_key<'a, T: JsonLike<'a> + Display>(value: &'a T, path: &[String]) -> anyh
         .ok_or_else(|| anyhow::anyhow!("Unable to find key {} in body", path.join(".")))
 }
 
+/// This function is used to batch the body of the requests.
+/// working of this function is as follows:
+/// 1. It takes the list of requests and extracts the body from each request.
+/// 2. It then clubs all the extracted bodies into list format. like [body1, body2, body3]
+/// 3. It does this all manually to avoid extra serialization cost.
+fn batch_request_body(mut base_request: Request, requests: &[DataLoaderRequest]) -> Request {
+    let mut request_bodies = Vec::with_capacity(requests.len());
+
+    if base_request.method() == reqwest::Method::GET {
+        // in case of GET method do nothing and return the base request.
+        return base_request;
+    }
+
+    for req in requests {
+        if let Some(body) = req.body().and_then(|b| b.as_bytes()) {
+            request_bodies.push(body);
+        }
+    }
+
+    if !request_bodies.is_empty() {
+        if cfg!(feature = "integration_test") || cfg!(test) {
+            // sort the body to make it consistent for testing env.
+            request_bodies.sort();
+        }
+
+        // construct serialization manually.
+        let merged_body = request_bodies.iter().fold(
+            Vec::with_capacity(
+                request_bodies.iter().map(|i| i.len()).sum::<usize>() + request_bodies.len(),
+            ),
+            |mut acc, item| {
+                if !acc.is_empty() {
+                    // add ',' to separate the body from each other.
+                    acc.extend_from_slice(b",");
+                }
+                acc.extend_from_slice(item);
+                acc
+            },
+        );
+
+        // add list brackets to the serialized body.
+        let mut serialized_body = Vec::with_capacity(merged_body.len() + 2);
+        serialized_body.extend_from_slice(b"[");
+        serialized_body.extend_from_slice(&merged_body);
+        serialized_body.extend_from_slice(b"]");
+        base_request.body_mut().replace(serialized_body.into());
+    }
+
+    base_request
+}
+
 #[async_trait::async_trait]
 impl Loader<DataLoaderRequest> for HttpDataLoader {
     type Value = Response<async_graphql::Value>;
@@ -70,50 +122,13 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
             let query_name = group_by.key();
             let mut dl_requests = keys.to_vec();
 
-            // Sort keys to build consistent URLs
             if cfg!(feature = "integration_test") || cfg!(test) {
+            // Sort keys to build consistent URLs only in Testing environment.
                 dl_requests.sort_by(|a, b| a.to_request().url().cmp(b.to_request().url()));
             }
 
             // Create base request
-            let mut base_request = dl_requests[0].to_request();
-            if dl_requests[0].method() == reqwest::Method::POST {
-                // run only for POST requests.
-                let mut merged_body = Vec::with_capacity(dl_requests.len());
-                for req in dl_requests.iter() {
-                    if let Some(body) = req.body().and_then(|b| b.as_bytes()) {
-                        merged_body.push(body);
-                    }
-                }
-
-                if !merged_body.is_empty() {
-                    if cfg!(feature = "integration_test") || cfg!(test) {
-                        // sort the body to make it consistent for testing env.
-                        merged_body.sort();
-                    }
-
-                    // construct serialization manually.
-                    let arr = merged_body.iter().fold(
-                        Vec::with_capacity(
-                            merged_body.iter().map(|i| i.len()).sum::<usize>() + merged_body.len(),
-                        ),
-                        |mut acc, item| {
-                            if !acc.is_empty() {
-                                acc.extend_from_slice(b",");
-                            }
-                            acc.extend_from_slice(item);
-                            acc
-                        },
-                    );
-
-                    // add list brackets to the serialized body.
-                    let mut serialized_body = Vec::with_capacity(arr.len() + 2);
-                    serialized_body.extend_from_slice(b"[");
-                    serialized_body.extend_from_slice(&arr);
-                    serialized_body.extend_from_slice(b"]");
-                    base_request.body_mut().replace(serialized_body.into());
-                }
-            }
+            let mut base_request = batch_request_body(dl_requests[0].to_request(), &dl_requests);
 
             // Merge query params in the request
             for key in &dl_requests[1..] {

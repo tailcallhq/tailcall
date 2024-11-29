@@ -58,8 +58,7 @@ pub fn compile_http(
             .into()
         })
         .and_then(|request_template| {
-            //TODO: Simply this check.
-            if !http.batch_key.is_empty() && (http.body.is_some() || http.method == Method::POST) {
+            if !http.batch_key.is_empty() && (http.body.is_some() || http.method != Method::GET) {
                 let keys = http
                     .body
                     .as_ref()
