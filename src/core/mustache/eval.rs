@@ -8,13 +8,6 @@ pub trait Eval<'a> {
     fn eval(&'a self, mustache: &'a Mustache, in_value: &'a Self::In) -> Self::Out;
 }
 
-pub trait EvalStrict<'a> {
-    type In;
-    type Out;
-
-    fn eval_strict(&'a self, mustache: &'a Mustache, in_value: &'a Self::In) -> Self::Out;
-}
-
 pub struct PathStringEval<A>(std::marker::PhantomData<A>);
 
 impl<A> PathStringEval<A> {
@@ -37,27 +30,6 @@ impl<A: PathString> Eval<'_> for PathStringEval<A> {
                     .path_string(parts)
                     .map(|a| a.to_string())
                     .unwrap_or_default(),
-            })
-            .collect()
-    }
-}
-
-impl<A: PathString> EvalStrict<'_> for PathStringEval<A> {
-    type In = A;
-    type Out = String;
-
-    fn eval_strict(&'_ self, mustache: &'_ Mustache, in_value: &'_ Self::In) -> Self::Out {
-        mustache
-            .segments()
-            .iter()
-            .map(|segment| match segment {
-                Segment::Literal(text) => text.to_string(),
-                Segment::Expression(parts) => in_value
-                    .path_string(parts)
-                    .map(|v| v.to_string())
-                    .unwrap_or(
-                        Mustache::from(vec![Segment::Expression(parts.to_vec())]).to_string(),
-                    ),
             })
             .collect()
     }
