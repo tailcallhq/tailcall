@@ -98,7 +98,7 @@ async fn check_identity(spec: &ExecutionSpec, reader_ctx: &ConfigReaderContext<'
     if spec.check_identity {
         for (source, content) in spec.server.iter() {
             if matches!(source, Source::GraphQL) {
-                let content = Mustache::parse(content).partial_render(reader_ctx);
+                let content = Mustache::parse(content).eval_partial(reader_ctx);
                 let config = Config::from_source(source.to_owned(), &content).unwrap();
                 let actual = config.to_sdl();
 
@@ -202,7 +202,7 @@ async fn test_spec(spec: ExecutionSpec) {
 
     // Resolve all configs
     let config_modules = join_all(spec.server.iter().map(|(source, content)| async {
-        let content = Mustache::parse(content).partial_render(&reader_ctx);
+        let content = Mustache::parse(content).eval_partial(&reader_ctx);
 
         let config = Config::from_source(source.to_owned(), &content)?;
 

@@ -100,7 +100,10 @@ impl Mustache {
         PathStringEval::new().eval(self, value)
     }
 
-    pub fn partial_render(&self, value: &impl PathString) -> String {
+    /// Evaluates the mustache template with the given value, returning a
+    /// string. If a path is not found in the value, the expression is
+    /// preserved.
+    pub fn eval_partial(&self, value: &impl PathString) -> String {
         self.segments()
             .iter()
             .map(|segment| match segment {
