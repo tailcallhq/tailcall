@@ -16,7 +16,7 @@ use tailcall::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::core::blueprint::{Blueprint, BlueprintError};
 use tailcall::core::config::reader::ConfigReader;
 use tailcall::core::config::transformer::Required;
-use tailcall::core::config::{Config, ConfigModule, Source};
+use tailcall::core::config::{Config, ConfigModule, ConfigReaderContext, Source};
 use tailcall::core::http::handle_request;
 use tailcall::core::print_schema::print_schema;
 use tailcall::core::variance::Invariant;
@@ -87,7 +87,7 @@ async fn is_sdl_error(spec: &ExecutionSpec, config_module: Valid<ConfigModule, S
     false
 }
 
-async fn check_identity(spec: &ExecutionSpec) {
+async fn check_identity(spec: &ExecutionSpec, reader_ctx: &ConfigReaderContext<'_>) {
     // TODO: we should probably figure out a way to do this for every test
     // but GraphQL identity checking is very hard, since a lot depends on the code
     // style the re-serializing check gives us some of the advantages of the
@@ -97,7 +97,8 @@ async fn check_identity(spec: &ExecutionSpec) {
     if spec.check_identity {
         for (source, content) in spec.server.iter() {
             if matches!(source, Source::GraphQL) {
-                let config = Config::from_source(source.to_owned(), content).unwrap();
+                let config =
+                    Config::from_source_resolved(source.to_owned(), content, reader_ctx).unwrap();
                 let actual = config.to_sdl();
 
                 // \r is added automatically in windows, it's safe to replace it with \n
@@ -190,11 +191,17 @@ async fn test_spec(spec: ExecutionSpec) {
 
     let mut runtime = runtime::create_runtime(mock_http_client.clone(), spec.env.clone(), None);
     runtime.file = Arc::new(File::new(spec.clone()));
+    let reader_ctx = ConfigReaderContext {
+        runtime: &runtime.clone(),
+        vars: &Default::default(),
+        headers: Default::default(),
+    };
+
     let reader = ConfigReader::init(runtime);
 
     // Resolve all configs
     let config_modules = join_all(spec.server.iter().map(|(source, content)| async {
-        let config = Config::from_source(source.to_owned(), content)?;
+        let config = Config::from_source_resolved(source.to_owned(), content, &reader_ctx)?;
 
         reader.resolve(config, spec.path.parent()).await
     }))
@@ -237,7 +244,7 @@ async fn test_spec(spec: ExecutionSpec) {
         .collect::<Result<Vec<_>, _>>()
         .unwrap();
 
-    check_identity(&spec).await;
+    check_identity(&spec, &reader_ctx).await;
 
     // client: Check if client spec matches snapshot
     if config_modules.len() == 1 {

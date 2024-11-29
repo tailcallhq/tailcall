@@ -1,0 +1,22 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server(port: 8080) @upstream(batch: {delay: 100, headers: []}, httpCache: 42) {
+  query: Query
+}
+
+type Post {
+  foo: String @http(url: "http://jsonplaceholder.typicode.com/posts/foo")
+  id: Int!
+  user: User @http(url: "http://jsonplaceholder.typicode.com/users/{{.value.userId}}")
+  userId: Int!
+}
+
+type Query {
+  post(id: Int!): [Post] @http(url: "http://jsonplaceholder.typicode.com/posts/{{.args.id}}")
+}
+
+type User {
+  id: Int!
+}
