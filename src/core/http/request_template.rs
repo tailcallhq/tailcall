@@ -142,15 +142,12 @@ impl RequestTemplate {
                     // TODO: this is a performance bottleneck
                     // We first encode everything to string and then back to form-urlencoded
                     let form_data = match serde_json::from_str::<String>(&body) {
-                        Ok(raw_str) => {
-                            
-                            match serde_json::from_str::<serde_json::Value>(&raw_str) {
-                                    Ok(deserialized_data) => {
-                                        serde_urlencoded::to_string(deserialized_data)?
-                                    }
-                                    Err(_) => raw_str,
-                                }
-                        }
+                        Ok(raw_str) => match serde_json::from_str::<serde_json::Value>(&raw_str) {
+                            Ok(deserialized_data) => {
+                                serde_urlencoded::to_string(deserialized_data)?
+                            }
+                            Err(_) => raw_str,
+                        },
                         Err(_) => serde_urlencoded::to_string(&rendered_body)?,
                     };
 
@@ -638,7 +635,9 @@ mod tests {
     fn test_body() {
         let tmpl = RequestTemplate::new("http://localhost:3000")
             .unwrap()
-            .body_path(Some(DynamicValue::Value(serde_json::Value::String("foo".to_string()))));
+            .body_path(Some(DynamicValue::Value(serde_json::Value::String(
+                "foo".to_string(),
+            ))));
         let ctx = Context::default();
         let body = tmpl.to_body(&ctx).unwrap();
         assert_eq!(body, "\"foo\"");
@@ -648,8 +647,8 @@ mod tests {
     fn test_body_template() {
         let tmpl = RequestTemplate::new("http://localhost:3000")
             .unwrap()
-            .body_path(Some(DynamicValue::Mustache(Mustache::parse("{{foo.bar}}"
-    ))));     let ctx = Context::default().value(json!({
+            .body_path(Some(DynamicValue::Mustache(Mustache::parse("{{foo.bar}}"))));
+        let ctx = Context::default().value(json!({
           "foo": {
             "bar": "baz"
           }
@@ -663,8 +662,8 @@ mod tests {
         let tmpl = RequestTemplate::new("http://localhost:3000")
             .unwrap()
             .encoding(crate::core::config::Encoding::ApplicationJson)
-            .body_path(Some(DynamicValue::Mustache(Mustache::parse("{{foo.bar}}"
-    ))));     let ctx = Context::default().value(json!({
+            .body_path(Some(DynamicValue::Mustache(Mustache::parse("{{foo.bar}}"))));
+        let ctx = Context::default().value(json!({
           "foo": {
             "bar": "baz"
           }
@@ -826,9 +825,10 @@ mod tests {
         fn test_with_string() {
             let tmpl = RequestTemplate::form_encoded_url("http://localhost:3000")
                 .unwrap()
-                .body_path(Some(DynamicValue::Mustache(Mustache::parse("{{foo.bar}}"
-        ))));     let ctx = Context::default().value(json!({"foo": {"bar":
-        "baz"}}));     let request_body = tmpl.to_body(&ctx);
+                .body_path(Some(DynamicValue::Mustache(Mustache::parse("{{foo.bar}}"))));
+            let ctx = Context::default().value(json!({"foo": {"bar":
+        "baz"}}));
+            let request_body = tmpl.to_body(&ctx);
             let body = request_body.unwrap();
             assert_eq!(body, "baz");
         }
