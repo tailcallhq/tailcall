@@ -105,8 +105,10 @@ pub fn compile_http(
 
                 // notes:
                 // batch_key -> is used for response grouping.
-                // but when batching body, we can't just rely on the key i.e is if dynamic key is deeply nested inside then atomic/singular key won't suffice.
-                // so we need some path that allows to to extract the body key from request body.
+                // but when batching body, we can't just rely on the key i.e is if dynamic key
+                // is deeply nested inside then atomic/singular key won't suffice.
+                // so we need some path that allows to to extract the body key from request
+                // body.
                 let body_path = body_key
                     .map(|v| v.into_iter().map(|v| v.to_string()).collect::<Vec<_>>())
                     .unwrap_or_default();

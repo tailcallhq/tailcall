@@ -3,9 +3,8 @@ use std::borrow::Cow;
 use serde::de::DeserializeOwned;
 
 use crate::core::blueprint::DynamicValue;
-use crate::core::path::PathString;
-
 use crate::core::json::{JsonLike, JsonObjectLike};
+use crate::core::path::PathString;
 
 pub trait ValueExt {
     type Output;

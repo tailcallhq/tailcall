@@ -61,7 +61,8 @@ fn get_key<'a, T: JsonLike<'a> + Display>(value: &'a T, path: &[String]) -> anyh
 /// This function is used to batch the body of the requests.
 /// working of this function is as follows:
 /// 1. It takes the list of requests and extracts the body from each request.
-/// 2. It then clubs all the extracted bodies into list format. like [body1, body2, body3]
+/// 2. It then clubs all the extracted bodies into list format. like [body1,
+///    body2, body3]
 /// 3. It does this all manually to avoid extra serialization cost.
 fn batch_request_body(mut base_request: Request, requests: &[DataLoaderRequest]) -> Request {
     let mut request_bodies = Vec::with_capacity(requests.len());
@@ -126,7 +127,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
                 dl_requests.sort_by(|a, b| a.to_request().url().cmp(b.to_request().url()));
             }
 
-            if let Some(base_dl_request) = dl_requests.get(0).as_mut() {
+            if let Some(base_dl_request) = dl_requests.first().as_mut() {
                 // Create base request
                 let mut base_request =
                     batch_request_body(base_dl_request.to_request(), &dl_requests);

@@ -18,7 +18,7 @@ impl DataLoaderRequest {
     }
 
     pub fn with_body(self, body: Option<serde_json::Value>) -> Self {
-        Self { body: body, ..self }
+        Self { body, ..self }
     }
 
     pub fn body_value(&self) -> Option<&serde_json::Value> {

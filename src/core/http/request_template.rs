@@ -143,14 +143,13 @@ impl RequestTemplate {
                     // We first encode everything to string and then back to form-urlencoded
                     let form_data = match serde_json::from_str::<String>(&body) {
                         Ok(raw_str) => {
-                            let form_data =
-                                match serde_json::from_str::<serde_json::Value>(&raw_str) {
+                            
+                            match serde_json::from_str::<serde_json::Value>(&raw_str) {
                                     Ok(deserialized_data) => {
                                         serde_urlencoded::to_string(deserialized_data)?
                                     }
                                     Err(_) => body,
-                                };
-                            form_data
+                                }
                         }
                         Err(_) => serde_urlencoded::to_string(&rendered_body)?,
                     };
