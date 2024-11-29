@@ -76,7 +76,7 @@ pub fn compile_call(
             .fuse(
                 Valid::from(
                     DynamicValue::try_from(&Value::Object(step.args.clone().into_iter().collect()))
-                        .map_err(|e| ValidationError::new(e.to_string())),
+                        .map_err(|e: anyhow::Error| ValidationError::new(e.to_string())),
                 )
                 .map(IR::Dynamic),
             )

@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt::Display;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -49,14 +50,11 @@ impl HttpDataLoader {
     }
 }
 
-fn get_key<'a, T: JsonLike<'a>>(value: &'a T, path: &str) -> anyhow::Result<&'a str> {
+fn get_key<'a, T: JsonLike<'a> + Display>(value: &'a T, path: &str) -> anyhow::Result<String> {
     value
-        .get_path(&[path])
-        .and_then(|k| k.as_str())
-        .ok_or(anyhow::anyhow!(
-            "Unable to find key '{}' in request body.",
-            path
-        ))
+        .get_key(path)
+        .and_then(|k| Some(k.to_string()))
+        .ok_or_else(|| anyhow::anyhow!("Unable to find key {} in body", path))
 }
 
 #[async_trait::async_trait]
@@ -183,7 +181,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
                 let path = group_by.key();
                 for (dl_req, body) in request_to_body_map.into_iter() {
                     // retrive the key from body
-                    let extracted_value = data_extractor(&response_map, get_key(&body, path)?);
+                    let extracted_value = data_extractor(&response_map, &get_key(&body, path)?);
                     let res = res.clone().body(extracted_value);
                     hashmap.insert(dl_req.clone(), res);
                 }

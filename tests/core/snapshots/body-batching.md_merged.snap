@@ -25,7 +25,7 @@ type User {
   posts: [Post]
     @http(
       url: "https://jsonplaceholder.typicode.com/posts"
-      body: "{\"userId\":\"{{.value.id}}\",\"title\":\"foo\",\"body\":\"bar\"}"
+      body: {userId: "{{.value.id}}", title: "foo", body: "bar"}
       batchKey: ["userId"]
       method: "POST"
     )

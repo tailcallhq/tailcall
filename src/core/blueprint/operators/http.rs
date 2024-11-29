@@ -1,4 +1,3 @@
-use regex::Regex;
 use tailcall_valid::{Valid, ValidationError, Validator};
 
 use crate::core::blueprint::*;
@@ -29,31 +28,6 @@ pub fn compile_http(
                     && !http.batch_key.is_empty()
             }),
         )
-        .and_then(|_| {
-            let result = if http.method == Method::POST {
-                if !http.batch_key.is_empty() {
-                    let keys = http
-                        .body
-                        .as_ref()
-                        .map(|b| extract_expression_keys(b).len())
-                        .unwrap_or_default();
-
-                    if keys == 1 {
-                        Valid::succeed(())
-                    }else{
-                        Valid::fail(
-                            "POST request batching requires exactly one dynamic value in the request body.".to_string(),
-                        )
-                    }
-                } else {
-                    Valid::succeed(())
-                }
-            } else {
-                Valid::succeed(())
-            };
-
-            result.trace("body")
-        })
         .and(Valid::succeed(http.url.as_str()))
         .zip(helpers::headers::to_mustache_headers(&http.headers))
         .and_then(|(base_url, headers)| {
@@ -81,7 +55,35 @@ pub fn compile_http(
             .map_err(|e| ValidationError::new(e.to_string()))
             .into()
         })
-        .map(|req_template| {
+        .and_then(|request_template| {
+            //TODO: Simply this check.
+            if !http.batch_key.is_empty() && (http.body.is_some() || http.method == Method::POST) {
+                let keys = http
+                    .body
+                    .as_ref()
+                    .map(|b| extract_expression_keys(b, None));
+                if let Some(keys) = keys {
+                    // only one dynamic value allowed in body for batching to work.
+                    if keys.len() != 1 {
+                        return Valid::fail(
+                            "POST request batching requires exactly one dynamic value in the request body."
+                                .to_string(),
+                        ).trace("body");
+                    }else{
+                        Valid::succeed((request_template, keys.get(0).cloned()))
+                    }
+                }else{
+                    return Valid::fail(
+                        "POST request batching requires exactly one dynamic value in the request body."
+                            .to_string(),
+                    ).trace("body");
+                }
+            } else {
+                Valid::succeed((request_template, None))
+                
+            }
+        })
+        .map(|(req_template, body_key)| {
             // marge http and upstream on_request
             let http_filter = http
                 .on_request
@@ -100,17 +102,7 @@ pub fn compile_http(
                             .then(|| q.key.clone())
                     })
                 } else {
-                    // find the key from the body where value is mustache template.
-                    http.body
-                        .as_ref()
-                        .map(|b| extract_expression_keys(b))
-                        .and_then(|keys| {
-                            if keys.len() == 1 {
-                                Some(keys[0].clone())
-                            } else {
-                                None
-                            }
-                        })
+                    body_key
                 };
 
                 IR::IO(IO::Http {
@@ -158,33 +150,50 @@ pub fn update_http<'a>(
 
 /// extracts the keys from the json representation, if the value is of mustache
 /// template type.
-fn extract_expression_keys(json: &str) -> Vec<String> {
-    let mut keys = Vec::new();
-    let re = Regex::new(r#""([^"]+)"\s*:\s*"\{\{.*?\}\}""#).unwrap();
-    for cap in re.captures_iter(json) {
-        if let Some(key) = cap.get(1) {
-            keys.push(key.as_str().to_string());
+fn extract_expression_keys(json: &serde_json::Value, key: Option<&str>) -> Vec<String> {
+    let mut keys = vec![];
+    match json {
+        serde_json::Value::Array(arr) => {
+            arr.iter().for_each(|v| {
+                keys.extend(extract_expression_keys(v, None));
+            });
         }
+        serde_json::Value::Object(obj) => {
+            obj.iter().for_each(|(k, v)| {
+                keys.extend(extract_expression_keys(v, Some(k)));
+            });
+        }
+        serde_json::Value::String(s) => {
+            if let Some(k) = key {
+                if !Mustache::parse(s).is_const() {
+                    keys.push(k.to_string());
+                }
+            }
+        }
+        _ => {}
     }
-    println!("[Finder]: input: {:#?} and output: {:#?}", json, keys);
+
     keys
 }
 
 #[cfg(test)]
 mod test {
+    use serde_json::json;
+
     use super::*;
 
     #[test]
     fn test_extract_expression_keys_from_str() {
         let json = r#"{"body":"d","userId":"{{.value.uid}}","nested":{"other":"{{test}}"}}"#;
-        let keys = extract_expression_keys(json);
+        let json = serde_json::from_str(json).unwrap();
+        let keys = extract_expression_keys(&json, None);
         assert_eq!(keys, vec!["userId", "other"]);
     }
 
     #[test]
     fn test_with_non_json_value() {
-        let json = r#"{{.value}}"#;
-        let keys = extract_expression_keys(json);
+        let json = json!(r#"{{.value}}"#);
+        let keys = extract_expression_keys(&json, None);
         assert_eq!(keys, Vec::<String>::new());
     }
 }
