@@ -55,10 +55,10 @@ pub(super) async fn init_command(runtime: TargetRuntime, folder_path: &str) -> R
     Ok(())
 }
 
-fn default_graphqlrc() -> serde_yaml::Value {
-    serde_yaml::Value::Mapping(serde_yaml::mapping::Mapping::from_iter([(
+fn default_graphqlrc() -> serde_yaml_ng::Value {
+    serde_yaml_ng::Value::Mapping(serde_yaml_ng::mapping::Mapping::from_iter([(
         "schema".into(),
-        serde_yaml::Value::Sequence(vec!["./.tailcallrc.graphql".into(), "./*.graphql".into()]),
+        serde_yaml_ng::Value::Sequence(vec!["./.tailcallrc.graphql".into(), "./*.graphql".into()]),
     )]))
 }
 
@@ -72,13 +72,13 @@ async fn confirm_and_write_yml(
 
     match runtime.file.read(yml_file_path.as_ref()).await {
         Ok(yml_content) => {
-            let graphqlrc: serde_yaml::Value = serde_yaml::from_str(&yml_content)?;
+            let graphqlrc: serde_yaml_ng::Value = serde_yaml_ng::from_str(&yml_content)?;
             final_graphqlrc = graphqlrc.merge_right(final_graphqlrc);
-            let content = serde_yaml::to_string(&final_graphqlrc)?;
+            let content = serde_yaml_ng::to_string(&final_graphqlrc)?;
             confirm_and_write(runtime.clone(), &yml_file_path, content.as_bytes()).await
         }
         Err(_) => {
-            let content = serde_yaml::to_string(&final_graphqlrc)?;
+            let content = serde_yaml_ng::to_string(&final_graphqlrc)?;
             runtime.file.write(&yml_file_path, content.as_bytes()).await
         }
     }

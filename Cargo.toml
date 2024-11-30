@@ -74,7 +74,7 @@ thiserror = { workspace = true }
 serde_json = { workspace = true }
 serde = { workspace = true }
 serde_qs = "0.13"
-serde_yaml = "0.9.34"
+serde_yaml_ng = "0.10.0"
 serde_urlencoded = "0.7.1"
 url = { workspace = true }
 indexmap = { workspace = true }

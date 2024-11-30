@@ -83,7 +83,7 @@ impl Generator {
 
         let config: Config = match source {
             ConfigSource::Json => serde_json::from_str(&config_content)?,
-            ConfigSource::Yml => serde_yaml::from_str(&config_content)?,
+            ConfigSource::Yml => serde_yaml_ng::from_str(&config_content)?,
         };
 
         config.into_resolved(config_path)
