@@ -5,8 +5,9 @@ use crate::core::blueprint::*;
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::Field;
 use crate::core::endpoint::Endpoint;
-use crate::core::http::{HttpFilter, Method, RequestTemplate};
+use crate::core::http::{Method, RequestTemplate};
 use crate::core::ir::model::{IO, IR};
+use crate::core::worker_hooks::WorkerHooks;
 use crate::core::{config, helpers, Mustache};
 
 pub fn compile_http(
@@ -68,11 +69,12 @@ pub fn compile_http(
         })
         .map(|req_template| {
             // marge http and upstream on_request
-            let http_filter = http
+            let on_request = http
                 .on_request
                 .clone()
-                .or(config_module.upstream.on_request.clone())
-                .map(|on_request| HttpFilter { on_request });
+                .or(config_module.upstream.on_request.clone());
+            let on_response_body = http.on_response_body.clone();
+            let hook = WorkerHooks::try_new(on_request, on_response_body).ok();
 
             let io = if !http.batch_key.is_empty() && http.method == Method::GET {
                 // Find a query parameter that contains a reference to the {{.value}} key
@@ -85,18 +87,18 @@ pub fn compile_http(
                     req_template,
                     group_by: Some(GroupBy::new(http.batch_key.clone(), key)),
                     dl_id: None,
-                    http_filter,
                     is_list,
                     dedupe,
+                    hook,
                 })
             } else {
                 IR::IO(IO::Http {
                     req_template,
                     group_by: None,
                     dl_id: None,
-                    http_filter,
                     is_list,
                     dedupe,
+                    hook,
                 })
             };
             (io, &http.select)

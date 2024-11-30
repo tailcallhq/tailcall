@@ -2,7 +2,7 @@ use async_graphql_value::ConstValue;
 
 use super::eval_http::{
     execute_grpc_request_with_dl, execute_raw_grpc_request, execute_raw_request,
-    execute_request_with_dl, parse_graphql_response, set_headers, EvalHttp,
+    execute_request_with_dl, parse_graphql_response, set_headers, EvalHttp, WorkerContext,
 };
 use super::model::{CacheKey, IO};
 use super::{EvalContext, ResolverContextLike};
@@ -45,15 +45,15 @@ where
     Ctx: ResolverContextLike + Sync,
 {
     match io {
-        IO::Http { req_template, dl_id, http_filter, .. } => {
-            let worker = &ctx.request_ctx.runtime.cmd_worker;
+        IO::Http { req_template, dl_id, hook, .. } => {
+            let event_worker = &ctx.request_ctx.runtime.cmd_worker;
+            let js_worker = &ctx.request_ctx.runtime.worker;
             let eval_http = EvalHttp::new(ctx, req_template, dl_id);
             let request = eval_http.init_request()?;
-            let response = match (&worker, http_filter) {
-                (Some(worker), Some(http_filter)) => {
-                    eval_http
-                        .execute_with_worker(request, worker, http_filter)
-                        .await?
+            let response = match (&event_worker, js_worker, hook) {
+                (Some(worker), Some(js_worker), Some(hook)) => {
+                    let worker_ctx = WorkerContext::new(worker, js_worker, hook);
+                    eval_http.execute_with_worker(request, worker_ctx).await?
                 }
                 _ => eval_http.execute(request).await?,
             };
@@ -76,8 +76,9 @@ where
             set_headers(ctx, &res);
             parse_graphql_response(ctx, res, field_name)
         }
-        IO::Grpc { req_template, dl_id, .. } => {
+        IO::Grpc { req_template, dl_id, hook, .. } => {
             let rendered = req_template.render(ctx)?;
+            let worker = &ctx.request_ctx.runtime.worker;
 
             let res = if ctx.request_ctx.upstream.batch.is_some() &&
                     // TODO: share check for operation_type for resolvers
@@ -91,6 +92,10 @@ where
                 execute_raw_grpc_request(ctx, req, &req_template.operation).await?
             };
 
+            let res = match (worker.as_ref(), hook.as_ref()) {
+                (Some(worker), Some(hook)) => hook.on_response(worker, res).await?,
+                _ => res,
+            };
             set_headers(ctx, &res);
 
             Ok(res.body)

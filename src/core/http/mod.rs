@@ -1,7 +1,7 @@
 pub use cache::*;
 pub use data_loader::*;
 pub use data_loader_request::*;
-use http::header::HeaderValue;
+use http::HeaderValue;
 pub use method::Method;
 pub use query_encoder::QueryEncoder;
 pub use request_context::RequestContext;
@@ -23,16 +23,3 @@ mod telemetry;
 
 pub static TAILCALL_HTTPS_ORIGIN: HeaderValue = HeaderValue::from_static("https://tailcall.run");
 pub static TAILCALL_HTTP_ORIGIN: HeaderValue = HeaderValue::from_static("http://tailcall.run");
-
-#[derive(Default, Clone, Debug)]
-/// User can configure the filter/interceptor
-/// for the http requests.
-pub struct HttpFilter {
-    pub on_request: String,
-}
-
-impl HttpFilter {
-    pub fn new(on_request: &str) -> Self {
-        HttpFilter { on_request: on_request.to_owned() }
-    }
-}

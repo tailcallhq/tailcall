@@ -101,4 +101,10 @@ pub struct Http {
     ///   "buzz": "eggs", ... }, ... }` we can use { foo: "{{.foo}}", buzz:
     ///   "{{.fizz.buzz}}" }`
     pub select: Option<Value>,
+
+    /// Specifies a JavaScript function to be executed after receiving the
+    /// response body. This function can modify or transform the response
+    /// body before it's sent back to the client.
+    #[serde(rename = "onResponseBody", default, skip_serializing_if = "is_default")]
+    pub on_response_body: Option<String>,
 }
