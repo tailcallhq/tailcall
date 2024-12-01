@@ -56,10 +56,12 @@ fn json_schema_from_field(config: &Config, field: &Field) -> FieldSchema {
     let args_schema = crate::core::blueprint::to_json_schema_for_args(&field.args, config);
     FieldSchema { args: args_schema, field: field_schema }
 }
+
 pub struct FieldSchema {
     pub args: JsonSchema,
     pub field: JsonSchema,
 }
+
 fn validate_schema(
     field_schema: FieldSchema,
     operation: &ProtobufOperation,
@@ -81,12 +83,7 @@ fn validate_schema(
     input_type
         .zip(output_type)
         .and_then(|(_input_schema, sub_type)| {
-            // TODO: add validation for input schema - should compare result grpc.body to
-            // schema
             let super_type = field_schema.field;
-            // TODO: all of the fields in protobuf are optional actually
-            // and if we want to mark some fields as required in GraphQL
-            // JsonSchema won't match and the validation will fail
             match sub_type.is_a(&super_type, name).to_result() {
                 Ok(res) => Valid::succeed(res),
                 Err(e) => Valid::from_validation_err(BlueprintError::from_validation_string(e)),
@@ -124,10 +121,7 @@ fn validate_group_by(
     json_schema
         .zip(Valid::from(output_type))
         .and_then(|(_input_schema, output_schema)| {
-            // TODO: add validation for input schema - should compare result grpc.body to
-            // schema considering repeated message type
             let fields = &field_schema.field;
-            // we're treating List types for gRPC as optional.
             let fields = JsonSchema::Opt(Box::new(JsonSchema::Arr(Box::new(fields.to_owned()))));
             match fields
                 .is_a(&output_schema, group_by[0].as_str())
@@ -165,12 +159,16 @@ impl TryFrom<&str> for GrpcMethod {
         let parts: Vec<&str> = value.rsplitn(3, '.').collect();
         match &parts[..] {
             &[name, service, id] => {
-                let method = GrpcMethod {
+                if id.is_empty() || service.is_empty() || name.is_empty() {
+                    return Err(ValidationError::new(
+                        BlueprintError::InvalidGrpcMethodFormat(value.to_string()),
+                    ));
+                }
+                Ok(GrpcMethod {
                     package: id.to_owned(),
                     service: service.to_owned(),
                     name: name.to_owned(),
-                };
-                Ok(method)
+                })
             }
             _ => Err(ValidationError::new(
                 BlueprintError::InvalidGrpcMethodFormat(value.to_string()),
@@ -248,37 +246,33 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, BlueprintError> {
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryFrom;
-
+    use super::*;
     use tailcall_valid::ValidationError;
 
-    use super::GrpcMethod;
-    use crate::core::blueprint::BlueprintError;
-
     #[test]
-    fn try_from_grpc_method() {
-        let method = GrpcMethod::try_from("package_name.ServiceName.MethodName").unwrap();
-        let method1 = GrpcMethod::try_from("package.name.ServiceName.MethodName").unwrap();
+    fn test_try_from_grpc_method() {
+        let valid_method = GrpcMethod::try_from("package_name.ServiceName.MethodName");
+        assert!(valid_method.is_ok());
+        assert_eq!(
+            valid_method.unwrap(),
+            GrpcMethod {
+                package: "package_name".to_string(),
+                service: "ServiceName".to_string(),
+                name: "MethodName".to_string()
+            }
+        );
 
-        assert_eq!(method.package, "package_name");
-        assert_eq!(method.service, "ServiceName");
-        assert_eq!(method.name, "MethodName");
-
-        assert_eq!(method1.package, "package.name");
-        assert_eq!(method1.service, "ServiceName");
-        assert_eq!(method1.name, "MethodName");
+        let invalid_method = GrpcMethod::try_from("InvalidMethodFormat");
+        assert!(invalid_method.is_err());
     }
 
     #[test]
-    fn try_from_grpc_method_invalid() {
-        let result = GrpcMethod::try_from("package_name.ServiceName");
-
-        assert!(result.is_err());
-        assert_eq!(
-            result.err().unwrap(),
-            ValidationError::new(BlueprintError::InvalidGrpcMethodFormat(
-                "package_name.ServiceName".to_string()
-            ))
-        );
+    fn test_display_grpc_method() {
+        let method = GrpcMethod {
+            package: "package_name".to_string(),
+            service: "ServiceName".to_string(),
+            name: "MethodName".to_string(),
+        };
+        assert_eq!(format!("{}", method), "package_name.ServiceName.MethodName");
     }
 }
