@@ -1,16 +1,16 @@
 use http::header::HeaderName;
-use tailcall_valid::{Valid, ValidationError, Validator};
+use tailcall_valid::{Valid, Cause, Validator};
 
 use crate::core::config::KeyValue;
 use crate::core::mustache::Mustache;
 
 pub type MustacheHeaders = Vec<(HeaderName, Mustache)>;
 
-pub fn to_mustache_headers(headers: &[KeyValue]) -> Valid<MustacheHeaders, String> {
+pub fn to_mustache_headers(headers: &[KeyValue]) -> Valid<MustacheHeaders, String, String> {
     Valid::from_iter(headers.iter(), |key_value| {
         let name = Valid::from(
             HeaderName::from_bytes(key_value.key.as_bytes())
-                .map_err(|e| ValidationError::new(e.to_string())),
+                .map_err(|e| Cause::new(e.to_string())),
         )
         .trace(&key_value.key);
 

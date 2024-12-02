@@ -13,7 +13,7 @@ fn compile_interface_resolver(
     interface_name: &str,
     interface_types: &BTreeSet<String>,
     discriminate: &Option<Discriminate>,
-) -> Valid<Discriminator, BlueprintError> {
+) -> Valid<Discriminator, BlueprintError, String> {
     let typename_field = discriminate.as_ref().map(|d| d.get_field());
 
     match Discriminator::new(
@@ -24,14 +24,18 @@ fn compile_interface_resolver(
     .to_result()
     {
         Ok(data) => Valid::succeed(data),
-        Err(err) => Valid::from_validation_err(BlueprintError::from_validation_string(err)),
+        Err(err) => Valid::from(BlueprintError::from_validation_string(err)),
     }
 }
 
-pub fn update_interface_resolver<'a>(
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a Type, &'a str), FieldDefinition, BlueprintError>
-{
-    TryFold::<(&ConfigModule, &Field, &Type, &str), FieldDefinition, BlueprintError>::new(
+pub fn update_interface_resolver<'a>() -> TryFold<
+    'a,
+    (&'a ConfigModule, &'a Field, &'a Type, &'a str),
+    FieldDefinition,
+    BlueprintError,
+    String,
+> {
+    TryFold::<(&ConfigModule, &Field, &Type, &str), FieldDefinition, BlueprintError, String>::new(
         |(config, field, _, _), mut b_field| {
             let Some(interface_types) = config.interfaces_types_map().get(field.type_of.name())
             else {

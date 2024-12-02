@@ -4,7 +4,7 @@ use tailcall_valid::Valid;
 use crate::core::grpc::request_template::RequestBody;
 use crate::core::mustache::Mustache;
 
-pub fn to_body(body: Option<&Value>) -> Valid<Option<RequestBody>, String> {
+pub fn to_body(body: Option<&Value>) -> Valid<Option<RequestBody>, String, String> {
     let Some(body) = body else {
         return Valid::succeed(None);
     };

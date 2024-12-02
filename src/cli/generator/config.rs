@@ -116,8 +116,8 @@ pub struct Schema {
     pub mutation: Option<String>,
 }
 
-fn between(threshold: f32, min: f32, max: f32) -> Valid<(), String> {
-    Valid::<(), String>::fail(format!(
+fn between(threshold: f32, min: f32, max: f32) -> Valid<(), String, String> {
+    Valid::<(), String, String>::fail(format!(
         "Invalid threshold value ({:.2}). Allowed range is [{:.2} - {:.2}] inclusive.",
         threshold, min, max
     ))
@@ -126,7 +126,8 @@ fn between(threshold: f32, min: f32, max: f32) -> Valid<(), String> {
 
 impl ValidateFrom<PresetConfig> for Preset {
     type Error = String;
-    fn validate_from(config: PresetConfig) -> Valid<Self, Self::Error> {
+    type Trace = String;
+    fn validate_from(config: PresetConfig) -> Valid<Self, Self::Error, Self::Trace> {
         let mut preset = Preset::new();
 
         if let Some(merge_type) = config.merge_type {
@@ -268,7 +269,7 @@ mod tests {
     use std::collections::HashMap;
 
     use pretty_assertions::assert_eq;
-    use tailcall_valid::{ValidateInto, ValidationError, Validator};
+    use tailcall_valid::{Cause, ValidateInto, Validator};
 
     use super::*;
 
@@ -333,7 +334,7 @@ mod tests {
             unwrap_single_field_types: None,
         };
 
-        let transform_preset: Result<Preset, ValidationError<String>> =
+        let transform_preset: Result<Preset, Cause<String>, String> =
             config_preset.validate_into().to_result();
         assert!(transform_preset.is_err());
     }
@@ -434,7 +435,7 @@ mod tests {
         let json = r#"
           {"output": {
               "paths": "./output.graphql",
-          }} 
+          }}
         "#;
         let expected_error =
             "unknown field `paths`, expected `path` or `format` at line 3 column 21";
@@ -446,7 +447,7 @@ mod tests {
         let json = r#"
           {"schema": {
               "querys": "Query",
-          }} 
+          }}
         "#;
         let expected_error =
             "unknown field `querys`, expected `query` or `mutation` at line 3 column 22";

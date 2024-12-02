@@ -1,4 +1,4 @@
-use tailcall_valid::{Valid, ValidationError, Validator};
+use tailcall_valid::{Valid, Cause, Validator};
 
 use super::BlueprintError;
 use crate::core::config::{Link, LinkType};
@@ -7,7 +7,7 @@ use crate::core::directive::DirectiveCodec;
 pub struct Links;
 
 impl TryFrom<Vec<Link>> for Links {
-    type Error = ValidationError<crate::core::blueprint::BlueprintError>;
+    type Error = Cause<crate::core::blueprint::BlueprintError, String>;
 
     fn try_from(links: Vec<Link>) -> Result<Self, Self::Error> {
         Valid::from_iter(links.iter().enumerate(), |(pos, link)| {

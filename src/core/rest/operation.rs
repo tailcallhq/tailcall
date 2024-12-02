@@ -33,7 +33,7 @@ impl OperationQuery {
 pub async fn validate_operations(
     blueprint: &Blueprint,
     operations: Vec<OperationQuery>,
-) -> Valid<(), String> {
+) -> Valid<(), String, String> {
     let schema = blueprint.to_schema_with(SchemaModifiers::default().with_no_resolver());
     Valid::from_iter(
         futures_util::future::join_all(operations.into_iter().map(|op| op.validate(&schema)))
@@ -43,8 +43,8 @@ pub async fn validate_operations(
             if errors.is_empty() {
                 Valid::succeed(())
             } else {
-                Valid::<(), String>::from_vec_cause(
-                    errors.iter().map(|e| Cause::new(e.to_string())).collect(),
+                Valid::<(), String, String>::from(
+                    errors.iter().map(|e| Cause::new(e.to_string())).collect::<Vec<_>>(),
                 )
             }
         },

@@ -27,7 +27,7 @@ impl KeyedDiscriminator {
     ///
     /// `type_name`: The name of the type that this discriminator is applied at.
     /// `types`: The possible types that this discriminator can resolve.
-    pub fn new(type_name: String, types: BTreeSet<String>) -> Valid<Self, String> {
+    pub fn new(type_name: String, types: BTreeSet<String>) -> Valid<Self, String, String> {
         let discriminator = Self { type_name, types };
 
         Valid::succeed(discriminator)

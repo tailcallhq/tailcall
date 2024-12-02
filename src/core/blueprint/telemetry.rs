@@ -31,7 +31,7 @@ pub struct Telemetry {
     pub request_headers: Vec<String>,
 }
 
-fn to_url(url: &str) -> Valid<Url, BlueprintError> {
+fn to_url(url: &str) -> Valid<Url, BlueprintError, String> {
     match Url::parse(url).map_err(BlueprintError::UrlParse) {
         Ok(url) => Valid::succeed(url),
         Err(err) => Valid::fail(err),
@@ -39,7 +39,7 @@ fn to_url(url: &str) -> Valid<Url, BlueprintError> {
     .trace("url")
 }
 
-fn to_headers(headers: Vec<KeyValue>) -> Valid<HeaderMap, BlueprintError> {
+fn to_headers(headers: Vec<KeyValue>) -> Valid<HeaderMap, BlueprintError, String> {
     Valid::from_iter(headers.iter(), |key_value| {
         match HeaderName::from_str(&key_value.key).map_err(BlueprintError::InvalidHeaderName) {
             Ok(name) => Valid::succeed(name),
@@ -58,10 +58,10 @@ fn to_headers(headers: Vec<KeyValue>) -> Valid<HeaderMap, BlueprintError> {
     .trace("headers")
 }
 
-pub fn to_opentelemetry<'a>() -> TryFold<'a, ConfigModule, Telemetry, BlueprintError> {
+pub fn to_opentelemetry<'a>() -> TryFold<'a, ConfigModule, Telemetry, BlueprintError, String> {
     TryFoldConfig::<Telemetry>::new(|config, up| {
         if let Some(export) = config.telemetry.export.as_ref() {
-            let export: Valid<TelemetryExporter, BlueprintError> = match export {
+            let export: Valid<TelemetryExporter, BlueprintError, String> = match export {
                 config::TelemetryExporter::Stdout(config) => {
                     Valid::succeed(TelemetryExporter::Stdout(config.clone()))
                 }
@@ -88,13 +88,13 @@ pub fn to_opentelemetry<'a>() -> TryFold<'a, ConfigModule, Telemetry, BlueprintE
     })
 }
 
-fn validate_apollo(apollo: Apollo) -> Valid<Apollo, BlueprintError> {
+fn validate_apollo(apollo: Apollo) -> Valid<Apollo, BlueprintError, String> {
     validate_graph_ref(&apollo.graph_ref)
         .map(|_| apollo)
         .trace("apollo.graph_ref")
 }
 
-fn validate_graph_ref(graph_ref: &str) -> Valid<(), BlueprintError> {
+fn validate_graph_ref(graph_ref: &str) -> Valid<(), BlueprintError, String> {
     let is_valid = regex::Regex::new(r"^[A-Za-z0-9-_]+@[A-Za-z0-9-_]+$")
         .unwrap()
         .is_match(graph_ref);

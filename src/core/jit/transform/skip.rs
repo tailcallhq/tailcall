@@ -25,7 +25,7 @@ where
 
     type Error = Error;
 
-    fn transform(&self, plan: Self::Value) -> Valid<Self::Value, Self::Error> {
+    fn transform(&self, plan: Self::Value) -> Valid<Self::Value, Self::Error, String> {
         let mut plan = plan;
         let variables: &Variables<Var> = self.variables;
         skip(&mut plan.selection, variables);

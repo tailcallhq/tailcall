@@ -45,7 +45,7 @@ impl<'a> MustachePartsValidator<'a> {
         Ok(())
     }
 
-    fn validate(&self, parts: &[String], is_query: bool) -> Valid<(), BlueprintError> {
+    fn validate(&self, parts: &[String], is_query: bool) -> Valid<(), BlueprintError, String> {
         let config = self.config;
         let args = &self.field.args;
 
@@ -101,7 +101,7 @@ impl<'a> MustachePartsValidator<'a> {
         Valid::succeed(())
     }
 
-    fn validate_resolver(&self, resolver: &IR) -> Valid<(), BlueprintError> {
+    fn validate_resolver(&self, resolver: &IR) -> Valid<(), BlueprintError, String> {
         match resolver {
             IR::Merge(resolvers) => {
                 Valid::from_iter(resolvers, |resolver| self.validate_resolver(resolver)).unit()
@@ -180,7 +180,7 @@ impl FieldDefinition {
         &self,
         type_of: &config::Type,
         config: &Config,
-    ) -> Valid<(), BlueprintError> {
+    ) -> Valid<(), BlueprintError, String> {
         // XXX we could use `Mustache`'s `render` method with a mock
         // struct implementing the `PathString` trait encapsulating `validation_map`
         // but `render` simply falls back to the default value for a given

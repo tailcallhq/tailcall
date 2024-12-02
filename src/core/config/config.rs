@@ -431,7 +431,7 @@ impl Config {
         Ok(serde_yaml::from_str(yaml)?)
     }
 
-    pub fn from_sdl(sdl: &str) -> Valid<Self, String> {
+    pub fn from_sdl(sdl: &str) -> Valid<Self, String, String> {
         let doc = async_graphql::parser::parse_schema(sdl);
         match doc {
             Ok(doc) => from_document(doc),

@@ -47,7 +47,7 @@ impl Discriminator {
         type_name: String,
         types: BTreeSet<String>,
         typename_field: Option<String>,
-    ) -> Valid<Self, String> {
+    ) -> Valid<Self, String, String> {
         if let Some(typename_field) = &typename_field {
             if typename_field.is_empty() {
                 return Valid::fail(format!(

@@ -22,7 +22,7 @@ impl<A: Debug> Transform for AuthPlanner<A> {
     type Value = OperationPlan<A>;
     type Error = Infallible;
 
-    fn transform(&self, mut plan: Self::Value) -> Valid<Self::Value, Self::Error> {
+    fn transform(&self, mut plan: Self::Value) -> Valid<Self::Value, Self::Error, String> {
         let mut auth = Vec::new();
         plan.selection
             .iter_mut()

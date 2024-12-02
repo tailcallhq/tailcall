@@ -1,6 +1,6 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use tailcall_valid::{ValidationError, Validator};
+use tailcall_valid::{Cause, Validator};
 use thiserror::Error;
 
 use super::Config;
@@ -77,12 +77,12 @@ impl Source {
     }
 
     /// Decode the config from the given data
-    pub fn decode(&self, data: &str) -> Result<Config, ValidationError<String>> {
+    pub fn decode(&self, data: &str) -> Result<Config, Cause<String, String>> {
         match self {
-            Source::Yml => Config::from_yaml(data).map_err(|e| ValidationError::new(e.to_string())),
+            Source::Yml => Config::from_yaml(data).map_err(|e| Cause::new(e.to_string())),
             Source::GraphQL => Config::from_sdl(data).to_result(),
             Source::Json => {
-                Config::from_json(data).map_err(|e| ValidationError::new(e.to_string()))
+                Config::from_json(data).map_err(|e| Cause::new(e.to_string()))
             }
         }
     }

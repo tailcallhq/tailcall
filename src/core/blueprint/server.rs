@@ -6,7 +6,7 @@ use std::time::Duration;
 use derive_setters::Setters;
 use http::header::{HeaderMap, HeaderName, HeaderValue};
 use rustls_pki_types::CertificateDer;
-use tailcall_valid::{Valid, ValidationError, Validator};
+use tailcall_valid::{Valid, Cause, Validator};
 
 use super::BlueprintError;
 use crate::core::blueprint::Cors;
@@ -82,7 +82,7 @@ impl Server {
 }
 
 impl TryFrom<crate::core::config::ConfigModule> for Server {
-    type Error = ValidationError<crate::core::blueprint::BlueprintError>;
+    type Error = Cause<crate::core::blueprint::BlueprintError, String>;
 
     fn try_from(config_module: config::ConfigModule) -> Result<Self, Self::Error> {
         let config_server = config_module.server.clone();
@@ -99,7 +99,7 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
                     .extensions()
                     .keys
                     .first()
-                    .ok_or_else(|| ValidationError::new(BlueprintError::KeyIsRequiredForHTTP2))?
+                    .ok_or_else(|| Cause::new(BlueprintError::KeyIsRequiredForHTTP2))?
                     .clone();
 
                 Valid::succeed(Http::HTTP2 { cert, key })
@@ -153,7 +153,7 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
 
 fn to_script(
     config_module: &crate::core::config::ConfigModule,
-) -> Valid<Option<Script>, BlueprintError> {
+) -> Valid<Option<Script>, BlueprintError, String> {
     config_module.extensions().script.as_ref().map_or_else(
         || Valid::succeed(None),
         |script| {
@@ -170,7 +170,7 @@ fn to_script(
     )
 }
 
-fn validate_cors(cors: Option<config::cors::Cors>) -> Valid<Option<Cors>, BlueprintError> {
+fn validate_cors(cors: Option<config::cors::Cors>) -> Valid<Option<Cors>, BlueprintError, String> {
     Valid::from(cors.map(|cors| cors.try_into()).transpose())
         .trace("cors")
         .trace("headers")
@@ -178,13 +178,13 @@ fn validate_cors(cors: Option<config::cors::Cors>) -> Valid<Option<Cors>, Bluepr
         .trace("schema")
 }
 
-fn validate_hostname(hostname: String) -> Valid<IpAddr, BlueprintError> {
+fn validate_hostname(hostname: String) -> Valid<IpAddr, BlueprintError, String> {
     if hostname == "localhost" {
         Valid::succeed(IpAddr::from([127, 0, 0, 1]))
     } else {
         Valid::from(
             hostname.parse().map_err(|e: AddrParseError| {
-                ValidationError::new(BlueprintError::ParsingFailed(e))
+                Cause::new(BlueprintError::ParsingFailed(e))
             }),
         )
         .trace("hostname")
@@ -195,7 +195,7 @@ fn validate_hostname(hostname: String) -> Valid<IpAddr, BlueprintError> {
 
 fn handle_response_headers(
     resp_headers: Vec<(String, String)>,
-) -> Valid<HeaderMap, BlueprintError> {
+) -> Valid<HeaderMap, BlueprintError, String> {
     Valid::from_iter(resp_headers.iter(), |(k, v)| {
         let name = match HeaderName::from_bytes(k.as_bytes()) {
             Ok(name) => Valid::succeed(name),
@@ -218,7 +218,7 @@ fn handle_response_headers(
 
 fn handle_experimental_headers(
     headers: BTreeSet<String>,
-) -> Valid<HashSet<HeaderName>, BlueprintError> {
+) -> Valid<HashSet<HeaderName>, BlueprintError, String> {
     Valid::from_iter(headers.iter(), |h| {
         if !h.to_lowercase().starts_with("x-") {
             Valid::fail(BlueprintError::ExperimentalHeaderInvalidFormat(h.clone()))

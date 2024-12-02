@@ -40,4 +40,4 @@ pub use upstream::*;
 use crate::core::config::ConfigModule;
 use crate::core::try_fold::TryFold;
 
-pub type TryFoldConfig<'a, A> = TryFold<'a, ConfigModule, A, BlueprintError>;
+pub type TryFoldConfig<'a, A> = TryFold<'a, ConfigModule, A, BlueprintError, String>;

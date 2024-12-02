@@ -4,7 +4,7 @@ use tailcall_valid::Valid;
 use crate::core::blueprint::{BlueprintError, DynamicValue};
 use crate::core::ir::model::IR;
 
-pub fn apply_select(input: (IR, &Option<Value>)) -> Valid<IR, BlueprintError> {
+pub fn apply_select(input: (IR, &Option<Value>)) -> Valid<IR, BlueprintError, String> {
     let (mut ir, select) = input;
 
     if let Some(select_value) = select {

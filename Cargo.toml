@@ -28,7 +28,7 @@ derive_more = { version = "1", features = ["from", "debug"] }
 thiserror = "1.0.59"
 url = { version = "2.5.0", features = ["serde"] }
 convert_case = "0.6.0"
-tailcall-valid = "0.1.1"
+tailcall-valid = { path = "../tailcall-valid" }
 
 [dependencies]
 # dependencies specific to CLI must have optional = true and the dep should be added to default feature.

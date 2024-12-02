@@ -59,7 +59,7 @@ fn insert_resolution(
 impl Transform for AmbiguousType {
     type Value = Config;
     type Error = String;
-    fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
+    fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error, String> {
         let mut input_types = config.input_types();
         let mut output_types = config.output_types();
         Valid::from_iter(input_types.intersection(&output_types), |current_name| {

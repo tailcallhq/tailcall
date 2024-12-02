@@ -2,7 +2,7 @@ use tailcall_valid::Valid;
 
 use crate::core::mustache::Mustache;
 
-pub fn to_url(url: &str) -> Valid<Mustache, String> {
+pub fn to_url(url: &str) -> Valid<Mustache, String, String> {
     Valid::succeed(Mustache::parse(url))
 }
 

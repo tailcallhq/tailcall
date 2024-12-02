@@ -17,7 +17,7 @@ pub struct CompileEntityResolver<'a> {
     pub entity_resolver: &'a EntityResolver,
 }
 
-pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, BlueprintError> {
+pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, BlueprintError, String> {
     let CompileEntityResolver { config_module, entity_resolver } = inputs;
     let mut resolver_by_type = HashMap::new();
 
@@ -61,7 +61,7 @@ pub fn compile_entity_resolver(inputs: CompileEntityResolver<'_>) -> Valid<IR, B
     .map_to(IR::Entity(resolver_by_type))
 }
 
-pub fn compile_service(mut sdl: String) -> Valid<IR, BlueprintError> {
+pub fn compile_service(mut sdl: String) -> Valid<IR, BlueprintError, String> {
     writeln!(sdl).ok();
 
     // Mark subgraph as Apollo federation v2 compatible according to [docs](https://www.apollographql.com/docs/apollo-server/using-federation/apollo-subgraph-setup/#2-opt-in-to-federation-2)

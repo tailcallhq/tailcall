@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use async_graphql::parser::types::ConstDirective;
 use async_graphql::Name;
 use serde_json::Value;
-use tailcall_valid::{Valid, ValidationError, Validator};
+use tailcall_valid::{Cause, Valid, Validator};
 
 use super::BlueprintError;
 use crate::core::{config, pos};
@@ -14,7 +14,7 @@ pub struct Directive {
     pub arguments: HashMap<String, Value>,
 }
 
-pub fn to_directive(const_directive: ConstDirective) -> Valid<Directive, BlueprintError> {
+pub fn to_directive(const_directive: ConstDirective) -> Valid<Directive, BlueprintError, String> {
     match const_directive
         .arguments
         .into_iter()
@@ -24,20 +24,22 @@ pub fn to_directive(const_directive: ConstDirective) -> Valid<Directive, Bluepri
             value.map(|value| (k.node.to_string(), value))
         })
         .collect::<Result<_, _>>()
-        .map_err(|e| ValidationError::new(e.to_string()))
+        .map_err(|e| Cause::<_, &str>::new(e.to_string()))
         .map(|arguments| Directive { name: const_directive.name.node.to_string(), arguments })
     {
         Ok(data) => Valid::succeed(data),
-        Err(e) => Valid::from_validation_err(BlueprintError::from_validation_string(e)),
+        Err(e) => Valid::fail(BlueprintError::from(e)),
     }
 }
 
-pub fn to_const_directive(directive: &Directive) -> Valid<ConstDirective, String> {
+pub fn to_const_directive(directive: &Directive) -> Valid<ConstDirective, String, String> {
     Valid::from_iter(directive.arguments.iter(), |(k, v)| {
         let name = pos(Name::new(k));
-        Valid::from(serde_json::from_value(v.clone()).map(pos).map_err(|e| {
-            ValidationError::new(e.to_string()).trace(format!("@{}", directive.name).as_str())
-        }))
+        Valid::from(
+            serde_json::from_value(v.clone())
+                .map(pos)
+                .map_err(|e| Cause::new(e.to_string()).trace(format!("@{}", directive.name))),
+        )
         .map(|value| (name, value))
     })
     .map(|arguments| ConstDirective { name: pos(Name::new(&directive.name)), arguments })

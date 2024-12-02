@@ -94,7 +94,7 @@ pub fn expand_resolver_derive(input: DeriveInput) -> syn::Result<TokenStream> {
         impl #name {
             pub fn from_directives(
                 directives: &[Positioned<ConstDirective>],
-            ) -> Valid<crate::core::config::ResolverSet, String> {
+            ) -> Valid<crate::core::config::ResolverSet, String, String> {
                 Valid::from_iter(directives.iter(), |directive| {
                     #(#variant_parsers)*
 

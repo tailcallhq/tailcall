@@ -5733,8 +5733,6 @@ dependencies = [
 [[package]]
 name = "tailcall-valid"
 version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce2cd6de9a8f4d0daaeec878a821ce2b7d9a78e1113af372ccaa4859ed3ec96a"
 dependencies = [
  "derive_setters",
  "http 1.1.0",

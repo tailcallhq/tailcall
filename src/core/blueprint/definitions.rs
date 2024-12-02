@@ -14,7 +14,7 @@ use crate::core::ir::model::{Cache, IR};
 use crate::core::try_fold::TryFold;
 use crate::core::{config, scalar, Type};
 
-pub fn to_scalar_type_definition(name: &str) -> Valid<Definition, BlueprintError> {
+pub fn to_scalar_type_definition(name: &str) -> Valid<Definition, BlueprintError, String> {
     if scalar::Scalar::is_predefined(name) {
         Valid::fail(BlueprintError::ScalarTypeIsPredefined(name.to_string()))
     } else {
@@ -40,7 +40,7 @@ pub fn to_union_type_definition((name, u): (&String, &Union)) -> Definition {
 
 pub fn to_input_object_type_definition(
     definition: ObjectTypeDefinition,
-) -> Valid<Definition, BlueprintError> {
+) -> Valid<Definition, BlueprintError, String> {
     Valid::succeed(Definition::InputObject(InputObjectTypeDefinition {
         name: definition.name,
         fields: definition
@@ -60,7 +60,7 @@ pub fn to_input_object_type_definition(
 
 pub fn to_interface_type_definition(
     definition: ObjectTypeDefinition,
-) -> Valid<Definition, BlueprintError> {
+) -> Valid<Definition, BlueprintError, String> {
     Valid::succeed(Definition::Interface(InterfaceTypeDefinition {
         name: definition.name,
         fields: definition.fields,
@@ -70,8 +70,9 @@ pub fn to_interface_type_definition(
     }))
 }
 
-type InvalidPathHandler = dyn Fn(&str, &[String], &[String]) -> Valid<Type, BlueprintError>;
-type PathResolverErrorHandler = dyn Fn(&str, &str, &str, &[String]) -> Valid<Type, BlueprintError>;
+type InvalidPathHandler = dyn Fn(&str, &[String], &[String]) -> Valid<Type, BlueprintError, String>;
+type PathResolverErrorHandler =
+    dyn Fn(&str, &str, &str, &[String]) -> Valid<Type, BlueprintError, String>;
 
 struct ProcessFieldWithinTypeContext<'a> {
     field: &'a config::Field,
@@ -100,7 +101,7 @@ struct ProcessPathContext<'a> {
 
 fn process_field_within_type(
     context: ProcessFieldWithinTypeContext,
-) -> Valid<Type, BlueprintError> {
+) -> Valid<Type, BlueprintError, String> {
     let field = context.field;
     let field_name = context.field_name;
     let remaining_path = context.remaining_path;
@@ -188,7 +189,7 @@ fn process_field_within_type(
 
 // Helper function to recursively process the path and return the corresponding
 // type
-fn process_path(context: ProcessPathContext) -> Valid<Type, BlueprintError> {
+fn process_path(context: ProcessPathContext) -> Valid<Type, BlueprintError, String> {
     let path = context.path;
     let field = context.field;
     let type_info = context.type_info;
@@ -263,7 +264,7 @@ fn to_object_type_definition(
     name: &str,
     type_of: &config::Type,
     config_module: &ConfigModule,
-) -> Valid<Definition, BlueprintError> {
+) -> Valid<Definition, BlueprintError, String> {
     to_fields(name, type_of, config_module).map(|fields| {
         Definition::Object(ObjectTypeDefinition {
             name: name.to_string(),
@@ -280,8 +281,9 @@ fn update_args<'a>() -> TryFold<
     (&'a ConfigModule, &'a Field, &'a config::Type, &'a str),
     FieldDefinition,
     BlueprintError,
+    String,
 > {
-    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, BlueprintError>::new(
+    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, BlueprintError, String>::new(
         move |(_, field, _typ, name), _| {
             // TODO: assert type name
             Valid::from_iter(field.args.iter(), |(name, arg)| {
@@ -315,7 +317,7 @@ fn item_is_numeric(list: &[String]) -> bool {
 fn update_resolver_from_path(
     context: &ProcessPathContext,
     base_field: blueprint::FieldDefinition,
-) -> Valid<blueprint::FieldDefinition, BlueprintError> {
+) -> Valid<blueprint::FieldDefinition, BlueprintError, String> {
     let has_index = item_is_numeric(context.path);
 
     process_path(context.clone()).and_then(|of_type| {
@@ -345,8 +347,9 @@ pub fn fix_dangling_resolvers<'a>() -> TryFold<
     (&'a ConfigModule, &'a Field, &'a config::Type, &'a str),
     FieldDefinition,
     BlueprintError,
+    String,
 > {
-    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, BlueprintError>::new(
+    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, BlueprintError, String>::new(
         move |(config, field, _, name), mut b_field| {
             let mut set = HashSet::new();
             if !field.has_resolver()
@@ -369,8 +372,9 @@ pub fn update_cache_resolvers<'a>() -> TryFold<
     (&'a ConfigModule, &'a Field, &'a config::Type, &'a str),
     FieldDefinition,
     BlueprintError,
+    String,
 > {
-    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, BlueprintError>::new(
+    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, BlueprintError, String>::new(
         move |(_config, field, typ, _name), mut b_field| {
             if let Some(config::Cache { max_age }) = field.cache.as_ref().or(typ.cache.as_ref()) {
                 b_field.map_expr(|expression| Cache::wrap(*max_age, expression))
@@ -381,7 +385,7 @@ pub fn update_cache_resolvers<'a>() -> TryFold<
     )
 }
 
-fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), BlueprintError> {
+fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), BlueprintError, String> {
     let field_type = field.type_of.name();
     if !scalar::Scalar::is_predefined(field_type) && !config.contains(field_type) {
         Valid::fail(BlueprintError::UndeclaredTypeFound(field_type.clone()))
@@ -394,7 +398,7 @@ fn to_fields(
     object_name: &str,
     type_of: &config::Type,
     config_module: &ConfigModule,
-) -> Valid<Vec<FieldDefinition>, BlueprintError> {
+) -> Valid<Vec<FieldDefinition>, BlueprintError, String> {
     let operation_type = if config_module
         .schema
         .mutation
@@ -454,7 +458,7 @@ fn to_fields(
 
     let to_added_field = |add_field: &config::AddField,
                           type_of: &config::Type|
-     -> Valid<blueprint::FieldDefinition, BlueprintError> {
+     -> Valid<blueprint::FieldDefinition, BlueprintError, String> {
         let source_field = type_of
             .fields
             .iter()
@@ -480,28 +484,28 @@ fn to_fields(
                 let invalid_path_handler = |field_name: &str,
                                             _added_field_path: &[String],
                                             original_path: &[String]|
-                 -> Valid<Type, BlueprintError> {
-                    Valid::fail_with(
-                        BlueprintError::CannotAddField,
-                        BlueprintError::PathDoesNotExist(original_path.join(", ")),
-                    )
-                    .trace(field_name)
-                };
-                let path_resolver_error_handler = |resolver_name: &str,
-                                                   field_type: &str,
-                                                   field_name: &str,
-                                                   original_path: &[String]|
-                 -> Valid<Type, BlueprintError> {
-                    Valid::<Type, BlueprintError>::fail_with(
-                        BlueprintError::CannotAddField,
-                        BlueprintError::PathContainsResolver(
+                 -> Valid<Type, BlueprintError, String> {
+                    Valid::<Type, _, _>::fail(BlueprintError::CannotAddField)
+                        .and(Valid::fail(BlueprintError::PathDoesNotExist(
                             original_path.join(", "),
-                            resolver_name.to_string(),
-                            field_type.to_string(),
-                            field_name.to_string(),
-                        ),
-                    )
+                        )))
+                        .trace(field_name.to_string())
                 };
+                let path_resolver_error_handler =
+                    |resolver_name: &str,
+                     field_type: &str,
+                     field_name: &str,
+                     original_path: &[String]|
+                     -> Valid<Type, BlueprintError, String> {
+                        Valid::<Type, _, _>::fail(BlueprintError::CannotAddField).and(Valid::fail(
+                            BlueprintError::PathContainsResolver(
+                                original_path.join(", "),
+                                resolver_name.to_string(),
+                                field_type.to_string(),
+                                field_name.to_string(),
+                            ),
+                        ))
+                    };
                 update_resolver_from_path(
                     &ProcessPathContext {
                         path: &added_field_path,
@@ -516,7 +520,7 @@ fn to_fields(
                     field_definition,
                 )
             })
-            .trace(config::AddField::trace_name().as_str()),
+            .trace(config::AddField::trace_name()),
             None => Valid::fail(BlueprintError::FieldNotFoundInPath(
                 add_field.path[0].clone(),
                 add_field.path.join(","),
@@ -541,13 +545,13 @@ pub fn to_field_definition(
     config_module: &ConfigModule,
     type_of: &config::Type,
     name: &str,
-) -> Valid<FieldDefinition, BlueprintError> {
+) -> Valid<FieldDefinition, BlueprintError, String> {
     update_args()
         .and(update_resolver(operation_type, object_name))
-        .and(update_modify().trace(config::Modify::trace_name().as_str()))
+        .and(update_modify().trace(config::Modify::trace_name()))
         .and(fix_dangling_resolvers())
         .and(update_cache_resolvers())
-        .and(update_protected(object_name).trace(Protected::trace_name().as_str()))
+        .and(update_protected(object_name).trace(Protected::trace_name()))
         .and(update_enum_alias())
         .and(update_union_resolver())
         .and(update_interface_resolver())
@@ -557,8 +561,8 @@ pub fn to_field_definition(
         )
 }
 
-pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, BlueprintError> {
-    TryFold::<ConfigModule, Vec<Definition>, BlueprintError>::new(|config_module, _| {
+pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, BlueprintError, String> {
+    TryFold::<ConfigModule, Vec<Definition>, BlueprintError, String>::new(|config_module, _| {
         Valid::from_iter(config_module.types.iter(), |(name, type_)| {
             if type_.scalar() {
                 to_scalar_type_definition(name).trace(name)

@@ -1,7 +1,7 @@
 use std::net::AddrParseError;
 
 use async_graphql::dynamic::SchemaError;
-use tailcall_valid::{Cause, ValidationError};
+use tailcall_valid::Cause;
 
 use crate::core::Errata;
 
@@ -188,20 +188,18 @@ impl PartialEq for BlueprintError {
     }
 }
 
-impl From<ValidationError<crate::core::blueprint::BlueprintError>> for Errata {
-    fn from(error: ValidationError<crate::core::blueprint::BlueprintError>) -> Self {
+impl<E: ToString, T: ToString> From<Cause<T, E>> for BlueprintError {
+    fn from(cause: Cause<T, E>) -> Self {
+        BlueprintError::Cause(cause.error.to_string())
+    }
+}
+
+impl From<Vec<Cause<crate::core::blueprint::BlueprintError, String>>> for Errata {
+    fn from(error: Vec<Cause<crate::core::blueprint::BlueprintError, String>>) -> Self {
         Errata::new("Blueprint Error").caused_by(
             error
-                .as_vec()
-                .iter()
-                .map(|cause| {
-                    let mut err =
-                        Errata::new(&cause.message.to_string()).trace(cause.trace.clone().into());
-                    if let Some(description) = &cause.description {
-                        err = err.description(description.to_string());
-                    }
-                    err
-                })
+                .into_iter()
+                .map(|cause| Errata::new(&cause.error.to_string()).trace(cause.trace.into()))
                 .collect(),
         )
     }
@@ -209,63 +207,27 @@ impl From<ValidationError<crate::core::blueprint::BlueprintError>> for Errata {
 
 impl BlueprintError {
     pub fn to_validation_string(
-        errors: ValidationError<BlueprintError>,
-    ) -> ValidationError<String> {
-        let causes: Vec<Cause<_>> = errors
-            .as_vec()
-            .iter()
-            .map(|cause| {
-                let new_cause =
-                    Cause::new(cause.message.to_string()).trace(cause.trace.clone().into());
-
-                if let Some(description) = &cause.description {
-                    new_cause.description(description.to_string())
-                } else {
-                    new_cause
-                }
-            })
-            .collect();
-
-        ValidationError::from(causes)
+        errors: Vec<Cause<BlueprintError, String>>,
+    ) -> Vec<Cause<String, String>> {
+        errors
+            .into_iter()
+            .map(|cause| cause.transform(|e| e.to_string()))
+            .collect()
     }
 
-    pub fn from_validation_str(errors: ValidationError<&str>) -> ValidationError<BlueprintError> {
-        let causes: Vec<Cause<_>> = errors
-            .as_vec()
-            .iter()
-            .map(|cause| {
-                let new_cause = Cause::new(BlueprintError::Cause(cause.message.to_string()))
-                    .trace(cause.trace.clone().into());
-
-                if let Some(description) = cause.description {
-                    new_cause.description(BlueprintError::Description(description.to_string()))
-                } else {
-                    new_cause
-                }
-            })
-            .collect();
-
-        ValidationError::from(causes)
+    pub fn from_validation_str<T>(errors: Vec<Cause<&str, T>>) -> Vec<Cause<BlueprintError, T>> {
+        errors
+            .into_iter()
+            .map(|cause| cause.transform(|e| BlueprintError::Cause(e.to_string())))
+            .collect()
     }
 
-    pub fn from_validation_string(
-        errors: ValidationError<String>,
-    ) -> ValidationError<BlueprintError> {
-        let causes: Vec<Cause<_>> = errors
-            .as_vec()
-            .iter()
-            .map(|cause| {
-                let new_cause = Cause::new(BlueprintError::Cause(cause.message.to_string()))
-                    .trace(cause.trace.clone().into());
-
-                if let Some(description) = &cause.description {
-                    new_cause.description(BlueprintError::Description(description.to_string()))
-                } else {
-                    new_cause
-                }
-            })
-            .collect();
-
-        ValidationError::from(causes)
+    pub fn from_validation_string<T>(
+        errors: Vec<Cause<String, T>>,
+    ) -> Vec<Cause<BlueprintError, T>> {
+        errors
+            .into_iter()
+            .map(|cause| cause.transform(|e| BlueprintError::Cause(e)))
+            .collect()
     }
 }

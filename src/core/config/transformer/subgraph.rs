@@ -34,7 +34,7 @@ impl Transform for Subgraph {
 
     type Error = String;
 
-    fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
+    fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error, String> {
         if !config.server.get_enable_federation() {
             // if federation is disabled don't process the config
             return Valid::succeed(config);
@@ -206,7 +206,7 @@ impl KeysExtractor {
         type_name: &str,
         type_map: &BTreeMap<String, config::Type>,
         expr_iter: impl Iterator<Item = &'a Segment>,
-    ) -> Valid<(), String> {
+    ) -> Valid<(), String, String> {
         Valid::from_iter(expr_iter, |segment| {
             if let Segment::Expression(expr) = segment {
                 if expr.len() > 1 && expr[0].as_str() == "value" {
@@ -225,7 +225,7 @@ impl KeysExtractor {
         type_map: &BTreeMap<String, config::Type>,
         current_type: &str,
         fields_iter: impl Iterator<Item = &'a String>,
-    ) -> Valid<(), String> {
+    ) -> Valid<(), String, String> {
         let mut current_type = current_type;
         Valid::from_iter(fields_iter.enumerate(), |(index, key)| {
             if let Some(type_def) = type_map.get(current_type) {
@@ -248,7 +248,7 @@ impl KeysExtractor {
         type_map: &BTreeMap<String, config::Type>,
         resolver: &Resolver,
         type_name: &str,
-    ) -> Valid<(), String> {
+    ) -> Valid<(), String, String> {
         if let Resolver::Http(http) = resolver {
             Valid::from_iter(http.query.iter(), |q| {
                 Self::validate_expressions(
@@ -268,7 +268,7 @@ impl KeysExtractor {
         }
     }
 
-    fn extract_keys(resolver: &Resolver) -> Valid<Option<String>, String> {
+    fn extract_keys(resolver: &Resolver) -> Valid<Option<String>, String, String> {
         // TODO: add validation for available fields from the type
         match resolver {
             Resolver::Http(http) => {
@@ -331,7 +331,7 @@ impl KeysExtractor {
         })
     }
 
-    fn parse_str(s: &str) -> Valid<Keys, String> {
+    fn parse_str(s: &str) -> Valid<Keys, String, String> {
         let mustache = Mustache::parse(s);
         let mut keys = Keys::new();
 
@@ -355,7 +355,7 @@ impl KeysExtractor {
         .map_to(keys)
     }
 
-    fn parse_str_option(s: Option<&str>) -> Valid<Keys, String> {
+    fn parse_str_option(s: Option<&str>) -> Valid<Keys, String, String> {
         if let Some(s) = s {
             Self::parse_str(s)
         } else {
@@ -365,7 +365,7 @@ impl KeysExtractor {
 
     fn parse_key_value_iter<T: Borrow<KeyValue>>(
         it: impl Iterator<Item = T>,
-    ) -> Valid<Keys, String> {
+    ) -> Valid<Keys, String, String> {
         let mut keys = Keys::new();
 
         Valid::from_iter(it, |key_value| {
@@ -380,7 +380,7 @@ impl KeysExtractor {
 
     fn parse_key_value_iter_option<T: Borrow<KeyValue>>(
         it: Option<impl Iterator<Item = T>>,
-    ) -> Valid<Keys, String> {
+    ) -> Valid<Keys, String, String> {
         if let Some(it) = it {
             Self::parse_key_value_iter(it)
         } else {
@@ -388,7 +388,7 @@ impl KeysExtractor {
         }
     }
 
-    fn parse_value(value: &serde_json::Value) -> Valid<Keys, String> {
+    fn parse_value(value: &serde_json::Value) -> Valid<Keys, String, String> {
         match value {
             serde_json::Value::String(s) => return Self::parse_str(s),
             serde_json::Value::Array(v) => Valid::from_iter(v.iter(), Self::parse_value),
@@ -406,7 +406,7 @@ impl KeysExtractor {
         })
     }
 
-    fn parse_value_option(value: &Option<serde_json::Value>) -> Valid<Keys, String> {
+    fn parse_value_option(value: &Option<serde_json::Value>) -> Valid<Keys, String, String> {
         if let Some(value) = value {
             Self::parse_value(value)
         } else {

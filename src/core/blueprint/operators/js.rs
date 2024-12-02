@@ -9,7 +9,7 @@ pub struct CompileJs<'a> {
     pub script: &'a Option<String>,
 }
 
-pub fn compile_js(inputs: CompileJs) -> Valid<IR, BlueprintError> {
+pub fn compile_js(inputs: CompileJs) -> Valid<IR, BlueprintError, String> {
     let name = &inputs.js.name;
     Valid::from_option(inputs.script.as_ref(), BlueprintError::ScriptIsRequired)
         .map(|_| IR::IO(IO::Js { name: name.to_string() }))

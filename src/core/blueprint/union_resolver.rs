@@ -11,7 +11,7 @@ fn compile_union_resolver(
     union_name: &str,
     union_definition: &Union,
     discriminate: &Option<Discriminate>,
-) -> Valid<Discriminator, BlueprintError> {
+) -> Valid<Discriminator, BlueprintError, String> {
     let typename_field = discriminate.as_ref().map(|d| d.get_field());
 
     match Discriminator::new(
@@ -22,14 +22,18 @@ fn compile_union_resolver(
     .to_result()
     {
         Ok(discriminator) => Valid::succeed(discriminator),
-        Err(e) => Valid::from_validation_err(BlueprintError::from_validation_string(e)),
+        Err(e) => Valid::from(BlueprintError::from_validation_string(e)),
     }
 }
 
-pub fn update_union_resolver<'a>(
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a Type, &'a str), FieldDefinition, BlueprintError>
-{
-    TryFold::<(&ConfigModule, &Field, &Type, &str), FieldDefinition, BlueprintError>::new(
+pub fn update_union_resolver<'a>() -> TryFold<
+    'a,
+    (&'a ConfigModule, &'a Field, &'a Type, &'a str),
+    FieldDefinition,
+    BlueprintError,
+    String,
+> {
+    TryFold::<(&ConfigModule, &Field, &Type, &str), FieldDefinition, BlueprintError, String>::new(
         |(config, field, _, _), mut b_field| {
             let Some(union_definition) = config.find_union(field.type_of.name()) else {
                 return Valid::succeed(b_field);

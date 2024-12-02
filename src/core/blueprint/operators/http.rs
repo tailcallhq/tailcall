@@ -13,22 +13,24 @@ pub fn compile_http(
     config_module: &config::ConfigModule,
     http: &config::Http,
     field: &Field,
-) -> Valid<IR, BlueprintError> {
+) -> Valid<IR, BlueprintError, String> {
     let is_list = field.type_of.is_list();
     let dedupe = http.dedupe.unwrap_or_default();
     let mustache_headers = match helpers::headers::to_mustache_headers(&http.headers).to_result() {
         Ok(mustache_headers) => Valid::succeed(mustache_headers),
-        Err(e) => Valid::from_validation_err(BlueprintError::from_validation_string(e)),
+        Err(e) => Valid::from(BlueprintError::from_validation_string(e)),
     };
 
-    Valid::<(), BlueprintError>::fail(BlueprintError::GroupByOnlyForGet)
+    Valid::<(), BlueprintError, String>::fail(BlueprintError::GroupByOnlyForGet)
         .when(|| !http.batch_key.is_empty() && http.method != Method::GET)
         .and(
-            Valid::<(), BlueprintError>::fail(BlueprintError::IncorrectBatchingUsage).when(|| {
-                (config_module.upstream.get_delay() < 1
-                    || config_module.upstream.get_max_size() < 1)
-                    && !http.batch_key.is_empty()
-            }),
+            Valid::<(), BlueprintError, String>::fail(BlueprintError::IncorrectBatchingUsage).when(
+                || {
+                    (config_module.upstream.get_delay() < 1
+                        || config_module.upstream.get_max_size() < 1)
+                        && !http.batch_key.is_empty()
+                },
+            ),
         )
         .and(
             Valid::from_iter(http.query.iter(), |query| {

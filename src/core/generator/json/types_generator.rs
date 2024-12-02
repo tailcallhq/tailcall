@@ -168,7 +168,7 @@ impl Transform for GraphQLTypesGenerator<'_> {
     type Value = Config;
     type Error = String;
 
-    fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
+    fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error, String> {
         // generate the required types.
         let root_type = TypeGenerator::new(self.type_name_generator)
             .generate_types(&self.request_sample.res_body, &mut config);

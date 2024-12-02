@@ -35,7 +35,7 @@ impl<A> Transform for CheckDedupe<A> {
     type Value = OperationPlan<A>;
     type Error = Infallible;
 
-    fn transform(&self, mut plan: Self::Value) -> Valid<Self::Value, Self::Error> {
+    fn transform(&self, mut plan: Self::Value) -> Valid<Self::Value, Self::Error, String> {
         let dedupe = plan.selection.iter().all(|field| {
             if let Some(ir) = field.ir.as_ref() {
                 check_dedupe(ir)

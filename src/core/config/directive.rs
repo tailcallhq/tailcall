@@ -5,7 +5,7 @@ use async_graphql::Name;
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tailcall_valid::{Valid, ValidationError, Validator};
+use tailcall_valid::{Cause, Valid, Validator};
 
 use crate::core::{is_default, pos};
 
@@ -17,18 +17,20 @@ pub struct Directive {
     pub arguments: IndexMap<String, Value>,
 }
 
-pub fn to_const_directive(directive: &Directive) -> Valid<ConstDirective, String> {
+pub fn to_const_directive(directive: &Directive) -> Valid<ConstDirective, String, String> {
     Valid::from_iter(directive.arguments.iter(), |(k, v)| {
         let name = pos(Name::new(k.clone()));
-        Valid::from(serde_json::from_value(v.clone()).map(pos).map_err(|e| {
-            ValidationError::new(e.to_string()).trace(format!("@{}", directive.name).as_str())
-        }))
+        Valid::from(
+            serde_json::from_value(v.clone())
+                .map(pos)
+                .map_err(|e| Cause::new(e.to_string()).trace(format!("@{}", directive.name))),
+        )
         .map(|value| (name, value))
     })
     .map(|arguments| ConstDirective { name: pos(Name::new(directive.name.clone())), arguments })
 }
 
-pub fn to_directive(const_directive: ConstDirective) -> Valid<Directive, String> {
+pub fn to_directive(const_directive: ConstDirective) -> Valid<Directive, String, String> {
     const_directive
         .arguments
         .into_iter()
@@ -38,7 +40,7 @@ pub fn to_directive(const_directive: ConstDirective) -> Valid<Directive, String>
             value.map(|value| (k.node.to_string(), value))
         })
         .collect::<Result<_, _>>()
-        .map_err(|e| ValidationError::new(e.to_string()))
+        .map_err(|e| Cause::new(e.to_string()))
         .map(|arguments| Directive { name: const_directive.name.node.to_string(), arguments })
         .into()
 }

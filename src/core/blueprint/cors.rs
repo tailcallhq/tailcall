@@ -1,7 +1,7 @@
 use derive_setters::Setters;
 use http::header::{self, HeaderName, HeaderValue, InvalidHeaderValue};
 use http::request::Parts;
-use tailcall_valid::ValidationError;
+use tailcall_valid::Cause;
 
 use super::BlueprintError;
 use crate::core::config;
@@ -118,7 +118,7 @@ impl Cors {
 
 fn ensure_usable_cors_rules(
     layer: &Cors,
-) -> Result<(), ValidationError<crate::core::blueprint::BlueprintError>> {
+) -> Result<(), Cause<crate::core::blueprint::BlueprintError, String>> {
     if layer.allow_credentials {
         let allowing_all_headers = layer
             .allow_headers
@@ -127,11 +127,9 @@ fn ensure_usable_cors_rules(
             .is_some();
 
         if allowing_all_headers {
-            return Err(ValidationError::new(
-                BlueprintError::InvalidCORSConfiguration(
-                    "Access-Control-Allow-Headers".to_string(),
-                ),
-            ));
+            return Err(Cause::new(BlueprintError::InvalidCORSConfiguration(
+                "Access-Control-Allow-Headers".to_string(),
+            )));
         }
 
         let allowing_all_methods = layer
@@ -141,38 +139,34 @@ fn ensure_usable_cors_rules(
             .is_some();
 
         if allowing_all_methods {
-            return Err(ValidationError::new(
-                BlueprintError::InvalidCORSConfiguration(
-                    "Access-Control-Allow-Methods".to_string(),
-                ),
-            ));
+            return Err(Cause::new(BlueprintError::InvalidCORSConfiguration(
+                "Access-Control-Allow-Methods".to_string(),
+            )));
         }
 
         let allowing_all_origins = layer.allow_origins.iter().any(is_wildcard);
 
         if allowing_all_origins {
-            return Err(ValidationError::new(
-                BlueprintError::InvalidCORSConfiguration("Access-Control-Allow-Origin".to_string()),
-            ));
+            return Err(Cause::new(BlueprintError::InvalidCORSConfiguration(
+                "Access-Control-Allow-Origin".to_string(),
+            )));
         }
 
         if layer.expose_headers_is_wildcard() {
-            return Err(ValidationError::new(
-                BlueprintError::InvalidCORSConfiguration(
-                    "Access-Control-Expose-Headers".to_string(),
-                ),
-            ));
+            return Err(Cause::new(BlueprintError::InvalidCORSConfiguration(
+                "Access-Control-Expose-Headers".to_string(),
+            )));
         }
     }
     Ok(())
 }
 
 impl TryFrom<config::cors::Cors> for Cors {
-    type Error = ValidationError<crate::core::blueprint::BlueprintError>;
+    type Error = Cause<crate::core::blueprint::BlueprintError, String>;
 
     fn try_from(
         value: config::cors::Cors,
-    ) -> Result<Self, ValidationError<crate::core::blueprint::BlueprintError>> {
+    ) -> Result<Self, Cause<crate::core::blueprint::BlueprintError, String>> {
         let cors = Cors {
             allow_credentials: value.allow_credentials.unwrap_or_default(),
             allow_headers: (!value.allow_headers.is_empty()).then_some(
@@ -180,12 +174,12 @@ impl TryFrom<config::cors::Cors> for Cors {
                     .allow_headers
                     .join(", ")
                     .parse()
-                    .map_err(|e: InvalidHeaderValue| ValidationError::new(e.into()))?,
+                    .map_err(|e: InvalidHeaderValue| Cause::new(e.into()))?,
             ),
             allow_methods: {
                 Some(if value.allow_methods.is_empty() {
                     "*".parse()
-                        .map_err(|e: InvalidHeaderValue| ValidationError::new(e.into()))?
+                        .map_err(|e: InvalidHeaderValue| Cause::new(e.into()))?
                 } else {
                     value
                         .allow_methods
@@ -194,7 +188,7 @@ impl TryFrom<config::cors::Cors> for Cors {
                         .collect::<Vec<String>>()
                         .join(", ")
                         .parse()
-                        .map_err(|e: InvalidHeaderValue| ValidationError::new(e.into()))?
+                        .map_err(|e: InvalidHeaderValue| Cause::new(e.into()))?
                 })
             },
             allow_origins: value
@@ -202,16 +196,16 @@ impl TryFrom<config::cors::Cors> for Cors {
                 .into_iter()
                 .map(|val| {
                     val.parse()
-                        .map_err(|e: InvalidHeaderValue| ValidationError::new(e.into()))
+                        .map_err(|e: InvalidHeaderValue| Cause::new(e.into()))
                 })
-                .collect::<Result<_, ValidationError<crate::core::blueprint::BlueprintError>>>()?,
+                .collect::<Result<_, Cause<crate::core::blueprint::BlueprintError, String>>>()?,
             allow_private_network: value.allow_private_network.unwrap_or_default(),
             expose_headers: Some(
                 value
                     .expose_headers
                     .join(", ")
                     .parse()
-                    .map_err(|e: InvalidHeaderValue| ValidationError::new(e.into()))?,
+                    .map_err(|e: InvalidHeaderValue| Cause::new(e.into()))?,
             ),
             max_age: value.max_age.map(|val| val.into()),
             vary: value
@@ -219,9 +213,9 @@ impl TryFrom<config::cors::Cors> for Cors {
                 .iter()
                 .map(|val| {
                     val.parse()
-                        .map_err(|e: InvalidHeaderValue| ValidationError::new(e.into()))
+                        .map_err(|e: InvalidHeaderValue| Cause::new(e.into()))
                 })
-                .collect::<Result<_, ValidationError<crate::core::blueprint::BlueprintError>>>()?,
+                .collect::<Result<_, Cause<crate::core::blueprint::BlueprintError, String>>>()?,
         };
         ensure_usable_cors_rules(&cors)?;
         Ok(cors)

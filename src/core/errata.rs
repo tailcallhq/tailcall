@@ -2,7 +2,7 @@ use std::fmt::{Debug, Display};
 
 use colored::Colorize;
 use derive_setters::Setters;
-use tailcall_valid::ValidationError;
+use tailcall_valid::Cause;
 
 use crate::core::error::Error as CoreError;
 
@@ -157,7 +157,7 @@ impl From<anyhow::Error> for Errata {
             Ok(cli_error) => cli_error,
             Err(error) => {
                 // Convert other errors to Errata
-                let cli_error = match error.downcast::<ValidationError<String>>() {
+                let cli_error = match error.downcast::<Cause<String, String>>() {
                     Ok(validation_error) => Errata::from(validation_error),
                     Err(error) => {
                         let sources = error
@@ -193,32 +193,35 @@ impl From<CoreError> for Errata {
     }
 }
 
-impl<'a> From<ValidationError<&'a str>> for Errata {
-    fn from(error: ValidationError<&'a str>) -> Self {
+impl<E: ToString, T: ToString> From<Cause<E, T>> for Errata {
+    fn from(cause: Cause<E, T>) -> Self {
+        Errata::new(cause.error.to_string().as_str())
+            .trace(cause.trace.iter().map(ToString::to_string).collect())
+    }
+}
+
+impl<'a, T: ToString> From<Vec<Cause<&'a str, T>>> for Errata {
+    fn from(error: Vec<Cause<&'a str, T>>) -> Self {
         Errata::new("Invalid Configuration").caused_by(
             error
-                .as_vec()
-                .iter()
+                .into_iter()
                 .map(|cause| {
-                    let mut err = Errata::new(cause.message).trace(Vec::from(cause.trace.clone()));
-                    if let Some(description) = cause.description {
-                        err = err.description(description.to_owned());
-                    }
-                    err
+                    Errata::new(&cause.error.to_string())
+                        .trace(cause.trace.iter().map(ToString::to_string).collect())
                 })
                 .collect(),
         )
     }
 }
 
-impl From<ValidationError<String>> for Errata {
-    fn from(error: ValidationError<String>) -> Self {
+impl<T: ToString> From<Vec<Cause<String, T>>> for Errata {
+    fn from(error: Vec<Cause<String, T>>) -> Self {
         Errata::new("Invalid Configuration").caused_by(
             error
-                .as_vec()
-                .iter()
+                .into_iter()
                 .map(|cause| {
-                    Errata::new(cause.message.as_str()).trace(Vec::from(cause.trace.clone()))
+                    Errata::new(&cause.error.to_string())
+                        .trace(cause.trace.iter().map(ToString::to_string).collect())
                 })
                 .collect(),
         )
@@ -367,11 +370,13 @@ mod tests {
 
     #[test]
     fn test_from_validation() {
-        let cause = Cause::new("URL needs to be specified")
-            .description("Set `url` in @http or @server directives")
-            .trace(vec!["Query", "users", "@http", "url"]);
-        let valid = ValidationError::from(cause);
-        let error = Errata::from(valid);
+        let cause =
+            Cause::new("URL needs to be specified: Set `url` in @http or @server directives")
+                .trace("Query")
+                .trace("users")
+                .trace("@http")
+                .trace("url");
+        let error = Errata::from(cause);
         let expected = r"|Invalid Configuration
                      |Caused by:
                      |  • URL needs to be specified: Set `url` in @http or @server directives [at Query.users.@http.url]"
@@ -395,13 +400,11 @@ mod tests {
 
     #[test]
     fn test_validation_error_identity() {
-        let validation_error = ValidationError::from(
-            Cause::new("Test Error".to_string()).trace(vec!["Query".to_string()]),
-        );
-        let anyhow_error: anyhow::Error = validation_error.clone().into();
+        let cause = Cause::from(Cause::new("Test Error".to_string()).trace("Query"));
+        let anyhow_error: anyhow::Error = cause.clone().into();
 
         let actual = Errata::from(anyhow_error);
-        let expected = Errata::from(validation_error);
+        let expected = Errata::from(cause);
 
         assert_eq!(actual, expected);
     }

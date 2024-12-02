@@ -83,7 +83,7 @@ impl ConfigModule {
         &self.cache.interfaces_types_map
     }
 
-    pub fn transform<T: Transform<Value = Config>>(self, transformer: T) -> Valid<Self, T::Error> {
+    pub fn transform<T: Transform<Value = Config>>(self, transformer: T) -> Valid<Self, T::Error, String> {
         transformer
             .transform(self.cache.config)
             .map(|config| ConfigModule::new(config, self.extensions))

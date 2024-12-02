@@ -14,7 +14,7 @@ impl Transform for NestedUnions {
     type Value = Config;
     type Error = String;
 
-    fn transform(&self, mut config: Config) -> Valid<Config, String> {
+    fn transform(&self, mut config: Config) -> Valid<Config, String, String> {
         let visitor = Visitor { unions: &config.unions };
 
         visitor.visit().map(|unions| {
@@ -29,7 +29,7 @@ struct Visitor<'cfg> {
 }
 
 impl<'cfg> Visitor<'cfg> {
-    fn visit(self) -> Valid<BTreeMap<String, Union>, String> {
+    fn visit(self) -> Valid<BTreeMap<String, Union>, String, String> {
         let mut result = BTreeMap::new();
 
         Valid::from_iter(self.unions.iter(), |(union_name, union_)| {
@@ -51,7 +51,7 @@ impl<'cfg> Visitor<'cfg> {
         union_: &'cfg Union,
         union_types: &mut BTreeSet<String>,
         seen: &mut HashSet<&'cfg String>,
-    ) -> Valid<(), String> {
+    ) -> Valid<(), String, String> {
         Valid::from_iter(union_.types.iter(), |type_name| {
             if let Some(union_) = self.unions.get(type_name) {
                 if seen.contains(type_name) {

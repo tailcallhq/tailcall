@@ -21,7 +21,7 @@ use tailcall::core::http::handle_request;
 use tailcall::core::print_schema::print_schema;
 use tailcall::core::variance::Invariant;
 use tailcall_prettier::Parser;
-use tailcall_valid::{Cause, Valid, ValidationError, Validator};
+use tailcall_valid::{Cause, Valid, Cause, Validator};
 
 use super::file::File;
 use super::http::Http;
@@ -36,8 +36,8 @@ struct SDLError {
     description: Option<String>,
 }
 
-impl<'a> From<Cause<&'a str>> for SDLError {
-    fn from(value: Cause<&'a str>) -> Self {
+impl<'a> From<Cause<&'a str>, String> for SDLError {
+    fn from(value: Cause<&'a str>) -, String> Self {
         SDLError {
             message: value.message.to_string(),
             trace: value.trace.iter().map(|e| e.to_string()).collect(),
@@ -46,8 +46,8 @@ impl<'a> From<Cause<&'a str>> for SDLError {
     }
 }
 
-impl From<Cause<String>> for SDLError {
-    fn from(value: Cause<String>) -> Self {
+impl From<Cause<String>, String> for SDLError {
+    fn from(value: Cause<String>) -, String> Self {
         SDLError {
             message: value.message.to_string(),
             trace: value.trace.iter().map(|e| e.to_string()).collect(),
@@ -56,12 +56,12 @@ impl From<Cause<String>> for SDLError {
     }
 }
 
-async fn is_sdl_error(spec: &ExecutionSpec, config_module: Valid<ConfigModule, String>) -> bool {
+async fn is_sdl_error(spec: &ExecutionSpec, config_module: Valid<ConfigModule, String, String>) -> bool {
     if spec.sdl_error {
         // errors: errors are expected, make sure they match
         let blueprint = config_module.and_then(|cfg| match Blueprint::try_from(&cfg) {
             Ok(blueprint) => Valid::succeed(blueprint),
-            Err(e) => Valid::from_validation_err(BlueprintError::to_validation_string(e)),
+            Err(e) => Valid::from(BlueprintError::to_validation_string(e)),
         });
 
         match blueprint.to_result() {
@@ -202,9 +202,9 @@ async fn test_spec(spec: ExecutionSpec) {
 
     let config_module = Valid::from_iter(config_modules.iter(), |config_module| {
         Valid::from(config_module.as_ref().map_err(|e| {
-            match e.downcast_ref::<ValidationError<String>>() {
+            match e.downcast_ref::<Cause<String>, String>() {
                 Some(err) => err.clone(),
-                None => ValidationError::new(e.to_string()),
+                None => Cause::new(e.to_string()),
             }
         }))
     })

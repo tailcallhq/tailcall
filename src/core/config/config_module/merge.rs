@@ -10,7 +10,7 @@ use crate::core::merge_right::MergeRight;
 use crate::core::variance::{Contravariant, Covariant, Invariant};
 
 impl core::Type {
-    fn merge(self, other: Self, non_null_merge: fn(bool, bool) -> bool) -> Valid<Self, String> {
+    fn merge(self, other: Self, non_null_merge: fn(bool, bool) -> bool) -> Valid<Self, String, String> {
         use core::Type;
 
         match (self, other) {
@@ -50,7 +50,7 @@ impl Contravariant for core::Type {
     /// if it is specified as non_null in at least one of the definitions.
     /// That's a narrows merge i.e. the result narrows the input definitions
     /// the way it could be handled by both self and other sources
-    fn shrink(self, other: Self) -> Valid<Self, String> {
+    fn shrink(self, other: Self) -> Valid<Self, String, String> {
         #[inline]
         fn non_null_merge(non_null: bool, other_non_null: bool) -> bool {
             non_null || other_non_null
@@ -65,7 +65,7 @@ impl Covariant for core::Type {
     /// if it is specified as non_null in both sources.
     /// That's a wide merge i.e. the result wides the input definitions
     /// the way it could be handled by both self and other sources
-    fn expand(self, other: Self) -> Valid<Self, String> {
+    fn expand(self, other: Self) -> Valid<Self, String, String> {
         #[inline]
         fn non_null_merge(non_null: bool, other_non_null: bool) -> bool {
             non_null && other_non_null
@@ -76,7 +76,7 @@ impl Covariant for core::Type {
 }
 
 impl Contravariant for Arg {
-    fn shrink(self, other: Self) -> Valid<Self, String> {
+    fn shrink(self, other: Self) -> Valid<Self, String, String> {
         self.type_of.shrink(other.type_of).map(|type_of| Self {
             type_of,
             doc: self.doc.merge_right(other.doc),
@@ -87,7 +87,7 @@ impl Contravariant for Arg {
 }
 
 impl Contravariant for Field {
-    fn shrink(self, other: Self) -> Valid<Self, String> {
+    fn shrink(self, other: Self) -> Valid<Self, String, String> {
         self.type_of
             .shrink(other.type_of)
             .fuse(self.args.shrink(other.args))
@@ -108,7 +108,7 @@ impl Contravariant for Field {
 }
 
 impl Covariant for Field {
-    fn expand(self, other: Self) -> Valid<Self, String> {
+    fn expand(self, other: Self) -> Valid<Self, String, String> {
         self.type_of
             .expand(other.type_of)
             // args are always merged with narrow
@@ -130,7 +130,7 @@ impl Covariant for Field {
 }
 
 impl Contravariant for Type {
-    fn shrink(self, other: Self) -> Valid<Self, String> {
+    fn shrink(self, other: Self) -> Valid<Self, String, String> {
         self.fields.shrink(other.fields).map(|fields| Self {
             fields,
             // TODO: is not very clear how to merge added_fields here
@@ -146,7 +146,7 @@ impl Contravariant for Type {
 }
 
 impl Covariant for Type {
-    fn expand(self, other: Self) -> Valid<Self, String> {
+    fn expand(self, other: Self) -> Valid<Self, String, String> {
         self.fields.expand(other.fields).map(|fields| Self {
             fields,
             // TODO: is not very clear how to merge added_fields here
@@ -162,7 +162,7 @@ impl Covariant for Type {
 }
 
 impl Contravariant for Enum {
-    fn shrink(mut self, other: Self) -> Valid<Self, String> {
+    fn shrink(mut self, other: Self) -> Valid<Self, String, String> {
         self.variants.retain(|key| other.variants.contains(key));
 
         Valid::succeed(Self {
@@ -173,7 +173,7 @@ impl Contravariant for Enum {
 }
 
 impl Covariant for Enum {
-    fn expand(mut self, other: Self) -> Valid<Self, String> {
+    fn expand(mut self, other: Self) -> Valid<Self, String, String> {
         self.variants.extend(other.variants);
 
         Valid::succeed(Self {
@@ -184,7 +184,7 @@ impl Covariant for Enum {
 }
 
 impl Invariant for Cache {
-    fn unify(self, other: Self) -> Valid<Self, String> {
+    fn unify(self, other: Self) -> Valid<Self, String, String> {
         let mut types = self.config.types;
         let mut enums = self.config.enums;
 
@@ -288,7 +288,7 @@ impl Invariant for Cache {
 }
 
 impl Invariant for ConfigModule {
-    fn unify(self, other: Self) -> Valid<Self, String> {
+    fn unify(self, other: Self) -> Valid<Self, String, String> {
         self.cache.unify(other.cache).map(|cache| Self {
             cache,
             extensions: self.extensions.merge_right(other.extensions),
@@ -343,7 +343,7 @@ where
     C: FederatedMergeCollection,
     C::Entry: Contravariant,
 {
-    fn shrink(mut self, other: Self) -> Valid<Self, String> {
+    fn shrink(mut self, other: Self) -> Valid<Self, String, String> {
         Valid::from_iter(other, |(name, other_field)| {
         match self.remove(&name) {
             Some(field) => Contravariant::shrink(field, other_field).map(|merged| Some((name.clone(), merged))),
@@ -375,7 +375,7 @@ where
     C: FederatedMergeCollection,
     C::Entry: Covariant,
 {
-    fn expand(mut self, other: Self) -> Valid<Self, String> {
+    fn expand(mut self, other: Self) -> Valid<Self, String, String> {
         Valid::from_iter(other, |(name, other_field)| match self.remove(&name) {
             Some(field) => field
                 .expand(other_field)

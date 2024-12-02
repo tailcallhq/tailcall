@@ -55,7 +55,7 @@ fn get_single_field_path(
 impl Transform for FlattenSingleField {
     type Value = Config;
     type Error = String;
-    fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
+    fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error, String> {
         let origin_config = config.clone();
 
         for ty in config.types.values_mut() {

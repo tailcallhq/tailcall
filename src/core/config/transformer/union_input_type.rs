@@ -29,7 +29,7 @@ impl Transform for UnionInputType {
     type Value = Config;
     type Error = String;
 
-    fn transform(&self, mut config: Config) -> Valid<Config, String> {
+    fn transform(&self, mut config: Config) -> Valid<Config, String, String> {
         let visitor = Visitor::new(&config);
 
         let new_types = visitor.visit();

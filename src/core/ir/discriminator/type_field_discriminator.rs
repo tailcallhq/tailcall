@@ -35,7 +35,7 @@ impl TypeFieldDiscriminator {
         type_name: String,
         types: BTreeSet<String>,
         typename_field: String,
-    ) -> Valid<Self, String> {
+    ) -> Valid<Self, String, String> {
         let discriminator = Self { type_name, types, typename_field };
 
         Valid::succeed(discriminator)

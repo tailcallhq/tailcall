@@ -92,7 +92,7 @@ impl JsonSchema {
     }
 
     // TODO: validate `JsonLike` instead of fixing on `async_graphql::Value`
-    pub fn validate(&self, value: &async_graphql::Value) -> Valid<(), &'static str> {
+    pub fn validate(&self, value: &async_graphql::Value) -> Valid<(), &'static str, String> {
         match self {
             JsonSchema::Str => match value {
                 async_graphql::Value::String(_) => Valid::succeed(()),
@@ -116,7 +116,7 @@ impl JsonSchema {
                 async_graphql::Value::List(list) => {
                     // TODO: add unit tests
                     Valid::from_iter(list.iter().enumerate(), |(i, item)| {
-                        schema.validate(item).trace(i.to_string().as_str())
+                        schema.validate(item).trace(i.to_string())
                     })
                     .unit()
                 }
@@ -153,7 +153,7 @@ impl JsonSchema {
     }
 
     /// Check if `self` is a subtype of `other`
-    pub fn is_a(&self, super_type: &JsonSchema, name: &str) -> Valid<(), String> {
+    pub fn is_a<'a>(&self, super_type: &'a JsonSchema, name: &'a str) -> Valid<(), String, String> {
         let sub_type = self;
         if let JsonSchema::Any = super_type {
             return Valid::succeed(());
@@ -240,7 +240,7 @@ impl JsonSchema {
 }
 
 impl TryFrom<&MessageDescriptor> for JsonSchema {
-    type Error = tailcall_valid::ValidationError<String>;
+    type Error = tailcall_valid::Cause<String, String>;
 
     fn try_from(value: &MessageDescriptor) -> Result<Self, Self::Error> {
         if value.is_map_entry() {
@@ -269,7 +269,7 @@ impl TryFrom<&MessageDescriptor> for JsonSchema {
 }
 
 impl TryFrom<&EnumDescriptor> for JsonSchema {
-    type Error = tailcall_valid::ValidationError<String>;
+    type Error = tailcall_valid::Cause<String, String>;
 
     fn try_from(value: &EnumDescriptor) -> Result<Self, Self::Error> {
         let mut set = BTreeSet::new();
@@ -281,7 +281,7 @@ impl TryFrom<&EnumDescriptor> for JsonSchema {
 }
 
 impl TryFrom<&FieldDescriptor> for JsonSchema {
-    type Error = tailcall_valid::ValidationError<String>;
+    type Error = tailcall_valid::Cause<String, String>;
 
     fn try_from(value: &FieldDescriptor) -> Result<Self, Self::Error> {
         let field_schema = match value.kind() {
@@ -377,7 +377,7 @@ mod tests {
             map
         });
         let result = schema.validate(&value);
-        assert_eq!(result, Valid::fail("expected number").trace("age"));
+        assert_eq!(result, Valid::fail("expected number").trace("age".to_string()));
     }
 
     #[test]

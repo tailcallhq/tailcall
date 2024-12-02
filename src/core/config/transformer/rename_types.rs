@@ -24,7 +24,7 @@ impl Transform for RenameTypes {
     type Value = Config;
     type Error = String;
 
-    fn transform(&self, config: Self::Value) -> Valid<Self::Value, Self::Error> {
+    fn transform(&self, config: Self::Value) -> Valid<Self::Value, Self::Error, String> {
         let mut config = config;
         let mut lookup = IndexMap::new();
 
@@ -142,7 +142,7 @@ impl Transform for RenameTypes {
 mod test {
     use indexmap::IndexMap;
     use maplit::hashmap;
-    use tailcall_valid::{ValidationError, Validator};
+    use tailcall_valid::{Cause, Validator};
 
     use super::RenameTypes;
     use crate::core::config::Config;
@@ -252,8 +252,8 @@ mod test {
             .transform(config)
             .to_result();
 
-        let b_err = ValidationError::new("Type 'B' not found in configuration.".to_string());
-        let c_err = ValidationError::new("Type 'C' not found in configuration.".to_string());
+        let b_err = Cause::new("Type 'B' not found in configuration.".to_string());
+        let c_err = Cause::new("Type 'C' not found in configuration.".to_string());
         let expected = Err(b_err.combine(c_err));
         assert_eq!(actual, expected);
     }

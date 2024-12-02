@@ -36,7 +36,7 @@ impl<A> Transform for CheckConst<A> {
     type Value = OperationPlan<A>;
     type Error = Infallible;
 
-    fn transform(&self, mut plan: Self::Value) -> Valid<Self::Value, Self::Error> {
+    fn transform(&self, mut plan: Self::Value) -> Valid<Self::Value, Self::Error, String> {
         let is_const = plan.iter_dfs().all(|field| match field.ir {
             Some(ref ir) => is_const(ir),
             None => true,

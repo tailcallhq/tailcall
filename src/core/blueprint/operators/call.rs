@@ -11,7 +11,7 @@ pub fn compile_call(
     call: &config::Call,
     operation_type: &GraphQLOperationType,
     object_name: &str,
-) -> Valid<IR, BlueprintError> {
+) -> Valid<IR, BlueprintError, String> {
     Valid::from_iter(call.steps.iter(), |step| {
         get_field_and_field_name(step, config_module).and_then(|(field, field_name, type_of)| {
             let args = step.args.iter();
@@ -108,7 +108,7 @@ fn get_type_and_field(call: &config::Step) -> Option<(String, String)> {
 fn get_field_and_field_name<'a>(
     call: &'a config::Step,
     config_module: &'a ConfigModule,
-) -> Valid<(&'a Field, String, &'a config::Type), BlueprintError> {
+) -> Valid<(&'a Field, String, &'a config::Type), BlueprintError, String> {
     Valid::from_option(
         get_type_and_field(call),
         BlueprintError::CallMustHaveQueryOrMutation,

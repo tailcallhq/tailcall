@@ -88,7 +88,7 @@ impl<'a> FromJsonGenerator<'a> {
 impl Transform for FromJsonGenerator<'_> {
     type Value = Config;
     type Error = String;
-    fn transform(&self, config: Self::Value) -> Valid<Self::Value, Self::Error> {
+    fn transform(&self, config: Self::Value) -> Valid<Self::Value, Self::Error, String> {
         let config_gen_req = self.request_samples;
         let type_name_gen = self.type_name_generator;
 

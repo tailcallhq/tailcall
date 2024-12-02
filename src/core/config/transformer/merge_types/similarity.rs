@@ -31,7 +31,7 @@ impl<'a> Similarity<'a> {
         (type_1_name, type_1): (&str, &Type),
         (type_2_name, type_2): (&str, &Type),
         threshold: f32,
-    ) -> Valid<bool, String> {
+    ) -> Valid<bool, String, String> {
         let type_info = SimilarityTypeInfo { type_1_name, type_1, type_2, type_2_name };
 
         self.similarity_inner(type_info, &mut PairSet::default(), threshold)
@@ -42,7 +42,7 @@ impl<'a> Similarity<'a> {
         type_info: SimilarityTypeInfo,
         visited_type: &mut PairSet<String>,
         threshold: f32,
-    ) -> Valid<bool, String> {
+    ) -> Valid<bool, String, String> {
         let type_1_name = type_info.type_1_name;
         let type_2_name = type_info.type_2_name;
         let type_1 = type_info.type_1;

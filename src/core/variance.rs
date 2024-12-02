@@ -18,7 +18,7 @@ use crate::core::primitive::Primitive;
 /// strictly adhere to certain constraints, and any merging must respect those
 /// constraints.
 pub trait Invariant: Sized {
-    fn unify(self, other: Self) -> Valid<Self, String>;
+    fn unify(self, other: Self) -> Valid<Self, String, String>;
 }
 
 /// A trait representing types that exhibit **contravariant** behavior during
@@ -34,7 +34,7 @@ pub trait Invariant: Sized {
 /// This is useful in scenarios where combining two values should result in the
 /// most restrictive interpretation.
 pub trait Contravariant: Sized {
-    fn shrink(self, other: Self) -> Valid<Self, String>;
+    fn shrink(self, other: Self) -> Valid<Self, String, String>;
 }
 
 /// A trait representing types that exhibit **covariant** behavior during
@@ -50,7 +50,7 @@ pub trait Contravariant: Sized {
 /// useful in scenarios where combining two values should result in the most
 /// permissive interpretation.
 pub trait Covariant: Sized {
-    fn expand(self, other: Self) -> Valid<Self, String>;
+    fn expand(self, other: Self) -> Valid<Self, String, String>;
 }
 
 /// Implements the `Invariant` trait for all types that implement `Primitive`.
@@ -60,7 +60,7 @@ pub trait Covariant: Sized {
 /// function to combine `self` and `other`, preserving the essential properties
 /// of the type.
 impl<A: Primitive + Sized> Invariant for A {
-    fn unify(self, other: Self) -> Valid<Self, String> {
+    fn unify(self, other: Self) -> Valid<Self, String, String> {
         Valid::succeed(self.merge_right(other))
     }
 }

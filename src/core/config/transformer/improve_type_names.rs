@@ -120,7 +120,7 @@ pub struct ImproveTypeNames;
 impl Transform for ImproveTypeNames {
     type Value = Config;
     type Error = String;
-    fn transform(&self, config: Config) -> Valid<Self::Value, Self::Error> {
+    fn transform(&self, config: Config) -> Valid<Self::Value, Self::Error, String> {
         let finalized_candidates = CandidateGeneration::new(&config).generate().converge();
         RenameTypes::new(finalized_candidates.iter()).transform(config)
     }

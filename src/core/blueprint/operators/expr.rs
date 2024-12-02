@@ -11,13 +11,13 @@ fn validate_data_with_schema(
     config: &config::Config,
     field: &config::Field,
     gql_value: ConstValue,
-) -> Valid<(), BlueprintError> {
+) -> Valid<(), BlueprintError, String> {
     match to_json_schema(&field.type_of, config)
         .validate(&gql_value)
         .to_result()
     {
         Ok(_) => Valid::succeed(()),
-        Err(err) => Valid::from_validation_err(BlueprintError::from_validation_str(err)),
+        Err(err) => Valid::from(BlueprintError::from_validation_str(err)),
     }
 }
 
@@ -28,7 +28,7 @@ pub struct CompileExpr<'a> {
     pub validate: bool,
 }
 
-pub fn compile_expr(inputs: CompileExpr) -> Valid<IR, BlueprintError> {
+pub fn compile_expr(inputs: CompileExpr) -> Valid<IR, BlueprintError, String> {
     let config_module = inputs.config_module;
     let field = inputs.field;
     let value = &inputs.expr.body;

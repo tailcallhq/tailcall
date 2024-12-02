@@ -38,7 +38,7 @@ impl<A> Transform for CheckCache<A> {
     type Value = OperationPlan<A>;
     type Error = Infallible;
 
-    fn transform(&self, mut plan: Self::Value) -> Valid<Self::Value, Self::Error> {
+    fn transform(&self, mut plan: Self::Value) -> Valid<Self::Value, Self::Error, String> {
         let mut ttl = Some(NonZeroU64::MAX);
 
         for field in plan.selection.iter() {

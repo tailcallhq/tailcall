@@ -23,7 +23,7 @@ impl<'a> SchemaGenerator<'a> {
 impl Transform for SchemaGenerator<'_> {
     type Value = Config;
     type Error = String;
-    fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
+    fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error, String> {
         match self.operation_type {
             GraphQLOperationType::Query => {
                 config.schema.query = Some(

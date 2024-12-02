@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
 use derive_setters::Setters;
-use tailcall_valid::{Valid, ValidationError, Validator};
+use tailcall_valid::{Valid, Cause, Validator};
 
 use super::BlueprintError;
 use crate::core::config::{self, Batch, ConfigModule};
@@ -51,7 +51,7 @@ impl Default for Upstream {
 }
 
 impl TryFrom<&ConfigModule> for Upstream {
-    type Error = ValidationError<crate::core::blueprint::BlueprintError>;
+    type Error = Cause<crate::core::blueprint::BlueprintError, String>;
 
     fn try_from(config_module: &ConfigModule) -> Result<Self, Self::Error> {
         let config_upstream = config_module.upstream.clone();
@@ -87,7 +87,7 @@ impl TryFrom<&ConfigModule> for Upstream {
     }
 }
 
-fn get_batch(upstream: &config::Upstream) -> Valid<Option<Batch>, BlueprintError> {
+fn get_batch(upstream: &config::Upstream) -> Valid<Option<Batch>, BlueprintError, String> {
     upstream.batch.as_ref().map_or_else(
         || Valid::succeed(None),
         |batch| {
@@ -100,7 +100,7 @@ fn get_batch(upstream: &config::Upstream) -> Valid<Option<Batch>, BlueprintError
     )
 }
 
-fn get_proxy(upstream: &config::Upstream) -> Valid<Option<Proxy>, BlueprintError> {
+fn get_proxy(upstream: &config::Upstream) -> Valid<Option<Proxy>, BlueprintError, String> {
     if let Some(ref proxy) = upstream.proxy {
         Valid::succeed(Some(Proxy { url: proxy.url.clone() }))
     } else {

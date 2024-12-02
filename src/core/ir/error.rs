@@ -91,8 +91,8 @@ impl ErrorExtensions for Error {
     }
 }
 
-impl<'a> From<tailcall_valid::ValidationError<&'a str>> for Error {
-    fn from(value: tailcall_valid::ValidationError<&'a str>) -> Self {
+impl<'a> From<tailcall_valid::Cause<&'a str, String>> for Error {
+    fn from(value: tailcall_valid::Cause<&'a str, String>) -> Self {
         Error::APIValidation(
             value
                 .as_vec()

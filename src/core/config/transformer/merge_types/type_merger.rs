@@ -236,7 +236,7 @@ fn merge_type(type_: &Type, mut merge_into: Type) -> Type {
 impl Transform for TypeMerger {
     type Value = Config;
     type Error = String;
-    fn transform(&self, config: Config) -> Valid<Self::Value, Self::Error> {
+    fn transform(&self, config: Config) -> Valid<Self::Value, Self::Error, String> {
         let config = self.merger(1, config);
         Valid::succeed(config)
     }

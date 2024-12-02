@@ -58,12 +58,12 @@ pub fn compile_graphql(
     operation_type: &GraphQLOperationType,
     type_name: &str,
     graphql: &GraphQL,
-) -> Valid<IR, BlueprintError> {
+) -> Valid<IR, BlueprintError, String> {
     let args = graphql.args.as_ref();
 
     let mustache = match helpers::headers::to_mustache_headers(&graphql.headers).to_result() {
         Ok(mustache) => Valid::succeed(mustache),
-        Err(err) => Valid::from_validation_err(BlueprintError::from_validation_string(err)),
+        Err(err) => Valid::from(BlueprintError::from_validation_string(err)),
     };
 
     Valid::succeed(graphql.url.as_str())

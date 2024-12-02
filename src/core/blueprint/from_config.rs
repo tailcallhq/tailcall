@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use async_graphql::dynamic::SchemaBuilder;
 use indexmap::IndexMap;
-use tailcall_valid::{Valid, ValidationError, Validator};
+use tailcall_valid::{Cause, Valid, Validator};
 
 use self::telemetry::to_opentelemetry;
 use super::Server;
@@ -15,7 +15,7 @@ use crate::core::json::JsonSchema;
 use crate::core::try_fold::TryFold;
 use crate::core::Type;
 
-pub fn config_blueprint<'a>() -> TryFold<'a, ConfigModule, Blueprint, BlueprintError> {
+pub fn config_blueprint<'a>() -> TryFold<'a, ConfigModule, Blueprint, BlueprintError, String> {
     let server = TryFoldConfig::<Blueprint>::new(|config_module, blueprint| {
         Valid::from(Server::try_from(config_module.clone())).map(|server| blueprint.server(server))
     });
@@ -116,7 +116,7 @@ pub fn to_json_schema(type_of: &Type, config: &Config) -> JsonSchema {
 }
 
 impl TryFrom<&ConfigModule> for Blueprint {
-    type Error = ValidationError<crate::core::blueprint::BlueprintError>;
+    type Error = Vec<Cause<crate::core::blueprint::BlueprintError, String>>;
 
     fn try_from(config_module: &ConfigModule) -> Result<Self, Self::Error> {
         config_blueprint()

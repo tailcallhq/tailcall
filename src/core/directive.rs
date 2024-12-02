@@ -3,20 +3,20 @@ use async_graphql::{Name, Positioned};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use serde_path_to_error::deserialize;
-use tailcall_valid::{Valid, ValidationError, Validator};
+use tailcall_valid::{Cause, Valid, Validator};
 
 use super::pos;
 
 pub trait DirectiveCodec: Sized {
     fn directive_name() -> String;
-    fn from_directive(directive: &ConstDirective) -> Valid<Self, String>;
+    fn from_directive(directive: &ConstDirective) -> Valid<Self, String, String>;
     fn to_directive(&self) -> ConstDirective;
     fn trace_name() -> String {
         format!("@{}", Self::directive_name())
     }
     fn from_directives<'a>(
         directives: impl Iterator<Item = &'a Positioned<ConstDirective>>,
-    ) -> Valid<Option<Self>, String> {
+    ) -> Valid<Option<Self>, String, String> {
         for directive in directives {
             if directive.node.name.node == Self::directive_name() {
                 return Self::from_directive(&directive.node).map(Some);
@@ -45,12 +45,13 @@ impl<'a, A: Deserialize<'a> + Serialize + 'a> DirectiveCodec for A {
         )
     }
 
-    fn from_directive(directive: &ConstDirective) -> Valid<A, String> {
+    fn from_directive(directive: &ConstDirective) -> Valid<A, String, String> {
         Valid::from_iter(directive.arguments.iter(), |(k, v)| {
-            Valid::from(serde_json::to_value(&v.node).map_err(|e| {
-                ValidationError::new(e.to_string())
-                    .trace(format!("@{}", directive.name.node).as_str())
-            }))
+            Valid::from(
+                serde_json::to_value(&v.node).map_err(|e| {
+                    Cause::new(e.to_string()).trace(format!("@{}", directive.name.node))
+                }),
+            )
             .map(|v| (k.node.as_str().to_string(), v))
         })
         .map(|items| {
@@ -61,9 +62,7 @@ impl<'a, A: Deserialize<'a> + Serialize + 'a> DirectiveCodec for A {
         })
         .and_then(|map| match deserialize(Value::Object(map)) {
             Ok(a) => Valid::succeed(a),
-            Err(e) => Valid::from_validation_err(
-                ValidationError::from(e).trace(format!("@{}", directive.name.node).as_str()),
-            ),
+            Err(e) => Valid::from(Cause::from(e).trace(format!("@{}", directive.name.node))),
         })
     }
 

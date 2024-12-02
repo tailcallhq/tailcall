@@ -6,7 +6,7 @@ use tailcall_valid::{Valid, Validator};
 pub trait Transform {
     type Value;
     type Error;
-    fn transform(&self, value: Self::Value) -> Valid<Self::Value, Self::Error>;
+    fn transform(&self, value: Self::Value) -> Valid<Self::Value, Self::Error, String>;
 }
 
 /// A suite of common operators that are available for all transformers.
@@ -14,7 +14,7 @@ pub trait TransformerOps: Sized + Transform {
     fn pipe<Other: Transform>(self, other: Other) -> Pipe<Self, Other> {
         Pipe(self, other)
     }
-    fn generate(&self) -> Valid<Self::Value, Self::Error>
+    fn generate(&self) -> Valid<Self::Value, Self::Error, String>
     where
         Self::Value: std::default::Default,
     {
@@ -33,7 +33,7 @@ impl<A: Transform> Transform for When<A> {
     type Value = A::Value;
     type Error = A::Error;
 
-    fn transform(&self, value: Self::Value) -> Valid<Self::Value, Self::Error> {
+    fn transform(&self, value: Self::Value) -> Valid<Self::Value, Self::Error, String> {
         if self.1 {
             self.0.transform(value)
         } else {
@@ -52,7 +52,7 @@ where
 {
     type Value = A;
     type Error = E;
-    fn transform(&self, value: Self::Value) -> Valid<Self::Value, Self::Error> {
+    fn transform(&self, value: Self::Value) -> Valid<Self::Value, Self::Error, String> {
         self.0.transform(value).and_then(|v| self.1.transform(v))
     }
 }
@@ -63,7 +63,7 @@ pub struct Default<A, E>(std::marker::PhantomData<(A, E)>);
 impl<A, E> Transform for Default<A, E> {
     type Value = A;
     type Error = E;
-    fn transform(&self, value: Self::Value) -> Valid<Self::Value, Self::Error> {
+    fn transform(&self, value: Self::Value) -> Valid<Self::Value, Self::Error, String> {
         Valid::succeed(value)
     }
 }

@@ -17,7 +17,7 @@ pub struct CompileResolver<'a> {
 pub fn compile_resolver(
     inputs: &CompileResolver,
     resolver: &Resolver,
-) -> Valid<Option<IR>, BlueprintError> {
+) -> Valid<Option<IR>, BlueprintError, String> {
     let CompileResolver { config_module, field, operation_type, object_name } = inputs;
 
     match resolver {
@@ -27,7 +27,7 @@ pub fn compile_resolver(
             // inner resolver should resolve only single instance of type, not a list
             field,
         )
-        .trace(config::Http::trace_name().as_str()),
+        .trace(config::Http::trace_name()),
         Resolver::Grpc(grpc) => compile_grpc(super::CompileGrpc {
             config_module,
             operation_type,
@@ -35,20 +35,20 @@ pub fn compile_resolver(
             grpc,
             validate_with_schema: true,
         })
-        .trace(config::Grpc::trace_name().as_str()),
+        .trace(config::Grpc::trace_name()),
         Resolver::Graphql(graphql) => {
             compile_graphql(config_module, operation_type, field.type_of.name(), graphql)
-                .trace(config::GraphQL::trace_name().as_str())
+                .trace(config::GraphQL::trace_name())
         }
         Resolver::Call(call) => compile_call(config_module, call, operation_type, object_name)
-            .trace(config::Call::trace_name().as_str()),
+            .trace(config::Call::trace_name()),
         Resolver::Js(js) => {
             compile_js(super::CompileJs { js, script: &config_module.extensions().script })
-                .trace(config::JS::trace_name().as_str())
+                .trace(config::JS::trace_name())
         }
         Resolver::Expr(expr) => {
             compile_expr(super::CompileExpr { config_module, field, expr, validate: true })
-                .trace(config::Expr::trace_name().as_str())
+                .trace(config::Expr::trace_name())
         }
         Resolver::ApolloFederation(_) => {
             // ignore the Federation resolvers since they have special meaning
@@ -67,8 +67,9 @@ pub fn update_resolver<'a>(
     (&'a ConfigModule, &'a Field, &'a config::Type, &'a str),
     FieldDefinition,
     BlueprintError,
+    String,
 > {
-    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, BlueprintError>::new(
+    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, BlueprintError, String>::new(
         |(config_module, field, type_of, _), b_field| {
             let inputs = CompileResolver { config_module, field, operation_type, object_name };
 

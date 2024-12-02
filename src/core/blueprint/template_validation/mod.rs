@@ -13,7 +13,7 @@ fn path_validator<'a>(
     mut path_iter: impl Iterator<Item = &'a String>,
     type_of: &str,
     leaf_validator: impl Fn(&str) -> bool,
-) -> Valid<(), BlueprintError> {
+) -> Valid<(), BlueprintError, String> {
     match config.find_type(type_of) {
         Some(type_def) => match path_iter.next() {
             Some(field) => match type_def.fields.get(field) {
@@ -34,7 +34,7 @@ pub fn validate_argument(
     config: &Config,
     template: Mustache,
     field: &Field,
-) -> Valid<(), BlueprintError> {
+) -> Valid<(), BlueprintError, String> {
     let scalar_validator =
         |type_: &str| Scalar::is_predefined(type_) || config.find_enum(type_).is_some();
 

@@ -5,7 +5,7 @@ use async_graphql::parser::types::{Directive, Type};
 use async_graphql::{Name, ServerError};
 use derive_more::{Debug, From};
 use serde_json;
-use tailcall_valid::ValidationError;
+use tailcall_valid::Cause;
 
 #[derive(From, thiserror::Error, Debug)]
 pub enum Error {
@@ -39,7 +39,7 @@ pub enum Error {
     UndefinedParam { key: String, input: String },
 
     #[error("Validation Error : {}", _0)]
-    Validation(ValidationError<std::string::String>),
+    Validation(Cause<std::string::String, String>),
 
     #[error("Async Graphql Parser Error: {}", _0)]
     ParseGraphQL(async_graphql::parser::Error),

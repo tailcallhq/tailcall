@@ -7,7 +7,7 @@ use crate::core::blueprint::*;
 use crate::core::config::{Config, Field, Type};
 use crate::core::directive::DirectiveCodec;
 
-fn validate_query(config: &Config) -> Valid<(), BlueprintError> {
+fn validate_query(config: &Config) -> Valid<(), BlueprintError, String> {
     Valid::from_option(
         config.schema.query.clone(),
         BlueprintError::QueryRootIsMissing,
@@ -29,7 +29,7 @@ fn validate_type_has_resolvers(
     ty: &Type,
     types: &BTreeMap<String, Type>,
     visited: &mut HashSet<String>,
-) -> Valid<(), BlueprintError> {
+) -> Valid<(), BlueprintError, String> {
     if ty.scalar() || visited.contains(name) {
         return Valid::succeed(());
     }
@@ -48,8 +48,8 @@ pub fn validate_field_has_resolver(
     field: &Field,
     types: &BTreeMap<String, Type>,
     visited: &mut HashSet<String>,
-) -> Valid<(), BlueprintError> {
-    Valid::<(), BlueprintError>::fail(BlueprintError::NoResolverFoundInSchema)
+) -> Valid<(), BlueprintError, String> {
+    Valid::<(), BlueprintError, String>::fail(BlueprintError::NoResolverFoundInSchema)
         .when(|| {
             if !field.has_resolver() {
                 let type_name = field.type_of.name();
@@ -65,7 +65,7 @@ pub fn validate_field_has_resolver(
         .trace(name)
 }
 
-fn validate_mutation(config: &Config) -> Valid<(), BlueprintError> {
+fn validate_mutation(config: &Config) -> Valid<(), BlueprintError, String> {
     let mutation_type_name = config.schema.mutation.as_ref();
 
     if let Some(mutation_type_name) = mutation_type_name {
