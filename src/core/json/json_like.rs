@@ -67,6 +67,7 @@ pub trait JsonLike<'json>: Sized {
 pub trait JsonObjectLike<'obj>: Sized {
     type Value;
     fn new() -> Self;
+    fn is_empty(&self) -> bool;
     fn len(&self) -> usize;
     fn with_capacity(n: usize) -> Self;
     fn from_vec(v: Vec<(&'obj str, Self::Value)>) -> Self;

@@ -35,9 +35,13 @@ impl<'obj> JsonObjectLike<'obj> for serde_json::Map<String, Value> {
     {
         self.iter().map(|(k, v)| (k.as_str(), v))
     }
-    
+
     fn len(&self) -> usize {
         self.len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.is_empty()
     }
 }
 
