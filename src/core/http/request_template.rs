@@ -643,7 +643,7 @@ mod tests {
             ))));
         let ctx = Context::default();
         let body = tmpl.to_body(&ctx).unwrap();
-        assert_eq!(body, "foo");
+        assert_eq!(body, "\"foo\"");
     }
 
     #[test]
@@ -657,7 +657,7 @@ mod tests {
           }
         }));
         let body = tmpl.to_body(&ctx).unwrap();
-        assert_eq!(body, "baz");
+        assert_eq!(body, "\"baz\"");
     }
 
     #[test]
@@ -672,7 +672,7 @@ mod tests {
           }
         }));
         let body = tmpl.to_body(&ctx).unwrap();
-        assert_eq!(body, "baz");
+        assert_eq!(body, "\"baz\"");
     }
 
     mod endpoint {
@@ -698,7 +698,7 @@ mod tests {
             assert_eq!(req.method(), reqwest::Method::POST);
             assert_eq!(req.headers().get("foo").unwrap(), "bar");
             let body = req.body().unwrap().as_bytes().unwrap().to_owned();
-            assert_eq!(body, "foo".as_bytes());
+            assert_eq!(body, "\"foo\"".as_bytes());
             assert_eq!(req.url().to_string(), "http://localhost:3000/");
         }
 
@@ -725,7 +725,7 @@ mod tests {
             assert_eq!(req.method(), reqwest::Method::POST);
             assert_eq!(req.headers().get("foo").unwrap(), "abc");
             let body = req.body().unwrap().as_bytes().unwrap().to_owned();
-            assert_eq!(body, "baz".as_bytes());
+            assert_eq!(body, "\"baz\"".as_bytes());
             assert_eq!(req.url().to_string(), "http://localhost:3000/baz?foo=baz");
         }
 
