@@ -9,7 +9,7 @@ impl<Body> RequestWrapper<Body> {
         Self { request, deserialized_body: None }
     }
 
-    pub fn with_deserialzied_body(self, deserialized_body: Option<Body>) -> Self {
+    pub fn with_deserialized_body(self, deserialized_body: Option<Body>) -> Self {
         Self { deserialized_body, ..self }
     }
 

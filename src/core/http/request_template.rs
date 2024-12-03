@@ -158,7 +158,7 @@ impl RequestTemplate {
         } else {
             None
         };
-        Ok(RequestWrapper::new(req).with_deserialzied_body(body_value))
+        Ok(RequestWrapper::new(req).with_deserialized_body(body_value))
     }
 
     /// Sets the headers for the request

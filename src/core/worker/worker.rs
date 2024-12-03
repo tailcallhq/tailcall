@@ -194,7 +194,7 @@ impl<Body: DeserializeOwned> TryFrom<WorkerRequest> for RequestWrapper<Body> {
         let request = if let Some(body) = value.0.body() {
             if let Some(body_bytes) = body.as_bytes() {
                 let body = serde_json::from_slice(body_bytes)?;
-                RequestWrapper::new(value.0).with_deserialzied_body(body)
+                RequestWrapper::new(value.0).with_deserialized_body(body)
             } else {
                 RequestWrapper::new(value.0)
             }
