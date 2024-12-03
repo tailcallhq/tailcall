@@ -2,12 +2,12 @@ use async_graphql_value::{ConstValue, Name};
 use indexmap::IndexMap;
 use serde_json::Value;
 
-use crate::core::mustache::Mustache;
+use crate::core::mustache::{JqTemplate, Mustache};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum DynamicValue<A> {
     Value(A),
-    Mustache(Mustache),
+    Mustache(JqTemplate),
     Object(IndexMap<Name, DynamicValue<A>>),
     Array(Vec<DynamicValue<A>>),
 }

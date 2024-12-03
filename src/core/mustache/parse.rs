@@ -16,6 +16,13 @@ impl Mustache {
             Err(_) => Mustache::from(vec![Segment::Literal(str.to_string())]),
         }
     }
+
+    pub fn try_parse_optional(template: &str) -> Option<Mustache> {
+        match parse_mustache(template).finish() {
+            Ok((_, mustache)) => Some(mustache),
+            Err(_) => None,
+        }
+    }
 }
 
 fn parse_name(input: &str) -> IResult<&str, String> {
