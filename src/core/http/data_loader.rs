@@ -6,14 +6,17 @@ use std::time::Duration;
 use async_graphql::async_trait;
 use async_graphql::futures_util::future::join_all;
 use async_graphql_value::ConstValue;
-use reqwest::Request;
+use tailcall_valid::Validator;
 
+use super::transformations::{BodyBatching, QueryBatching};
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::Batch;
 use crate::core::data_loader::{DataLoader, Loader};
 use crate::core::http::{DataLoaderRequest, Response};
 use crate::core::json::JsonLike;
 use crate::core::runtime::TargetRuntime;
+use crate::core::transform::TransformerOps;
+use crate::core::Transform;
 
 fn get_body_value_single(body_value: &HashMap<String, Vec<&ConstValue>>, id: &str) -> ConstValue {
     body_value
@@ -58,58 +61,6 @@ fn get_key<'a, T: JsonLike<'a> + Display>(value: &'a T, path: &[String]) -> anyh
         .ok_or_else(|| anyhow::anyhow!("Unable to find key {} in body", path.join(".")))
 }
 
-/// This function is used to batch the body of the requests.
-/// working of this function is as follows:
-/// 1. It takes the list of requests and extracts the body from each request.
-/// 2. It then clubs all the extracted bodies into list format. like [body1,
-///    body2, body3]
-/// 3. It does this all manually to avoid extra serialization cost.
-fn batch_request_body(mut base_request: Request, requests: &[DataLoaderRequest]) -> Request {
-    let mut request_bodies = Vec::with_capacity(requests.len());
-
-    if base_request.method() == reqwest::Method::GET {
-        // in case of GET method do nothing and return the base request.
-        return base_request;
-    }
-
-    for req in requests {
-        if let Some(body) = req.body().and_then(|b| b.as_bytes()) {
-            request_bodies.push(body);
-        }
-    }
-
-    if !request_bodies.is_empty() {
-        if cfg!(feature = "integration_test") || cfg!(test) {
-            // sort the body to make it consistent for testing env.
-            request_bodies.sort();
-        }
-
-        // construct serialization manually.
-        let merged_body = request_bodies.iter().fold(
-            Vec::with_capacity(
-                request_bodies.iter().map(|i| i.len()).sum::<usize>() + request_bodies.len(),
-            ),
-            |mut acc, item| {
-                if !acc.is_empty() {
-                    // add ',' to separate the body from each other.
-                    acc.extend_from_slice(b",");
-                }
-                acc.extend_from_slice(item);
-                acc
-            },
-        );
-
-        // add list brackets to the serialized body.
-        let mut serialized_body = Vec::with_capacity(merged_body.len() + 2);
-        serialized_body.extend_from_slice(b"[");
-        serialized_body.extend_from_slice(&merged_body);
-        serialized_body.extend_from_slice(b"]");
-        base_request.body_mut().replace(serialized_body.into());
-    }
-
-    base_request
-}
-
 #[async_trait::async_trait]
 impl Loader<DataLoaderRequest> for HttpDataLoader {
     type Value = Response<async_graphql::Value>;
@@ -128,24 +79,21 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
             }
 
             if let Some(base_dl_request) = dl_requests.first().as_mut() {
-                // Create base request
-                let mut base_request =
-                    batch_request_body(base_dl_request.to_request(), &dl_requests);
-
-                // Merge query params in the request
-                for key in dl_requests.iter().skip(1) {
-                    let request = key.to_request();
-                    let url = request.url();
-                    let pairs: Vec<_> = url
-                        .query_pairs()
-                        .filter(|(key, _)| group_by.key().eq(&key.to_string()))
-                        .collect();
-                    if !pairs.is_empty() {
-                        // if pair's are empty then don't extend the query params else it ends
-                        // up appending '?' to the url.
-                        base_request.url_mut().query_pairs_mut().extend_pairs(pairs);
-                    }
-                }
+                let base_request = if base_dl_request.method() == http::Method::GET {
+                    QueryBatching::new(
+                        &dl_requests.iter().skip(1).collect::<Vec<_>>(),
+                        Some(group_by.key()),
+                    )
+                    .transform(base_dl_request.to_request())
+                    .to_result()
+                    .map_err(|e| anyhow::anyhow!(e))?
+                } else {
+                    QueryBatching::new(&dl_requests.iter().skip(1).collect::<Vec<_>>(), None)
+                        .pipe(BodyBatching::new(&dl_requests.iter().collect::<Vec<_>>()))
+                        .transform(base_dl_request.to_request())
+                        .to_result()
+                        .map_err(|e| anyhow::anyhow!(e))?
+                };
 
                 // Dispatch request
                 let res = self

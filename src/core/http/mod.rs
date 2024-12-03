@@ -20,6 +20,7 @@ mod request_template;
 mod response;
 pub mod showcase;
 mod telemetry;
+mod transformations;
 
 pub static TAILCALL_HTTPS_ORIGIN: HeaderValue = HeaderValue::from_static("https://tailcall.run");
 pub static TAILCALL_HTTP_ORIGIN: HeaderValue = HeaderValue::from_static("http://tailcall.run");
