@@ -35,6 +35,10 @@ impl<'ctx> JsonObjectLike<'ctx> for ObjectAsVec<'ctx> {
     {
         self.iter()
     }
+    
+    fn len(&self) -> usize {
+        self.len()
+    }
 }
 
 impl<'ctx> JsonLike<'ctx> for Value<'ctx> {

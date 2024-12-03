@@ -27,7 +27,7 @@ pub trait JsonLike<'json>: Sized {
         T::JsonObject: JsonObjectLike<'json, Value = T>,
     {
         if let Some(obj) = other.as_object() {
-            let mut fields = Vec::new();
+            let mut fields = Vec::with_capacity(obj.len());
             for (k, v) in obj.iter() {
                 fields.push((k, Self::clone_from(v)));
             }
@@ -67,6 +67,7 @@ pub trait JsonLike<'json>: Sized {
 pub trait JsonObjectLike<'obj>: Sized {
     type Value;
     fn new() -> Self;
+    fn len(&self) -> usize;
     fn with_capacity(n: usize) -> Self;
     fn from_vec(v: Vec<(&'obj str, Self::Value)>) -> Self;
     fn get_key(&self, key: &str) -> Option<&Self::Value>;

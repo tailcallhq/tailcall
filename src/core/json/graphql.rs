@@ -37,6 +37,10 @@ impl<'obj, Value: JsonLike<'obj>> JsonObjectLike<'obj> for IndexMap<Name, Value>
     {
         self.iter().map(|(k, v)| (k.as_str(), v))
     }
+    
+    fn len(&self) -> usize {
+        self.len()
+    }
 }
 
 impl<'json> JsonLike<'json> for ConstValue {
