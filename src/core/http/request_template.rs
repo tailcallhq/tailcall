@@ -141,14 +141,15 @@ impl RequestTemplate {
                 Encoding::ApplicationXWwwFormUrlencoded => {
                     // TODO: this is a performance bottleneck
                     // We first encode everything to string and then back to form-urlencoded
-                    let form_data = match serde_json::from_str::<String>(&body) {
-                        Ok(raw_str) => match serde_json::from_str::<serde_json::Value>(&raw_str) {
-                            Ok(deserialized_data) => {
-                                serde_urlencoded::to_string(deserialized_data)?
-                            }
-                            Err(_) => raw_str,
-                        },
-                        Err(_) => serde_urlencoded::to_string(&rendered_body)?,
+                    let body = if let serde_json::Value::String(body) = &rendered_body {
+                        body.to_owned()
+                    } else {
+                        body
+                    };
+
+                    let form_data = match serde_json::from_str::<serde_json::Value>(&body) {
+                        Ok(deserialized_data) => serde_urlencoded::to_string(deserialized_data)?,
+                        Err(_) => body,
                     };
 
                     req.body_mut().replace(form_data.into());
@@ -490,9 +491,11 @@ mod tests {
                 skip_empty: false,
             },
         ];
+
         let tmpl = RequestTemplate::new("http://localhost:3000")
             .unwrap()
             .query(query);
+
         let ctx = Context::default();
         let request_wrapper = tmpl.to_request(&ctx).unwrap();
         let req = request_wrapper.request();
@@ -640,7 +643,7 @@ mod tests {
             ))));
         let ctx = Context::default();
         let body = tmpl.to_body(&ctx).unwrap();
-        assert_eq!(body, "\"foo\"");
+        assert_eq!(body, "foo");
     }
 
     #[test]
@@ -654,7 +657,7 @@ mod tests {
           }
         }));
         let body = tmpl.to_body(&ctx).unwrap();
-        assert_eq!(body, "\"baz\"");
+        assert_eq!(body, "baz");
     }
 
     #[test]
@@ -669,7 +672,7 @@ mod tests {
           }
         }));
         let body = tmpl.to_body(&ctx).unwrap();
-        assert_eq!(body, "\"baz\"");
+        assert_eq!(body, "baz");
     }
 
     mod endpoint {
@@ -695,7 +698,7 @@ mod tests {
             assert_eq!(req.method(), reqwest::Method::POST);
             assert_eq!(req.headers().get("foo").unwrap(), "bar");
             let body = req.body().unwrap().as_bytes().unwrap().to_owned();
-            assert_eq!(body, "\"foo\"".as_bytes());
+            assert_eq!(body, "foo".as_bytes());
             assert_eq!(req.url().to_string(), "http://localhost:3000/");
         }
 
@@ -722,7 +725,7 @@ mod tests {
             assert_eq!(req.method(), reqwest::Method::POST);
             assert_eq!(req.headers().get("foo").unwrap(), "abc");
             let body = req.body().unwrap().as_bytes().unwrap().to_owned();
-            assert_eq!(body, "\"baz\"".as_bytes());
+            assert_eq!(body, "baz".as_bytes());
             assert_eq!(req.url().to_string(), "http://localhost:3000/baz?foo=baz");
         }
 
