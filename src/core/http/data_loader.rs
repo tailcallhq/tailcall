@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::fmt::Display;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -52,13 +51,6 @@ impl HttpDataLoader {
             .delay(Duration::from_millis(batch.delay as u64))
             .max_batch_size(batch.max_size.unwrap_or_default())
     }
-}
-
-fn get_key<'a, T: JsonLike<'a> + Display>(value: &'a T, path: &[String]) -> anyhow::Result<String> {
-    value
-        .get_path(path)
-        .map(|k| k.to_string())
-        .ok_or_else(|| anyhow::anyhow!("Unable to find key {} in body", path.join(".")))
 }
 
 #[async_trait::async_trait]
@@ -137,15 +129,12 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
                         hashmap.insert(dl_req.clone(), res);
                     }
                 } else {
-                    let path = group_by.body_path();
                     for dl_req in dl_requests.into_iter() {
-                        // retrive the key from body
-                        let request_body = dl_req.body_value().ok_or(anyhow::anyhow!(
-                            "Unable to find body in request {}",
+                        let body_key = dl_req.body_key().ok_or(anyhow::anyhow!(
+                            "Unable to find body key in data loader request {}",
                             dl_req.url().as_str()
                         ))?;
-                        let extracted_value =
-                            data_extractor(&response_map, &get_key(request_body, path)?);
+                        let extracted_value = data_extractor(&response_map, body_key);
                         let res = res.clone().body(extracted_value);
                         hashmap.insert(dl_req.clone(), res);
                     }

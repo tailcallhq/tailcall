@@ -83,7 +83,7 @@ type User {
 - request:
     method: PATCH
     url: http://jsonplaceholder.typicode.com/users/1
-    body: {"postId": 1}
+    body: '{"postId":1}'
   response:
     status: 200
     body:

@@ -1,16 +1,16 @@
 /// Holds necessary information for request execution.
-pub struct RequestWrapper<Body> {
+pub struct RequestWrapper<Key> {
     request: reqwest::Request,
-    deserialized_body: Option<Body>,
+    body_key: Option<Key>,
 }
 
-impl<Body> RequestWrapper<Body> {
+impl<Key> RequestWrapper<Key> {
     pub fn new(request: reqwest::Request) -> Self {
-        Self { request, deserialized_body: None }
+        Self { request, body_key: None }
     }
 
-    pub fn with_deserialized_body(self, deserialized_body: Option<Body>) -> Self {
-        Self { deserialized_body, ..self }
+    pub fn with_body_key(self, body_key: Option<Key>) -> Self {
+        Self { body_key, ..self }
     }
 
     pub fn request(&self) -> &reqwest::Request {
@@ -21,19 +21,19 @@ impl<Body> RequestWrapper<Body> {
         &mut self.request
     }
 
-    pub fn deserialized_body(&self) -> Option<&Body> {
-        self.deserialized_body.as_ref()
+    pub fn body_key(&self) -> Option<&Key> {
+        self.body_key.as_ref()
     }
 
     pub fn into_request(self) -> reqwest::Request {
         self.request
     }
 
-    pub fn into_deserialized_body(self) -> Option<Body> {
-        self.deserialized_body
+    pub fn into_body_key(self) -> Option<Key> {
+        self.body_key
     }
 
-    pub fn into_parts(self) -> (reqwest::Request, Option<Body>) {
-        (self.request, self.deserialized_body)
+    pub fn into_parts(self) -> (reqwest::Request, Option<Key>) {
+        (self.request, self.body_key)
     }
 }

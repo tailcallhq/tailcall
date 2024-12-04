@@ -8,21 +8,21 @@ use tailcall_hasher::TailcallHasher;
 pub struct DataLoaderRequest {
     request: reqwest::Request,
     headers: BTreeSet<String>,
-    body: Option<serde_json::Value>,
+    body_key: Option<String>,
 }
 
 impl DataLoaderRequest {
     pub fn new(req: reqwest::Request, headers: BTreeSet<String>) -> Self {
         // TODO: req should already have headers builtin, no?
-        Self { request: req, headers, body: None }
+        Self { request: req, headers, body_key: None }
     }
 
-    pub fn with_body(self, body: Option<serde_json::Value>) -> Self {
-        Self { body, ..self }
+    pub fn with_body(self, body: Option<String>) -> Self {
+        Self { body_key: body, ..self }
     }
 
-    pub fn body_value(&self) -> Option<&serde_json::Value> {
-        self.body.as_ref()
+    pub fn body_key(&self) -> Option<&String> {
+        self.body_key.as_ref()
     }
 
     pub fn to_request(&self) -> reqwest::Request {
@@ -78,7 +78,7 @@ impl Clone for DataLoaderRequest {
             req
         });
 
-        if let Some(body) = self.body.as_ref() {
+        if let Some(body) = self.body_key.as_ref() {
             DataLoaderRequest::new(req, self.headers.clone()).with_body(Some(body.clone()))
         } else {
             DataLoaderRequest::new(req, self.headers.clone())
