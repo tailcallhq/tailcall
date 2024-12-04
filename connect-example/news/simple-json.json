@@ -1,0 +1,21 @@
+{
+  "inputs": [
+    {
+      "proto": {
+        "src": "./proto/news.proto",
+        "url": "http://127.0.0.1:8080",
+        "connect_rpc": true
+      }
+    }
+  ],
+  "preset": {
+    "mergeType": 1.0
+  },
+  "output": {
+    "path": "./output.graphql",
+    "format": "graphQL"
+  },
+  "schema": {
+    "query": "Query"
+  }
+}
