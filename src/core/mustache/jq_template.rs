@@ -1,4 +1,4 @@
-use std::iter::Empty;
+use std::sync::Arc;
 
 use jaq_core::{
     load::{parse::Term, Arena, File, Loader},
@@ -8,19 +8,19 @@ use jaq_json::Val;
 
 use crate::core::ir::{EvalContext, ResolverContextLike};
 
-use super::Mustache;
+use super::{Mustache, Segment};
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Hash)]
 pub enum JqTemplate {
     Mustache(Mustache),
-    JqTemplate(JqTransformer)
+    JqTemplate(Arc<JqTransformer>)
 }
 
 impl JqTemplate {
     pub fn render(&self, value: &serde_json::Value) -> String {
         match self {
             JqTemplate::Mustache(mustache) => mustache.render(value),
-            JqTemplate::JqTemplate(jq_transformer) => todo!(),
+            JqTemplate::JqTemplate(jq_transformer) => jq_transformer.render(value),
         }
     }
 
@@ -35,17 +35,68 @@ impl JqTemplate {
             },
         }
     }
+
+    pub fn is_const(&self) -> bool {
+        match self {
+            JqTemplate::Mustache(mustache) => mustache.is_const(),
+            JqTemplate::JqTemplate(jq_transformer) => jq_transformer.is_const(),
+        }
+    }
+
+    pub fn segments(&self) -> &Vec<Segment> {
+        if let JqTemplate::Mustache(mustache) = self {
+            mustache.segments()
+        } else {
+            unimplemented!()
+        }
+    }
+
+    pub fn segments_mut(&mut self) -> &mut Vec<Segment> {
+        if let JqTemplate::Mustache(mustache) = self {
+            mustache.segments_mut()
+        } else {
+            unimplemented!()
+        }
+    }
+
+    pub fn expression_segments(&self) -> Vec<&Vec<String>> {
+        if let JqTemplate::Mustache(mustache) = self {
+            mustache.expression_segments()
+        } else {
+            unimplemented!()
+        }
+    }
+
+    pub fn expression_contains(&self, expression: &str) -> bool {
+        if let JqTemplate::Mustache(mustache) = self {
+            mustache.expression_contains(expression)
+        } else {
+            unimplemented!()
+        }
+    }
+
+    pub fn parse(template: &str) -> Self {
+        Self::Mustache(Mustache::parse(template))
+    }
+}
+
+impl Default for JqTemplate {
+    fn default() -> Self {
+        Self::Mustache(Mustache::default())
+    }
 }
 
 pub struct JqTransformer {
     filter: Filter<Native<Val>>,
-    inputs: RcIter<Empty<Result<Val, String>>>,
-    terms: Vec<Term<String>,
+    term: Term<&'static str>,
 }
 
 impl JqTransformer {
     /// Used to parse a `template` and try to convert it into a JqTemplate
-    pub fn try_new(template: &str) -> Result<Self, JqTemplateError> {
+    pub fn try_new(template: &'static str) -> Result<Self, JqTemplateError> {
+        // the term is used because it can be easily serialized, deserialized and hashed
+        let term = Self::parse_template(template);
+
         // the template is used to be parsed in to the IR AST
         let template = File { code: template, path: () };
         // defs is used to extend the syntax with custom definitions of functions, like 'toString'
@@ -66,15 +117,13 @@ impl JqTransformer {
                     errs.into_iter().map(|e| format!("{:?}", e.1)).collect(),
                 )
             })?;
-        // the hardcoded inputs for the AST
-        let inputs = RcIter::new(core::iter::empty());
 
-        Ok(Self { filter, inputs })
+        Ok(Self { filter, term })
     }
 
     /// Used to execute the transformation of the JQTemplate
-    pub fn run<'a>(&'a self, data: Val) -> impl Iterator<Item = ValR<Val>> + 'a {
-        let ctx = Ctx::new([], &self.inputs);
+    pub fn run<'a, T: std::iter::Iterator<Item = std::result::Result<Val, std::string::String>>>(&'a self, inputs: &'a RcIter<T>,data: Val) -> impl Iterator<Item = ValR<Val>> + 'a {
+        let ctx = Ctx::new([], inputs);
         self.filter.run((ctx, data))
     }
 
@@ -91,7 +140,9 @@ impl JqTransformer {
     }
 
     fn render_helper(&self, value: Val) -> String {
-        let res = self.run(value);
+        // the hardcoded inputs for the AST
+        let inputs = RcIter::new(core::iter::empty());
+        let res = self.run(&inputs, value);
         res.filter_map(|v| {
             if let Ok(v) = v {
                 Some(v)
@@ -106,11 +157,15 @@ impl JqTransformer {
 
     /// Used to determine if the expression can be supported with current Mustache implementation
     pub fn is_select_operation(template: &str) -> bool {
+        let term = Self::parse_template(template);
+        Self::recursive_is_select_operation(term)
+    }
+
+    fn parse_template(template: &str) -> Term<&str> {
         let lexer = jaq_core::load::Lexer::new(template);
         let lex = lexer.lex().unwrap_or_default();
         let mut parser = jaq_core::load::parse::Parser::new(&lex);
-        let term = parser.term().unwrap_or_default();
-        Self::recursive_is_select_operation(term)
+        parser.term().unwrap_or_default()
     }
 
     /// Used as a helper function to determine if the term can be supported with Mustache implementation
@@ -157,18 +212,42 @@ impl JqTransformer {
             (jaq_core::path::Part::Range(_, _), jaq_core::path::Opt::Essential) => false,
         })
     }
+
+    /// Used to determine if the transformer is a static value
+    pub fn is_const(&self) -> bool {
+        // TODO: parse terms to determine the value
+        false
+    }
 }
 
 impl Default for JqTransformer {
     fn default() -> Self {
-        let inputs = RcIter::new(core::iter::empty());
-        Self { filter: Default::default(), inputs }
+        Self { filter: Default::default(), term: Term::default() }
     }
 }
 
 impl std::fmt::Debug for JqTransformer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("JqTemplateData").finish()
+        f.debug_struct("JqTransformer").field("term", &self.term).finish()
+    }
+}
+
+impl ToString for JqTransformer {
+    fn to_string(&self) -> String {
+        format!("[JqTransformer]({:?})", self.term)
+    }
+}
+
+impl std::cmp::PartialEq for JqTransformer {
+    fn eq(&self, other: &Self) -> bool {
+        // TODO: sorry for the quick hack
+        format!("{:?}", self).eq(&format!("{:?}", other))
+    }
+}
+
+impl std::hash::Hash for JqTransformer {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.to_string().hash(state);
     }
 }
 
