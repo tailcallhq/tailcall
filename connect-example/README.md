@@ -1,6 +1,7 @@
 # Connect RPC Examples
 
 This directory contains examples demonstrating how to use Connect RPC with Tailcall. There are two examples available:
+
 - News Service: A simple news management service
 - Eliza Service: A chatbot service
 
