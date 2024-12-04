@@ -10,8 +10,9 @@ error: true
   "schema": {
     "query": "Query"
   },
-  "types": {
-    "Query": {
+  "types": [
+    {
+      "name": "Query",
       "fields": {
         "foo": {
           "type": {
@@ -34,7 +35,7 @@ error: true
       },
       "protected": null
     }
-  },
+  ],
   "enums": {
     "Foo": {
       "variants": [],
