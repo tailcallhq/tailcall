@@ -32,8 +32,8 @@ impl Transform for ConnectRPC {
 
 impl From<Grpc> for Http {
     fn from(grpc: Grpc) -> Self {
-        let url = grpc.url.clone();
-        let body = grpc.body.clone();
+        let url = grpc.url;
+        let body = grpc.body;
         // remove the last
         // method: package.service.method
         // remove the method from the end.
@@ -42,11 +42,11 @@ impl From<Grpc> for Http {
         let endpoint = parts[parts.len() - 1].to_string();
 
         let new_url = format!("{}/{}/{}", url, method, endpoint);
-        let headers = grpc.headers.clone();
-        let batch_key = grpc.batch_key.clone();
-        let dedupe = grpc.dedupe.clone();
-        let select = grpc.select.clone();
-        let on_response_body = grpc.on_response_body.clone();
+        let headers = grpc.headers;
+        let batch_key = grpc.batch_key;
+        let dedupe = grpc.dedupe;
+        let select = grpc.select;
+        let on_response_body = grpc.on_response_body;
 
         Self {
             url: new_url,

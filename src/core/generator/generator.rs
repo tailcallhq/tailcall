@@ -137,7 +137,7 @@ impl Generator {
                 }
                 Input::Proto { metadata, url, connect_rpc } => {
                     let proto_config = self.generate_from_proto(metadata, &self.query, url)?;
-                    let proto_config = if let Some(_) = connect_rpc {
+                    let proto_config = if connect_rpc == &Some(true) {
                         ConnectRPC.transform(proto_config).to_result()?
                     } else {
                         proto_config
