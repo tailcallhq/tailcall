@@ -10,8 +10,8 @@ impl Transform for ConnectRPC {
     type Error = String;
 
     fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
-        for (_, type_) in config.types.iter_mut() {
-            for (_, field_) in type_.fields.iter_mut() {
+        for type_ in config.types.values_mut() {
+            for field_ in type_.fields.values_mut() {
                 let new_resolvers = field_
                     .resolvers
                     .0
