@@ -325,10 +325,10 @@ impl<'a, A: PathString> Eval<'a> for ExpressionValueEval<A> {
         // This implementation is a critical optimization for request batching:
         // - During batching, we need to extract individual request values from the
         //   batch response and map them back to their original requests
-        // - Instead of parsing the body JSON multiple times, we extract the key
-        //   during initial template evaluation
-        // - Since we enforce that batch requests can only contain one expression
-        //   in their body, this key uniquely identifies each request
+        // - Instead of parsing the body JSON multiple times, we extract the key during
+        //   initial template evaluation
+        // - Since we enforce that batch requests can only contain one expression in
+        //   their body, this key uniquely identifies each request
         // - This approach eliminates the need for repeated JSON parsing/serialization
         //   during the batching process, significantly improving performance
         let mut first_expression_value = None;
