@@ -2,18 +2,22 @@
 // @generated from file news.proto (package news, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile, GenService } from "@bufbuild/protobuf/codegenv1";
-import { fileDesc, serviceDesc } from "@bufbuild/protobuf/codegenv1";
-import type { MultipleNewsIdSchema, NewsIdSchema, NewsListSchema, NewsSchema } from "./news_dto_pb";
-import { file_news_dto } from "./news_dto_pb";
-import type { EmptySchema } from "@bufbuild/protobuf/wkt";
-import { file_google_protobuf_empty } from "@bufbuild/protobuf/wkt";
+import type {GenFile, GenService} from "@bufbuild/protobuf/codegenv1"
+import {fileDesc, serviceDesc} from "@bufbuild/protobuf/codegenv1"
+import type {MultipleNewsIdSchema, NewsIdSchema, NewsListSchema, NewsSchema} from "./news_dto_pb"
+import {file_news_dto} from "./news_dto_pb"
+import type {EmptySchema} from "@bufbuild/protobuf/wkt"
+import {file_google_protobuf_empty} from "@bufbuild/protobuf/wkt"
 
 /**
  * Describes the file news.proto.
  */
-export const file_news: GenFile = /*@__PURE__*/
-  fileDesc("CgpuZXdzLnByb3RvEgRuZXdzMqgCCgtOZXdzU2VydmljZRI2CgpHZXRBbGxOZXdzEhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5Gg4ubmV3cy5OZXdzTGlzdCIAEiUKB0dldE5ld3MSDC5uZXdzLk5ld3NJZBoKLm5ld3MuTmV3cyIAEjkKD0dldE11bHRpcGxlTmV3cxIULm5ld3MuTXVsdGlwbGVOZXdzSWQaDi5uZXdzLk5ld3NMaXN0IgASNAoKRGVsZXRlTmV3cxIMLm5ld3MuTmV3c0lkGhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5IgASJAoIRWRpdE5ld3MSCi5uZXdzLk5ld3MaCi5uZXdzLk5ld3MiABIjCgdBZGROZXdzEgoubmV3cy5OZXdzGgoubmV3cy5OZXdzIgBiBnByb3RvMw", [file_news_dto, file_google_protobuf_empty]);
+export const file_news: GenFile =
+  /*@__PURE__*/
+  fileDesc(
+    "CgpuZXdzLnByb3RvEgRuZXdzMqgCCgtOZXdzU2VydmljZRI2CgpHZXRBbGxOZXdzEhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5Gg4ubmV3cy5OZXdzTGlzdCIAEiUKB0dldE5ld3MSDC5uZXdzLk5ld3NJZBoKLm5ld3MuTmV3cyIAEjkKD0dldE11bHRpcGxlTmV3cxIULm5ld3MuTXVsdGlwbGVOZXdzSWQaDi5uZXdzLk5ld3NMaXN0IgASNAoKRGVsZXRlTmV3cxIMLm5ld3MuTmV3c0lkGhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5IgASJAoIRWRpdE5ld3MSCi5uZXdzLk5ld3MaCi5uZXdzLk5ld3MiABIjCgdBZGROZXdzEgoubmV3cy5OZXdzGgoubmV3cy5OZXdzIgBiBnByb3RvMw",
+    [file_news_dto, file_google_protobuf_empty],
+  )
 
 /**
  * @generated from service news.NewsService
@@ -23,50 +27,48 @@ export const NewsService: GenService<{
    * @generated from rpc news.NewsService.GetAllNews
    */
   getAllNews: {
-    methodKind: "unary";
-    input: typeof EmptySchema;
-    output: typeof NewsListSchema;
-  },
+    methodKind: "unary"
+    input: typeof EmptySchema
+    output: typeof NewsListSchema
+  }
   /**
    * @generated from rpc news.NewsService.GetNews
    */
   getNews: {
-    methodKind: "unary";
-    input: typeof NewsIdSchema;
-    output: typeof NewsSchema;
-  },
+    methodKind: "unary"
+    input: typeof NewsIdSchema
+    output: typeof NewsSchema
+  }
   /**
    * @generated from rpc news.NewsService.GetMultipleNews
    */
   getMultipleNews: {
-    methodKind: "unary";
-    input: typeof MultipleNewsIdSchema;
-    output: typeof NewsListSchema;
-  },
+    methodKind: "unary"
+    input: typeof MultipleNewsIdSchema
+    output: typeof NewsListSchema
+  }
   /**
    * @generated from rpc news.NewsService.DeleteNews
    */
   deleteNews: {
-    methodKind: "unary";
-    input: typeof NewsIdSchema;
-    output: typeof EmptySchema;
-  },
+    methodKind: "unary"
+    input: typeof NewsIdSchema
+    output: typeof EmptySchema
+  }
   /**
    * @generated from rpc news.NewsService.EditNews
    */
   editNews: {
-    methodKind: "unary";
-    input: typeof NewsSchema;
-    output: typeof NewsSchema;
-  },
+    methodKind: "unary"
+    input: typeof NewsSchema
+    output: typeof NewsSchema
+  }
   /**
    * @generated from rpc news.NewsService.AddNews
    */
   addNews: {
-    methodKind: "unary";
-    input: typeof NewsSchema;
-    output: typeof NewsSchema;
-  },
-}> = /*@__PURE__*/
-  serviceDesc(file_news, 0);
-
+    methodKind: "unary"
+    input: typeof NewsSchema
+    output: typeof NewsSchema
+  }
+}> = /*@__PURE__*/ serviceDesc(file_news, 0)

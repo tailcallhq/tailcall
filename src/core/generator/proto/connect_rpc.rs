@@ -34,7 +34,8 @@ impl From<Grpc> for Http {
     fn from(grpc: Grpc) -> Self {
         let url = grpc.url;
         let body = grpc.body.or_else(|| {
-            // if body isn't present while transforming the resolver, we need to provide an empty object.
+            // if body isn't present while transforming the resolver, we need to provide an
+            // empty object.
             Some(serde_json::Value::Object(serde_json::Map::new()))
         });
 

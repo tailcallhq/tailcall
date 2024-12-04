@@ -2,16 +2,20 @@
 // @generated from file news_dto.proto (package news, syntax proto3)
 /* eslint-disable */
 
-import type { GenEnum, GenFile, GenMessage } from "@bufbuild/protobuf/codegenv1";
-import { enumDesc, fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv1";
-import { file_google_protobuf_empty } from "@bufbuild/protobuf/wkt";
-import type { Message } from "@bufbuild/protobuf";
+import type {GenEnum, GenFile, GenMessage} from "@bufbuild/protobuf/codegenv1"
+import {enumDesc, fileDesc, messageDesc} from "@bufbuild/protobuf/codegenv1"
+import {file_google_protobuf_empty} from "@bufbuild/protobuf/wkt"
+import type {Message} from "@bufbuild/protobuf"
 
 /**
  * Describes the file news_dto.proto.
  */
-export const file_news_dto: GenFile = /*@__PURE__*/
-  fileDesc("Cg5uZXdzX2R0by5wcm90bxIEbmV3cyJgCgROZXdzEgoKAmlkGAEgASgFEg0KBXRpdGxlGAIgASgJEgwKBGJvZHkYAyABKAkSEQoJcG9zdEltYWdlGAQgASgJEhwKBnN0YXR1cxgFIAEoDjIMLm5ld3MuU3RhdHVzIhQKBk5ld3NJZBIKCgJpZBgBIAEoBSIrCg5NdWx0aXBsZU5ld3NJZBIZCgNpZHMYASADKAsyDC5uZXdzLk5ld3NJZCIkCghOZXdzTGlzdBIYCgRuZXdzGAEgAygLMgoubmV3cy5OZXdzKi8KBlN0YXR1cxINCglQVUJMSVNIRUQQABIJCgVEUkFGVBABEgsKB0RFTEVURUQQAmIGcHJvdG8z", [file_google_protobuf_empty]);
+export const file_news_dto: GenFile =
+  /*@__PURE__*/
+  fileDesc(
+    "Cg5uZXdzX2R0by5wcm90bxIEbmV3cyJgCgROZXdzEgoKAmlkGAEgASgFEg0KBXRpdGxlGAIgASgJEgwKBGJvZHkYAyABKAkSEQoJcG9zdEltYWdlGAQgASgJEhwKBnN0YXR1cxgFIAEoDjIMLm5ld3MuU3RhdHVzIhQKBk5ld3NJZBIKCgJpZBgBIAEoBSIrCg5NdWx0aXBsZU5ld3NJZBIZCgNpZHMYASADKAsyDC5uZXdzLk5ld3NJZCIkCghOZXdzTGlzdBIYCgRuZXdzGAEgAygLMgoubmV3cy5OZXdzKi8KBlN0YXR1cxINCglQVUJMSVNIRUQQABIJCgVEUkFGVBABEgsKB0RFTEVURUQQAmIGcHJvdG8z",
+    [file_google_protobuf_empty],
+  )
 
 /**
  * @generated from message news.News
@@ -20,35 +24,34 @@ export type News = Message<"news.News"> & {
   /**
    * @generated from field: int32 id = 1;
    */
-  id: number;
+  id: number
 
   /**
    * @generated from field: string title = 2;
    */
-  title: string;
+  title: string
 
   /**
    * @generated from field: string body = 3;
    */
-  body: string;
+  body: string
 
   /**
    * @generated from field: string postImage = 4;
    */
-  postImage: string;
+  postImage: string
 
   /**
    * @generated from field: news.Status status = 5;
    */
-  status: Status;
-};
+  status: Status
+}
 
 /**
  * Describes the message news.News.
  * Use `create(NewsSchema)` to create a new message.
  */
-export const NewsSchema: GenMessage<News> = /*@__PURE__*/
-  messageDesc(file_news_dto, 0);
+export const NewsSchema: GenMessage<News> = /*@__PURE__*/ messageDesc(file_news_dto, 0)
 
 /**
  * @generated from message news.NewsId
@@ -57,15 +60,14 @@ export type NewsId = Message<"news.NewsId"> & {
   /**
    * @generated from field: int32 id = 1;
    */
-  id: number;
-};
+  id: number
+}
 
 /**
  * Describes the message news.NewsId.
  * Use `create(NewsIdSchema)` to create a new message.
  */
-export const NewsIdSchema: GenMessage<NewsId> = /*@__PURE__*/
-  messageDesc(file_news_dto, 1);
+export const NewsIdSchema: GenMessage<NewsId> = /*@__PURE__*/ messageDesc(file_news_dto, 1)
 
 /**
  * @generated from message news.MultipleNewsId
@@ -74,15 +76,14 @@ export type MultipleNewsId = Message<"news.MultipleNewsId"> & {
   /**
    * @generated from field: repeated news.NewsId ids = 1;
    */
-  ids: NewsId[];
-};
+  ids: NewsId[]
+}
 
 /**
  * Describes the message news.MultipleNewsId.
  * Use `create(MultipleNewsIdSchema)` to create a new message.
  */
-export const MultipleNewsIdSchema: GenMessage<MultipleNewsId> = /*@__PURE__*/
-  messageDesc(file_news_dto, 2);
+export const MultipleNewsIdSchema: GenMessage<MultipleNewsId> = /*@__PURE__*/ messageDesc(file_news_dto, 2)
 
 /**
  * @generated from message news.NewsList
@@ -91,15 +92,14 @@ export type NewsList = Message<"news.NewsList"> & {
   /**
    * @generated from field: repeated news.News news = 1;
    */
-  news: News[];
-};
+  news: News[]
+}
 
 /**
  * Describes the message news.NewsList.
  * Use `create(NewsListSchema)` to create a new message.
  */
-export const NewsListSchema: GenMessage<NewsList> = /*@__PURE__*/
-  messageDesc(file_news_dto, 3);
+export const NewsListSchema: GenMessage<NewsList> = /*@__PURE__*/ messageDesc(file_news_dto, 3)
 
 /**
  * @generated from enum news.Status
@@ -124,6 +124,4 @@ export enum Status {
 /**
  * Describes the enum news.Status.
  */
-export const StatusSchema: GenEnum<Status> = /*@__PURE__*/
-  enumDesc(file_news_dto, 0);
-
+export const StatusSchema: GenEnum<Status> = /*@__PURE__*/ enumDesc(file_news_dto, 0)

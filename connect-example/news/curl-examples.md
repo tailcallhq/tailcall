@@ -3,6 +3,7 @@
 ## Using Connect Protocol
 
 ### Get All News
+
 ```bash
 curl \
   --header "Content-Type: application/json" \
@@ -12,6 +13,7 @@ curl \
 ```
 
 ### Get Single News
+
 ```bash
 curl \
   --header "Content-Type: application/json" \
@@ -21,6 +23,7 @@ curl \
 ```
 
 ### Get Multiple News
+
 ```bash
 curl \
   --header "Content-Type: application/json" \
@@ -30,6 +33,7 @@ curl \
 ```
 
 ### Add News
+
 ```bash
 curl \
   --header "Content-Type: application/json" \
@@ -44,6 +48,7 @@ curl \
 ```
 
 ### Edit News
+
 ```bash
 curl \
   --header "Content-Type: application/json" \
@@ -59,6 +64,7 @@ curl \
 ```
 
 ### Delete News
+
 ```bash
 curl \
   --header "Content-Type: application/json" \
