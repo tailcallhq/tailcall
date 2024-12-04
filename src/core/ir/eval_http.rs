@@ -49,14 +49,14 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         Self { evaluation_ctx, data_loader, request_template }
     }
 
-    pub fn init_request(&self) -> Result<RequestWrapper<serde_json::Value>, Error> {
+    pub fn init_request(&self) -> Result<RequestWrapper<String>, Error> {
         let inner = self.request_template.to_request(self.evaluation_ctx)?;
         Ok(inner)
     }
 
     pub async fn execute(
         &self,
-        req: RequestWrapper<serde_json::Value>,
+        req: RequestWrapper<String>,
     ) -> Result<Response<async_graphql::Value>, Error> {
         let ctx = &self.evaluation_ctx;
         let dl = &self.data_loader;
@@ -83,7 +83,7 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
     #[async_recursion::async_recursion]
     pub async fn execute_with_worker(
         &self,
-        mut request: RequestWrapper<serde_json::Value>,
+        mut request: RequestWrapper<String>,
         worker: &Arc<dyn WorkerIO<worker::Event, worker::Command>>,
         http_filter: &HttpFilter,
     ) -> Result<Response<async_graphql::Value>, Error> {
@@ -124,7 +124,7 @@ pub async fn execute_request_with_dl<
     Dl: Loader<DataLoaderRequest, Value = Response<async_graphql::Value>, Error = Arc<anyhow::Error>>,
 >(
     ctx: &EvalContext<'ctx, Ctx>,
-    req: RequestWrapper<serde_json::Value>,
+    req: RequestWrapper<String>,
     data_loader: Option<&DataLoader<DataLoaderRequest, Dl>>,
 ) -> Result<Response<async_graphql::Value>, Error> {
     let headers = ctx
@@ -184,7 +184,7 @@ fn set_cookie_headers<Ctx: ResolverContextLike>(
 
 pub async fn execute_raw_request<Ctx: ResolverContextLike>(
     ctx: &EvalContext<'_, Ctx>,
-    req: RequestWrapper<serde_json::Value>,
+    req: RequestWrapper<String>,
 ) -> Result<Response<async_graphql::Value>, Error> {
     let response = ctx
         .request_ctx

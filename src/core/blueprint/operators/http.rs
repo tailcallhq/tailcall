@@ -72,16 +72,16 @@ pub fn compile_http(
                     if keys.len() != 1 {
                         Valid::fail(BlueprintError::BatchRequiresDynamicParameter).trace("body")
                     } else {
-                        Valid::succeed((request_template, keys.first().cloned()))
+                        Valid::succeed(request_template)
                     }
                 } else {
                     Valid::fail(BlueprintError::BatchRequiresDynamicParameter).trace("body")
                 }
             } else {
-                Valid::succeed((request_template, None))
+                Valid::succeed(request_template)
             }
         })
-        .map(|(req_template, body_key)| {
+        .map(|req_template| {
             // marge http and upstream on_request
             let http_filter = http
                 .on_request
@@ -103,21 +103,9 @@ pub fn compile_http(
                     None
                 };
 
-                // notes:
-                // batch_key -> is used for response grouping.
-                // but when batching body, we can't just rely on the key i.e is if dynamic key
-                // is deeply nested inside then atomic/singular key won't suffice.
-                // so we need some path that allows to to extract the body key from request
-                // body.
-                let body_path = body_key
-                    .map(|v| v.into_iter().map(|v| v.to_string()).collect::<Vec<_>>())
-                    .unwrap_or_default();
-
                 IR::IO(IO::Http {
                     req_template,
-                    group_by: Some(
-                        GroupBy::new(http.batch_key.clone(), key).with_body_path(body_path),
-                    ),
+                    group_by: Some(GroupBy::new(http.batch_key.clone(), key)),
                     dl_id: None,
                     http_filter,
                     is_list,

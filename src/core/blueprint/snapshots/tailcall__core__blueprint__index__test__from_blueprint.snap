@@ -36,16 +36,14 @@ Index {
                                             headers: [],
                                             body_path: Some(
                                                 Mustache(
-                                                    Mustache(
-                                                        [
-                                                            Expression(
-                                                                [
-                                                                    "args",
-                                                                    "input",
-                                                                ],
-                                                            ),
-                                                        ],
-                                                    ),
+                                                    [
+                                                        Expression(
+                                                            [
+                                                                "args",
+                                                                "input",
+                                                            ],
+                                                        ),
+                                                    ],
                                                 ),
                                             ),
                                             endpoint: Endpoint {
@@ -107,16 +105,14 @@ Index {
                                             headers: [],
                                             body_path: Some(
                                                 Mustache(
-                                                    Mustache(
-                                                        [
-                                                            Expression(
-                                                                [
-                                                                    "args",
-                                                                    "input",
-                                                                ],
-                                                            ),
-                                                        ],
-                                                    ),
+                                                    [
+                                                        Expression(
+                                                            [
+                                                                "args",
+                                                                "input",
+                                                            ],
+                                                        ),
+                                                    ],
                                                 ),
                                             ),
                                             endpoint: Endpoint {
@@ -187,16 +183,14 @@ Index {
                                             headers: [],
                                             body_path: Some(
                                                 Mustache(
-                                                    Mustache(
-                                                        [
-                                                            Expression(
-                                                                [
-                                                                    "args",
-                                                                    "input",
-                                                                ],
-                                                            ),
-                                                        ],
-                                                    ),
+                                                    [
+                                                        Expression(
+                                                            [
+                                                                "args",
+                                                                "input",
+                                                            ],
+                                                        ),
+                                                    ],
                                                 ),
                                             ),
                                             endpoint: Endpoint {
@@ -270,16 +264,14 @@ Index {
                                             headers: [],
                                             body_path: Some(
                                                 Mustache(
-                                                    Mustache(
-                                                        [
-                                                            Expression(
-                                                                [
-                                                                    "args",
-                                                                    "input",
-                                                                ],
-                                                            ),
-                                                        ],
-                                                    ),
+                                                    [
+                                                        Expression(
+                                                            [
+                                                                "args",
+                                                                "input",
+                                                            ],
+                                                        ),
+                                                    ],
                                                 ),
                                             ),
                                             endpoint: Endpoint {

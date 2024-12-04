@@ -68,7 +68,7 @@ type Post {
 - request:
     method: POST
     url: http://jsonplaceholder.typicode.com/posts
-    body: [{"userId": 1, "title": "title", "body": "body"}, {"userId": 2, "title": "title", "body": "body"}]
+    body: [{"userId": "1", "title": "title", "body": "body"}, {"userId": "2", "title": "title", "body": "body"}]
   response:
     status: 200
     body:
@@ -99,7 +99,7 @@ type Post {
 - request:
     method: POST
     url: http://jsonplaceholder.typicode.com/users
-    body: [{"key": "id", "value": 1}, {"key": "id", "value": 2}]
+    body: [{"key": "id", "value": "1"}, {"key": "id", "value": "2"}]
   response:
     status: 200
     body:
@@ -126,7 +126,7 @@ type Post {
 - request:
     method: POST
     url: http://jsonplaceholder.typicode.com/bar
-    body: [{"id": 11}, {"id": 21}]
+    body: [{"id": "11"}, {"id": "21"}]
   response:
     status: 200
     body:
