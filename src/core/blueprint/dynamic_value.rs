@@ -2,12 +2,13 @@ use async_graphql_value::{ConstValue, Name};
 use indexmap::IndexMap;
 use serde_json::Value;
 
-use crate::core::mustache::{JqTemplate, Mustache};
+use crate::core::mustache::{JqTransformer, Mustache};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum DynamicValue<A> {
     Value(A),
-    Mustache(JqTemplate),
+    Mustache(Mustache),
+    JqTemplate(JqTransformer),
     Object(IndexMap<Name, DynamicValue<A>>),
     Array(Vec<DynamicValue<A>>),
 }
@@ -38,6 +39,7 @@ impl<A> DynamicValue<A> {
                     DynamicValue::Mustache(mustache)
                 }
             }
+            DynamicValue::JqTemplate(_) => self,
             DynamicValue::Object(index_map) => {
                 let index_map = index_map
                     .into_iter()
@@ -62,6 +64,9 @@ impl TryFrom<&DynamicValue<ConstValue>> for ConstValue {
             DynamicValue::Mustache(_) => Err(anyhow::anyhow!(
                 "mustache cannot be converted to const value"
             )),
+            DynamicValue::JqTemplate(_) => Err(anyhow::anyhow!(
+                "jq template cannot be converted to const value"
+            )),
             DynamicValue::Object(obj) => {
                 let out: Result<IndexMap<Name, ConstValue>, anyhow::Error> = obj
                     .into_iter()
@@ -83,6 +88,7 @@ impl<A> DynamicValue<A> {
     pub fn is_const(&self) -> bool {
         match self {
             DynamicValue::Mustache(m) => m.is_const(),
+            DynamicValue::JqTemplate(t) => t.is_const(),
             DynamicValue::Object(obj) => obj.values().all(|v| v.is_const()),
             DynamicValue::Array(arr) => arr.iter().all(|v| v.is_const()),
             _ => true,
@@ -110,10 +116,17 @@ impl TryFrom<&Value> for DynamicValue<ConstValue> {
             }
             Value::String(s) => {
                 let m = Mustache::parse(s.as_str());
-                if m.is_const() {
-                    Ok(DynamicValue::Value(ConstValue::from_json(value.clone())?))
+                if !m.is_const() {
+                    return Ok(DynamicValue::Mustache(m));
+                }
+                if let Ok(t) = JqTransformer::try_new(s.as_str()) {
+                    if t.is_const() {
+                        Ok(DynamicValue::Value(ConstValue::from_json(value.clone())?))
+                    } else {
+                        Ok(DynamicValue::JqTemplate(t))
+                    }
                 } else {
-                    Ok(DynamicValue::Mustache(m))
+                    Ok(DynamicValue::Value(ConstValue::from_json(value.clone())?))
                 }
             }
             _ => Ok(DynamicValue::Value(ConstValue::from_json(value.clone())?)),

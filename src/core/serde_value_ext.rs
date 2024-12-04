@@ -23,6 +23,36 @@ impl ValueExt for DynamicValue<async_graphql::Value> {
                     // but, we can just use that string as is
                     .unwrap_or_else(|_| GraphQLValue::String(rendered.into_owned()))
             }
+            DynamicValue::JqTemplate(_t) => {
+                let value = if let Some(value) = ctx.path_string(&["value"]) {
+                    serde_json::from_str(&value).unwrap()
+                } else {
+                    serde_json::Value::Object(serde_json::Map::new())
+                };
+
+                let vars = if let Some(vars) = ctx.path_string(&["vars"]) {
+                    serde_json::from_str(&vars).unwrap()
+                } else {
+                    serde_json::Value::Object(serde_json::Map::new())
+                };
+
+                let args = if let Some(args) = ctx.path_string(&["args"]) {
+                    serde_json::from_str(&args).unwrap()
+                } else {
+                    serde_json::Value::Object(serde_json::Map::new())
+                };
+
+                let data = serde_json::json!({
+                    "value": value,
+                    "vars": vars,
+                    "args": args,
+                });
+                println!("_t: {:?}", _t);
+                let rendered = _t.render(data);
+
+                serde_json::from_str::<GraphQLValue>(rendered.as_ref())
+                    .unwrap_or_else(|_| GraphQLValue::String(rendered))
+            }
             DynamicValue::Object(obj) => {
                 let out: IndexMap<_, _> = obj
                     .iter()
