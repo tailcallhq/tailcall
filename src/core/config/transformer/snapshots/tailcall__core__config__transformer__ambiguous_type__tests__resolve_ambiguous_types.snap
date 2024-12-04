@@ -14,11 +14,6 @@ input Type2Input {
   ty1: Type1Input
 }
 
-type Type3 {
-  ty1: Type1
-  ty2: Type2
-}
-
 type Query {
   field1(arg1: Type1Input, arg2: Type2Input): Type1
   field2(arg1: Type1Input, arg2: Type2Input): Type2
@@ -30,4 +25,9 @@ type Type1 {
 
 type Type2 {
   ty1: Type1
+}
+
+type Type3 {
+  ty1: Type1
+  ty2: Type2
 }

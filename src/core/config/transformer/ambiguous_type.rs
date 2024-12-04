@@ -234,7 +234,8 @@ mod tests {
         let config = AmbiguousType::default()
             .transform(config)
             .to_result()
-            .unwrap();
+            .unwrap()
+            .sort_types();
 
         assert_snapshot!(config.to_sdl());
     }
@@ -258,7 +259,8 @@ mod tests {
 
         let mut config = AmbiguousType::default()
             .transform(cfg_module.config().clone())
-            .to_result()?;
+            .to_result()?
+            .sort_types();
 
         // remove links since they break snapshot tests
         config.links = Default::default();

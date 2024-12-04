@@ -63,7 +63,7 @@ impl<'a> TypeGenerator<'a> {
 
     fn generate_scalar(&self, config: &mut Config) -> Scalar {
         let any_scalar = Scalar::JSON;
-        if config.types.iter().any(|ty| ty.name == any_scalar.to_string()) {
+        if config.types.iter().any(|ty| ty.name == any_scalar.name()) {
             return any_scalar;
         }
         any_scalar

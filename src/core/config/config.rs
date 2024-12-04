@@ -531,9 +531,9 @@ impl Config {
     pub fn ty_entry_or_default<T: ToString>(&mut self, name: T) -> &mut Type {
         let name = name.to_string();
 
-        let ty = Type::default().name(&name);
         if !self.types.iter().any(|v| v.name.eq(&name)) {
-            self.types.push(ty.clone());
+            let ty = Type::default().name(&name);
+            self.types.push(ty);
         }
         self.types.iter_mut().find(|v| v.name.eq(&name))
             // unwrap is safe here because we just pushed the type
