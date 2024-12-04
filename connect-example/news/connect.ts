@@ -1,6 +1,7 @@
 import type { ConnectRouter } from "@connectrpc/connect";
 import { NewsService } from "./gen/news_pb";
 import { Status } from "./gen/news_dto_pb";
+import { Empty } from "@bufbuild/protobuf/wkt";
 
 // In-memory storage for news items
 const newsStore = new Map([
@@ -22,8 +23,6 @@ const newsStore = new Map([
 
 let nextId = 3;
 
-type Empty = {};
-
 export default (router: ConnectRouter) =>
     router.service(NewsService, {
         async getAllNews(req: Empty) {
@@ -44,7 +43,7 @@ export default (router: ConnectRouter) =>
             const newsItems = req.ids
                 .map(newsId => newsStore.get(newsId.id))
                 .filter((news): news is NonNullable<typeof news> => news !== undefined);
-            
+
             return {
                 news: newsItems
             };
