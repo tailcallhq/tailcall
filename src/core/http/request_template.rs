@@ -133,7 +133,7 @@ impl RequestTemplate {
                 Encoding::ApplicationJson => {
                     let (body, body_key) = ExpressionValueEval::default().eval(body_path, ctx);
                     req.body_mut().replace(body.into());
-                    body_key.first().cloned()
+                    body_key
                 }
                 Encoding::ApplicationXWwwFormUrlencoded => {
                     // TODO: this is a performance bottleneck
@@ -314,7 +314,7 @@ impl<A> Default for ExpressionValueEval<A> {
 
 impl<'a, A: PathString> Eval<'a> for ExpressionValueEval<A> {
     type In = A;
-    type Out = (String, Vec<String>);
+    type Out = (String, Option<String>);
 
     fn eval(&self, mustache: &Mustache, in_value: &'a Self::In) -> Self::Out {
         let mut result = String::new();
@@ -323,29 +323,29 @@ impl<'a, A: PathString> Eval<'a> for ExpressionValueEval<A> {
         // 2. body_key: The value of the first expression found in the template
         //
         // This implementation is a critical optimization for request batching:
-        // - During batching, we need to extract individual request values from the 
+        // - During batching, we need to extract individual request values from the
         //   batch response and map them back to their original requests
-        // - Instead of parsing the body JSON multiple times, we extract the key 
+        // - Instead of parsing the body JSON multiple times, we extract the key
         //   during initial template evaluation
         // - Since we enforce that batch requests can only contain one expression
         //   in their body, this key uniquely identifies each request
         // - This approach eliminates the need for repeated JSON parsing/serialization
         //   during the batching process, significantly improving performance
-        let mut expressions = Vec::with_capacity(1);
+        let mut first_expression_value = None;
         for segment in mustache.segments().iter() {
             match segment {
                 Segment::Literal(text) => result.push_str(text),
                 Segment::Expression(parts) => {
                     if let Some(value) = in_value.path_string(parts) {
                         result.push_str(value.as_ref());
-                        if expressions.is_empty() {
-                            expressions.push(value.into_owned());
+                        if first_expression_value.is_none() {
+                            first_expression_value = Some(value.into_owned());
                         }
                     }
                 }
             }
         }
-        (result, expressions)
+        (result, first_expression_value)
     }
 }
 
