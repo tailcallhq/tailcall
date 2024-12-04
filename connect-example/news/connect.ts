@@ -22,9 +22,11 @@ const newsStore = new Map([
 
 let nextId = 3;
 
+type Empty = {};
+
 export default (router: ConnectRouter) =>
     router.service(NewsService, {
-        async getAllNews(req) {
+        async getAllNews(req: Empty) {
             return {
                 news: Array.from(newsStore.values())
             };
@@ -53,7 +55,7 @@ export default (router: ConnectRouter) =>
                 throw new Error(`News with id ${req.id} not found`);
             }
             newsStore.delete(req.id);
-            return new Empty();
+            return {};
         },
 
         async editNews(req) {
