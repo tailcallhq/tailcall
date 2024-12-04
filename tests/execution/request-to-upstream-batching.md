@@ -15,8 +15,9 @@
   "schema": {
     "query": "Query"
   },
-  "types": {
-    "Query": {
+  "types": [
+    {
+      "name": "Query",
       "fields": {
         "user": {
           "type": {
@@ -38,14 +39,17 @@
                 "value": "{{.args.id}}"
               }
             ],
-            "batchKey": ["id"]
+            "batchKey": [
+              "id"
+            ]
           },
           "cache": null
         }
       },
       "cache": null
     },
-    "User": {
+    {
+      "name": "User",
       "fields": {
         "id": {
           "type": {
@@ -62,7 +66,7 @@
       },
       "cache": null
     }
-  }
+  ]
 }
 ```
 

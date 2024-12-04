@@ -6,7 +6,7 @@ upstream:
 schema:
   query: Query
 types:
-  Post:
+  - name: Post
     fields:
       body:
         type:
@@ -29,7 +29,7 @@ types:
         type:
           name: Int
           required: true
-  Query:
+  - name: Query
     fields:
       posts:
         type:
@@ -47,7 +47,7 @@ types:
               required: true
         http:
           url: http://jsonplaceholder.typicode.com/users/{{args.id}}
-  User:
+  - name: User
     fields:
       email:
         type:

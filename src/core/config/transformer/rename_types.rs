@@ -11,7 +11,7 @@ use crate::core::Transform;
 pub struct RenameTypes(IndexMap<String, String>);
 
 impl RenameTypes {
-    pub fn new<I: Iterator<Item = (S, S)>, S: ToString>(suggested_names: I) -> Self {
+    pub fn new<I: Iterator<Item=(S, S)>, S: ToString>(suggested_names: I) -> Self {
         Self(
             suggested_names
                 .map(|(a, b)| (a.to_string(), b.to_string()))
@@ -30,13 +30,14 @@ impl Transform for RenameTypes {
 
         // Ensure all types exist in the configuration
         Valid::from_iter(self.0.iter(), |(existing_name, suggested_name)| {
-            if config.types.contains_key(existing_name)
-                || config.enums.contains_key(existing_name)
-                || config.unions.contains_key(existing_name)
+            if config.contains(existing_name)
             {
+                let to_be_removed = config.find_type(existing_name).cloned();
+                config = config.clone().remove_ty(existing_name);
+
                 // handle for the types.
-                if let Some(type_info) = config.types.remove(existing_name) {
-                    config.types.insert(suggested_name.to_string(), type_info);
+                if let Some(type_info) = to_be_removed {
+                    config.types.push(type_info.name(suggested_name.clone()));
                     lookup.insert(existing_name.clone(), suggested_name.clone());
 
                     // edge case where type is of operation type.
@@ -67,74 +68,74 @@ impl Transform for RenameTypes {
                 ))
             }
         })
-        .map(|_| {
-            for type_ in config.types.values_mut() {
-                for field_ in type_.fields.values_mut() {
-                    // replace type of field.
-                    if let Some(suggested_name) = lookup.get(field_.type_of.name()) {
-                        field_.type_of =
-                            field_.type_of.clone().with_name(suggested_name.to_owned());
-                    }
-                    // replace type of argument.
-                    for arg_ in field_.args.values_mut() {
-                        if let Some(suggested_name) = lookup.get(arg_.type_of.name()) {
-                            arg_.type_of =
-                                arg_.type_of.clone().with_name(suggested_name.to_owned());
+            .map(|_| {
+                for type_ in config.types.iter_mut() {
+                    for field_ in type_.fields.values_mut() {
+                        // replace type of field.
+                        if let Some(suggested_name) = lookup.get(field_.type_of.name()) {
+                            field_.type_of =
+                                field_.type_of.clone().with_name(suggested_name.to_owned());
+                        }
+                        // replace type of argument.
+                        for arg_ in field_.args.values_mut() {
+                            if let Some(suggested_name) = lookup.get(arg_.type_of.name()) {
+                                arg_.type_of =
+                                    arg_.type_of.clone().with_name(suggested_name.to_owned());
+                            }
                         }
                     }
+
+                    // replace in interface.
+                    type_.implements = type_
+                        .implements
+                        .iter()
+                        .map(|interface_type_name| {
+                            lookup
+                                .get(interface_type_name)
+                                .cloned()
+                                .unwrap_or_else(|| interface_type_name.to_owned())
+                        })
+                        .collect();
                 }
 
-                // replace in interface.
-                type_.implements = type_
-                    .implements
-                    .iter()
-                    .map(|interface_type_name| {
-                        lookup
-                            .get(interface_type_name)
-                            .cloned()
-                            .unwrap_or_else(|| interface_type_name.to_owned())
-                    })
-                    .collect();
-            }
+                // replace in the union as well.
+                for union_type_ in config.unions.values_mut() {
+                    // Collect changes to be made
+                    let mut types_to_remove = HashSet::new();
+                    let mut types_to_add = HashSet::new();
 
-            // replace in the union as well.
-            for union_type_ in config.unions.values_mut() {
-                // Collect changes to be made
-                let mut types_to_remove = HashSet::new();
-                let mut types_to_add = HashSet::new();
+                    for type_name in union_type_.types.iter() {
+                        if let Some(new_type_name) = lookup.get(type_name) {
+                            types_to_remove.insert(type_name.clone());
+                            types_to_add.insert(new_type_name.clone());
+                        }
+                    }
+                    // Apply changes
+                    for type_name in types_to_remove {
+                        union_type_.types.remove(&type_name);
+                    }
 
-                for type_name in union_type_.types.iter() {
-                    if let Some(new_type_name) = lookup.get(type_name) {
-                        types_to_remove.insert(type_name.clone());
-                        types_to_add.insert(new_type_name.clone());
+                    for type_name in types_to_add {
+                        union_type_.types.insert(type_name);
                     }
                 }
-                // Apply changes
-                for type_name in types_to_remove {
-                    union_type_.types.remove(&type_name);
+
+                // replace in union as well.
+                for union_type_ in config.unions.values_mut() {
+                    union_type_.types = union_type_
+                        .types
+                        .iter()
+                        .map(|type_name| {
+                            lookup
+                                .get(type_name)
+                                .cloned()
+                                .unwrap_or_else(|| type_name.to_owned())
+                        })
+                        .collect();
                 }
 
-                for type_name in types_to_add {
-                    union_type_.types.insert(type_name);
-                }
-            }
-
-            // replace in union as well.
-            for union_type_ in config.unions.values_mut() {
-                union_type_.types = union_type_
-                    .types
-                    .iter()
-                    .map(|type_name| {
-                        lookup
-                            .get(type_name)
-                            .cloned()
-                            .unwrap_or_else(|| type_name.to_owned())
-                    })
-                    .collect();
-            }
-
-            config
-        })
+                config
+            })
     }
 }
 
@@ -190,11 +191,12 @@ mod test {
                 "Mutation" => "UserMutation",
                 "Status" => "TaskStatus"
             }
-            .iter(),
+                .iter(),
         )
-        .transform(config)
-        .to_result()
-        .unwrap();
+            .transform(config)
+            .to_result()
+            .unwrap()
+            .sort_types();
 
         insta::assert_snapshot!(cfg.to_sdl())
     }
@@ -280,7 +282,8 @@ mod test {
         let result = RenameTypes::new(hashmap! {"Node" =>  "NodeTest"}.iter())
             .transform(config)
             .to_result()
-            .unwrap();
+            .unwrap()
+            .sort_types();
         insta::assert_snapshot!(result.to_sdl())
     }
 }

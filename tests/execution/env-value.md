@@ -6,8 +6,9 @@
   "schema": {
     "query": "Query"
   },
-  "types": {
-    "Post": {
+  "types": [
+    {
+      "name": "Post",
       "fields": {
         "body": {
           "type": {
@@ -37,7 +38,8 @@
       },
       "cache": null
     },
-    "Query": {
+    {
+      "name": "Query",
       "fields": {
         "post1": {
           "type": {
@@ -69,7 +71,7 @@
       },
       "cache": null
     }
-  }
+  ]
 }
 ```
 

@@ -57,19 +57,19 @@ impl Context {
     }
 
     /// Resolves the actual name and inserts the type.
-    fn insert_type(mut self, name: String, ty: config::Type) -> Self {
-        self.config.types.insert(name.to_string(), ty);
+    fn insert_type(mut self, ty: config::Type) -> Self {
+        self.config.types.push(ty);
         self
     }
 
     /// Converts oneof definitions in message to set of types with union
     fn insert_oneofs(
         mut self,
-        type_name: String,       // name of the message
         base_type: config::Type, // that's the type with fields that are not oneofs
         oneof_fields: Vec<Vec<(String, Field)>>, /* there is multiple oneof definitions every
                                   * one of which contains multiple fields */
     ) -> Self {
+        let type_name = base_type.name.clone();
         fn collect_types(
             type_name: String,
             base_type: config::Type,
@@ -137,7 +137,7 @@ impl Context {
         // to actually create union and use just this type
         if union_types.len() == 1 {
             let (_, ty) = union_types.pop().unwrap();
-            self.config.types.insert(type_name, ty);
+            self.config.types.push(ty.name(&type_name));
             return self;
         }
 
@@ -148,11 +148,11 @@ impl Context {
             ty.implements.insert(interface_name.clone());
             union_.types.insert(type_name.clone());
 
-            self = self.insert_type(type_name, ty);
+            self = self.insert_type(ty.name(&type_name));
         }
 
         // base interface type
-        self.config.types.insert(interface_name, base_type);
+        self.config.types.push(base_type.name(interface_name));
         self.config.unions.insert(type_name, union_);
 
         self
@@ -312,11 +312,12 @@ impl Context {
                     ty.fields.insert(field_name.to_string(), cfg_field);
                 }
             }
+            ty = ty.name(msg_type.to_string());
 
             if message.oneof_decl.is_empty() {
-                self = self.insert_type(msg_type.to_string(), ty);
+                self = self.insert_type(ty);
             } else {
-                self = self.insert_oneofs(msg_type.to_string(), ty, oneof_fields);
+                self = self.insert_oneofs(ty, oneof_fields);
             }
         }
         Ok(self)
@@ -377,21 +378,25 @@ impl Context {
                     select: None,
                     on_response_body: None,
                 })
-                .into();
+                    .into();
 
                 let method_path =
                     PathBuilder::new(&path).extend(PathField::Method, method_index as i32);
                 cfg_field.doc = self.comments_builder.get_comments(&method_path);
+                if self.config.find_type(self.query.as_str()).is_none() {
+                    self.config.schema.query = Some(self.query.clone());
+                }
+                let ty = self.config.ty_entry_or_default(self.query.clone());
+                /*                let ty = self
+                                    .config
+                                    .types
+                                    .entry(self.query.clone())
+                                    .or_insert_with(|| {
+                                        self.config.schema.query = Some(self.query.clone());
+                                        config::Type::default()
+                                    });
 
-                let ty = self
-                    .config
-                    .types
-                    .entry(self.query.clone())
-                    .or_insert_with(|| {
-                        self.config.schema.query = Some(self.query.clone());
-                        config::Type::default()
-                    });
-
+                                */
                 ty.fields.insert(field_name.to_string(), cfg_field);
             }
         }
@@ -431,7 +436,7 @@ fn convert_primitive_type(proto_ty: &str) -> String {
         "bytes" => "Bytes",
         x => x,
     }
-    .to_string()
+        .to_string()
 }
 
 /// Determines the output type for a service method.
@@ -501,6 +506,7 @@ mod test {
         ($( $set:expr ), +) => {
             let set = compile_protobuf(&[$( $set ),+]).unwrap();
             let config = from_proto(&[set], "Query", "http://localhost:50051").unwrap();
+            let config = config.sort_types();
             let config_module = ConfigModule::from(config);
             let result = config_module.to_sdl();
             insta::assert_snapshot!(result);

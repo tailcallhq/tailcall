@@ -5,17 +5,17 @@ schema:
   query: Query
 
 types:
-  T1:
+  - name: T1
     fields:
       t1:
         type:
           name: String
-  T2:
+  - name: T2
     fields:
       t2:
         type:
           name: Int
-  T3:
+  - name: T3
     fields:
       t3:
         type:
@@ -24,18 +24,18 @@ types:
         type:
           name: Float
           required: true
-  NU:
+  - name: NU
     fields:
       u:
         type:
           name: U
 
-  NNU:
+  - name: NNU
     fields:
       nu:
         type:
           name: NU
-  Query:
+  - name: Query
     fields:
       test:
         type:
@@ -50,5 +50,5 @@ types:
 
 unions:
   U:
-    types: ["T1", "T2", "T3"]
+    types: [ "T1", "T2", "T3" ]
 ```

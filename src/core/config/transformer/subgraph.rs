@@ -42,7 +42,9 @@ impl Transform for Subgraph {
         let config_types = config.types.clone();
         let mut resolver_by_type = BTreeMap::new();
 
-        let valid = Valid::from_iter(config.types.iter_mut(), |(type_name, ty)| {
+        let valid = Valid::from_iter(config.types.iter_mut(), |ty| {
+            let type_name = &ty.name;
+
             if ty.resolvers.len() > 1 {
                 // TODO: should support multiple different resolvers actually, see https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/entities/define-keys#multiple-keys
                 return Valid::fail(
@@ -85,7 +87,7 @@ impl Transform for Subgraph {
         // type that represents the response for service
         config
             .types
-            .insert(SERVICE_TYPE_NAME.to_owned(), service_type);
+            .push(service_type.name(SERVICE_TYPE_NAME.to_owned()));
 
         let query_type_name = match config.schema.query.as_ref() {
             Some(name) => name,
@@ -95,7 +97,8 @@ impl Transform for Subgraph {
             }
         };
 
-        let query_type = config.types.entry(query_type_name.to_owned()).or_default();
+        let query_type_name = query_type_name.to_string();
+        let query_type = config.ty_entry_or_default(query_type_name.to_owned());
 
         query_type.fields.insert(
             SERVICE_FIELD_NAME.to_string(),
@@ -122,9 +125,13 @@ impl Transform for Subgraph {
             // any scalar for argument `representations`
             config
                 .types
-                .insert(ENTITIES_TYPE_NAME.to_owned(), config::Type::default());
+                .push(config::Type::default().name(ENTITIES_TYPE_NAME.to_owned()));
 
-            let query_type = config.types.entry(query_type_name.to_owned()).or_default();
+            if !config.types.iter().any(|v| v.name.eq(&query_type_name)) {
+                config.types.push(config::Type::default().name(query_type_name.to_owned()));
+            }
+
+            let query_type = config.ty_entry_or_default(query_type_name.to_owned());
 
             let arg = Arg {
                 type_of: Type::from(ENTITIES_TYPE_NAME.to_string())
@@ -204,7 +211,7 @@ struct KeysExtractor;
 impl KeysExtractor {
     fn validate_expressions<'a>(
         type_name: &str,
-        type_map: &BTreeMap<String, config::Type>,
+        type_map: &Vec<config::Type>,
         expr_iter: impl Iterator<Item = &'a Segment>,
     ) -> Valid<(), String> {
         Valid::from_iter(expr_iter, |segment| {
@@ -222,13 +229,13 @@ impl KeysExtractor {
     }
 
     fn validate_iter<'a>(
-        type_map: &BTreeMap<String, config::Type>,
+        type_map: &Vec<config::Type>,
         current_type: &str,
         fields_iter: impl Iterator<Item = &'a String>,
     ) -> Valid<(), String> {
         let mut current_type = current_type;
         Valid::from_iter(fields_iter.enumerate(), |(index, key)| {
-            if let Some(type_def) = type_map.get(current_type) {
+            if let Some(type_def) = type_map.iter().find(|ty| ty.name == current_type) {
                 if !type_def.fields.contains_key(key) {
                     return Valid::fail(format!(
                         "Invalid key at index {}: '{}' is not a field of '{}'",
@@ -245,7 +252,7 @@ impl KeysExtractor {
     }
 
     fn validate(
-        type_map: &BTreeMap<String, config::Type>,
+        type_map: &Vec<config::Type>,
         resolver: &Resolver,
         type_name: &str,
     ) -> Valid<(), String> {

@@ -6,15 +6,15 @@ schema @server @upstream {
   query: Query
 }
 
+type Query {
+  q1: GEN__M1
+  q2: GEN__M1
+}
+
 type GEN__M1 {
   body: String
   id: Int
   is_verified: Boolean
   t1: GEN__M1
   userId: Int
-}
-
-type Query {
-  q1: GEN__M1
-  q2: GEN__M1
 }

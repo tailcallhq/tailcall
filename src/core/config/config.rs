@@ -62,7 +62,7 @@ pub struct Config {
     /// A map of all the types in the schema.
     #[serde(default)]
     #[setters(skip)]
-    pub types: BTreeMap<String, Type>,
+    pub types: Vec<Type>,
 
     ///
     /// A map of all the union types in the schema.
@@ -88,11 +88,25 @@ pub struct Config {
 /// Represents a GraphQL type.
 /// A type can be an object, interface, enum or scalar.
 #[derive(
-    Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight,
+    Serialize,
+    Deserialize,
+    Setters,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    MergeRight,
 )]
 pub struct Type {
     ///
+    /// The name of the type.
+    #[setters(into)]
+    pub name: String,
+    ///
     /// A map of field name and its definition.
+    #[setters(skip)]
     pub fields: BTreeMap<String, Field>,
     #[serde(default, skip_serializing_if = "is_default")]
     ///
@@ -281,10 +295,10 @@ impl Field {
     pub fn is_omitted(&self) -> bool {
         self.omit.is_some()
             || self
-                .modify
-                .as_ref()
-                .and_then(|m| m.omit)
-                .unwrap_or_default()
+            .modify
+            .as_ref()
+            .and_then(|m| m.omit)
+            .unwrap_or_default()
     }
 }
 
@@ -365,9 +379,9 @@ impl Config {
             &self.schema.mutation,
             &self.schema.subscription,
         ]
-        .iter()
-        .filter_map(|&root_name| root_name.as_ref())
-        .any(|root_name| root_name.to_lowercase() == type_name)
+            .iter()
+            .filter_map(|&root_name| root_name.as_ref())
+            .any(|root_name| root_name.to_lowercase() == type_name)
     }
 
     pub fn port(&self) -> u16 {
@@ -375,7 +389,7 @@ impl Config {
     }
 
     pub fn find_type(&self, name: &str) -> Option<&Type> {
-        self.types.get(name)
+        self.types.iter().find(|v| v.name.eq(name))
     }
 
     pub fn find_union(&self, name: &str) -> Option<&Union> {
@@ -408,17 +422,13 @@ impl Config {
         self
     }
 
-    pub fn types(mut self, types: Vec<(&str, Type)>) -> Self {
-        let mut graphql_types = BTreeMap::new();
-        for (name, type_) in types {
-            graphql_types.insert(name.to_string(), type_);
-        }
-        self.types = graphql_types;
+    pub fn types(mut self, types: Vec<Type>) -> Self {
+        self.types = types;
         self
     }
 
     pub fn contains(&self, name: &str) -> bool {
-        self.types.contains_key(name)
+        self.types.iter().any(|v| v.name.eq(&name))
             || self.unions.contains_key(name)
             || self.enums.contains_key(name)
     }
@@ -477,8 +487,8 @@ impl Config {
     ///
     /// Checks if a type is a scalar or not.
     pub fn is_scalar(&self, type_name: &str) -> bool {
-        self.types
-            .get(type_name)
+        self
+            .find_type(type_name)
             .map_or(Scalar::is_predefined(type_name), |ty| ty.scalar())
     }
 
@@ -518,10 +528,35 @@ impl Config {
         types
     }
 
+    pub fn ty_entry_or_default<T: ToString>(&mut self, name: T) -> &mut Type {
+        let name = name.to_string();
+
+        let ty = Type::default().name(&name);
+        if !self.types.iter().any(|v| v.name.eq(&name)) {
+            self.types.push(ty.clone());
+        }
+        self.types.iter_mut().find(|v| v.name.eq(&name))
+            // unwrap is safe here because we just pushed the type
+            .unwrap()
+    }
+
+    pub fn remove_ty<T: ToString>(self, name: T) -> Self {
+        let name = name.to_string();
+        let types = self.types.into_iter().filter(|v| v.name.ne(&name)).collect();
+        Self { types, ..self }
+    }
+
+    // TODO: maybe add transform?
+    pub fn sort_types(mut self) -> Self {
+        self.types.sort_by(|a, b| a.name.cmp(&b.name));
+        self
+    }
+
     pub fn interfaces_types_map(&self) -> BTreeMap<String, BTreeSet<String>> {
         let mut interfaces_types: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
 
-        for (type_name, type_definition) in self.types.iter() {
+        for type_definition in self.types.iter() {
+            let type_name = &type_definition.name;
             for implement_name in type_definition.implements.clone() {
                 interfaces_types
                     .entry(implement_name)
@@ -581,14 +616,16 @@ impl Config {
     fn arguments(&self) -> Vec<(&String, &Arg)> {
         self.types
             .iter()
-            .flat_map(|(_, type_of)| type_of.fields.iter())
+            .flat_map(|type_of| type_of.fields.iter())
             .flat_map(|(_, field)| field.args.iter())
             .collect::<Vec<_>>()
     }
     /// Removes all types that are passed in the set
     pub fn remove_types(mut self, types: HashSet<String>) -> Self {
         for unused_type in types {
-            self.types.remove(&unused_type);
+            if let Some(index) = self.types.iter().position(|t| t.name == unused_type) {
+                self.types.remove(index);
+            }
             self.unions.remove(&unused_type);
         }
 
@@ -597,12 +634,13 @@ impl Config {
 
     pub fn unused_types(&self) -> HashSet<String> {
         let used_types = self.get_all_used_type_names();
-        let all_types: HashSet<String> = self
+        let mut all_types: HashSet<String> = self
             .types
-            .keys()
-            .chain(self.unions.keys())
-            .cloned()
-            .collect();
+            .iter()
+            .map(|v| v.name.to_string())
+            .collect::<HashSet<_>>();
+        all_types.extend(self.unions.keys().cloned().collect::<HashSet<_>>());
+
         all_types.difference(&used_types).cloned().collect()
     }
 
@@ -625,7 +663,7 @@ impl Config {
                 for type_ in &union_.types {
                     stack.push(type_.clone());
                 }
-            } else if let Some(typ) = self.types.get(&type_name) {
+            } else if let Some(typ) = self.find_type(&type_name) {
                 set.insert(type_name);
                 for field in typ.fields.values() {
                     stack.extend(field.args.values().map(|arg| arg.type_of.name().to_owned()));
@@ -710,7 +748,7 @@ mod tests {
                 batch_key: vec!["id".to_string()],
                 ..Default::default()
             })
-            .into(),
+                .into(),
             ..Default::default()
         };
 
@@ -733,10 +771,9 @@ mod tests {
     #[test]
     fn test_from_sdl_empty() {
         let actual = Config::from_sdl("type Foo {a: Int}").to_result().unwrap();
-        let expected = Config::default().types(vec![(
-            "Foo",
-            Type::default().fields(vec![("a", Field::int())]),
-        )]);
+        let expected = Config::default().types(vec![
+            Type::default().name("Foo").fields(vec![("a", Field::int())]),
+        ]);
         assert_eq!(actual, expected);
     }
 
@@ -756,8 +793,8 @@ mod tests {
             }
             ",
         )
-        .to_result()
-        .unwrap();
+            .to_result()
+            .unwrap();
 
         let actual = config.unused_types();
         let mut expected = HashSet::new();

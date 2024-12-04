@@ -132,6 +132,7 @@ impl Covariant for Field {
 impl Contravariant for Type {
     fn shrink(self, other: Self) -> Valid<Self, String> {
         self.fields.shrink(other.fields).map(|fields| Self {
+            name: self.name,
             fields,
             // TODO: is not very clear how to merge added_fields here
             added_fields: self.added_fields.merge_right(other.added_fields),
@@ -148,6 +149,7 @@ impl Contravariant for Type {
 impl Covariant for Type {
     fn expand(self, other: Self) -> Valid<Self, String> {
         self.fields.expand(other.fields).map(|fields| Self {
+            name: self.name,
             fields,
             // TODO: is not very clear how to merge added_fields here
             added_fields: self.added_fields.merge_right(other.added_fields),
@@ -188,9 +190,13 @@ impl Invariant for Cache {
         let mut types = self.config.types;
         let mut enums = self.config.enums;
 
-        Valid::from_iter(other.config.types, |(type_name, other_type)| {
+        Valid::from_iter(other.config.types, |other_type| {
+            let type_name = other_type.name.clone();
             let trace_name = type_name.clone();
-            match types.remove(&type_name) {
+            let to_be_removed = types.iter().find(|ty| ty.name == type_name).cloned();
+            types.retain(|ty| ty.name != type_name);
+
+            match to_be_removed {
                 Some(ty) => {
                     let is_self_input = self.input_types.contains(&type_name);
                     let is_other_input = other.input_types.contains(&type_name);
@@ -226,64 +232,72 @@ impl Invariant for Cache {
                 }
                 None => Valid::succeed(other_type),
             }
-            .map(|ty| (type_name, ty))
-            .trace(&trace_name)
+                .map(|ty| ty.name(type_name))
+                .trace(&trace_name)
         })
-        .fuse(Valid::from_iter(other.config.enums, |(name, other_enum)| {
-            let trace_name = name.clone();
+            .fuse(Valid::from_iter(other.config.enums, |(name, other_enum)| {
+                let trace_name = name.clone();
 
-            match enums.remove(&name) {
-                Some(en) => {
-                    let is_self_input = self.input_types.contains(&name);
-                    let is_other_input = other.input_types.contains(&name);
-                    let is_self_output = self.output_types.contains(&name);
-                    let is_other_output = other.output_types.contains(&name);
+                match enums.remove(&name) {
+                    Some(en) => {
+                        let is_self_input = self.input_types.contains(&name);
+                        let is_other_input = other.input_types.contains(&name);
+                        let is_self_output = self.output_types.contains(&name);
+                        let is_other_output = other.output_types.contains(&name);
 
-                    match (is_self_input, is_self_output, is_other_input, is_other_output) {
-                        // both input types
-                        (true, false, true, false) => en.shrink(other_enum),
-                        // both output types
-                        (false, true, false, true) => en.expand(other_enum),
-                        // if type is unknown on one side, we merge based on info from another side
-                        (false, false, true, false) | (true, false, false, false) => {
-                            en.shrink(other_enum)
-                        }
-                        (false, false, false, true) | (false, true, false, false) => {
-                            en.expand(other_enum)
-                        }
-                        // if type is used as both input and output on either side
-                        // generated validation error because we need to merge it differently
-                        (true, true, _, _) | (_, _, true, true) => {
-                            if en == other_enum {
-                                Valid::succeed(en)
-                            } else {
-                                Valid::fail("Enum is used both as input and output types and in that case the enum content should be equal for every subgraph".to_string())
+                        match (is_self_input, is_self_output, is_other_input, is_other_output) {
+                            // both input types
+                            (true, false, true, false) => en.shrink(other_enum),
+                            // both output types
+                            (false, true, false, true) => en.expand(other_enum),
+                            // if type is unknown on one side, we merge based on info from another side
+                            (false, false, true, false) | (true, false, false, false) => {
+                                en.shrink(other_enum)
                             }
-                        },
-                        // type is used differently on both sides
-                        (true, false, false, true) | (false, true, true, false) => Valid::fail("Enum is used as input type in one subgraph and output type in another".to_string()),
-                        (false, false, false, false) => Valid::fail("Cannot infer the usage of enum and therefore merge it from the subgraph".to_string()),
+                            (false, false, false, true) | (false, true, false, false) => {
+                                en.expand(other_enum)
+                            }
+                            // if type is used as both input and output on either side
+                            // generated validation error because we need to merge it differently
+                            (true, true, _, _) | (_, _, true, true) => {
+                                if en == other_enum {
+                                    Valid::succeed(en)
+                                } else {
+                                    Valid::fail("Enum is used both as input and output types and in that case the enum content should be equal for every subgraph".to_string())
+                                }
+                            }
+                            // type is used differently on both sides
+                            (true, false, false, true) | (false, true, true, false) => Valid::fail("Enum is used as input type in one subgraph and output type in another".to_string()),
+                            (false, false, false, false) => Valid::fail("Cannot infer the usage of enum and therefore merge it from the subgraph".to_string()),
+                        }
                     }
-                },
-                None => Valid::succeed(other_enum),
-            }
-            .map(|en| (name, en))
-            .trace(&trace_name)
-        }))
-        .map( |(merged_types, merged_enums)| {
-            types.extend(merged_types);
-            enums.extend(merged_enums);
+                    None => Valid::succeed(other_enum),
+                }
+                    .map(|en| (name, en))
+                    .trace(&trace_name)
+            }))
+            .map(|(merged_types, merged_enums)| {
+                types.extend(merged_types);
+                enums.extend(merged_enums);
 
-            let config = Config {
-                types, enums, unions: self.config.unions.merge_right(other.config.unions), server: self.config.server.merge_right(other.config.server), upstream: self.config.upstream.merge_right(other.config.upstream), schema: self.config.schema.merge_right(other.config.schema), links: self.config.links.merge_right(other.config.links), telemetry: self.config.telemetry.merge_right(other.config.telemetry)  };
+                let config = Config {
+                    types,
+                    enums,
+                    unions: self.config.unions.merge_right(other.config.unions),
+                    server: self.config.server.merge_right(other.config.server),
+                    upstream: self.config.upstream.merge_right(other.config.upstream),
+                    schema: self.config.schema.merge_right(other.config.schema),
+                    links: self.config.links.merge_right(other.config.links),
+                    telemetry: self.config.telemetry.merge_right(other.config.telemetry),
+                };
 
-            Cache {
-                config,
-                input_types: self.input_types.merge_right(other.input_types),
-                output_types: self.output_types.merge_right(other.output_types),
-                interfaces_types_map: self.interfaces_types_map.merge_right(other.interfaces_types_map),
-            }
-        })
+                Cache {
+                    config,
+                    input_types: self.input_types.merge_right(other.input_types),
+                    output_types: self.output_types.merge_right(other.output_types),
+                    interfaces_types_map: self.interfaces_types_map.merge_right(other.interfaces_types_map),
+                }
+            })
     }
 }
 
@@ -297,25 +311,25 @@ impl Invariant for ConfigModule {
 }
 
 trait TypedEntry {
-    fn type_of(&self) -> &crate::core::Type;
+    fn ty_of(&self) -> &crate::core::Type;
 }
 
 impl TypedEntry for Field {
-    fn type_of(&self) -> &crate::core::Type {
+    fn ty_of(&self) -> &crate::core::Type {
         &self.type_of
     }
 }
 
 impl TypedEntry for Arg {
-    fn type_of(&self) -> &crate::core::Type {
+    fn ty_of(&self) -> &crate::core::Type {
         &self.type_of
     }
 }
 
 trait FederatedMergeCollection:
-    IntoIterator<Item = (String, Self::Entry)>
-    + FromIterator<(String, Self::Entry)>
-    + Extend<(String, Self::Entry)>
+IntoIterator<Item=(String, Self::Entry)>
++ FromIterator<(String, Self::Entry)>
++ Extend<(String, Self::Entry)>
 {
     type Entry: TypedEntry;
 
@@ -339,41 +353,41 @@ impl<Entry: TypedEntry> FederatedMergeCollection for BTreeMap<String, Entry> {
 }
 
 impl<C> Contravariant for C
-where
-    C: FederatedMergeCollection,
-    C::Entry: Contravariant,
+    where
+        C: FederatedMergeCollection,
+        C::Entry: Contravariant,
 {
     fn shrink(mut self, other: Self) -> Valid<Self, String> {
         Valid::from_iter(other, |(name, other_field)| {
-        match self.remove(&name) {
-            Some(field) => Contravariant::shrink(field, other_field).map(|merged| Some((name.clone(), merged))),
-            None => {
-                if other_field.type_of().is_nullable() {
-                    Valid::succeed(None)
-                } else {
-                    Valid::fail("Input arg is marked as non_null on the right side, but is not present on the left side".to_string())
+            match self.remove(&name) {
+                Some(field) => Contravariant::shrink(field, other_field).map(|merged| Some((name.clone(), merged))),
+                None => {
+                    if other_field.ty_of().is_nullable() {
+                        Valid::succeed(None)
+                    } else {
+                        Valid::fail("Input arg is marked as non_null on the right side, but is not present on the left side".to_string())
+                    }
                 }
-            },
-        }
-        .trace(&name)
-        })
-        .fuse(Valid::from_iter(self, |(name, field)| {
-            if field.type_of().is_nullable() {
-                Valid::succeed(())
-            } else {
-                Valid::fail("Input arg is marked as non_null on the left side, but is not present on the right side".to_string()).trace(&name)
             }
-        }))
-        .map(|(merged_fields, _)| {
-            merged_fields.into_iter().flatten().collect()
+                .trace(&name)
         })
+            .fuse(Valid::from_iter(self, |(name, field)| {
+                if field.ty_of().is_nullable() {
+                    Valid::succeed(())
+                } else {
+                    Valid::fail("Input arg is marked as non_null on the left side, but is not present on the right side".to_string()).trace(&name)
+                }
+            }))
+            .map(|(merged_fields, _)| {
+                merged_fields.into_iter().flatten().collect()
+            })
     }
 }
 
 impl<C> Covariant for C
-where
-    C: FederatedMergeCollection,
-    C::Entry: Covariant,
+    where
+        C: FederatedMergeCollection,
+        C::Entry: Covariant,
 {
     fn expand(mut self, other: Self) -> Valid<Self, String> {
         Valid::from_iter(other, |(name, other_field)| match self.remove(&name) {
@@ -383,12 +397,12 @@ where
                 .trace(&name),
             None => Valid::succeed((name, other_field)),
         })
-        .map(|merged_fields| {
-            let mut merged_fields: C = merged_fields.into_iter().collect();
-            merged_fields.extend(self);
+            .map(|merged_fields| {
+                let mut merged_fields: C = merged_fields.into_iter().collect();
+                merged_fields.extend(self);
 
-            merged_fields
-        })
+                merged_fields
+            })
     }
 }
 

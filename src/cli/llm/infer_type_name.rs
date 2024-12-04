@@ -99,7 +99,8 @@ impl InferTypeName {
         let types_to_be_processed = config
             .types
             .iter()
-            .filter(|(type_name, _)| {
+            .filter(|type_| {
+                let type_name = &type_.name;
                 !config.is_root_operation_type(type_name) && Self::is_auto_generated(type_name)
             })
             .collect::<Vec<_>>();
@@ -107,12 +108,13 @@ impl InferTypeName {
         let mut used_type_names = config
             .types
             .iter()
-            .filter(|(ty_name, _)| !Self::is_auto_generated(ty_name))
-            .map(|(ty_name, _)| ty_name.to_owned())
+            .filter(|ty_| !Self::is_auto_generated(&ty_.name))
+            .map(|ty_| ty_.name.to_owned())
             .collect::<IndexSet<_>>();
 
         let total = types_to_be_processed.len();
-        for (i, (type_name, type_)) in types_to_be_processed.into_iter().enumerate() {
+        for (i, type_) in types_to_be_processed.into_iter().enumerate() {
+            let type_name = &type_.name;
             // convert type to sdl format.
             let question = Question {
                 ignore: used_type_names.clone(),
@@ -130,7 +132,7 @@ impl InferTypeName {
                     Ok(answer) => {
                         let name = &answer.suggestions.join(", ");
                         for name in answer.suggestions {
-                            if config.types.contains_key(&name) || used_type_names.contains(&name) {
+                            if config.types.iter().any(|v| v.name.eq(&name)) || used_type_names.contains(&name) {
                                 continue;
                             }
                             used_type_names.insert(name.clone());

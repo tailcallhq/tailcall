@@ -1,7 +1,6 @@
 ---
 source: src/core/config/config_module/merge.rs
 expression: merged.to_sdl()
-snapshot_kind: text
 ---
 schema @server(port: 8000) @upstream(batch: {delay: 100, headers: []}, httpCache: 42) {
   query: Query
@@ -30,8 +29,14 @@ enum Role {
   USER
 }
 
-type Comment {
-  body: String
+type User {
+  email: String!
+  id: Int!
+  name: String!
+  phone: String
+  role: Role
+  username: String!
+  website: String
 }
 
 type Query {
@@ -43,20 +48,14 @@ type Query {
   version: String @expr(body: "test")
 }
 
-type User {
-  email: String!
-  id: Int!
-  name: String!
-  phone: String
-  role: Role
-  username: String!
-  website: String
-}
-
 type UserPost implements Post {
   body: String
   id: Int!
   title: String
   user: User @http(url: "http://jsonplaceholder.typicode.com/users/{{.value.userId}}")
   userId: Int!
+}
+
+type Comment {
+  body: String
 }

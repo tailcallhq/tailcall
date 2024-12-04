@@ -25,7 +25,7 @@ fn get_single_field_path(
     if config.is_scalar(type_name) || config.enums.contains_key(type_name) {
         return Some(path);
     }
-    let ty = config.types.get(type_name);
+    let ty = config.find_type(type_name);
     if let Some(ty) = ty {
         if ty.fields.len() == 1 {
             if let Some((sub_field_name, sub_field)) = ty.fields.first_key_value() {
@@ -58,7 +58,7 @@ impl Transform for FlattenSingleField {
     fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
         let origin_config = config.clone();
 
-        for ty in config.types.values_mut() {
+        for ty in config.types.iter_mut() {
             for (field_name, field) in ty.fields.iter_mut() {
                 let mut visited_types = HashSet::<String>::new();
                 if let Some(path) = get_single_field_path(

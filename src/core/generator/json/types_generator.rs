@@ -63,7 +63,7 @@ impl<'a> TypeGenerator<'a> {
 
     fn generate_scalar(&self, config: &mut Config) -> Scalar {
         let any_scalar = Scalar::JSON;
-        if config.types.contains_key(&any_scalar.name()) {
+        if config.types.iter().any(|ty| ty.name == any_scalar.to_string()) {
             return any_scalar;
         }
         any_scalar
@@ -132,7 +132,7 @@ impl<'a> TypeGenerator<'a> {
                     let generate_type_name = self.type_name_generator.next();
                     config
                         .types
-                        .insert(generate_type_name.to_owned(), merged_type);
+                        .push(merged_type.name(&generate_type_name));
                     return generate_type_name;
                 }
 
@@ -145,7 +145,7 @@ impl<'a> TypeGenerator<'a> {
                 }
                 let ty = self.create_type_from_object(json_obj, config);
                 let generate_type_name = self.type_name_generator.next();
-                config.types.insert(generate_type_name.to_owned(), ty);
+                config.types.push(ty.name(&generate_type_name));
                 generate_type_name
             }
             other => to_gql_type(other),

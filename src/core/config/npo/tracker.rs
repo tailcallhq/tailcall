@@ -184,7 +184,8 @@ impl<'a> PathTracker<'a> {
             Some(query) => self.iter(None, TypeName::new(query.as_str()), false),
         };
 
-        for (type_name, type_of) in &self.config.types {
+        for type_of in &self.config.types {
+            let type_name = &type_of.name;
             if type_of.has_resolver() {
                 let parent_path = Name::Entity(TypeName(type_name.as_str()));
                 // entity resolver are used to fetch multiple instances at once

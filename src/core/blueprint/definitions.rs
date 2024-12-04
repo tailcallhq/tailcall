@@ -559,7 +559,8 @@ pub fn to_field_definition(
 
 pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, BlueprintError> {
     TryFold::<ConfigModule, Vec<Definition>, BlueprintError>::new(|config_module, _| {
-        Valid::from_iter(config_module.types.iter(), |(name, type_)| {
+        Valid::from_iter(config_module.types.iter(), |type_| {
+            let name = type_.name.as_str();
             if type_.scalar() {
                 to_scalar_type_definition(name).trace(name)
             } else {

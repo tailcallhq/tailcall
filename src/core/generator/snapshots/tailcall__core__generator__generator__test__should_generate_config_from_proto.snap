@@ -6,12 +6,12 @@ schema @server @upstream @link(src: "../../../tailcall-fixtures/fixtures/protobu
   query: Query
 }
 
-input GEN__news__MultipleNewsId {
-  ids: [GEN__news__NewsId]
-}
-
 input GEN__news__NewsId {
   id: Int
+}
+
+input GEN__news__MultipleNewsId {
+  ids: [GEN__news__NewsId]
 }
 
 input GEN__news__NewsInput {
@@ -28,14 +28,6 @@ enum GEN__news__Status {
   PUBLISHED
 }
 
-type GEN__news__News {
-  body: String
-  id: Int
-  postImage: String
-  status: GEN__news__Status
-  title: String
-}
-
 type GEN__news__NewsList {
   news: [GEN__news__News]
 }
@@ -47,4 +39,12 @@ type Query {
   GEN__news__NewsService__GetAllNews: GEN__news__NewsList @grpc(url: "http://localhost:50051", method: "news.NewsService.GetAllNews")
   GEN__news__NewsService__GetMultipleNews(multipleNewsId: GEN__news__MultipleNewsId!): GEN__news__NewsList @grpc(url: "http://localhost:50051", body: "{{.args.multipleNewsId}}", method: "news.NewsService.GetMultipleNews")
   GEN__news__NewsService__GetNews(newsId: GEN__news__NewsId!): GEN__news__News @grpc(url: "http://localhost:50051", body: "{{.args.newsId}}", method: "news.NewsService.GetNews")
+}
+
+type GEN__news__News {
+  body: String
+  id: Int
+  postImage: String
+  status: GEN__news__Status
+  title: String
 }

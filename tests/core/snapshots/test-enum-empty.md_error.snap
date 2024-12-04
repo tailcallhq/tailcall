@@ -4,7 +4,7 @@ expression: errors
 ---
 [
   {
-    "message": "No variants found for enum",
+    "message": "invalid type: map, expected a sequence at line 6 column 11",
     "trace": [],
     "description": null
   }

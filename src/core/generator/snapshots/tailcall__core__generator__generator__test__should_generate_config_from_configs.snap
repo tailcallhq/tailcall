@@ -6,11 +6,31 @@ schema @server(hostname: "0.0.0.0", port: 8000) @upstream(httpCache: 42) {
   query: Query
 }
 
-type Album {
+type Query {
+  post(id: Int! = 1): Post @http(url: "https://jsonplaceholder.typicode.com/posts/{{.args.id}}")
+  posts: [Post] @http(url: "https://jsonplaceholder.typicode.com/posts?_limit=11")
+  user(id: Int!): User @http(url: "https://jsonplaceholder.typicode.com/users/{{.args.id}}")
+  users: [User] @http(url: "https://jsonplaceholder.typicode.com/users")
+}
+
+type User {
+  albums: [Album] @http(url: "https://jsonplaceholder.typicode.com/users/{{.value.id}}/albums?_limit=2")
+  blog: String @expr(body: "https://test.blog/users/website/{{.value.username}}")
+  email: String!
   id: Int!
-  photos: [Photo] @http(url: "https://jsonplaceholder.typicode.com/albums/{{.value.id}}/photos?_limit=3")
-  title: Int
+  name: String!
+  phone: String
+  username: String!
+}
+
+type Post {
+  body: String!
+  comments: [Comment] @http(url: "https://jsonplaceholder.typicode.com/posts/{{.value.id}}/comments")
+  id: Int!
+  title: String!
+  user: User @http(url: "https://jsonplaceholder.typicode.com/users/{{.value.userId}}")
   userId: Int!
+  users: [User] @http(url: "https://jsonplaceholder.typicode.com/users")
 }
 
 type Comment {
@@ -28,29 +48,9 @@ type Photo {
   title: String!
 }
 
-type Post {
-  body: String!
-  comments: [Comment] @http(url: "https://jsonplaceholder.typicode.com/posts/{{.value.id}}/comments")
+type Album {
   id: Int!
-  title: String!
-  user: User @http(url: "https://jsonplaceholder.typicode.com/users/{{.value.userId}}")
+  photos: [Photo] @http(url: "https://jsonplaceholder.typicode.com/albums/{{.value.id}}/photos?_limit=3")
+  title: Int
   userId: Int!
-  users: [User] @http(url: "https://jsonplaceholder.typicode.com/users")
-}
-
-type Query {
-  post(id: Int! = 1): Post @http(url: "https://jsonplaceholder.typicode.com/posts/{{.args.id}}")
-  posts: [Post] @http(url: "https://jsonplaceholder.typicode.com/posts?_limit=11")
-  user(id: Int!): User @http(url: "https://jsonplaceholder.typicode.com/users/{{.args.id}}")
-  users: [User] @http(url: "https://jsonplaceholder.typicode.com/users")
-}
-
-type User {
-  albums: [Album] @http(url: "https://jsonplaceholder.typicode.com/users/{{.value.id}}/albums?_limit=2")
-  blog: String @expr(body: "https://test.blog/users/website/{{.value.username}}")
-  email: String!
-  id: Int!
-  name: String!
-  phone: String
-  username: String!
 }

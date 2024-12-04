@@ -6,21 +6,21 @@ schema @server(hostname: "0.0.0.0", port: 8000) @upstream(httpCache: 42) {
   query: Query
 }
 
-type Color {
-  colors: [T3]
-  isColorPageExists: Boolean
-  isColorsImageAvailable: Boolean
-}
-
-type F1 {
-  color: Color
+type T3 {
+  hexCode: String
+  name: String
 }
 
 type Query {
   f1: F1 @http(url: "http://example.typicode.com/colors")
 }
 
-type T3 {
-  hexCode: String
-  name: String
+type F1 {
+  color: Color
+}
+
+type Color {
+  colors: [T3]
+  isColorPageExists: Boolean
+  isColorsImageAvailable: Boolean
 }

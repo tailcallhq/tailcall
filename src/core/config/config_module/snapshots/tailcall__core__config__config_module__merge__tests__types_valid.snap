@@ -6,14 +6,14 @@ schema @server @upstream {
   query: Query
 }
 
+type Query {
+  a: A
+}
+
 type A {
   a: String
   b: Int
   c: Boolean
   d: Float!
   e: String
-}
-
-type Query {
-  a: A
 }

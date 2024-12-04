@@ -74,7 +74,7 @@ impl Transform for AmbiguousType {
                 .trace(current_name)
             } else {
                 let mut resolution_map = HashMap::new();
-                if let Some(ty) = config.types.get(current_name) {
+                if let Some(ty) = config.find_type(current_name) {
                     resolution_map = insert_resolution(resolution_map, current_name, resolution);
                     for field in ty.fields.values() {
                         for args in field.args.values() {
@@ -103,26 +103,27 @@ impl Transform for AmbiguousType {
                 let input_name = &resolution.input;
                 let output_name = &resolution.output;
 
-                let og_ty = config.types.get(current_name).cloned();
+                let og_ty = config.find_type(current_name).cloned();
 
                 // remove old types
-                config.types.remove(current_name);
+                config = config.remove_ty(current_name);
+
                 input_types.remove(current_name);
                 output_types.remove(current_name);
 
                 // add new types
                 if let Some(og_ty) = og_ty {
-                    config.types.insert(input_name.clone(), og_ty.clone());
+                    config.types.push(og_ty.clone().name(input_name));
                     input_types.insert(input_name.clone());
 
-                    config.types.insert(output_name.clone(), og_ty);
+                    config.types.push(og_ty.name(output_name));
                     output_types.insert(output_name.clone());
                 }
             }
-            let keys = config.types.keys().cloned().collect::<Vec<_>>();
+            let keys = config.types.iter().map(|v| v.name.clone()).collect::<Vec<_>>();
 
             for k in keys {
-                if let Some(ty) = config.types.get_mut(&k) {
+                if let Some(ty) = config.types.iter_mut().find(|v| v.name.eq(&k)) {
                     for field in ty.fields.values_mut() {
                         if let Some(resolution) = resolution_map.get(field.type_of.name()) {
                             if output_types.contains(&k) {
@@ -190,7 +191,7 @@ mod tests {
         query.fields.insert("field1".to_string(), field1);
         query.fields.insert("field2".to_string(), field2);
 
-        config.types.insert("Query".to_string(), query);
+        config.types.push(query.name("Query"));
         config = config.query("Query");
 
         config
@@ -224,9 +225,9 @@ mod tests {
             crate::core::config::Field::default().type_of("Type2".to_string().into()),
         );
 
-        config.types.insert("Type1".to_string(), type1);
-        config.types.insert("Type2".to_string(), type2);
-        config.types.insert("Type3".to_string(), type3);
+        config.types.push(type1.name("Type1"));
+        config.types.push(type2.name("Type2"));
+        config.types.push(type3.name("Type3"));
 
         config = build_qry(config);
 

@@ -16,10 +16,10 @@ enum enumOutput {
   C
 }
 
-type A {
-  a(x: enumInput): enumOutput
-}
-
 type Query {
   a: A
+}
+
+type A {
+  a(x: enumInput): enumOutput
 }

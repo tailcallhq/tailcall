@@ -272,12 +272,11 @@ pub mod tests {
 
         let method = GrpcMethod { package: id, service: "a".to_owned(), name: "b".to_owned() };
         let grpc = Grpc { method: method.to_string(), ..Default::default() };
-        config.types.insert(
-            "foo".to_string(),
+        config.types.push(
             Type::default().fields(vec![(
                 "bar",
                 Field::default().resolvers(Resolver::Grpc(grpc).into()),
-            )]),
+            )]).name("foo"),
         );
         Ok(reader
             .resolve(config, None)

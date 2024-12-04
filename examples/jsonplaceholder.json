@@ -10,8 +10,9 @@
   "schema": {
     "query": "Query"
   },
-  "types": {
-    "Post": {
+  "types": [
+    {
+      "name": "Post",
       "fields": {
         "body": {
           "type": {
@@ -47,7 +48,8 @@
         }
       }
     },
-    "Query": {
+    {
+      "name": "Query",
       "fields": {
         "posts": {
           "type": {
@@ -77,7 +79,8 @@
         }
       }
     },
-    "User": {
+    {
+      "name": "User",
       "fields": {
         "email": {
           "type": {
@@ -115,5 +118,5 @@
         }
       }
     }
-  }
+  ]
 }
