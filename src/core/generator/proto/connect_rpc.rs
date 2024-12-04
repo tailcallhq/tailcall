@@ -66,3 +66,107 @@ impl From<Grpc> for Http {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+    use crate::core::config::KeyValue;
+
+    #[test]
+    fn test_grpc_to_http_basic_conversion() {
+        let grpc = Grpc {
+            url: "http://localhost:8080".to_string(),
+            method: "package.service.method".to_string(),
+            body: Some(json!({"key": "value"})),
+            headers: Default::default(),
+            batch_key: Default::default(),
+            dedupe: Default::default(),
+            select: Default::default(),
+            on_response_body: Default::default(),
+        };
+
+        let http = Http::from(grpc);
+
+        assert_eq!(http.url, "http://localhost:8080/package.service/method");
+        assert_eq!(http.method, crate::core::http::Method::POST);
+        assert_eq!(http.body, Some(r#"{"key":"value"}"#.to_string()));
+    }
+
+    #[test]
+    fn test_grpc_to_http_empty_body() {
+        let grpc = Grpc {
+            url: "http://localhost:8080".to_string(),
+            method: "package.service.method".to_string(),
+            body: Default::default(),
+            headers: Default::default(),
+            batch_key: Default::default(),
+            dedupe: Default::default(),
+            select: Default::default(),
+            on_response_body: Default::default(),
+        };
+
+        let http = Http::from(grpc);
+
+        assert_eq!(http.body, Some("{}".to_string()));
+    }
+
+    #[test]
+    fn test_grpc_to_http_with_headers() {
+        let grpc = Grpc {
+            url: "http://localhost:8080".to_string(),
+            method: "a.b.c".to_string(),
+            body: None,
+            headers: vec![KeyValue { key: "X-Foo".to_string(), value: "bar".to_string() }],
+            batch_key: Default::default(),
+            dedupe: Default::default(),
+            select: Default::default(),
+            on_response_body: Default::default(),
+        };
+
+        let http = Http::from(grpc);
+
+        assert_eq!(http.url, "http://localhost:8080/a.b/c");
+        assert_eq!(
+            http.headers
+                .iter()
+                .find(|h| h.key == "X-Foo")
+                .unwrap()
+                .value,
+            "bar".to_string()
+        );
+    }
+
+    #[test]
+    fn test_grpc_to_http_all_fields() {
+        let grpc = Grpc {
+            url: "http://localhost:8080".to_string(),
+            method: "package.service.method".to_string(),
+            body: Some(json!({"key": "value"})),
+            headers: vec![KeyValue { key: "X-Foo".to_string(), value: "bar".to_string() }],
+            batch_key: Some("batch_key_value".to_string()),
+            dedupe: Some(true),
+            select: Some("select_value".to_string()),
+            on_response_body: Some("on_response_body_value".to_string()),
+        };
+
+        let http = Http::from(grpc);
+
+        assert_eq!(http.url, "http://localhost:8080/package.service/method");
+        assert_eq!(http.method, crate::core::http::Method::POST);
+        assert_eq!(http.body, Some(r#"{"key":"value"}"#.to_string()));
+        assert_eq!(
+            http.headers
+                .iter()
+                .find(|h| h.key == "X-Foo")
+                .unwrap()
+                .value,
+            "bar".to_string()
+        );
+        assert_eq!(http.batch_key, Some("batch_key_value".to_string()));
+        assert_eq!(http.dedupe, Some(true));
+        assert_eq!(http.select, Some("select_value".to_string()));
+        assert_eq!(http.on_response_body, Some("on_response_body_value".to_string()));
+    }
+}
