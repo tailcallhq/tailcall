@@ -69,7 +69,7 @@ impl From<Grpc> for Http {
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
+    use serde_json::{json, Value};
 
     use super::*;
     use crate::core::config::KeyValue;
@@ -145,9 +145,9 @@ mod tests {
             method: "package.service.method".to_string(),
             body: Some(json!({"key": "value"})),
             headers: vec![KeyValue { key: "X-Foo".to_string(), value: "bar".to_string() }],
-            batch_key: Some("batch_key_value".to_string()),
+            batch_key: vec!["batch_key_value".to_string()],
             dedupe: Some(true),
-            select: Some("select_value".to_string()),
+            select: Some(Value::String("select_value".to_string())),
             on_response_body: Some("on_response_body_value".to_string()),
         };
 
@@ -164,9 +164,12 @@ mod tests {
                 .value,
             "bar".to_string()
         );
-        assert_eq!(http.batch_key, Some("batch_key_value".to_string()));
+        assert_eq!(http.batch_key, vec!["batch_key_value".to_string()]);
         assert_eq!(http.dedupe, Some(true));
-        assert_eq!(http.select, Some("select_value".to_string()));
-        assert_eq!(http.on_response_body, Some("on_response_body_value".to_string()));
+        assert_eq!(http.select, Some(Value::String("select_value".to_string())));
+        assert_eq!(
+            http.on_response_body,
+            Some("on_response_body_value".to_string())
+        );
     }
 }
