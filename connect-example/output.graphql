@@ -10,6 +10,18 @@ type GEN__connectrpc__eliza__v1__SayResponse {
   sentence: String
 }
 
-type Query @addField(name: "GEN__connectrpc__eliza__v1__ElizaService__Say", path: ["GEN__connectrpc__eliza__v1__ElizaService__Say", "sentence"]) {
-  GEN__connectrpc__eliza__v1__ElizaService__Say(sayRequest: GEN__connectrpc__eliza__v1__SayRequest!): GEN__connectrpc__eliza__v1__SayResponse @http(url: "http://127.0.0.1:8080/connectrpc.eliza.v1.ElizaService/Say", body: "\"{{.args.sayRequest}}\"", method: "POST") @omit
+type Query
+  @addField(
+    name: "GEN__connectrpc__eliza__v1__ElizaService__Say"
+    path: ["GEN__connectrpc__eliza__v1__ElizaService__Say", "sentence"]
+  ) {
+  GEN__connectrpc__eliza__v1__ElizaService__Say(
+    sayRequest: GEN__connectrpc__eliza__v1__SayRequest!
+  ): GEN__connectrpc__eliza__v1__SayResponse
+    @http(
+      url: "http://127.0.0.1:8080/connectrpc.eliza.v1.ElizaService/Say"
+      body: "\"{{.args.sayRequest}}\""
+      method: "POST"
+    )
+    @omit
 }

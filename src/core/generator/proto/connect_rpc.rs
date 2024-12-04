@@ -1,9 +1,7 @@
 use tailcall_valid::Valid;
 
-use crate::core::{
-    config::{Config, Grpc, Http, Resolver, ResolverSet},
-    Transform,
-};
+use crate::core::config::{Config, Grpc, Http, Resolver, ResolverSet};
+use crate::core::Transform;
 
 pub struct ConnectRPC;
 

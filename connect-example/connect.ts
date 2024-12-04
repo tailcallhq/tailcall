@@ -1,5 +1,5 @@
-import type { ConnectRouter } from "@connectrpc/connect";
-import { ElizaService } from "./gen/eliza_pb";
+import type {ConnectRouter} from "@connectrpc/connect"
+import {ElizaService} from "./gen/eliza_pb"
 
 export default (router: ConnectRouter) =>
   // registers connectrpc.eliza.v1.ElizaService
@@ -7,7 +7,7 @@ export default (router: ConnectRouter) =>
     // implements rpc Say
     async say(req) {
       return {
-        sentence: `You said: ${req.sentence}`
+        sentence: `You said: ${req.sentence}`,
       }
     },
-  });
+  })
