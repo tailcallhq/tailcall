@@ -1,0 +1,17 @@
+schema @server(port: 8000) {
+  query: Query
+}
+
+type Bar {
+  name: Foo
+  rec: Bar
+}
+
+type Foo {
+  name: String
+}
+
+type Query {
+  bars(filter: Bar): String
+    @graphQL(url: "http://localhost", args: [{key: "baz", value: "{{.args.baz}}"}], name: "bars")
+}
