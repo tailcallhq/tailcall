@@ -67,20 +67,6 @@ impl JqTemplate {
         self.filter.run((ctx, data))
     }
 
-    /// Used to calculate the result and format it to string. Could be used in
-    /// place of Mustache::render
-    pub fn render(&self, value: serde_json::Value) -> String {
-        // the hardcoded inputs for the AST
-        let inputs = RcIter::new(core::iter::empty());
-        let res = self.run(&inputs, Val::from(value));
-        // TODO: handle error correct, now we ignore it
-        res.filter_map(|v| if let Ok(v) = v { Some(v) } else { None })
-            .fold(String::new(), |acc, cur| {
-                let cur_string = cur.to_string();
-                acc + &cur_string
-            })
-    }
-
     /// Used to calculate the result and return it as json
     pub fn render_value(&self, value: serde_json::Value) -> async_graphql_value::ConstValue {
         let inputs = RcIter::new(core::iter::empty());
@@ -234,7 +220,6 @@ impl Display for JqTemplate {
 
 impl std::cmp::PartialEq for JqTemplate {
     fn eq(&self, other: &Self) -> bool {
-        // TODO: sorry for the quick hack
         self.representation.eq(&other.representation)
     }
 }
@@ -257,6 +242,8 @@ pub enum JqTemplateError {
 
 #[cfg(test)]
 mod tests {
+    use std::hash::{DefaultHasher, Hash, Hasher};
+
     use jaq_core::load::parse::{BinaryOp, Pattern, Term};
     use serde_json::json;
 
@@ -317,22 +304,42 @@ mod tests {
     }
 
     #[test]
-    fn test_render() {
+    fn test_render_value_no_results() {
+        let template_str = ".[] | select(.non_existent)";
+        let jq_template = JqTemplate::try_new(template_str).expect("Failed to create JqTemplate");
+        let input_json = json!([{"foo": 1}, {"foo": 2}]);
+        let result = jq_template.render_value(input_json);
+        assert_eq!(
+            result,
+            async_graphql_value::ConstValue::Null,
+            "Expected Null for no results"
+        );
+    }
+
+    #[test]
+    fn test_render_value_single_result() {
+        let template_str = ".[0]";
+        let jq_template = JqTemplate::try_new(template_str).expect("Failed to create JqTemplate");
+        let input_json = json!([{"foo": 1}, {"foo": 2}]);
+        let result = jq_template.render_value(input_json);
+        assert_eq!(
+            result,
+            async_graphql_value::ConstValue::from_json(json!({"foo": 1})).unwrap(),
+            "Expected single result"
+        );
+    }
+
+    #[test]
+    fn test_render_value_multiple_results() {
         let template_str = ".[] | .foo";
         let jq_template = JqTemplate::try_new(template_str).expect("Failed to create JqTemplate");
-
-        let input_json = json!([
-            {"foo": 1},
-            {"foo": 2}
+        let input_json = json!([{"foo": 1}, {"foo": 2}]);
+        let result = jq_template.render_value(input_json);
+        let expected = async_graphql_value::ConstValue::array(vec![
+            async_graphql_value::ConstValue::from_json(json!(1)).unwrap(),
+            async_graphql_value::ConstValue::from_json(json!(2)).unwrap(),
         ]);
-
-        let expected_output = "12";
-        let actual_output = jq_template.render(input_json);
-
-        assert_eq!(
-            actual_output, expected_output,
-            "The rendered output did not match the expected output."
-        );
+        assert_eq!(result, expected, "Expected array of results");
     }
 
     #[test]
@@ -469,5 +476,69 @@ mod tests {
             !JqTemplate::recursive_is_select_operation(term_pipe_with_pattern),
             "Expected false for a pipe operation with pattern"
         );
+    }
+
+    #[test]
+    fn test_default() {
+        let jq_template = JqTemplate::default();
+        assert_eq!(jq_template.representation, "");
+        assert!(jq_template.is_const);
+        // Assuming `filter` has a sensible default implementation
+    }
+
+    #[test]
+    fn test_debug() {
+        let jq_template = JqTemplate {
+            filter: Arc::new(Filter::default()),
+            representation: "test".to_string(),
+            is_const: false,
+        };
+        let debug_string = format!("{:?}", jq_template);
+        assert_eq!(debug_string, "JqTemplate { representation: \"test\" }");
+    }
+
+    #[test]
+    fn test_display() {
+        let jq_template = JqTemplate {
+            filter: Arc::new(Filter::default()),
+            representation: "test".to_string(),
+            is_const: false,
+        };
+        let display_string = format!("{}", jq_template);
+        assert_eq!(display_string, "[JqTemplate](is_const=false)(test)");
+    }
+
+    #[test]
+    fn test_partial_eq() {
+        let jq_template1 = JqTemplate {
+            filter: Arc::new(Filter::default()),
+            representation: "test".to_string(),
+            is_const: false,
+        };
+        let jq_template2 = JqTemplate {
+            filter: Arc::new(Filter::default()),
+            representation: "test".to_string(),
+            is_const: true, // Different `is_const` value should not affect equality
+        };
+        assert_eq!(jq_template1, jq_template2);
+    }
+
+    #[test]
+    fn test_hash() {
+        let jq_template1 = JqTemplate {
+            filter: Arc::new(Filter::default()),
+            representation: "test".to_string(),
+            is_const: false,
+        };
+        let jq_template2 = JqTemplate {
+            filter: Arc::new(Filter::default()),
+            representation: "test".to_string(),
+            is_const: false,
+        };
+        let mut hasher1 = DefaultHasher::new();
+        let mut hasher2 = DefaultHasher::new();
+        jq_template1.hash(&mut hasher1);
+        jq_template2.hash(&mut hasher2);
+        assert_eq!(hasher1.finish(), hasher2.finish());
     }
 }
