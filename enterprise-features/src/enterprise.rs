@@ -69,7 +69,16 @@ impl Enterprise {
                 keygen_rs::config::set_config(config);
                 let _signed_key_result =
                     keygen_rs::verify(keygen_rs::license::SchemeCode::Ed25519Sign, &signed_key)
-                        .map_err(Box::new)?;
+                        .map_err(|e| match e {
+                            Error::LicenseNotSigned => EnterpriseError::ValidationFailed(
+                                "License is not signed".to_string(),
+                            ),
+                            Error::LicenseKeyNotGenuine => EnterpriseError::ValidationFailed(
+                                "License key is not genuine".to_string(),
+                            ),
+                            Error::LicenseKeyMissing => EnterpriseError::TokenNotProvided,
+                            _ => EnterpriseError::KeygenError(Box::new(e)),
+                        })?;
                 Ok(Self {
                     license_key: Some(signed_key),
                     config: Some(keygen_rs::config::get_config()),
