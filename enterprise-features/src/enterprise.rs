@@ -1,7 +1,9 @@
 #![allow(dead_code)]
-use keygen_rs::{config::KeygenConfig, errors::Error};
-use serde::Deserialize;
 use std::env;
+
+use keygen_rs::config::KeygenConfig;
+use keygen_rs::errors::Error;
+use serde::Deserialize;
 use thiserror::Error;
 
 const TOKEN_NAME: &str = "TAILCALL_TOKEN";
@@ -19,7 +21,7 @@ pub enum EnterpriseError {
     #[error("Failed to parse public key: {0}")]
     PublicKeyParsingError(String),
     #[error(transparent)]
-    KeygenError(#[from] Error),
+    KeygenError(#[from] Box<Error>),
 }
 
 #[derive(Debug)]
@@ -66,28 +68,32 @@ impl Enterprise {
                 config.license_key = Some(signed_key.clone());
                 keygen_rs::config::set_config(config);
                 let _signed_key_result =
-                    keygen_rs::verify(keygen_rs::license::SchemeCode::Ed25519Sign, &signed_key)?;
-                Ok(Self { license_key: Some(signed_key), config: Some(keygen_rs::config::get_config()) })
+                    keygen_rs::verify(keygen_rs::license::SchemeCode::Ed25519Sign, &signed_key)
+                        .map_err(Box::new)?;
+                Ok(Self {
+                    license_key: Some(signed_key),
+                    config: Some(keygen_rs::config::get_config()),
+                })
             }
             Err(_) => Err(EnterpriseError::TokenNotProvided),
         }
     }
 
     async fn fetch_public_key() -> Result<KeygenData, EnterpriseError> {
-        let response = reqwest::get(PUBLIC_KEY_URL)
+        reqwest::get(PUBLIC_KEY_URL)
             .await
             .map_err(|e| EnterpriseError::PublicKeyFetchError(e.to_string()))?
             .json::<KeygenData>()
             .await
-            .map_err(|e| EnterpriseError::PublicKeyParsingError(e.to_string()));
-        response
+            .map_err(|e| EnterpriseError::PublicKeyParsingError(e.to_string()))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::env;
+
+    use super::*;
 
     #[tokio::test]
     async fn test_no_token_provided() {

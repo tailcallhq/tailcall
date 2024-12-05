@@ -6,14 +6,13 @@ use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 use tailcall_valid::{Valid, Validator};
 
+use super::LinkType;
 use crate::core::config::Config;
 use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoMetadata;
 use crate::core::rest::{EndpointSet, Unchecked};
 use crate::core::Transform;
-
-use super::LinkType;
 
 mod merge;
 
@@ -57,7 +56,11 @@ impl ConfigModule {
 
     /// presently only two features are enteredprise features. [JS, Telemetry]
     pub fn is_enterprised_features_enabled(&self) -> bool {
-        let js_capability_enabled = self.config().links.iter().any(|link| matches!(link.type_of, LinkType::Script));
+        let js_capability_enabled = self
+            .config()
+            .links
+            .iter()
+            .any(|link| matches!(link.type_of, LinkType::Script));
         let telemetry_capability_enabled = self.config().telemetry.export.is_some();
         js_capability_enabled || telemetry_capability_enabled
     }
