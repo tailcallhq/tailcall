@@ -84,6 +84,9 @@ pub enum Source<Status = UnResolved> {
     Proto {
         src: Location<Status>,
         url: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        #[serde(rename = "connectRPC")]
+        connect_rpc: Option<bool>,
     },
     Config {
         src: Location<Status>,
@@ -217,9 +220,9 @@ impl Source<UnResolved> {
                     is_mutation,
                 })
             }
-            Source::Proto { src, url } => {
+            Source::Proto { src, url, connect_rpc } => {
                 let resolved_path = src.into_resolved(parent_dir);
-                Ok(Source::Proto { src: resolved_path, url })
+                Ok(Source::Proto { src: resolved_path, url, connect_rpc })
             }
             Source::Config { src } => {
                 let resolved_path = src.into_resolved(parent_dir);
