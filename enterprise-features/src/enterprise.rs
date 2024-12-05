@@ -115,6 +115,6 @@ mod tests {
     async fn test_invalid_token() {
         env::set_var(TOKEN_NAME, "invalid-token");
         let result = Enterprise::try_new().await;
-        assert!(result.is_ok());
+        assert!(result.is_err());
     }
 }
