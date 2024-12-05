@@ -9,4 +9,4 @@ reqwest = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
-keygen-rs = "0.3.0"
+keygen-rs = { git = "https://github.com/laststylebender14/keygen-rs.git", rev = "75ac67948c20bb3afb9bf48a8f77b80988a0401b" }
