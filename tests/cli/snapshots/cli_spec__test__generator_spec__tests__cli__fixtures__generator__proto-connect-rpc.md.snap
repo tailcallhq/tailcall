@@ -6,8 +6,8 @@ schema @server @upstream {
   query: Query
 }
 
-input GEN__news__MultipleNewsId @addField(name: "ids", path: ["ids", "id"]) {
-  ids: [Id]@omit 
+input GEN__news__MultipleNewsId {
+  ids: [Id]
 }
 
 input GEN__news__NewsInput {
