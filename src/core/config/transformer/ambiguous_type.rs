@@ -252,6 +252,7 @@ mod tests {
             .inputs(vec![Input::Proto {
                 metadata: ProtoMetadata { descriptor_set: set, path: news_proto.to_string() },
                 url,
+                connect_rpc: None,
             }])
             .generate(false)?;
 
