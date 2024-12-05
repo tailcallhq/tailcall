@@ -84,6 +84,8 @@ pub enum Source<Status = UnResolved> {
     Proto {
         src: Location<Status>,
         url: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        #[serde(rename = "connectRPC")]
         connect_rpc: Option<bool>,
     },
     Config {
