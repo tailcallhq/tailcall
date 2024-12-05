@@ -117,16 +117,22 @@ impl TryFrom<&Value> for DynamicValue<ConstValue> {
             Value::String(s) => {
                 let m = Mustache::parse(s.as_str());
                 if !m.is_const() {
+                    tracing::info!("Successfully loaded Mustache template: {}", s);
                     return Ok(DynamicValue::Mustache(m));
                 }
-                if let Ok(t) = JqTransformer::try_new(s.as_str()) {
-                    if t.is_const() {
+                match JqTransformer::try_new(s.as_str()) {
+                    Ok(t) => if t.is_const() {
+                        tracing::info!("Successfully loaded const value template: {}", s);
                         Ok(DynamicValue::Value(ConstValue::from_json(value.clone())?))
                     } else {
+                        tracing::info!("Successfully loaded JQ template: {}", s);
                         Ok(DynamicValue::JqTemplate(t))
+                    },
+                    Err(err) => {
+                        tracing::info!("Defaulting to const value template: {}", s);
+                        tracing::warn!("JQ template error: {:?}", err);
+                        Ok(DynamicValue::Value(ConstValue::from_json(value.clone())?))
                     }
-                } else {
-                    Ok(DynamicValue::Value(ConstValue::from_json(value.clone())?))
                 }
             }
             _ => Ok(DynamicValue::Value(ConstValue::from_json(value.clone())?)),

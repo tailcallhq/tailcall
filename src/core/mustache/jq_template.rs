@@ -6,6 +6,8 @@ use jaq_core::load::{Arena, File, Loader};
 use jaq_core::{Compiler, Ctx, Filter, Native, RcIter, ValR};
 use jaq_json::Val;
 
+use crate::core::json::JsonLike;
+
 #[derive(Clone)]
 pub struct JqTransformer {
     filter: Arc<Filter<Native<Val>>>,
@@ -24,7 +26,7 @@ impl JqTransformer {
         let template = File { code: template, path: () };
         // defs is used to extend the syntax with custom definitions of functions, like
         // 'toString'
-        let defs = vec![];
+        let defs = jaq_std::defs();
         // the loader is used to load custom modules
         let loader = Loader::new(defs);
         // the arena is used to keep the loaded modules
@@ -35,6 +37,7 @@ impl JqTransformer {
         })?;
         // the AST of the operation, used to transform the data
         let filter = Compiler::<_, Native<Val>>::default()
+            .with_funs(jaq_std::funs())
             .compile(modules)
             .map_err(|errs| {
                 JqTemplateError::JqCompileError(
@@ -63,6 +66,28 @@ impl JqTransformer {
         self.render_helper(Val::from(value))
     }
 
+    pub fn render_value(&self, value: serde_json::Value) -> async_graphql_value::ConstValue {
+        let inputs = RcIter::new(core::iter::empty());
+        let res = self.run(&inputs, Val::from(value));
+        let res: Vec<async_graphql_value::ConstValue> = res
+            .into_iter()
+            // TODO: handle error correct, now we ignore it
+            .filter_map(|v| if let Ok(v) = v { Some(v) } else { None })
+            .map(serde_json::Value::from)
+            .map(async_graphql_value::ConstValue::from_json)
+            // TODO: handle error correct, now we ignore it
+            .filter_map(|v| if let Ok(v) = v { Some(v) } else { None })
+            .collect();
+        let res_len = res.len();
+        if res_len == 0 {
+            async_graphql_value::ConstValue::Null
+        } else if res_len == 1 {
+            res.into_iter().next().unwrap()
+        } else {
+            async_graphql_value::ConstValue::array(res)
+        }
+    }
+
     pub fn render_graphql(&self, value: &async_graphql_value::ConstValue) -> String {
         let Ok(value) = value.clone().into_json() else {
             return String::default();
@@ -75,6 +100,7 @@ impl JqTransformer {
         // the hardcoded inputs for the AST
         let inputs = RcIter::new(core::iter::empty());
         let res = self.run(&inputs, value);
+        // TODO: handle error correct, now we ignore it
         res.filter_map(|v| if let Ok(v) = v { Some(v) } else { None })
             .fold(String::new(), |acc, cur| {
                 let cur_string = cur.to_string();

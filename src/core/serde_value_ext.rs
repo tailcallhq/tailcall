@@ -23,7 +23,7 @@ impl ValueExt for DynamicValue<async_graphql::Value> {
                     // but, we can just use that string as is
                     .unwrap_or_else(|_| GraphQLValue::String(rendered.into_owned()))
             }
-            DynamicValue::JqTemplate(_t) => {
+            DynamicValue::JqTemplate(t) => {
                 let value = if let Some(value) = ctx.path_string(&["value"]) {
                     serde_json::from_str(&value).unwrap()
                 } else {
@@ -47,11 +47,8 @@ impl ValueExt for DynamicValue<async_graphql::Value> {
                     "vars": vars,
                     "args": args,
                 });
-                println!("_t: {:?}", _t);
-                let rendered = _t.render(data);
 
-                serde_json::from_str::<GraphQLValue>(rendered.as_ref())
-                    .unwrap_or_else(|_| GraphQLValue::String(rendered))
+                t.render_value(data)
             }
             DynamicValue::Object(obj) => {
                 let out: IndexMap<_, _> = obj
@@ -190,6 +187,140 @@ mod tests {
         let expected =
             async_graphql::Value::from_json(json!([{"a": [{"aa": 1}]}, {"a":[{"aa": 2}]}]))
                 .unwrap();
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_jq_render_value() {
+        let value = json!({"a": ".value.foo"});
+        let value = DynamicValue::try_from(&value).unwrap();
+        let ctx = json!({"value": {"foo": {"bar": "baz"}}});
+        let result = value.render_value(&ctx);
+        let expected = async_graphql::Value::from_json(json!({"a": {"bar": "baz"}})).unwrap();
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_jq_render_value_nested() {
+        let value = json!({"a": ".value.foo.bar.baz"});
+        let value = DynamicValue::try_from(&value).unwrap();
+        let ctx = json!({"value": {"foo": {"bar": {"baz": 1}}}});
+        let result = value.render_value(&ctx);
+        let expected = async_graphql::Value::from_json(json!({"a": 1})).unwrap();
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_jq_render_value_nested_str() {
+        let value = json!({"a": ".value.foo.bar.baz"});
+        let value = DynamicValue::try_from(&value).unwrap();
+        let ctx = json!({"value": {"foo": {"bar": {"baz": "foo"}}}});
+        let result = value.render_value(&ctx);
+        let expected = async_graphql::Value::from_json(json!({"a": "foo"})).unwrap();
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_jq_render_value_null() {
+        let value = json!(".value.foo.bar.baz");
+        let value = DynamicValue::try_from(&value).unwrap();
+        let ctx = json!({"value": {"foo": {"bar": {"baz": null}}}});
+        let result = value.render_value(&ctx);
+        let expected = async_graphql::Value::from_json(json!(null)).unwrap();
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_jq_render_value_nested_bool() {
+        let value = json!({"a": ".value.foo.bar.baz"});
+        let value = DynamicValue::try_from(&value).unwrap();
+        let ctx = json!({"value": {"foo": {"bar": {"baz": true}}}});
+        let result = value.render_value(&ctx);
+        let expected = async_graphql::Value::from_json(json!({"a": true})).unwrap();
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_jq_render_value_nested_float() {
+        let value = json!({"a": ".value.foo.bar.baz"});
+        let value = DynamicValue::try_from(&value).unwrap();
+        let ctx = json!({"value": {"foo": {"bar": {"baz": 1.1}}}});
+        let result = value.render_value(&ctx);
+        let expected = async_graphql::Value::from_json(json!({"a": 1.1})).unwrap();
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_jq_render_value_arr() {
+        let value = json!({"a": ".value.foo.bar.baz"});
+        let value = DynamicValue::try_from(&value).unwrap();
+        let ctx = json!({"value": {"foo": {"bar": {"baz": [1,2,3]}}}});
+        let result = value.render_value(&ctx);
+        let expected = async_graphql::Value::from_json(json!({"a": [1, 2, 3]})).unwrap();
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_jq_render_value_arr_template() {
+        let value = json!({"a": [".value.foo.bar.baz", ".value.foo.bar.qux"]});
+        let value = DynamicValue::try_from(&value).unwrap();
+        let ctx = json!({"value": {"foo": {"bar": {"baz": 1, "qux": 2}}}});
+        let result = value.render_value(&ctx);
+        let expected = async_graphql::Value::from_json(json!({"a": [1, 2]})).unwrap();
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_jq_or_value_is_const() {
+        let value = json!(".value.foo");
+        let value = DynamicValue::try_from(&value).unwrap();
+        let ctx = json!({"value": {"foo": "bar"}});
+        let result = value.render_value(&ctx);
+        let expected = async_graphql::Value::String("bar".to_owned());
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_jq_arr_obj() {
+        let value = json!({"a": [".value.foo.bar.baz", ".value.foo.bar.qux"]});
+        let value = DynamicValue::try_from(&value).unwrap();
+        let ctx = json!({"value": {"foo": {"bar": {"baz": 1, "qux": 2}}}});
+        let result = value.render_value(&ctx);
+        let expected = async_graphql::Value::from_json(json!({"a": [1, 2]})).unwrap();
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_jq_arr_obj_arr() {
+        let value =
+            json!([{"a": [{"aa": ".value.foo.bar.baz"}]}, {"a": [{"aa": ".value.foo.bar.qux"}]}]);
+        let value = DynamicValue::try_from(&value).unwrap();
+        let ctx = json!({"value": {"foo": {"bar": {"baz": 1, "qux": 2}}}});
+        let result = value.render_value(&ctx);
+        let expected =
+            async_graphql::Value::from_json(json!([{"a": [{"aa": 1}]}, {"a":[{"aa": 2}]}]))
+                .unwrap();
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_jq_create_obj() {
+        let value = json!(".value.foo | split(\" \") | {fizz: .[0], buzz: .[1]}");
+        let value = DynamicValue::try_from(&value).unwrap();
+        let ctx = json!({"value": {"foo": "hello world"}});
+        let result = value.render_value(&ctx);
+        let expected =
+            async_graphql::Value::from_json(json!({"fizz": "hello", "buzz": "world"})).unwrap();
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_jq_create_arr() {
+        let value = json!(".value.foo | split(\" \")");
+        let value = DynamicValue::try_from(&value).unwrap();
+        let ctx = json!({"value": {"foo": "hello world"}});
+        let result = value.render_value(&ctx);
+        let expected = async_graphql::Value::from_json(json!(["hello", "world"])).unwrap();
         assert_eq!(result, expected);
     }
 }

@@ -20,7 +20,7 @@ expression: response
         "obj": {
           "e": 1
         },
-        "bool": "true",
+        "bool": true,
         "nested": {
           "num": 0,
           "arr": [

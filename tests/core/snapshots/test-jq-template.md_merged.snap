@@ -1,0 +1,26 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server(hostname: "0.0.0.0", port: 8000) @upstream {
+  query: Query
+}
+
+type Buzz {
+  first: String!
+  second: String!
+}
+
+type Fizz {
+  bar: String!
+  buzz: Buzz! @expr(body: ".value.bar | split(\" \") | {first: .[0], second: .[1]}")
+}
+
+type Foo {
+  bar: [String!]! @expr(body: ".value.bar | split(\" \")")
+}
+
+type Query {
+  fizz: Fizz! @http(url: "http://upstream/foo")
+  foo: Foo! @http(url: "http://upstream/foo")
+}

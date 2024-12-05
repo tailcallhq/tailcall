@@ -5702,6 +5702,7 @@ dependencies = [
  "insta",
  "jaq-core",
  "jaq-json",
+ "jaq-std",
  "jsonwebtoken",
  "lazy_static",
  "lru",
