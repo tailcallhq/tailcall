@@ -67,7 +67,8 @@ impl JqTemplate {
         self.filter.run((ctx, data))
     }
 
-    /// Used to calculate the result and format it to string. Could be used in place of Mustache::render
+    /// Used to calculate the result and format it to string. Could be used in
+    /// place of Mustache::render
     pub fn render(&self, value: serde_json::Value) -> String {
         // the hardcoded inputs for the AST
         let inputs = RcIter::new(core::iter::empty());
@@ -256,9 +257,10 @@ pub enum JqTemplateError {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use serde_json::json;
     use jaq_core::load::parse::{BinaryOp, Pattern, Term};
+    use serde_json::json;
+
+    use super::*;
 
     #[test]
     fn test_is_select_operation_simple_property() {
@@ -327,78 +329,145 @@ mod tests {
         let expected_output = "12";
         let actual_output = jq_template.render(input_json);
 
-        assert_eq!(actual_output, expected_output, "The rendered output did not match the expected output.");
+        assert_eq!(
+            actual_output, expected_output,
+            "The rendered output did not match the expected output."
+        );
     }
 
     #[test]
     fn test_calculate_is_const() {
         // Test with a constant number
         let term_num = Term::Num("42");
-        assert!(JqTemplate::calculate_is_const(&term_num), "Expected true for a constant number");
+        assert!(
+            JqTemplate::calculate_is_const(&term_num),
+            "Expected true for a constant number"
+        );
 
         // Test with a string without formatter
         let term_str = Term::Str(None, vec![]);
-        assert!(JqTemplate::calculate_is_const(&term_str), "Expected true for a simple string");
+        assert!(
+            JqTemplate::calculate_is_const(&term_str),
+            "Expected true for a simple string"
+        );
 
         // Test with a string with formatter
         let term_str_fmt = Term::Str(Some("fmt"), vec![]);
-        assert!(!JqTemplate::calculate_is_const(&term_str_fmt), "Expected false for a formatted string");
+        assert!(
+            !JqTemplate::calculate_is_const(&term_str_fmt),
+            "Expected false for a formatted string"
+        );
 
         // Test with an identity operation
         let term_id = Term::Id;
-        assert!(!JqTemplate::calculate_is_const(&term_id), "Expected false for an identity operation");
+        assert!(
+            !JqTemplate::calculate_is_const(&term_id),
+            "Expected false for an identity operation"
+        );
 
         // Test with a recursive operation
         let term_recurse = Term::Recurse;
-        assert!(!JqTemplate::calculate_is_const(&term_recurse), "Expected false for a recursive operation");
+        assert!(
+            !JqTemplate::calculate_is_const(&term_recurse),
+            "Expected false for a recursive operation"
+        );
 
         // Test with a binary operation
-        let term_bin_op = Term::BinOp(Box::new(Term::Num("1")), BinaryOp::Math(jaq_core::ops::Math::Add), Box::new(Term::Num("2")));
-        assert!(!JqTemplate::calculate_is_const(&term_bin_op), "Expected false for a binary operation");
+        let term_bin_op = Term::BinOp(
+            Box::new(Term::Num("1")),
+            BinaryOp::Math(jaq_core::ops::Math::Add),
+            Box::new(Term::Num("2")),
+        );
+        assert!(
+            !JqTemplate::calculate_is_const(&term_bin_op),
+            "Expected false for a binary operation"
+        );
 
         // Test with a pipe operation without pattern
         let term_pipe = Term::Pipe(Box::new(Term::Num("1")), None, Box::new(Term::Num("2")));
-        assert!(JqTemplate::calculate_is_const(&term_pipe), "Expected true for a constant pipe operation");
+        assert!(
+            JqTemplate::calculate_is_const(&term_pipe),
+            "Expected true for a constant pipe operation"
+        );
 
         // Test with a pipe operation with pattern
         let pattern = Pattern::Var("x");
-        let term_pipe_with_pattern = Term::Pipe(Box::new(Term::Num("1")), Some(pattern), Box::new(Term::Num("2")));
-        assert!(!JqTemplate::calculate_is_const(&term_pipe_with_pattern), "Expected false for a pipe operation with pattern");
+        let term_pipe_with_pattern = Term::Pipe(
+            Box::new(Term::Num("1")),
+            Some(pattern),
+            Box::new(Term::Num("2")),
+        );
+        assert!(
+            !JqTemplate::calculate_is_const(&term_pipe_with_pattern),
+            "Expected false for a pipe operation with pattern"
+        );
     }
 
     #[test]
     fn test_recursive_is_select_operation() {
         // Test with simple identity operation
         let term_id = Term::Id;
-        assert!(JqTemplate::recursive_is_select_operation(term_id), "Expected true for identity operation");
+        assert!(
+            JqTemplate::recursive_is_select_operation(term_id),
+            "Expected true for identity operation"
+        );
 
         // Test with a number
         let term_num = Term::Num("42");
-        assert!(!JqTemplate::recursive_is_select_operation(term_num), "Expected false for a number");
+        assert!(
+            !JqTemplate::recursive_is_select_operation(term_num),
+            "Expected false for a number"
+        );
 
         // Test with a string without formatter
         let term_str = Term::Str(None, vec![]);
-        assert!(JqTemplate::recursive_is_select_operation(term_str), "Expected true for a simple string");
+        assert!(
+            JqTemplate::recursive_is_select_operation(term_str),
+            "Expected true for a simple string"
+        );
 
         // Test with a string with formatter
         let term_str_fmt = Term::Str(Some("fmt"), vec![]);
-        assert!(!JqTemplate::recursive_is_select_operation(term_str_fmt), "Expected false for a formatted string");
+        assert!(
+            !JqTemplate::recursive_is_select_operation(term_str_fmt),
+            "Expected false for a formatted string"
+        );
 
         // Test with a recursive operation
         let term_recurse = Term::Recurse;
-        assert!(!JqTemplate::recursive_is_select_operation(term_recurse), "Expected false for a recursive operation");
+        assert!(
+            !JqTemplate::recursive_is_select_operation(term_recurse),
+            "Expected false for a recursive operation"
+        );
 
         // Test with a binary operation
-        let term_bin_op = Term::BinOp(Box::new(Term::Num("1")), BinaryOp::Math(jaq_core::ops::Math::Add), Box::new(Term::Num("2")));
-        assert!(!JqTemplate::recursive_is_select_operation(term_bin_op), "Expected false for a binary operation");
+        let term_bin_op = Term::BinOp(
+            Box::new(Term::Num("1")),
+            BinaryOp::Math(jaq_core::ops::Math::Add),
+            Box::new(Term::Num("2")),
+        );
+        assert!(
+            !JqTemplate::recursive_is_select_operation(term_bin_op),
+            "Expected false for a binary operation"
+        );
 
         // Test with a pipe operation without pattern
         let term_pipe = Term::Pipe(Box::new(Term::Num("1")), None, Box::new(Term::Num("2")));
-        assert!(!JqTemplate::recursive_is_select_operation(term_pipe), "Expected false for a constant pipe operation");
+        assert!(
+            !JqTemplate::recursive_is_select_operation(term_pipe),
+            "Expected false for a constant pipe operation"
+        );
 
         // Test with a pipe operation with pattern
         let pattern = Pattern::Var("x");
-        let term_pipe_with_pattern = Term::Pipe(Box::new(Term::Num("1")), Some(pattern), Box::new(Term::Num("2")));
-        assert!(!JqTemplate::recursive_is_select_operation(term_pipe_with_pattern), "Expected false for a pipe operation with pattern");
+        let term_pipe_with_pattern = Term::Pipe(
+            Box::new(Term::Num("1")),
+            Some(pattern),
+            Box::new(Term::Num("2")),
+        );
+        assert!(
+            !JqTemplate::recursive_is_select_operation(term_pipe_with_pattern),
+            "Expected false for a pipe operation with pattern"
+        );
     }
 }
