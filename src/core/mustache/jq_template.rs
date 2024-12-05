@@ -8,18 +8,23 @@ use jaq_json::Val;
 
 use crate::core::json::JsonLike;
 
+/// Used to represent a JQ template. Currently used only on @expr directive.
 #[derive(Clone)]
-pub struct JqTransformer {
+pub struct JqTemplate {
+    /// The compiled filter
     filter: Arc<Filter<Native<Val>>>,
+    /// The IR representation, used for debug purposes
     representation: String,
+    /// If the transformer returns a constant value
     is_const: bool,
 }
 
-impl JqTransformer {
+impl JqTemplate {
     /// Used to parse a `template` and try to convert it into a JqTemplate
     pub fn try_new(template: &str) -> Result<Self, JqTemplateError> {
         // the term is used because it can be easily serialized, deserialized and hashed
         let term = Self::parse_template(template);
+        // calculate if the expression returns always a constant value
         let is_const = Self::calculate_is_const(&term);
 
         // the template is used to be parsed in to the IR AST
@@ -52,7 +57,7 @@ impl JqTransformer {
         })
     }
 
-    /// Used to execute the transformation of the JQTemplate
+    /// Used to execute the transformation of the JqTemplate
     pub fn run<'a, T: std::iter::Iterator<Item = std::result::Result<Val, std::string::String>>>(
         &'a self,
         inputs: &'a RcIter<T>,
@@ -62,10 +67,20 @@ impl JqTransformer {
         self.filter.run((ctx, data))
     }
 
+    /// Used to calculate the result and format it to string. Could be used in place of Mustache::render
     pub fn render(&self, value: serde_json::Value) -> String {
-        self.render_helper(Val::from(value))
+        // the hardcoded inputs for the AST
+        let inputs = RcIter::new(core::iter::empty());
+        let res = self.run(&inputs, Val::from(value));
+        // TODO: handle error correct, now we ignore it
+        res.filter_map(|v| if let Ok(v) = v { Some(v) } else { None })
+            .fold(String::new(), |acc, cur| {
+                let cur_string = cur.to_string();
+                acc + &cur_string
+            })
     }
 
+    /// Used to calculate the result and return it as json
     pub fn render_value(&self, value: serde_json::Value) -> async_graphql_value::ConstValue {
         let inputs = RcIter::new(core::iter::empty());
         let res = self.run(&inputs, Val::from(value));
@@ -88,26 +103,6 @@ impl JqTransformer {
         }
     }
 
-    pub fn render_graphql(&self, value: &async_graphql_value::ConstValue) -> String {
-        let Ok(value) = value.clone().into_json() else {
-            return String::default();
-        };
-
-        self.render_helper(Val::from(value))
-    }
-
-    fn render_helper(&self, value: Val) -> String {
-        // the hardcoded inputs for the AST
-        let inputs = RcIter::new(core::iter::empty());
-        let res = self.run(&inputs, value);
-        // TODO: handle error correct, now we ignore it
-        res.filter_map(|v| if let Ok(v) = v { Some(v) } else { None })
-            .fold(String::new(), |acc, cur| {
-                let cur_string = cur.to_string();
-                acc + &cur_string
-            })
-    }
-
     /// Used to determine if the expression can be supported with current
     /// Mustache implementation
     pub fn is_select_operation(template: &str) -> bool {
@@ -115,6 +110,7 @@ impl JqTransformer {
         Self::recursive_is_select_operation(term)
     }
 
+    /// Used to parse the template string and return the IR representation
     fn parse_template(template: &str) -> Term<&str> {
         let lexer = jaq_core::load::Lexer::new(template);
         let lex = lexer.lex().unwrap_or_default();
@@ -157,6 +153,7 @@ impl JqTransformer {
         }
     }
 
+    /// Used to check if the path indicates a select operation or modify
     fn is_path_select_operation(path: jaq_core::path::Path<Term<&str>>) -> bool {
         path.0.into_iter().all(|part| match part {
             (jaq_core::path::Part::Index(idx), jaq_core::path::Opt::Optional) => {
@@ -170,6 +167,7 @@ impl JqTransformer {
         })
     }
 
+    /// Used to calcuate if the template always returns a constant value
     fn calculate_is_const(term: &Term<&str>) -> bool {
         match term {
             Term::Id => false,
@@ -205,7 +203,7 @@ impl JqTransformer {
     }
 }
 
-impl Default for JqTransformer {
+impl Default for JqTemplate {
     fn default() -> Self {
         Self {
             filter: Default::default(),
@@ -215,32 +213,32 @@ impl Default for JqTransformer {
     }
 }
 
-impl std::fmt::Debug for JqTransformer {
+impl std::fmt::Debug for JqTemplate {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("JqTransformer")
+        f.debug_struct("JqTemplate")
             .field("representation", &self.representation)
             .finish()
     }
 }
 
-impl Display for JqTransformer {
+impl Display for JqTemplate {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         format!(
-            "[JqTransformer](is_const={})({})",
+            "[JqTemplate](is_const={})({})",
             self.is_const, self.representation
         )
         .fmt(f)
     }
 }
 
-impl std::cmp::PartialEq for JqTransformer {
+impl std::cmp::PartialEq for JqTemplate {
     fn eq(&self, other: &Self) -> bool {
         // TODO: sorry for the quick hack
         self.representation.eq(&other.representation)
     }
 }
 
-impl std::hash::Hash for JqTransformer {
+impl std::hash::Hash for JqTemplate {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.to_string().hash(state);
     }
@@ -259,12 +257,14 @@ pub enum JqTemplateError {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
+    use jaq_core::load::parse::{BinaryOp, Pattern, Term};
 
     #[test]
     fn test_is_select_operation_simple_property() {
         let template = ".fruit";
         assert!(
-            JqTransformer::is_select_operation(template),
+            JqTemplate::is_select_operation(template),
             "Should return true for simple property access"
         );
     }
@@ -273,7 +273,7 @@ mod tests {
     fn test_is_select_operation_nested_property() {
         let template = ".fruit.name";
         assert!(
-            JqTransformer::is_select_operation(template),
+            JqTemplate::is_select_operation(template),
             "Should return true for nested property access"
         );
     }
@@ -282,7 +282,7 @@ mod tests {
     fn test_is_select_operation_array_index() {
         let template = ".fruits[1]";
         assert!(
-            !JqTransformer::is_select_operation(template),
+            !JqTemplate::is_select_operation(template),
             "Should return false for array index access"
         );
     }
@@ -291,7 +291,7 @@ mod tests {
     fn test_is_select_operation_pipe_operator() {
         let template = ".fruits[] | .name";
         assert!(
-            !JqTransformer::is_select_operation(template),
+            !JqTemplate::is_select_operation(template),
             "Should return false for pipe operator usage"
         );
     }
@@ -300,7 +300,7 @@ mod tests {
     fn test_is_select_operation_filter() {
         let template = ".fruits[] | select(.price > 1)";
         assert!(
-            !JqTransformer::is_select_operation(template),
+            !JqTemplate::is_select_operation(template),
             "Should return false for select filter usage"
         );
     }
@@ -309,8 +309,96 @@ mod tests {
     fn test_is_select_operation_function_call() {
         let template = "map(.price)";
         assert!(
-            !JqTransformer::is_select_operation(template),
+            !JqTemplate::is_select_operation(template),
             "Should return false for function call"
         );
+    }
+
+    #[test]
+    fn test_render() {
+        let template_str = ".[] | .foo";
+        let jq_template = JqTemplate::try_new(template_str).expect("Failed to create JqTemplate");
+
+        let input_json = json!([
+            {"foo": 1},
+            {"foo": 2}
+        ]);
+
+        let expected_output = "12";
+        let actual_output = jq_template.render(input_json);
+
+        assert_eq!(actual_output, expected_output, "The rendered output did not match the expected output.");
+    }
+
+    #[test]
+    fn test_calculate_is_const() {
+        // Test with a constant number
+        let term_num = Term::Num("42");
+        assert!(JqTemplate::calculate_is_const(&term_num), "Expected true for a constant number");
+
+        // Test with a string without formatter
+        let term_str = Term::Str(None, vec![]);
+        assert!(JqTemplate::calculate_is_const(&term_str), "Expected true for a simple string");
+
+        // Test with a string with formatter
+        let term_str_fmt = Term::Str(Some("fmt"), vec![]);
+        assert!(!JqTemplate::calculate_is_const(&term_str_fmt), "Expected false for a formatted string");
+
+        // Test with an identity operation
+        let term_id = Term::Id;
+        assert!(!JqTemplate::calculate_is_const(&term_id), "Expected false for an identity operation");
+
+        // Test with a recursive operation
+        let term_recurse = Term::Recurse;
+        assert!(!JqTemplate::calculate_is_const(&term_recurse), "Expected false for a recursive operation");
+
+        // Test with a binary operation
+        let term_bin_op = Term::BinOp(Box::new(Term::Num("1")), BinaryOp::Math(jaq_core::ops::Math::Add), Box::new(Term::Num("2")));
+        assert!(!JqTemplate::calculate_is_const(&term_bin_op), "Expected false for a binary operation");
+
+        // Test with a pipe operation without pattern
+        let term_pipe = Term::Pipe(Box::new(Term::Num("1")), None, Box::new(Term::Num("2")));
+        assert!(JqTemplate::calculate_is_const(&term_pipe), "Expected true for a constant pipe operation");
+
+        // Test with a pipe operation with pattern
+        let pattern = Pattern::Var("x");
+        let term_pipe_with_pattern = Term::Pipe(Box::new(Term::Num("1")), Some(pattern), Box::new(Term::Num("2")));
+        assert!(!JqTemplate::calculate_is_const(&term_pipe_with_pattern), "Expected false for a pipe operation with pattern");
+    }
+
+    #[test]
+    fn test_recursive_is_select_operation() {
+        // Test with simple identity operation
+        let term_id = Term::Id;
+        assert!(JqTemplate::recursive_is_select_operation(term_id), "Expected true for identity operation");
+
+        // Test with a number
+        let term_num = Term::Num("42");
+        assert!(!JqTemplate::recursive_is_select_operation(term_num), "Expected false for a number");
+
+        // Test with a string without formatter
+        let term_str = Term::Str(None, vec![]);
+        assert!(JqTemplate::recursive_is_select_operation(term_str), "Expected true for a simple string");
+
+        // Test with a string with formatter
+        let term_str_fmt = Term::Str(Some("fmt"), vec![]);
+        assert!(!JqTemplate::recursive_is_select_operation(term_str_fmt), "Expected false for a formatted string");
+
+        // Test with a recursive operation
+        let term_recurse = Term::Recurse;
+        assert!(!JqTemplate::recursive_is_select_operation(term_recurse), "Expected false for a recursive operation");
+
+        // Test with a binary operation
+        let term_bin_op = Term::BinOp(Box::new(Term::Num("1")), BinaryOp::Math(jaq_core::ops::Math::Add), Box::new(Term::Num("2")));
+        assert!(!JqTemplate::recursive_is_select_operation(term_bin_op), "Expected false for a binary operation");
+
+        // Test with a pipe operation without pattern
+        let term_pipe = Term::Pipe(Box::new(Term::Num("1")), None, Box::new(Term::Num("2")));
+        assert!(!JqTemplate::recursive_is_select_operation(term_pipe), "Expected false for a constant pipe operation");
+
+        // Test with a pipe operation with pattern
+        let pattern = Pattern::Var("x");
+        let term_pipe_with_pattern = Term::Pipe(Box::new(Term::Num("1")), Some(pattern), Box::new(Term::Num("2")));
+        assert!(!JqTemplate::recursive_is_select_operation(term_pipe_with_pattern), "Expected false for a pipe operation with pattern");
     }
 }
