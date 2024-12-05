@@ -127,6 +127,12 @@ impl<Ctx: ResolverContextLike> PathGraphql for EvalContext<'_, Ctx> {
     }
 }
 
+impl PathValue for serde_json::Value {
+    fn raw_value<'a, T: AsRef<str>>(&'a self, path: &[T]) -> Option<ValueString<'a>> {
+        todo!()
+    }
+}
+
 #[cfg(test)]
 mod tests {
 

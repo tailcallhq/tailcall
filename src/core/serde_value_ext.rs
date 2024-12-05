@@ -4,14 +4,14 @@ use async_graphql::{Name, Value as GraphQLValue};
 use indexmap::IndexMap;
 
 use crate::core::blueprint::DynamicValue;
-use crate::core::path::PathString;
+use super::mustache::PathJqValueString;
 
 pub trait ValueExt {
-    fn render_value(&self, ctx: &impl PathString) -> GraphQLValue;
+    fn render_value(&self, ctx: &impl PathJqValueString) -> GraphQLValue;
 }
 
 impl ValueExt for DynamicValue<async_graphql::Value> {
-    fn render_value<'a>(&self, ctx: &'a impl PathString) -> GraphQLValue {
+    fn render_value<'a>(&self, ctx: &'a impl PathJqValueString) -> GraphQLValue {
         match self {
             DynamicValue::Value(value) => value.to_owned(),
             DynamicValue::Mustache(m) => {
@@ -24,31 +24,7 @@ impl ValueExt for DynamicValue<async_graphql::Value> {
                     .unwrap_or_else(|_| GraphQLValue::String(rendered.into_owned()))
             }
             DynamicValue::JqTemplate(t) => {
-                let value = if let Some(value) = ctx.path_string(&["value"]) {
-                    serde_json::from_str(&value).unwrap()
-                } else {
-                    serde_json::Value::Object(serde_json::Map::new())
-                };
-
-                let vars = if let Some(vars) = ctx.path_string(&["vars"]) {
-                    serde_json::from_str(&vars).unwrap()
-                } else {
-                    serde_json::Value::Object(serde_json::Map::new())
-                };
-
-                let args = if let Some(args) = ctx.path_string(&["args"]) {
-                    serde_json::from_str(&args).unwrap()
-                } else {
-                    serde_json::Value::Object(serde_json::Map::new())
-                };
-
-                let data = serde_json::json!({
-                    "value": value,
-                    "vars": vars,
-                    "args": args,
-                });
-
-                t.render_value(data)
+                todo!()
             }
             DynamicValue::Object(obj) => {
                 let out: IndexMap<_, _> = obj
