@@ -120,6 +120,7 @@ impl TryFrom<&Value> for DynamicValue<ConstValue> {
                     tracing::info!("Successfully loaded Mustache template: {}", s);
                     return Ok(DynamicValue::Mustache(m));
                 }
+
                 match JqTemplate::try_new(s.as_str()) {
                     Ok(t) => {
                         if t.is_const() {

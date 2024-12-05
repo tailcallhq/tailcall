@@ -5,6 +5,7 @@ use jaq_core::load::parse::Term;
 use jaq_core::load::{Arena, File, Loader};
 use jaq_core::{Compiler, Ctx, Filter, Native, RcIter, ValR};
 use jaq_json::Val;
+use regex::Regex;
 
 use crate::core::json::JsonLike;
 
@@ -22,13 +23,15 @@ pub struct JqTemplate {
 impl JqTemplate {
     /// Used to parse a `template` and try to convert it into a JqTemplate
     pub fn try_new(template: &str) -> Result<Self, JqTemplateError> {
+        let template = transform_to_jq(template);
+
         // the term is used because it can be easily serialized, deserialized and hashed
-        let term = Self::parse_template(template);
+        let term = Self::parse_template(&template);
         // calculate if the expression returns always a constant value
         let is_const = Self::calculate_is_const(&term);
 
         // the template is used to be parsed in to the IR AST
-        let template = File { code: template, path: () };
+        let template = File { code: template.as_str(), path: () };
         // defs is used to extend the syntax with custom definitions of functions, like
         // 'toString'
         let defs = jaq_std::defs();
@@ -238,6 +241,54 @@ pub enum JqTemplateError {
     JqLoadError(Vec<String>),
     #[error("JQ Compile Errors: {0:?}")]
     JqCompileError(Vec<String>),
+}
+
+/// Used to convert mustache to jq
+fn transform_to_jq(input: &str) -> String {
+    let re = Regex::new(r"\{\{\.([^}]*)\}\}").unwrap();
+    let mut result = String::new();
+    let mut last_end = 0;
+    let captures: Vec<_> = re.captures_iter(input).collect();
+
+    // when we do not have any mustache templates return the string
+    if captures.is_empty() {
+        return input.to_string();
+    }
+
+    for cap in captures {
+        let match_ = cap.get(0).unwrap();
+        let var_name = cap.get(1).unwrap().as_str();
+
+        // Append the text before the match, then the transformed variable
+        if last_end != match_.start() {
+            if !result.is_empty() {
+                result.push_str(" + ");
+            }
+            result.push_str(&format!("\"{}\"", &input[last_end..match_.start()]));
+        }
+
+        if !result.is_empty() {
+            result.push_str(" + ");
+        }
+        result.push_str(&format!(".{}", var_name));
+
+        last_end = match_.end();
+    }
+
+    // Append any remaining text after the last match
+    if last_end < input.len() {
+        if !result.is_empty() {
+            result.push_str(" + ");
+        }
+        result.push_str(&format!("\"{}\"", &input[last_end..]));
+    }
+
+    // If no transformations were made, return the original input
+    if result.is_empty() {
+        return input.to_string();
+    }
+
+    result
 }
 
 #[cfg(test)]
@@ -540,5 +591,34 @@ mod tests {
         jq_template1.hash(&mut hasher1);
         jq_template2.hash(&mut hasher2);
         assert_eq!(hasher1.finish(), hasher2.finish());
+    }
+
+    #[test]
+    fn test_transform_to_jq() {
+        assert_eq!(
+            transform_to_jq("Hello world: {{.foo.buzz | split(\" \")}}"),
+            "\"Hello world: \" + .foo.buzz | split(\" \")"
+        );
+        assert_eq!(
+            transform_to_jq("Hello world: {{.foo.buzz | split(\" \")}} this is great"),
+            "\"Hello world: \" + .foo.buzz | split(\" \") + \" this is great\""
+        );
+        assert_eq!(
+            transform_to_jq("{{.foo.buzz | split(\" \")}} buzz"),
+            ".foo.buzz | split(\" \") + \" buzz\""
+        );
+        assert_eq!(
+            transform_to_jq("{{.foo.buzz | split(\" \")}} of type {{.bar}}"),
+            ".foo.buzz | split(\" \") + \" of type \" + .bar"
+        );
+    }
+
+    #[test]
+    fn test_transform_to_jq_identity() {
+        assert_eq!(transform_to_jq("Hello world"), "Hello world");
+        assert_eq!(
+            transform_to_jq(".foo.buzz | split(\" \")"),
+            ".foo.buzz | split(\" \")"
+        );
     }
 }
