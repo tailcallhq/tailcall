@@ -1,5 +1,5 @@
 use anyhow::Result;
-use enterprise_features::Enterprise;
+use tailcall_enterprise::Enterprise;
 use tracing::info;
 
 use super::helpers::log_endpoint_set;

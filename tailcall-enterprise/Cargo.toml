@@ -1,5 +1,5 @@
 [package]
-name = "enterprise-features"
+name = "tailcall-enterprise"
 version = "0.1.0"
 edition = "2021"
 

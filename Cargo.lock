@@ -1603,18 +1603,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "enterprise-features"
-version = "0.1.0"
-dependencies = [
- "keygen-rs",
- "reqwest 0.11.27",
- "serde",
- "serde_json",
- "thiserror 1.0.69",
- "tokio",
-]
-
-[[package]]
 name = "env_filter"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5878,7 +5866,6 @@ dependencies = [
  "derive_more",
  "derive_setters",
  "dotenvy",
- "enterprise-features",
  "exitcode",
  "flate2",
  "fnv",
@@ -5951,6 +5938,7 @@ dependencies = [
  "strum",
  "strum_macros",
  "tailcall-chunk",
+ "tailcall-enterprise",
  "tailcall-fixtures",
  "tailcall-hasher",
  "tailcall-http-cache",
@@ -6023,6 +6011,18 @@ dependencies = [
  "tracing-subscriber",
  "tracing-subscriber-wasm",
  "worker",
+]
+
+[[package]]
+name = "tailcall-enterprise"
+version = "0.1.0"
+dependencies = [
+ "keygen-rs",
+ "reqwest 0.11.27",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
 ]
 
 [[package]]
