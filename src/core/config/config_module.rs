@@ -13,6 +13,8 @@ use crate::core::proto_reader::ProtoMetadata;
 use crate::core::rest::{EndpointSet, Unchecked};
 use crate::core::Transform;
 
+use super::LinkType;
+
 mod merge;
 
 /// A wrapper on top of Config that contains all the resolved extensions and
@@ -51,6 +53,13 @@ impl From<Config> for Cache {
 impl ConfigModule {
     pub fn new(config: Config, extensions: Extensions) -> Self {
         ConfigModule { cache: Cache::from(config), extensions }
+    }
+
+    /// presently only two features are enteredprise features. [JS, Telemetry]
+    pub fn is_enterprised_features_enabled(&self) -> bool {
+        let js_capability_enabled = self.config().links.iter().any(|link| matches!(link.type_of, LinkType::Script));
+        let telemetry_capability_enabled = self.config().telemetry.export.is_some();
+        js_capability_enabled || telemetry_capability_enabled
     }
 
     pub fn set_extensions(mut self, extensions: Extensions) -> Self {
