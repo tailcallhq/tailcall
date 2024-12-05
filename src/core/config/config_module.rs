@@ -54,7 +54,7 @@ impl ConfigModule {
         ConfigModule { cache: Cache::from(config), extensions }
     }
 
-    /// presently only two features are enteredprise features. [JS, Telemetry]
+    /// presently only two features are enterprised features. [JS, Telemetry]
     pub fn is_enterprised_features_enabled(&self) -> bool {
         let js_capability_enabled = self
             .config()
