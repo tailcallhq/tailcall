@@ -3,12 +3,16 @@ use std::env;
 
 use keygen_rs::config::KeygenConfig;
 use keygen_rs::errors::Error;
+use postgrest::Postgrest;
 use serde::Deserialize;
 use thiserror::Error;
 
 const TOKEN_NAME: &str = "TAILCALL_TOKEN";
-// TODO: replace with the actual URL.
-const PUBLIC_KEY_URL: &str = "https://api.npoint.io/79becbd1b51c8b8538ec";
+
+// Supabase configurations
+const TABLE_NAME: &str = "---Add-Table-Name-Here---";
+const ANON_KEY: &str = "---Add-Anonymous-Key-Here---";
+const API_URL: &str = "---Add-Api-Url-Here---";
 
 #[derive(Error, Debug)]
 pub enum EnterpriseError {
@@ -20,6 +24,8 @@ pub enum EnterpriseError {
     PublicKeyParsingError(String),
     #[error(transparent)]
     KeygenError(#[from] Box<Error>),
+    #[error(transparent)]
+    DatabaseClientError(#[from] reqwest::Error),
 }
 
 #[derive(Debug)]
@@ -29,7 +35,6 @@ pub struct Enterprise {
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
 struct KeygenData {
     public_key: String,
     account: String,
@@ -81,12 +86,18 @@ impl Enterprise {
     }
 
     async fn fetch_public_key() -> Result<KeygenData, EnterpriseError> {
-        reqwest::get(PUBLIC_KEY_URL)
-            .await
-            .map_err(|e| EnterpriseError::PublicKeyFetchError(e.to_string()))?
-            .json::<KeygenData>()
-            .await
-            .map_err(|e| EnterpriseError::PublicKeyParsingError(e.to_string()))
+        let client = Postgrest::new(API_URL).insert_header("apiKey", ANON_KEY);
+        // pick the latest key from the database.
+        let result = client
+            .from(TABLE_NAME)
+            .select("*")
+            .order("id.desc")
+            .limit(1)
+            .single()
+            .execute()
+            .await?;
+        let body = result.json::<KeygenData>().await?;
+        Ok(body)
     }
 }
 
