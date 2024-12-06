@@ -11,16 +11,10 @@ expression: response
     "data": {
       "entry": {
         "num": "0",
-        "arr": [
-          1,
-          2,
-          3
-        ],
+        "arr": "[1, 2, 3]",
         "str": "test",
-        "obj": {
-          "e": 1
-        },
-        "bool": true,
+        "obj": "{e: 1}",
+        "bool": "true",
         "nested": {
           "num": 0,
           "arr": [
@@ -29,9 +23,7 @@ expression: response
             3
           ],
           "str": "test",
-          "obj": {
-            "e": 1
-          },
+          "obj": "{e: 1}",
           "bool": true
         }
       }

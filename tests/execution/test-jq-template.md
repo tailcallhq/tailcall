@@ -12,12 +12,12 @@ type Query {
 
 type Foo {
   bar: String!
-  bar: [String!]! @expr(body: ".value.bar | split(\" \")")
+  bar: [String!]! @expr(body: "{{.value.bar | split(\" \")}}")
 }
 
 type Fizz {
   bar: String!
-  buzz: Buzz! @expr(body: ".value.bar | split(\" \") | {first: .[0], second: .[1]}")
+  buzz: Buzz! @expr(body: "{{.value.bar | split(\" \") | {first: .[0], second: .[1]}}}")
 }
 
 type Buzz {

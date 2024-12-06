@@ -4,7 +4,7 @@ use std::sync::Arc;
 use jaq_core::load::parse::Term;
 use jaq_core::load::{Arena, File, Loader};
 use jaq_core::val::Range;
-use jaq_core::{Compiler, Ctx, Error, Exn, Filter, Native, RcIter, ValR, ValT};
+use jaq_core::{Compiler, Ctx, Error, Exn, Filter, Native, RcIter, ValR};
 use jaq_json::Val;
 use regex::Regex;
 
@@ -69,7 +69,33 @@ impl<Ctx: ResolverContextLike> PathJqValueString for EvalContext<'_, Ctx> {}
 
 impl PathJqValueString for serde_json::Value {}
 
-impl ValT for PathValueEnum<'_> {
+impl jaq_std::ValT for PathValueEnum<'_> {
+    fn into_seq<S: FromIterator<Self>>(self) -> Result<S, Self> {
+        todo!()
+    }
+
+    fn as_isize(&self) -> Option<isize> {
+        match self {
+            PathValueEnum::PathValue(_) => None,
+            PathValueEnum::Val(val) => val.as_isize(),
+        }
+    }
+
+    fn as_f64(&self) -> Result<f64, Error<Self>> {
+        match self {
+            PathValueEnum::PathValue(_) => Err(Error::new(Self::Val(Val::from("Cannot convert context to f64".to_string())))),
+            PathValueEnum::Val(val) => match val.as_f64() {
+                Ok(val) => Ok(val),
+                Err(err) => {
+                    let val = err.into_val();
+                    Err(Error::new(Self::Val(val)))
+                }
+            },
+        }
+    }
+}
+
+impl jaq_core::ValT for PathValueEnum<'_> {
     fn from_num(n: &str) -> ValR<Self> {
         match Val::from_num(n) {
             Ok(val) => ValR::Ok(Self::Val(val)),
@@ -102,7 +128,15 @@ impl ValT for PathValueEnum<'_> {
     }
 
     fn values(self) -> Box<dyn Iterator<Item = ValR<Self>>> {
-        todo!()
+        match self {
+            PathValueEnum::PathValue(_) => panic!("Cannot iterate context"),
+            PathValueEnum::Val(val) => Box::new(val.values().map(|v| {
+                v.map(PathValueEnum::Val).map_err(|err| {
+                    let val = err.into_val();
+                    Error::new(PathValueEnum::Val(val))
+                })
+            })),
+        }
     }
 
     fn index(self, index: &Self) -> ValR<Self> {
@@ -546,6 +580,27 @@ impl PartialOrd for PathValueEnum<'_> {
     }
 }
 
+impl Eq for PathValueEnum<'_> {}
+
+impl Ord for PathValueEnum<'_> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        match (self, other) {
+            (PathValueEnum::PathValue(_), PathValueEnum::PathValue(_)) => std::cmp::Ordering::Equal,
+            (PathValueEnum::PathValue(_), PathValueEnum::Val(_)) => std::cmp::Ordering::Greater,
+            (PathValueEnum::Val(_), PathValueEnum::PathValue(_)) => std::cmp::Ordering::Less,
+            (PathValueEnum::Val(self_val), PathValueEnum::Val(other_val)) => {
+                self_val.cmp(other_val)
+            }
+        }
+    }
+}
+
+impl From<f64> for PathValueEnum<'_> {
+    fn from(value: f64) -> Self {
+        Self::Val(Val::from(value))
+    }
+}
+
 impl From<PathValueEnum<'_>> for serde_json::Value {
     fn from(value: PathValueEnum<'_>) -> Self {
         match value {
@@ -598,7 +653,10 @@ impl JqTemplate {
 
         match self.get_filter() {
             Ok(filter) => filter.run((ctx, data)).collect::<Vec<_>>(),
-            Err(_) => vec![],
+            Err(err) => {
+                println!("JQ Create Err: {:?}", err);
+                vec![]
+            }
         }
     }
 
@@ -619,7 +677,7 @@ impl JqTemplate {
 
         // the AST of the operation, used to transform the data
         let filter = Compiler::<_, Native<PathValueEnum>>::default()
-            // .with_funs(jaq_std::funs())
+            .with_funs(jaq_std::funs())
             .compile(modules)
             .map_err(|errs| {
                 JqTemplateError::JqCompileError(
@@ -636,11 +694,23 @@ impl JqTemplate {
         let res: Vec<async_graphql_value::ConstValue> = res
             .into_iter()
             // TODO: handle error correct, now we ignore it
-            .filter_map(|v| if let Ok(v) = v { Some(v) } else { None })
+            .filter_map(|v| match v {
+                Ok(v) => Some(v),
+                Err(err) => {
+                    println!("ERR: {:?}", err);
+                    None
+                }
+            })
             .map(std::convert::Into::into)
             .map(async_graphql_value::ConstValue::from_json)
             // TODO: handle error correct, now we ignore it
-            .filter_map(|v| if let Ok(v) = v { Some(v) } else { None })
+            .filter_map(|v| match v {
+                Ok(v) => Some(v),
+                Err(err) => {
+                    println!("ERR: {:?}", err);
+                    None
+                }
+            })
             .collect();
         let res_len = res.len();
         if res_len == 0 {
@@ -804,15 +874,16 @@ pub enum JqTemplateError {
 
 /// Used to convert mustache to jq
 fn transform_to_jq(input: &str) -> String {
-    let re = Regex::new(r"\{\{\.([^}]*)\}\}").unwrap();
+    let input = input
+        .to_string()
+        .replace("{{{", "[-<-[{")
+        .replace("}}}", "}]->-]")
+        .replace("{{", "[-<-[")
+        .replace("}}", "]->]");
+    let re = Regex::new(r"\[-<-\[(.*?)\]->\]").unwrap();
     let mut result = String::new();
     let mut last_end = 0;
-    let captures: Vec<_> = re.captures_iter(input).collect();
-
-    // when we do not have any mustache templates return the string
-    if captures.is_empty() {
-        return input.to_string();
-    }
+    let captures: Vec<_> = re.captures_iter(&input).collect();
 
     for cap in captures {
         let match_ = cap.get(0).unwrap();
@@ -829,7 +900,7 @@ fn transform_to_jq(input: &str) -> String {
         if !result.is_empty() {
             result.push_str(" + ");
         }
-        result.push_str(&format!(".{}", var_name));
+        result.push_str(var_name);
 
         last_end = match_.end();
     }
@@ -842,12 +913,13 @@ fn transform_to_jq(input: &str) -> String {
         result.push_str(&format!("\"{}\"", &input[last_end..]));
     }
 
-    // If no transformations were made, return the original input
+    // If the result is empty, it means the input was a single mustache expression
     if result.is_empty() {
         return input.to_string();
     }
 
-    result
+    // Remove unnecessary delimiters from the result
+    result.replace("\"[-<-[", "").replace("]->-]\"", "")
 }
 
 #[cfg(test)]
@@ -1154,30 +1226,52 @@ mod tests {
 
     #[test]
     fn test_transform_to_jq() {
+        assert_eq!(transform_to_jq("Hello world"), "\"Hello world\"");
+
         assert_eq!(
             transform_to_jq("Hello world: {{.foo.buzz | split(\" \")}}"),
             "\"Hello world: \" + .foo.buzz | split(\" \")"
         );
+
+        assert_eq!(
+            transform_to_jq("\"Hello world: \" + .foo.buzz | split(\" \")"),
+            "\"\"Hello world: \" + .foo.buzz | split(\" \")\""
+        );
+
         assert_eq!(
             transform_to_jq("Hello world: {{.foo.buzz | split(\" \")}} this is great"),
             "\"Hello world: \" + .foo.buzz | split(\" \") + \" this is great\""
         );
         assert_eq!(
+            transform_to_jq("\"Hello world: \" + .foo.buzz | split(\" \") + \" this is great\""),
+            "\"\"Hello world: \" + .foo.buzz | split(\" \") + \" this is great\"\""
+        );
+
+        assert_eq!(
             transform_to_jq("{{.foo.buzz | split(\" \")}} buzz"),
             ".foo.buzz | split(\" \") + \" buzz\""
         );
         assert_eq!(
+            transform_to_jq(".foo.buzz | split(\" \") + \" buzz\""),
+            "\".foo.buzz | split(\" \") + \" buzz\"\""
+        );
+
+        assert_eq!(
             transform_to_jq("{{.foo.buzz | split(\" \")}} of type {{.bar}}"),
             ".foo.buzz | split(\" \") + \" of type \" + .bar"
         );
-    }
-
-    #[test]
-    fn test_transform_to_jq_identity() {
-        assert_eq!(transform_to_jq("Hello world"), "Hello world");
         assert_eq!(
-            transform_to_jq(".foo.buzz | split(\" \")"),
-            ".foo.buzz | split(\" \")"
+            transform_to_jq(".foo.buzz | split(\" \") + \" of type \" + .bar"),
+            "\".foo.buzz | split(\" \") + \" of type \" + .bar\""
+        );
+
+        assert_eq!(
+            transform_to_jq("{{.foo.buzz | split(\" \")}} of type {{.bar}}"),
+            ".foo.buzz | split(\" \") + \" of type \" + .bar"
+        );
+        assert_eq!(
+            transform_to_jq("{{.value.body | split(\" \") | {first: .[0], second: .[1]}}}"),
+            ".value.body | split(\" \") | {first: .[0], second: .[1]}"
         );
     }
 }
