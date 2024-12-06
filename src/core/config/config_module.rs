@@ -61,7 +61,7 @@ impl ConfigModule {
             .links
             .iter()
             .any(|link| matches!(link.type_of, LinkType::Script));
-        let telemetry_capability_enabled = self.config().telemetry.export.is_some();
+        let telemetry_capability_enabled = self.config().telemetry.is_enabled();
         js_capability_enabled || telemetry_capability_enabled
     }
 

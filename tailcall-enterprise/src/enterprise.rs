@@ -14,8 +14,6 @@ const PUBLIC_KEY_URL: &str = "https://api.npoint.io/79becbd1b51c8b8538ec";
 pub enum EnterpriseError {
     #[error("TAILCALL_TOKEN is not provided. Please connect via https://tailcall.run/contact/ if you haven't already got a token.")]
     TokenNotProvided,
-    #[error("TAILCALL_TOKEN validation failed. Reason: {0}")]
-    ValidationFailed(String),
     #[error("Failed to fetch public key: {0}")]
     PublicKeyFetchError(String),
     #[error("Failed to parse public key: {0}")]
@@ -70,12 +68,6 @@ impl Enterprise {
                 let _signed_key_result =
                     keygen_rs::verify(keygen_rs::license::SchemeCode::Ed25519Sign, &signed_key)
                         .map_err(|e| match e {
-                            Error::LicenseNotSigned => EnterpriseError::ValidationFailed(
-                                "License is not signed".to_string(),
-                            ),
-                            Error::LicenseKeyNotGenuine => EnterpriseError::ValidationFailed(
-                                "License key is not genuine".to_string(),
-                            ),
                             Error::LicenseKeyMissing => EnterpriseError::TokenNotProvided,
                             _ => EnterpriseError::KeygenError(Box::new(e)),
                         })?;
