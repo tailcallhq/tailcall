@@ -17,7 +17,7 @@ pub(super) async fn start_command(
 
     // config module understand the configuration and the features enabled in the
     // configuration.
-    if config_module.is_enterprised_features_enabled() {
+    if config_module.is_enterprise_features_enabled() {
         let enterprise = Enterprise::try_new().await?;
         if enterprise.is_validated() {
             info!("TAILCALL_TOKEN validated successfully. Enabling all enterprise features")
