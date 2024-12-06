@@ -5,7 +5,7 @@ use super::eval_http::{
     execute_request_with_dl, parse_graphql_response, set_headers, EvalHttp,
 };
 use super::model::{CacheKey, IO};
-use super::{EvalContext, RequestWrapper, ResolverContextLike};
+use super::{DynamicRequest, EvalContext, ResolverContextLike};
 use crate::core::config::GraphQLOperationType;
 use crate::core::data_loader::DataLoader;
 use crate::core::graphql::GraphqlDataLoader;
@@ -62,7 +62,7 @@ where
         }
         IO::GraphQL { req_template, field_name, dl_id, .. } => {
             let req = req_template.to_request(ctx)?;
-            let request = RequestWrapper::new(req);
+            let request = DynamicRequest::new(req);
             let res = if ctx.request_ctx.upstream.batch.is_some()
                 && matches!(req_template.operation_type, GraphQLOperationType::Query)
             {

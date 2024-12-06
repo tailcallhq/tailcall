@@ -7,7 +7,7 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
 use super::error::{Error, Result};
-use crate::core::ir::RequestWrapper;
+use crate::core::ir::DynamicRequest;
 use crate::core::{is_default, Response};
 
 #[derive(Serialize, Deserialize, Default, Debug, PartialEq, Eq)]
@@ -187,11 +187,11 @@ impl From<WorkerRequest> for reqwest::Request {
     }
 }
 
-impl<Body: DeserializeOwned> TryFrom<WorkerRequest> for RequestWrapper<Body> {
+impl<Body: DeserializeOwned> TryFrom<WorkerRequest> for DynamicRequest<Body> {
     type Error = anyhow::Error;
 
     fn try_from(value: WorkerRequest) -> std::result::Result<Self, Self::Error> {
-        Ok(RequestWrapper::new(value.0))
+        Ok(DynamicRequest::new(value.0))
     }
 }
 

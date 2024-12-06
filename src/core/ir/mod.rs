@@ -4,7 +4,7 @@ mod eval;
 mod eval_context;
 mod eval_http;
 mod eval_io;
-mod request_wrapper;
+mod request;
 mod resolver_context_like;
 
 pub mod model;
@@ -14,7 +14,7 @@ use std::ops::Deref;
 pub use discriminator::*;
 pub use error::*;
 pub use eval_context::EvalContext;
-pub(crate) use request_wrapper::RequestWrapper;
+pub(crate) use request::DynamicRequest;
 pub use resolver_context_like::{
     EmptyResolverContext, ResolverContext, ResolverContextLike, SelectionField,
 };

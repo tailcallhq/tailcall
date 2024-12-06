@@ -1,15 +1,15 @@
 /// Holds necessary information for request execution.
-pub struct RequestWrapper<Key> {
+pub struct DynamicRequest<Value> {
     request: reqwest::Request,
-    body_key: Option<Key>,
+    body_key: Option<Value>,
 }
 
-impl<Key> RequestWrapper<Key> {
+impl<Value> DynamicRequest<Value> {
     pub fn new(request: reqwest::Request) -> Self {
         Self { request, body_key: None }
     }
 
-    pub fn with_body_key(self, body_key: Option<Key>) -> Self {
+    pub fn with_body_key(self, body_key: Option<Value>) -> Self {
         Self { body_key, ..self }
     }
 
@@ -21,7 +21,7 @@ impl<Key> RequestWrapper<Key> {
         &mut self.request
     }
 
-    pub fn body_key(&self) -> Option<&Key> {
+    pub fn body_key(&self) -> Option<&Value> {
         self.body_key.as_ref()
     }
 
@@ -29,11 +29,11 @@ impl<Key> RequestWrapper<Key> {
         self.request
     }
 
-    pub fn into_body_key(self) -> Option<Key> {
+    pub fn into_body_key(self) -> Option<Value> {
         self.body_key
     }
 
-    pub fn into_parts(self) -> (reqwest::Request, Option<Key>) {
+    pub fn into_parts(self) -> (reqwest::Request, Option<Value>) {
         (self.request, self.body_key)
     }
 }

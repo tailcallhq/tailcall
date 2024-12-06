@@ -12,7 +12,7 @@ use crate::core::endpoint::Endpoint;
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
 use crate::core::ir::model::{CacheKey, IoId};
-use crate::core::ir::RequestWrapper;
+use crate::core::ir::DynamicRequest;
 use crate::core::mustache::{Eval, Mustache, Segment};
 use crate::core::path::{PathString, PathValue, ValueString};
 
@@ -114,7 +114,7 @@ impl RequestTemplate {
     pub fn to_request<C: PathString + HasHeaders + PathValue>(
         &self,
         ctx: &C,
-    ) -> anyhow::Result<RequestWrapper<String>> {
+    ) -> anyhow::Result<DynamicRequest<String>> {
         let url = self.create_url(ctx)?;
         let method = self.method.clone();
         let req = reqwest::Request::new(method, url);
@@ -127,7 +127,7 @@ impl RequestTemplate {
         &self,
         mut req: reqwest::Request,
         ctx: &C,
-    ) -> anyhow::Result<RequestWrapper<String>> {
+    ) -> anyhow::Result<DynamicRequest<String>> {
         let body_value = if let Some(body_path) = &self.body_path {
             match &self.encoding {
                 Encoding::ApplicationJson => {
@@ -151,7 +151,7 @@ impl RequestTemplate {
         } else {
             None
         };
-        Ok(RequestWrapper::new(req).with_body_key(body_value))
+        Ok(DynamicRequest::new(req).with_body_key(body_value))
     }
 
     /// Sets the headers for the request
