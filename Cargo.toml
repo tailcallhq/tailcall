@@ -247,7 +247,7 @@ default = ["cli", "js"]
 
 # Feature flag to force JIT engine inside integration tests
 force_jit = []
-
+integration_test = []
 
 [workspace]
 members = [

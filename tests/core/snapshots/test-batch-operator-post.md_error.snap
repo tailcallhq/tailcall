@@ -4,11 +4,12 @@ expression: errors
 ---
 [
   {
-    "message": "GroupBy is only supported for GET requests",
+    "message": "request body batching requires exactly one dynamic value in the body.",
     "trace": [
       "Query",
       "user",
-      "@http"
+      "@http",
+      "body"
     ],
     "description": null
   }

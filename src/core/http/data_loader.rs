@@ -35,19 +35,11 @@ fn get_body_value_list(body_value: &HashMap<String, Vec<&ConstValue>>, id: &str)
 pub struct HttpDataLoader {
     pub runtime: TargetRuntime,
     pub group_by: Option<GroupBy>,
-    pub body: fn(&HashMap<String, Vec<&ConstValue>>, &str) -> ConstValue,
+    is_list: bool,
 }
 impl HttpDataLoader {
     pub fn new(runtime: TargetRuntime, group_by: Option<GroupBy>, is_list: bool) -> Self {
-        HttpDataLoader {
-            runtime,
-            group_by,
-            body: if is_list {
-                get_body_value_list
-            } else {
-                get_body_value_single
-            },
-        }
+        HttpDataLoader { runtime, group_by, is_list }
     }
 
     pub fn to_data_loader(self, batch: Batch) -> DataLoader<DataLoaderRequest, HttpDataLoader> {
@@ -55,6 +47,16 @@ impl HttpDataLoader {
             .delay(Duration::from_millis(batch.delay as u64))
             .max_batch_size(batch.max_size.unwrap_or_default())
     }
+}
+
+fn get_key<'a, T: JsonLike<'a>>(value: &'a T, path: &str) -> anyhow::Result<&'a str> {
+    value
+        .get_path(&[path])
+        .and_then(|k| k.as_str())
+        .ok_or(anyhow::anyhow!(
+            "Unable to find key '{}' in request body.",
+            path
+        ))
 }
 
 #[async_trait::async_trait]
@@ -71,12 +73,55 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
             let mut dl_requests = keys.to_vec();
 
             // Sort keys to build consistent URLs
-            // TODO: enable in tests only
-            dl_requests.sort_by(|a, b| a.to_request().url().cmp(b.to_request().url()));
+            if cfg!(feature = "integration_test") || cfg!(test) {
+                dl_requests.sort_by(|a, b| a.to_request().url().cmp(b.to_request().url()));
+            }
 
             // Create base request
-            let mut request = dl_requests[0].to_request();
-            let first_url = request.url_mut();
+            let mut base_request = dl_requests[0].to_request();
+            // TODO: add the body as is in the DalaLoaderRequest.
+            let mut request_to_body_map = HashMap::with_capacity(dl_requests.len());
+
+            if dl_requests[0].method() == reqwest::Method::POST {
+                // run only for POST requests.
+                let mut merged_body = Vec::with_capacity(dl_requests.len());
+                for req in dl_requests.iter() {
+                    if let Some(body) = req.body().and_then(|b| b.as_bytes()) {
+                        let value = serde_json::from_slice::<serde_json_borrow::Value>(body)
+                            .map_err(|e| anyhow::anyhow!("Unable to deserialize body: {}", e))?;
+                        request_to_body_map.insert(req, value);
+                        merged_body.push(body);
+                    }
+                }
+
+                if !merged_body.is_empty() {
+                    if cfg!(feature = "integration_test") || cfg!(test) {
+                        // sort the body to make it consistent for testing env.
+                        merged_body.sort();
+                    }
+
+                    // construct serialization manually.
+                    let arr = merged_body.iter().fold(
+                        Vec::with_capacity(
+                            merged_body.iter().map(|i| i.len()).sum::<usize>() + merged_body.len(),
+                        ),
+                        |mut acc, item| {
+                            if !acc.is_empty() {
+                                acc.extend_from_slice(b",");
+                            }
+                            acc.extend_from_slice(item);
+                            acc
+                        },
+                    );
+
+                    // add list brackets to the serialized body.
+                    let mut serialized_body = Vec::with_capacity(arr.len() + 2);
+                    serialized_body.extend_from_slice(b"[");
+                    serialized_body.extend_from_slice(&arr);
+                    serialized_body.extend_from_slice(b"]");
+                    base_request.body_mut().replace(serialized_body.into());
+                }
+            }
 
             // Merge query params in the request
             for key in &dl_requests[1..] {
@@ -86,14 +131,18 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
                     .query_pairs()
                     .filter(|(key, _)| group_by.key().eq(&key.to_string()))
                     .collect();
-                first_url.query_pairs_mut().extend_pairs(pairs);
+                if !pairs.is_empty() {
+                    // if pair's are empty then don't extend the query params else it ends
+                    // up appending '?' to the url.
+                    base_request.url_mut().query_pairs_mut().extend_pairs(pairs);
+                }
             }
 
             // Dispatch request
             let res = self
                 .runtime
                 .http
-                .execute(request)
+                .execute(base_request)
                 .await?
                 .to_json::<ConstValue>()?;
 
@@ -107,20 +156,37 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
             // ResponseMap contains the response body grouped by the batchKey
             let response_map = res.body.group_by(path);
 
+            // depending on graphql type, it will extract the data out of the response.
+            let data_extractor = if self.is_list {
+                get_body_value_list
+            } else {
+                get_body_value_single
+            };
+
             // For each request and insert its corresponding value
-            for dl_req in dl_requests.iter() {
-                let url = dl_req.url();
-                let query_set: HashMap<_, _> = url.query_pairs().collect();
-                let id = query_set.get(query_name).ok_or(anyhow::anyhow!(
-                    "Unable to find key {} in query params",
-                    query_name
-                ))?;
+            if dl_requests[0].method() == reqwest::Method::GET {
+                for dl_req in dl_requests.iter() {
+                    let url = dl_req.url();
+                    let query_set: HashMap<_, _> = url.query_pairs().collect();
+                    let id = query_set.get(query_name).ok_or(anyhow::anyhow!(
+                        "Unable to find key {} in query params",
+                        query_name
+                    ))?;
 
-                // Clone the response and set the body
-                let body = (self.body)(&response_map, id);
-                let res = res.clone().body(body);
+                    // Clone the response and set the body
+                    let body = data_extractor(&response_map, id);
+                    let res = res.clone().body(body);
 
-                hashmap.insert(dl_req.clone(), res);
+                    hashmap.insert(dl_req.clone(), res);
+                }
+            } else {
+                let path = group_by.key();
+                for (dl_req, body) in request_to_body_map.into_iter() {
+                    // retrive the key from body
+                    let extracted_value = data_extractor(&response_map, get_key(&body, path)?);
+                    let res = res.clone().body(extracted_value);
+                    hashmap.insert(dl_req.clone(), res);
+                }
             }
 
             Ok(hashmap)

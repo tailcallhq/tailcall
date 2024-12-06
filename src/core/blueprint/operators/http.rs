@@ -1,3 +1,4 @@
+use regex::Regex;
 use tailcall_valid::{Valid, Validator};
 use template_validation::validate_argument;
 
@@ -22,8 +23,8 @@ pub fn compile_http(
         Err(e) => Valid::from_validation_err(BlueprintError::from_validation_string(e)),
     };
 
-    Valid::<(), BlueprintError>::fail(BlueprintError::GroupByOnlyForGet)
-        .when(|| !http.batch_key.is_empty() && http.method != Method::GET)
+    Valid::<(), BlueprintError>::fail(BlueprintError::GroupByOnlyForGetAndPost)
+        .when(|| !http.batch_key.is_empty() && !matches!(http.method, Method::GET | Method::POST))
         .and(
             Valid::<(), BlueprintError>::fail(BlueprintError::IncorrectBatchingUsage).when(|| {
                 (config_module.upstream.get_delay() < 1
@@ -31,6 +32,31 @@ pub fn compile_http(
                     && !http.batch_key.is_empty()
             }),
         )
+        .and_then(|_| {
+            let result = if http.method == Method::POST {
+                if !http.batch_key.is_empty() {
+                    let keys = http
+                        .body
+                        .as_ref()
+                        .map(|b| extract_expression_keys(b).len())
+                        .unwrap_or_default();
+
+                    if keys == 1 {
+                        Valid::succeed(())
+                    } else {
+                        Valid::fail(
+                            BlueprintError::RequestBatchingRequiresAtLeastOneDynamicParameter,
+                        )
+                    }
+                } else {
+                    Valid::succeed(())
+                }
+            } else {
+                Valid::succeed(())
+            };
+
+            result.trace("body")
+        })
         .and(
             Valid::from_iter(http.query.iter(), |query| {
                 validate_argument(config_module, Mustache::parse(query.value.as_str()), field)
@@ -76,13 +102,30 @@ pub fn compile_http(
             let on_response_body = http.on_response_body.clone();
             let hook = WorkerHooks::try_new(on_request, on_response_body).ok();
 
-            let io = if !http.batch_key.is_empty() && http.method == Method::GET {
+            let group_by_clause = !http.batch_key.is_empty()
+                && (http.method == Method::GET || http.method == Method::POST);
+            let io = if group_by_clause {
                 // Find a query parameter that contains a reference to the {{.value}} key
-                let key = http.query.iter().find_map(|q| {
-                    Mustache::parse(&q.value)
-                        .expression_contains("value")
-                        .then(|| q.key.clone())
-                });
+                let key = if http.method == Method::GET {
+                    http.query.iter().find_map(|q| {
+                        Mustache::parse(&q.value)
+                            .expression_contains("value")
+                            .then(|| q.key.clone())
+                    })
+                } else {
+                    // find the key from the body where value is mustache template.
+                    http.body
+                        .as_ref()
+                        .map(|b| extract_expression_keys(b))
+                        .and_then(|keys| {
+                            if keys.len() == 1 {
+                                Some(keys[0].clone())
+                            } else {
+                                None
+                            }
+                        })
+                };
+
                 IR::IO(IO::Http {
                     req_template,
                     group_by: Some(GroupBy::new(http.batch_key.clone(), key)),
@@ -104,4 +147,37 @@ pub fn compile_http(
             (io, &http.select)
         })
         .and_then(apply_select)
+}
+
+/// extracts the keys from the json representation, if the value is of mustache
+/// template type.
+fn extract_expression_keys(json: &str) -> Vec<String> {
+    let mut keys = Vec::new();
+    let re = Regex::new(r#""([^"]+)"\s*:\s*"\{\{.*?\}\}""#).unwrap();
+    for cap in re.captures_iter(json) {
+        if let Some(key) = cap.get(1) {
+            keys.push(key.as_str().to_string());
+        }
+    }
+    println!("[Finder]: input: {:#?} and output: {:#?}", json, keys);
+    keys
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_extract_expression_keys_from_str() {
+        let json = r#"{"body":"d","userId":"{{.value.uid}}","nested":{"other":"{{test}}"}}"#;
+        let keys = extract_expression_keys(json);
+        assert_eq!(keys, vec!["userId", "other"]);
+    }
+
+    #[test]
+    fn test_with_non_json_value() {
+        let json = r#"{{.value}}"#;
+        let keys = extract_expression_keys(json);
+        assert_eq!(keys, Vec::<String>::new());
+    }
 }

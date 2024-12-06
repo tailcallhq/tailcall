@@ -1,0 +1,24 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+---
+type Post {
+  body: String
+  id: Int
+  title: String
+  userId: Int!
+}
+
+type Query {
+  users: [User]
+}
+
+type User {
+  id: Int!
+  name: String!
+  posts: [Post]
+}
+
+schema {
+  query: Query
+}
