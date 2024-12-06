@@ -4203,6 +4203,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "postgrest"
+version = "1.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5a966c650b47a064e7082170b4be74fca08c088d893244fc4b70123e3c1f3ee7"
+dependencies = [
+ "reqwest 0.11.27",
+]
+
+[[package]]
 name = "posthog-rs"
 version = "0.2.3"
 source = "git+https://github.com/PostHog/posthog-rs.git?rev=a006a81419031e4889d9c3882d7458d2efa588a8#a006a81419031e4889d9c3882d7458d2efa588a8"
@@ -6018,6 +6027,7 @@ name = "tailcall-enterprise"
 version = "0.1.0"
 dependencies = [
  "keygen-rs",
+ "postgrest",
  "reqwest 0.11.27",
  "serde",
  "serde_json",
