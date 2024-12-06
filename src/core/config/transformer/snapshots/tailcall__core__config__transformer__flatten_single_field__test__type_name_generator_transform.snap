@@ -6,19 +6,20 @@ schema @server @upstream {
   query: Query
 }
 
-type Query @addField(name: "foo", path: ["foo", "bar", "a"]) {
-  foo: Foo @omit
-  not_single: NotSingle
-  not_single_middle: NotSingleMiddle
+input Bar {
+  a: Int
+}
+
+input Input {
+  a: Bar
+}
+
+type Connection {
   user: User
 }
 
 type Foo @addField(name: "bar", path: ["bar", "a"]) {
   bar: Bar @omit
-}
-
-type Bar {
-  a: Int
 }
 
 type NotSingle {
@@ -28,6 +29,14 @@ type NotSingle {
 
 type NotSingleMiddle {
   t1: Type1
+}
+
+type Query @addField(name: "foo", path: ["foo", "bar", "a"]) {
+  a(input: Input!): Empty
+  foo: Foo @omit
+  not_single: NotSingle
+  not_single_middle: NotSingleMiddle
+  user: User
 }
 
 type Type1 {
@@ -49,8 +58,4 @@ type Type4 {
 
 type User {
   connections: [Connection]
-}
-
-type Connection {
-  user: User
 }

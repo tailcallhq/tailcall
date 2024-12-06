@@ -8,6 +8,7 @@ use tailcall_valid::Validator;
 use url::Url;
 
 use super::from_proto::from_proto;
+use super::proto::connect_rpc::ConnectRPC;
 use super::{FromJsonGenerator, NameGenerator, RequestSample, PREFIX};
 use crate::core::config::{self, Config, ConfigModule, Link, LinkType};
 use crate::core::http::Method;
@@ -42,6 +43,7 @@ pub enum Input {
     Proto {
         url: String,
         metadata: ProtoMetadata,
+        connect_rpc: Option<bool>,
     },
     Config {
         schema: String,
@@ -133,9 +135,14 @@ impl Generator {
                     config = config
                         .merge_right(self.generate_from_json(&type_name_generator, &[req_sample])?);
                 }
-                Input::Proto { metadata, url } => {
-                    config =
-                        config.merge_right(self.generate_from_proto(metadata, &self.query, url)?);
+                Input::Proto { metadata, url, connect_rpc } => {
+                    let proto_config = self.generate_from_proto(metadata, &self.query, url)?;
+                    let proto_config = if connect_rpc == &Some(true) {
+                        ConnectRPC.transform(proto_config).to_result()?
+                    } else {
+                        proto_config
+                    };
+                    config = config.merge_right(proto_config);
                 }
             }
         }
@@ -264,6 +271,7 @@ pub mod test {
                     path: "../../../tailcall-fixtures/fixtures/protobuf/news.proto".to_string(),
                 },
                 url: "http://localhost:50051".to_string(),
+                connect_rpc: None,
             }])
             .generate(false)?;
 
@@ -317,6 +325,7 @@ pub mod test {
                 path: "../../../tailcall-fixtures/fixtures/protobuf/news.proto".to_string(),
             },
             url: "http://localhost:50051".to_string(),
+            connect_rpc: None,
         };
 
         // Config input

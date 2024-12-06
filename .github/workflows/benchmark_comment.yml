@@ -9,7 +9,7 @@ on:
 jobs:
   macro_benchmarks_comment:
     name: Benchmark comment on commit
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     if: >
       github.event.workflow_run.conclusion == 'success'
     steps:

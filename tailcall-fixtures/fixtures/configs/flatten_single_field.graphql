@@ -2,11 +2,16 @@ schema {
   query: Query
 }
 
+input Input {
+  a: Bar
+}
+
 type Query {
   foo: Foo
   not_single: NotSingle
   not_single_middle: NotSingleMiddle
   user: User
+  a(input: Input!): Empty
 }
 
 # Type with only one field
