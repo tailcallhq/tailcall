@@ -166,10 +166,7 @@ impl<'cfg> Visitor<'cfg> {
                 self.union_presence.insert(
                     type_name,
                     UnionPresence::Union(
-                        union_types
-                            .iter()
-                            .map(|type_| type_.name.clone())
-                            .collect(),
+                        union_types.iter().map(|type_| type_.name.clone()).collect(),
                     ),
                 );
 
@@ -241,7 +238,7 @@ impl<'cfg> Visitor<'cfg> {
             type_name: String,                        // name of the new type to set
             base_type: Type,                          // current representation of the type
             union_fields: &[(&String, &Vec<String>)], // list of fields that are union
-            result: &mut Vec<Type>,         /* the result list of new types with their
+            result: &mut Vec<Type>,                   /* the result list of new types with their
                                                        * names */
         ) {
             let Some((field_name, union_types)) = union_fields.first().as_ref() else {
@@ -285,10 +282,9 @@ mod tests {
     use insta::assert_snapshot;
     use tailcall_valid::Validator;
 
+    use super::UnionInputType;
     use crate::core::config::Config;
     use crate::core::transform::Transform;
-
-    use super::UnionInputType;
 
     // TODO: maybe introduce a macro to reduce duplication?
 
@@ -296,7 +292,11 @@ mod tests {
     fn test_union() {
         let config = std::fs::read_to_string(tailcall_fixtures::configs::YAML_UNION).unwrap();
         let config = Config::from_yaml(&config).unwrap();
-        let config = UnionInputType.transform(config).to_result().unwrap().sort_types();
+        let config = UnionInputType
+            .transform(config)
+            .to_result()
+            .unwrap()
+            .sort_types();
 
         assert_snapshot!(config.to_sdl());
     }
@@ -306,7 +306,11 @@ mod tests {
         let config =
             std::fs::read_to_string(tailcall_fixtures::configs::YAML_UNION_IN_TYPE).unwrap();
         let config = Config::from_yaml(&config).unwrap();
-        let config = UnionInputType.transform(config).to_result().unwrap().sort_types();
+        let config = UnionInputType
+            .transform(config)
+            .to_result()
+            .unwrap()
+            .sort_types();
 
         assert_snapshot!(config.to_sdl());
     }
@@ -316,7 +320,11 @@ mod tests {
         let config =
             std::fs::read_to_string(tailcall_fixtures::configs::YAML_NESTED_UNIONS).unwrap();
         let config = Config::from_yaml(&config).unwrap();
-        let config = UnionInputType.transform(config).to_result().unwrap().sort_types();
+        let config = UnionInputType
+            .transform(config)
+            .to_result()
+            .unwrap()
+            .sort_types();
 
         assert_snapshot!(config.to_sdl());
     }
@@ -325,7 +333,11 @@ mod tests {
         let config =
             std::fs::read_to_string(tailcall_fixtures::configs::YAML_RECURSIVE_INPUT).unwrap();
         let config = Config::from_yaml(&config).unwrap();
-        let config = UnionInputType.transform(config).to_result().unwrap().sort_types();
+        let config = UnionInputType
+            .transform(config)
+            .to_result()
+            .unwrap()
+            .sort_types();
 
         assert_snapshot!(config.to_sdl());
     }

@@ -496,7 +496,7 @@ mod test {
     macro_rules! assert_gen {
         ($( $set:expr ), +) => {
             let set = compile_protobuf(&[$( $set ),+]).unwrap();
-            let config = from_proto(&[set], "Query", "http://localhost:50051").unwrap();
+            let config = from_proto(&[set], "Query", "http://localhost:50051").unwrap().sort_types();
             let config_module = ConfigModule::from(config);
             let result = config_module.to_sdl();
             insta::assert_snapshot!(result);

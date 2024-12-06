@@ -1,8 +1,7 @@
 use std::collections::HashSet;
 
-use tailcall_valid::{Valid, Validator};
-
 use directive::to_directive;
+use tailcall_valid::{Valid, Validator};
 
 use crate::core::blueprint::*;
 use crate::core::config::{Config, Field, Type};
@@ -28,7 +27,7 @@ fn validate_query(config: &Config) -> Valid<(), BlueprintError> {
 fn validate_type_has_resolvers(
     name: &str,
     ty: &Type,
-    types: &Vec<Type>,
+    types: &[Type],
     visited: &mut HashSet<String>,
 ) -> Valid<(), BlueprintError> {
     if ty.scalar() || visited.contains(name) {
@@ -47,7 +46,7 @@ fn validate_type_has_resolvers(
 pub fn validate_field_has_resolver(
     name: &str,
     field: &Field,
-    types: &Vec<Type>,
+    types: &[Type],
     visited: &mut HashSet<String>,
 ) -> Valid<(), BlueprintError> {
     Valid::<(), BlueprintError>::fail(BlueprintError::NoResolverFoundInSchema)

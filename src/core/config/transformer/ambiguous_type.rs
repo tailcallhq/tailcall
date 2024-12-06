@@ -120,7 +120,11 @@ impl Transform for AmbiguousType {
                     output_types.insert(output_name.clone());
                 }
             }
-            let keys = config.types.iter().map(|v| v.name.clone()).collect::<Vec<_>>();
+            let keys = config
+                .types
+                .iter()
+                .map(|v| v.name.clone())
+                .collect::<Vec<_>>();
 
             for k in keys {
                 if let Some(ty) = config.types.iter_mut().find(|v| v.name.eq(&k)) {

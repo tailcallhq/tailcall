@@ -104,7 +104,8 @@ mod test {
     fn test_type_name_generator_transform() {
         let config = Config::from_sdl(read_fixture(configs::FLATTEN_SINGLE_FIELD).as_str())
             .to_result()
-            .unwrap();
+            .unwrap()
+            .sort_types();
 
         let transformed_config = FlattenSingleField.transform(config).to_result().unwrap();
         insta::assert_snapshot!(transformed_config.to_sdl());

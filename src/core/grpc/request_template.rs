@@ -168,10 +168,12 @@ mod tests {
         };
         let grpc = Grpc { method: method.to_string(), ..Default::default() };
         config.types.push(
-            Type::default().fields(vec![(
-                "bar",
-                Field::default().resolvers(Resolver::Grpc(grpc).into()),
-            )]).name("foo"),
+            Type::default()
+                .fields(vec![(
+                    "bar",
+                    Field::default().resolvers(Resolver::Grpc(grpc).into()),
+                )])
+                .name("foo"),
         );
 
         let protobuf_set = ProtobufSet::from_proto_file(

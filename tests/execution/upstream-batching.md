@@ -36,9 +36,7 @@
                 "value": "{{.args.id}}"
               }
             ],
-            "batchKey": [
-              "id"
-            ]
+            "batchKey": ["id"]
           },
           "cache": null
         }

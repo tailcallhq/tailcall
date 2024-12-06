@@ -128,7 +128,9 @@ impl Transform for Subgraph {
                 .push(config::Type::default().name(ENTITIES_TYPE_NAME.to_owned()));
 
             if !config.types.iter().any(|v| v.name.eq(&query_type_name)) {
-                config.types.push(config::Type::default().name(query_type_name.to_owned()));
+                config
+                    .types
+                    .push(config::Type::default().name(query_type_name.to_owned()));
             }
 
             let query_type = config.ty_entry_or_default(query_type_name.to_owned());
@@ -211,7 +213,7 @@ struct KeysExtractor;
 impl KeysExtractor {
     fn validate_expressions<'a>(
         type_name: &str,
-        type_map: &Vec<config::Type>,
+        type_map: &[config::Type],
         expr_iter: impl Iterator<Item = &'a Segment>,
     ) -> Valid<(), String> {
         Valid::from_iter(expr_iter, |segment| {
@@ -229,7 +231,7 @@ impl KeysExtractor {
     }
 
     fn validate_iter<'a>(
-        type_map: &Vec<config::Type>,
+        type_map: &[config::Type],
         current_type: &str,
         fields_iter: impl Iterator<Item = &'a String>,
     ) -> Valid<(), String> {
@@ -252,7 +254,7 @@ impl KeysExtractor {
     }
 
     fn validate(
-        type_map: &Vec<config::Type>,
+        type_map: &[config::Type],
         resolver: &Resolver,
         type_name: &str,
     ) -> Valid<(), String> {

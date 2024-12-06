@@ -10,7 +10,7 @@ types:
         type:
           name: String
     name: T1
-    
+
   - fields:
       t2:
         type:
@@ -53,9 +53,9 @@ types:
 
 unions:
   U1:
-    types: [ "T1", "T2", "T3" ]
+    types: ["T1", "T2", "T3"]
   U2:
-    types: [ "T3", "T4" ]
+    types: ["T3", "T4"]
   U:
-    types: [ "U1", "U2", "T5" ]
+    types: ["U1", "U2", "T5"]
 ```

@@ -327,9 +327,9 @@ impl TypedEntry for Arg {
 }
 
 trait FederatedMergeCollection:
-IntoIterator<Item=(String, Self::Entry)>
-+ FromIterator<(String, Self::Entry)>
-+ Extend<(String, Self::Entry)>
+    IntoIterator<Item = (String, Self::Entry)>
+    + FromIterator<(String, Self::Entry)>
+    + Extend<(String, Self::Entry)>
 {
     type Entry: TypedEntry;
 
@@ -353,9 +353,9 @@ impl<Entry: TypedEntry> FederatedMergeCollection for BTreeMap<String, Entry> {
 }
 
 impl<C> Contravariant for C
-    where
-        C: FederatedMergeCollection,
-        C::Entry: Contravariant,
+where
+    C: FederatedMergeCollection,
+    C::Entry: Contravariant,
 {
     fn shrink(mut self, other: Self) -> Valid<Self, String> {
         Valid::from_iter(other, |(name, other_field)| {
@@ -385,9 +385,9 @@ impl<C> Contravariant for C
 }
 
 impl<C> Covariant for C
-    where
-        C: FederatedMergeCollection,
-        C::Entry: Covariant,
+where
+    C: FederatedMergeCollection,
+    C::Entry: Covariant,
 {
     fn expand(mut self, other: Self) -> Valid<Self, String> {
         Valid::from_iter(other, |(name, other_field)| match self.remove(&name) {
@@ -397,12 +397,12 @@ impl<C> Covariant for C
                 .trace(&name),
             None => Valid::succeed((name, other_field)),
         })
-            .map(|merged_fields| {
-                let mut merged_fields: C = merged_fields.into_iter().collect();
-                merged_fields.extend(self);
+        .map(|merged_fields| {
+            let mut merged_fields: C = merged_fields.into_iter().collect();
+            merged_fields.extend(self);
 
-                merged_fields
-            })
+            merged_fields
+        })
     }
 }
 

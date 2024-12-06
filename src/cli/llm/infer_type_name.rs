@@ -132,7 +132,9 @@ impl InferTypeName {
                     Ok(answer) => {
                         let name = &answer.suggestions.join(", ");
                         for name in answer.suggestions {
-                            if config.types.iter().any(|v| v.name.eq(&name)) || used_type_names.contains(&name) {
+                            if config.types.iter().any(|v| v.name.eq(&name))
+                                || used_type_names.contains(&name)
+                            {
                                 continue;
                             }
                             used_type_names.insert(name.clone());

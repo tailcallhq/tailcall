@@ -18,9 +18,7 @@
     },
     {
       "name": "B",
-      "implements": [
-        "IA"
-      ],
+      "implements": ["IA"],
       "fields": {
         "a": {
           "type": {

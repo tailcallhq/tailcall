@@ -64,5 +64,5 @@ types:
 
 unions:
   U:
-    types: [ "T1", "T2", "T3" ]
+    types: ["T1", "T2", "T3"]
 ```

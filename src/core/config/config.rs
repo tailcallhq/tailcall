@@ -295,10 +295,10 @@ impl Field {
     pub fn is_omitted(&self) -> bool {
         self.omit.is_some()
             || self
-            .modify
-            .as_ref()
-            .and_then(|m| m.omit)
-            .unwrap_or_default()
+                .modify
+                .as_ref()
+                .and_then(|m| m.omit)
+                .unwrap_or_default()
     }
 }
 
@@ -379,9 +379,9 @@ impl Config {
             &self.schema.mutation,
             &self.schema.subscription,
         ]
-            .iter()
-            .filter_map(|&root_name| root_name.as_ref())
-            .any(|root_name| root_name.to_lowercase() == type_name)
+        .iter()
+        .filter_map(|&root_name| root_name.as_ref())
+        .any(|root_name| root_name.to_lowercase() == type_name)
     }
 
     pub fn port(&self) -> u16 {
@@ -487,8 +487,7 @@ impl Config {
     ///
     /// Checks if a type is a scalar or not.
     pub fn is_scalar(&self, type_name: &str) -> bool {
-        self
-            .find_type(type_name)
+        self.find_type(type_name)
             .map_or(Scalar::is_predefined(type_name), |ty| ty.scalar())
     }
 
@@ -535,14 +534,20 @@ impl Config {
             let ty = Type::default().name(&name);
             self.types.push(ty);
         }
-        self.types.iter_mut().find(|v| v.name.eq(&name))
+        self.types
+            .iter_mut()
+            .find(|v| v.name.eq(&name))
             // unwrap is safe here because we just pushed the type
             .unwrap()
     }
 
     pub fn remove_ty<T: ToString>(self, name: T) -> Self {
         let name = name.to_string();
-        let types = self.types.into_iter().filter(|v| v.name.ne(&name)).collect();
+        let types = self
+            .types
+            .into_iter()
+            .filter(|v| v.name.ne(&name))
+            .collect();
         Self { types, ..self }
     }
 
@@ -748,7 +753,7 @@ mod tests {
                 batch_key: vec!["id".to_string()],
                 ..Default::default()
             })
-                .into(),
+            .into(),
             ..Default::default()
         };
 
@@ -771,9 +776,9 @@ mod tests {
     #[test]
     fn test_from_sdl_empty() {
         let actual = Config::from_sdl("type Foo {a: Int}").to_result().unwrap();
-        let expected = Config::default().types(vec![
-            Type::default().name("Foo").fields(vec![("a", Field::int())]),
-        ]);
+        let expected = Config::default().types(vec![Type::default()
+            .name("Foo")
+            .fields(vec![("a", Field::int())])]);
         assert_eq!(actual, expected);
     }
 
@@ -793,8 +798,8 @@ mod tests {
             }
             ",
         )
-            .to_result()
-            .unwrap();
+        .to_result()
+        .unwrap();
 
         let actual = config.unused_types();
         let mut expected = HashSet::new();
