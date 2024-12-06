@@ -13,7 +13,7 @@ pub struct Endpoint {
     pub input: JsonSchema,
     pub output: JsonSchema,
     pub headers: HeaderMap,
-    pub body: Option<String>,
+    pub body: Option<serde_json::Value>,
     pub description: Option<String>,
     pub encoding: Encoding,
 }
