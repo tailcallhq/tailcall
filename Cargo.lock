@@ -4151,7 +4151,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "157c5a9d7ea5c2ed2d9fb8f495b64759f7816c7eaea54ba3978f0d63000162e3"
 dependencies = [
  "anyhow",
- "itertools 0.10.5",
+ "itertools 0.11.0",
  "proc-macro2",
  "quote",
  "syn 2.0.90",
@@ -4172,9 +4172,9 @@ dependencies = [
 
 [[package]]
 name = "prost-reflect"
-version = "0.14.2"
+version = "0.14.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4b7535b02f0e5efe3e1dbfcb428be152226ed0c66cad9541f2274c8ba8d4cd40"
+checksum = "20ae544fca2892fd4b7e9ff26cba1090cedf1d4d95c2aded1af15d2f93f270b8"
 dependencies = [
  "base64 0.22.1",
  "logos",
@@ -4342,7 +4342,7 @@ dependencies = [
  "bytes",
  "miette 7.4.0",
  "prost 0.13.4",
- "prost-reflect 0.14.2",
+ "prost-reflect 0.14.3",
  "prost-types 0.13.3",
  "protox-parse 0.7.0",
  "thiserror 1.0.69",
@@ -5660,7 +5660,7 @@ dependencies = [
  "pretty_assertions",
  "prometheus",
  "prost 0.13.4",
- "prost-reflect 0.14.2",
+ "prost-reflect 0.14.3",
  "protox 0.7.1",
  "protox-parse 0.7.0",
  "rand",
