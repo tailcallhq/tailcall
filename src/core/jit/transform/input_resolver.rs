@@ -1,7 +1,10 @@
+use std::fmt::Display;
+
 use async_graphql_value::{ConstValue, Value};
 
 use super::super::{Arg, Field, OperationPlan, ResolveInputError, Variables};
 use crate::core::blueprint::Index;
+use crate::core::ir::model::IO;
 use crate::core::json::{JsonLikeOwned, JsonObjectLike};
 use crate::core::Type;
 
@@ -46,7 +49,7 @@ impl<Input> InputResolver<Input> {
 impl<Input, Output> InputResolver<Input>
 where
     Input: Clone + std::fmt::Debug,
-    Output: Clone + JsonLikeOwned + TryFrom<serde_json::Value> + std::fmt::Debug,
+    Output: Clone + JsonLikeOwned + TryFrom<serde_json::Value> + std::fmt::Debug + Display,
     Input: InputResolvable<Output = Output>,
     <Output as TryFrom<serde_json::Value>>::Error: std::fmt::Debug,
 {
@@ -55,7 +58,7 @@ where
         variables: &Variables<Output>,
     ) -> Result<OperationPlan<Output>, ResolveInputError> {
         let index = self.plan.index;
-        let selection = self
+        let mut selection = self
             .plan
             .selection
             .into_iter()
@@ -67,6 +70,10 @@ where
             // this check?
             .map(|field| Self::resolve_field(&index, field?))
             .collect::<Result<Vec<_>, _>>()?;
+
+        // adjust the pre-computed values in selection set like graphql query for
+        // @graphql directive.
+        Self::resolve_graphql_selection_set(&mut selection, variables);
 
         Ok(OperationPlan {
             root_name: self.plan.root_name.to_string(),
@@ -80,6 +87,25 @@ where
             selection,
             before: self.plan.before,
         })
+    }
+
+    // resolves the variables in selection set mustache template for graphql query.
+    fn resolve_graphql_selection_set(
+        base_field: &mut [Field<Output>],
+        variables: &Variables<Output>,
+    ) {
+        for field in base_field.iter_mut() {
+            if let Some(ir) = field.ir.as_mut() {
+                ir.modify_io(&mut |io| {
+                    if let IO::GraphQL { req_template, .. } = io {
+                        if let Some(selection) = req_template.selection.take() {
+                            req_template.selection = Some(selection.resolve(variables));
+                        }
+                    }
+                });
+            }
+            Self::resolve_graphql_selection_set(field.selection.as_mut(), variables);
+        }
     }
 
     fn resolve_field(

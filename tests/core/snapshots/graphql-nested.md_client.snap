@@ -1,0 +1,30 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+---
+type NodeA {
+  child: NodeA
+  name: String
+  nodeB: NodeB
+  nodeC: NodeC
+}
+
+type NodeB {
+  name: String
+  nodeA: NodeA
+  nodeC: NodeC
+}
+
+type NodeC {
+  name: String
+  nodeA: NodeA
+  nodeB: NodeB
+}
+
+type Query {
+  queryNodeA: NodeA
+}
+
+schema {
+  query: Query
+}

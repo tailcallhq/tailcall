@@ -131,6 +131,28 @@ impl Cache {
 }
 
 impl IR {
+    // allows to modify the IO node in the IR tree
+    pub fn modify_io(&mut self, io_modifier: &mut dyn FnMut(&mut IO)) {
+        match self {
+            IR::IO(io) => io_modifier(io),
+            IR::Cache(cache) => io_modifier(&mut cache.io),
+            IR::Discriminate(_, ir) | IR::Protect(_, ir) | IR::Path(ir, _) => {
+                ir.modify_io(io_modifier)
+            }
+            IR::Pipe(ir1, ir2) => {
+                ir1.modify_io(io_modifier);
+                ir2.modify_io(io_modifier);
+            }
+            IR::Entity(hash_map) => {
+                for ir in hash_map.values_mut() {
+                    ir.modify_io(io_modifier);
+                }
+            }
+            IR::Map(map) => map.input.modify_io(io_modifier),
+            _ => {}
+        }
+    }
+
     pub fn pipe(self, next: Self) -> Self {
         IR::Pipe(Box::new(self), Box::new(next))
     }
