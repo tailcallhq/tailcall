@@ -2,12 +2,13 @@ use async_graphql_value::{ConstValue, Name};
 use indexmap::IndexMap;
 use serde_json::Value;
 
-use crate::core::mustache::Mustache;
+use crate::core::mustache::{JqTemplate, Mustache};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum DynamicValue<A> {
     Value(A),
     Mustache(Mustache),
+    JqTemplate(JqTemplate),
     Object(IndexMap<Name, DynamicValue<A>>),
     Array(Vec<DynamicValue<A>>),
 }
@@ -38,6 +39,7 @@ impl<A> DynamicValue<A> {
                     DynamicValue::Mustache(mustache)
                 }
             }
+            DynamicValue::JqTemplate(_) => self,
             DynamicValue::Object(index_map) => {
                 let index_map = index_map
                     .into_iter()
@@ -62,6 +64,9 @@ impl TryFrom<&DynamicValue<ConstValue>> for ConstValue {
             DynamicValue::Mustache(_) => Err(anyhow::anyhow!(
                 "mustache cannot be converted to const value"
             )),
+            DynamicValue::JqTemplate(_) => Err(anyhow::anyhow!(
+                "jq template cannot be converted to const value"
+            )),
             DynamicValue::Object(obj) => {
                 let out: Result<IndexMap<Name, ConstValue>, anyhow::Error> = obj
                     .into_iter()
@@ -83,6 +88,7 @@ impl<A> DynamicValue<A> {
     pub fn is_const(&self) -> bool {
         match self {
             DynamicValue::Mustache(m) => m.is_const(),
+            DynamicValue::JqTemplate(t) => t.is_const(),
             DynamicValue::Object(obj) => obj.values().all(|v| v.is_const()),
             DynamicValue::Array(arr) => arr.iter().all(|v| v.is_const()),
             _ => true,
@@ -110,10 +116,26 @@ impl TryFrom<&Value> for DynamicValue<ConstValue> {
             }
             Value::String(s) => {
                 let m = Mustache::parse(s.as_str());
-                if m.is_const() {
-                    Ok(DynamicValue::Value(ConstValue::from_json(value.clone())?))
-                } else {
-                    Ok(DynamicValue::Mustache(m))
+                if !m.is_const() {
+                    tracing::info!("Successfully loaded Mustache template: {}", s);
+                    return Ok(DynamicValue::Mustache(m));
+                }
+
+                match JqTemplate::try_new(s.as_str()) {
+                    Ok(t) => {
+                        if t.is_const() {
+                            tracing::info!("Successfully loaded const value template: {}", s);
+                            Ok(DynamicValue::Value(ConstValue::from_json(value.clone())?))
+                        } else {
+                            tracing::info!("Successfully loaded JQ template: {}", s);
+                            Ok(DynamicValue::JqTemplate(t))
+                        }
+                    }
+                    Err(err) => {
+                        tracing::info!("Defaulting to const value template: {}", s);
+                        tracing::warn!("JQ template error: {:?}", err);
+                        Ok(DynamicValue::Value(ConstValue::from_json(value.clone())?))
+                    }
                 }
             }
             _ => Ok(DynamicValue::Value(ConstValue::from_json(value.clone())?)),
