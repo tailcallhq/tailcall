@@ -1,69 +1,25 @@
 # Ref other nested
 
-```json @config
-{
-  "server": {},
-  "schema": {
-    "query": "Query"
-  },
-  "types": {
-    "Query": {
-      "fields": {
-        "firstUser": {
-          "type": {
-            "name": "User1"
-          },
-          "http": {
-            "url": "http://jsonplaceholder.typicode.com/users/1"
-          },
-          "cache": null
-        }
-      },
-      "cache": null
-    },
-    "User": {
-      "fields": {
-        "id": {
-          "type": {
-            "name": "Int"
-          },
-          "cache": null
-        },
-        "name": {
-          "type": {
-            "name": "String"
-          },
-          "cache": null
-        }
-      },
-      "cache": null
-    },
-    "User1": {
-      "fields": {
-        "user1": {
-          "type": {
-            "name": "User2"
-          },
-          "cache": null
-        }
-      },
-      "cache": null
-    },
-    "User2": {
-      "fields": {
-        "user2": {
-          "type": {
-            "name": "User"
-          },
-          "http": {
-            "url": "http://jsonplaceholder.typicode.com/users/1"
-          },
-          "cache": null
-        }
-      },
-      "cache": null
-    }
-  }
+```graphql @config
+schema @server {
+  query: Query
+}
+
+type Query {
+  firstUser: User1 @http(url: "http://jsonplaceholder.typicode.com/users/1")
+}
+
+type User {
+  id: Int
+  name: String
+}
+
+type User1 {
+  user1: User2
+}
+
+type User2 {
+  user2: User @http(url: "http://jsonplaceholder.typicode.com/users/1")
 }
 ```
 

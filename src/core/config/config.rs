@@ -1,7 +1,7 @@
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt::{self, Display};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use async_graphql::parser::types::ServiceDocument;
 use derive_setters::Setters;
 use indexmap::IndexMap;
@@ -56,27 +56,28 @@ pub struct Config {
     ///
     /// Specifies the entry points for query and mutation in the generated
     /// GraphQL schema.
+    #[serde(skip)]
     pub schema: RootSchema,
 
     ///
     /// A map of all the types in the schema.
-    #[serde(default)]
+    #[serde(skip)]
     #[setters(skip)]
     pub types: BTreeMap<String, Type>,
 
     ///
     /// A map of all the union types in the schema.
-    #[serde(default, skip_serializing_if = "is_default")]
+    #[serde(skip)]
     pub unions: BTreeMap<String, Union>,
 
     ///
     /// A map of all the enum types in the schema
-    #[serde(default, skip_serializing_if = "is_default")]
+    #[serde(skip)]
     pub enums: BTreeMap<String, Enum>,
 
     ///
     /// A list of all links in the schema.
-    #[serde(default, skip_serializing_if = "is_default")]
+    #[serde(skip)]
     pub links: Vec<Link>,
 
     /// Enable [opentelemetry](https://opentelemetry.io) support
@@ -87,40 +88,31 @@ pub struct Config {
 ///
 /// Represents a GraphQL type.
 /// A type can be an object, interface, enum or scalar.
-#[derive(
-    Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight,
-)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, MergeRight)]
 pub struct Type {
     ///
     /// A map of field name and its definition.
     pub fields: BTreeMap<String, Field>,
-    #[serde(default, skip_serializing_if = "is_default")]
     ///
     /// Additional fields to be added to the type
     pub added_fields: Vec<AddField>,
-    #[serde(default, skip_serializing_if = "is_default")]
     ///
     /// Documentation for the type that is publicly visible.
     pub doc: Option<String>,
-    #[serde(default, skip_serializing_if = "is_default")]
     ///
     /// Interfaces that the type implements.
     pub implements: BTreeSet<String>,
-    #[serde(default, skip_serializing_if = "is_default")]
     ///
     /// Setting to indicate if the type can be cached.
     pub cache: Option<Cache>,
     ///
     /// Marks field as protected by auth providers
-    #[serde(default)]
     pub protected: Option<Protected>,
     ///
     /// Apollo federation entity resolver.
-    #[serde(flatten, default, skip_serializing_if = "is_default")]
     pub resolvers: ResolverSet,
     ///
     /// Any additional directives
-    #[serde(default, skip_serializing_if = "is_default")]
     pub directives: Vec<Directive>,
 }
 
@@ -158,59 +150,38 @@ impl Type {
     }
 }
 
-#[derive(
-    Serialize,
-    Deserialize,
-    Clone,
-    Debug,
-    Default,
-    Setters,
-    PartialEq,
-    Eq,
-    schemars::JsonSchema,
-    MergeRight,
-)]
+#[derive(Clone, Debug, Default, Setters, PartialEq, Eq, MergeRight)]
 #[setters(strip_option)]
 pub struct RootSchema {
     pub query: Option<String>,
-    #[serde(default, skip_serializing_if = "is_default")]
     pub mutation: Option<String>,
-    #[serde(default, skip_serializing_if = "is_default")]
     pub subscription: Option<String>,
 }
 
 ///
 /// A field definition containing all the metadata information about resolving a
 /// field.
-#[derive(
-    Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
-)]
+#[derive(Clone, Debug, Default, Setters, PartialEq, Eq)]
 #[setters(strip_option)]
 pub struct Field {
     ///
     /// Refers to the type of the value the field can be resolved to.
-    #[serde(rename = "type", default, skip_serializing_if = "is_default")]
     pub type_of: crate::core::Type,
 
     ///
     /// Map of argument name and its definition.
-    #[serde(default, skip_serializing_if = "is_default")]
-    #[schemars(with = "HashMap::<String, Arg>")]
     pub args: IndexMap<String, Arg>,
 
     ///
     /// Publicly visible documentation for the field.
-    #[serde(default, skip_serializing_if = "is_default")]
     pub doc: Option<String>,
 
     ///
     /// Allows modifying existing fields.
-    #[serde(default, skip_serializing_if = "is_default")]
     pub modify: Option<Modify>,
 
     ///
     /// Omits a field from public consumption.
-    #[serde(default, skip_serializing_if = "is_default")]
     pub omit: Option<Omit>,
 
     ///
@@ -219,12 +190,10 @@ pub struct Field {
 
     ///
     /// Stores the default value for the field
-    #[serde(default, skip_serializing_if = "is_default")]
     pub default_value: Option<Value>,
 
     ///
     /// Marks field as protected by auth provider
-    #[serde(default)]
     pub protected: Option<Protected>,
 
     ///
@@ -233,12 +202,10 @@ pub struct Field {
 
     ///
     /// Resolver for the field
-    #[serde(flatten, default, skip_serializing_if = "is_default")]
     pub resolvers: ResolverSet,
 
     ///
     /// Any additional directives
-    #[serde(default, skip_serializing_if = "is_default")]
     pub directives: Vec<Directive>,
 }
 
@@ -288,32 +255,26 @@ impl Field {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Inline {
     pub path: Vec<String>,
 }
 
-#[derive(Default, Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct Arg {
-    #[serde(rename = "type")]
     pub type_of: crate::core::Type,
-    #[serde(default, skip_serializing_if = "is_default")]
     pub doc: Option<String>,
-    #[serde(default, skip_serializing_if = "is_default")]
     pub modify: Option<Modify>,
-    #[serde(default, skip_serializing_if = "is_default")]
     pub default_value: Option<Value>,
 }
 
-#[derive(
-    Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight,
-)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, MergeRight)]
 pub struct Union {
     pub types: BTreeSet<String>,
     pub doc: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
+#[derive(Clone, Debug, PartialEq, Eq, MergeRight)]
 /// Definition of GraphQL enum type
 pub struct Enum {
     pub variants: BTreeSet<Variant>,
@@ -321,26 +282,14 @@ pub struct Enum {
 }
 
 /// Definition of GraphQL value
-#[derive(
-    Serialize,
-    Deserialize,
-    Clone,
-    Debug,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    schemars::JsonSchema,
-    MergeRight,
-)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, MergeRight)]
 pub struct Variant {
     pub name: String,
     // directive: alias
     pub alias: Option<Alias>,
 }
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub enum GraphQLOperationType {
     #[default]
     Query,
@@ -442,8 +391,7 @@ impl Config {
     pub fn from_source(source: Source, schema: &str) -> Result<Self> {
         match source {
             Source::GraphQL => Ok(Config::from_sdl(schema).to_result()?),
-            Source::Json => Ok(Config::from_json(schema)?),
-            Source::Yml => Ok(Config::from_yaml(schema)?),
+            _ => Err(anyhow!("Only the graphql config is currently supported")),
         }
     }
 

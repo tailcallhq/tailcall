@@ -1,10 +1,11 @@
 ---
 source: tests/core/spec.rs
 expression: errors
+snapshot_kind: text
 ---
 [
   {
-    "message": "No variants found for enum",
+    "message": " --> 9:11\n  |\n9 | enum Foo {}\n  |           ^---\n  |\n  = expected enum_value_definition",
     "trace": [],
     "description": null
   }

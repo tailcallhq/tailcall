@@ -75,14 +75,12 @@ mod tests {
     use tailcall_valid::Validator;
 
     use super::NestedUnions;
-    use crate::core::config::Config;
     use crate::core::transform::Transform;
+    use crate::include_config;
 
     #[test]
     fn test_nested_unions() {
-        let config =
-            std::fs::read_to_string(tailcall_fixtures::configs::YAML_NESTED_UNIONS).unwrap();
-        let config = Config::from_yaml(&config).unwrap();
+        let config = include_config!("./fixtures/nested-unions.graphql").unwrap();
         let config = NestedUnions.transform(config).to_result().unwrap();
 
         assert_snapshot!(config.to_sdl());
@@ -90,10 +88,7 @@ mod tests {
 
     #[test]
     fn test_nested_unions_recursive() {
-        let config =
-            std::fs::read_to_string(tailcall_fixtures::configs::YAML_NESTED_UNIONS_RECURSIVE)
-                .unwrap();
-        let config = Config::from_yaml(&config).unwrap();
+        let config = include_config!("./fixtures/nested-unions-recursive.graphql").unwrap();
         let error = NestedUnions.transform(config).to_result().unwrap_err();
 
         assert_snapshot!(error);
