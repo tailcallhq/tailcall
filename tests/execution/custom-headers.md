@@ -20,8 +20,9 @@
   "schema": {
     "query": "Query"
   },
-  "types": {
-    "Query": {
+  "types": [
+    {
+      "name": "Query",
       "fields": {
         "greet": {
           "type": {
@@ -35,7 +36,7 @@
       },
       "cache": null
     }
-  }
+  ]
 }
 ```
 

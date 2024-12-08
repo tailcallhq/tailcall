@@ -14,15 +14,15 @@ type F3 {
   user: User
 }
 
-type Query {
-  user(id: Int!): F3 @http(url: "http://jsonplaceholder.typicode.com/users/{{.args.id}}")
-  users: F2 @http(url: "http://jsonplaceholder.typicode.com/users")
-}
-
 type User {
   email: String!
   id: Int!
   name: String!
   phone: String
   username: String!
+}
+
+type Query {
+  user(id: Int!): F3 @http(url: "http://jsonplaceholder.typicode.com/users/{{.args.id}}")
+  users: F2 @http(url: "http://jsonplaceholder.typicode.com/users")
 }

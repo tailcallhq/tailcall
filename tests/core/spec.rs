@@ -102,6 +102,7 @@ async fn check_identity(spec: &ExecutionSpec, reader_ctx: &ConfigReaderContext<'
                 let mustache = Mustache::parse(content);
                 let content = PathStringEval::new().eval_partial(&mustache, reader_ctx);
                 let config = Config::from_source(source.to_owned(), &content).unwrap();
+                let config = config.sort_types();
                 let actual = config.to_sdl();
 
                 // \r is added automatically in windows, it's safe to replace it with \n
@@ -233,9 +234,10 @@ async fn test_spec(spec: ExecutionSpec) {
         return;
     }
 
-    let merged = config_module.to_result().unwrap().to_sdl();
+    let merged = config_module.to_result().unwrap();
+    let sorted = merged.config().clone().sort_types();
 
-    let formatter = tailcall_prettier::format(merged, &Parser::Gql)
+    let formatter = tailcall_prettier::format(sorted.to_sdl(), &Parser::Gql)
         .await
         .unwrap();
 
@@ -253,7 +255,6 @@ async fn test_spec(spec: ExecutionSpec) {
     // client: Check if client spec matches snapshot
     if config_modules.len() == 1 {
         let config = &config_modules[0];
-
         let client = print_schema(
             (Blueprint::try_from(config)
                 .context(format!("file: {}", spec.path.to_str().unwrap()))

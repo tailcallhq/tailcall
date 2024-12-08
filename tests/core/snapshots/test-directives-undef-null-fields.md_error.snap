@@ -4,6 +4,46 @@ expression: errors
 ---
 [
   {
+    "message": "var 'garbage' is not set in the server config",
+    "trace": [
+      "Query",
+      "userAccessHeadersVars",
+      "@http",
+      "path"
+    ],
+    "description": null
+  },
+  {
+    "message": "can't use list type 'id' here",
+    "trace": [
+      "Query",
+      "userListArg",
+      "@http",
+      "path"
+    ],
+    "description": null
+  },
+  {
+    "message": "argument 'id' is a nullable type",
+    "trace": [
+      "Query",
+      "userNullableArg",
+      "@http",
+      "path"
+    ],
+    "description": null
+  },
+  {
+    "message": "no argument 'uid' found",
+    "trace": [
+      "Query",
+      "userUndefinedArg",
+      "@http",
+      "path"
+    ],
+    "description": null
+  },
+  {
     "message": "value 'nonNullableNestedUser' is not of a scalar type",
     "trace": [
       "Post",
@@ -110,46 +150,6 @@ expression: errors
       "userUndefinedValueQuery",
       "@http",
       "query"
-    ],
-    "description": null
-  },
-  {
-    "message": "var 'garbage' is not set in the server config",
-    "trace": [
-      "Query",
-      "userAccessHeadersVars",
-      "@http",
-      "path"
-    ],
-    "description": null
-  },
-  {
-    "message": "can't use list type 'id' here",
-    "trace": [
-      "Query",
-      "userListArg",
-      "@http",
-      "path"
-    ],
-    "description": null
-  },
-  {
-    "message": "argument 'id' is a nullable type",
-    "trace": [
-      "Query",
-      "userNullableArg",
-      "@http",
-      "path"
-    ],
-    "description": null
-  },
-  {
-    "message": "no argument 'uid' found",
-    "trace": [
-      "Query",
-      "userUndefinedArg",
-      "@http",
-      "path"
     ],
     "description": null
   }

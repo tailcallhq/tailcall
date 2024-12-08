@@ -10,8 +10,9 @@
     "query": "Query",
     "mutation": "Mutation"
   },
-  "types": {
-    "Query": {
+  "types": [
+    {
+      "name": "Query",
       "fields": {
         "user": {
           "type": {
@@ -23,7 +24,8 @@
         }
       }
     },
-    "Mutation": {
+    {
+      "name": "Mutation",
       "fields": {
         "createUser": {
           "args": {
@@ -44,7 +46,8 @@
         }
       }
     },
-    "User": {
+    {
+      "name": "User",
       "fields": {
         "id": {
           "type": {
@@ -70,7 +73,8 @@
         }
       }
     },
-    "Connection": {
+    {
+      "name": "Connection",
       "fields": {
         "type": {
           "type": {
@@ -84,7 +88,7 @@
         }
       }
     }
-  }
+  ]
 }
 ```
 

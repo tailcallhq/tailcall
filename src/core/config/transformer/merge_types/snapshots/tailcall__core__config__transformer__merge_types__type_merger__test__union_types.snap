@@ -14,10 +14,10 @@ type Foo {
   foo: String
 }
 
-type GEN__M1 {
-  bar: String
-}
-
 type Query {
   foo: FooBar @http(url: "http://jsonplacheholder.typicode.com/foo")
+}
+
+type GEN__M1 {
+  bar: String
 }

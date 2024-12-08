@@ -6,17 +6,17 @@ expression: errors
   {
     "message": "Type resolver can't use `.args`, use `.value` instead",
     "trace": [
-      "Post",
-      "http",
-      "query"
+      "User",
+      "call"
     ],
     "description": null
   },
   {
     "message": "Type resolver can't use `.args`, use `.value` instead",
     "trace": [
-      "User",
-      "call"
+      "Post",
+      "http",
+      "query"
     ],
     "description": null
   }

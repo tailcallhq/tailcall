@@ -58,7 +58,9 @@ fn config_document(config: &Config) -> ServiceDocument {
     definitions.push(TypeSystemDefinition::Schema(pos(schema_definition)));
     let interface_types = config.interfaces_types_map();
     let input_types = config.input_types();
-    for (type_name, type_def) in config.types.iter() {
+    for type_def in config.types.iter() {
+        let type_name = &type_def.name;
+
         let kind = if interface_types.contains_key(type_name) {
             TypeKind::Interface(InterfaceType {
                 implements: type_def

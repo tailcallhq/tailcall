@@ -6,8 +6,9 @@
   "schema": {
     "query": "Query"
   },
-  "types": {
-    "Query": {
+  "types": [
+    {
+      "name": "Query",
       "fields": {
         "firstUser": {
           "type": {
@@ -21,7 +22,8 @@
       },
       "cache": null
     },
-    "User": {
+    {
+      "name": "User",
       "fields": {
         "id": {
           "type": {
@@ -38,7 +40,7 @@
       },
       "cache": null
     }
-  }
+  ]
 }
 ```
 

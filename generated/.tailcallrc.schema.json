@@ -47,9 +47,9 @@
     },
     "types": {
       "description": "A map of all the types in the schema.",
-      "default": {},
-      "type": "object",
-      "additionalProperties": {
+      "default": [],
+      "type": "array",
+      "items": {
         "$ref": "#/definitions/Type"
       }
     },
@@ -1416,7 +1416,8 @@
         "$ref": "#/definitions/Resolver"
       },
       "required": [
-        "fields"
+        "fields",
+        "name"
       ],
       "properties": {
         "added_fields": {
@@ -1465,6 +1466,10 @@
             "type": "string"
           },
           "uniqueItems": true
+        },
+        "name": {
+          "description": "The name of the type.",
+          "type": "string"
         },
         "protected": {
           "description": "Marks field as protected by auth providers",

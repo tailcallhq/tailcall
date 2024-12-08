@@ -2,17 +2,17 @@ schema:
   query: Query
 
 types:
-  T1:
+  - name: T1
     fields:
       t1:
         type:
           name: String
-  T2:
+  - name: T2
     fields:
       t2:
         type:
           name: Int
-  T3:
+  - name: T3
     fields:
       t3:
         type:
@@ -22,7 +22,7 @@ types:
           name: Float
           required: true
 
-  Query:
+  - name: Query
     fields:
       test:
         type:

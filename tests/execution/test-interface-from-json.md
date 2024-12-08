@@ -5,8 +5,9 @@
   "schema": {
     "query": "Query"
   },
-  "types": {
-    "IA": {
+  "types": [
+    {
+      "name": "IA",
       "fields": {
         "a": {
           "type": {
@@ -15,7 +16,8 @@
         }
       }
     },
-    "B": {
+    {
+      "name": "B",
       "implements": ["IA"],
       "fields": {
         "a": {
@@ -30,7 +32,8 @@
         }
       }
     },
-    "Query": {
+    {
+      "name": "Query",
       "fields": {
         "bar": {
           "type": {
@@ -42,6 +45,6 @@
         }
       }
     }
-  }
+  ]
 }
 ```

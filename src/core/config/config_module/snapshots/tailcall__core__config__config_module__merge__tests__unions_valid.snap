@@ -8,6 +8,10 @@ schema @server @upstream {
 
 union Union = A | B | C
 
+type Query {
+  b: B
+}
+
 type A {
   a: String
 }
@@ -18,8 +22,4 @@ type B {
 
 type C {
   c: Int
-}
-
-type Query {
-  b: B
 }

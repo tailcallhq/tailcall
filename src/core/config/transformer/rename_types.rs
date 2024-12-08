@@ -30,13 +30,13 @@ impl Transform for RenameTypes {
 
         // Ensure all types exist in the configuration
         Valid::from_iter(self.0.iter(), |(existing_name, suggested_name)| {
-            if config.types.contains_key(existing_name)
-                || config.enums.contains_key(existing_name)
-                || config.unions.contains_key(existing_name)
-            {
+            if config.contains(existing_name) {
+                let to_be_removed = config.find_type(existing_name).cloned();
+                config = config.clone().remove_ty(existing_name);
+
                 // handle for the types.
-                if let Some(type_info) = config.types.remove(existing_name) {
-                    config.types.insert(suggested_name.to_string(), type_info);
+                if let Some(type_info) = to_be_removed {
+                    config.types.push(type_info.name(suggested_name.clone()));
                     lookup.insert(existing_name.clone(), suggested_name.clone());
 
                     // edge case where type is of operation type.
@@ -68,7 +68,7 @@ impl Transform for RenameTypes {
             }
         })
         .map(|_| {
-            for type_ in config.types.values_mut() {
+            for type_ in config.types.iter_mut() {
                 for field_ in type_.fields.values_mut() {
                     // replace type of field.
                     if let Some(suggested_name) = lookup.get(field_.type_of.name()) {
@@ -194,7 +194,8 @@ mod test {
         )
         .transform(config)
         .to_result()
-        .unwrap();
+        .unwrap()
+        .sort_types();
 
         insta::assert_snapshot!(cfg.to_sdl())
     }
@@ -280,7 +281,8 @@ mod test {
         let result = RenameTypes::new(hashmap! {"Node" =>  "NodeTest"}.iter())
             .transform(config)
             .to_result()
-            .unwrap();
+            .unwrap()
+            .sort_types();
         insta::assert_snapshot!(result.to_sdl())
     }
 }

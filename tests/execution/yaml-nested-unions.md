@@ -5,18 +5,18 @@ schema:
   query: Query
 
 types:
-  T1:
-    fields:
+  - fields:
       t1:
         type:
           name: String
-  T2:
-    fields:
+    name: T1
+
+  - fields:
       t2:
         type:
           name: Int
-  T3:
-    fields:
+    name: T2
+  - fields:
       t3:
         type:
           name: Boolean
@@ -24,20 +24,21 @@ types:
         type:
           name: Float
           required: true
+    name: T3
 
-  T4:
+  - name: T4
     fields:
       t4:
         type:
           name: String
 
-  T5:
+  - name: T5
     fields:
       t5:
         type:
           name: Boolean
 
-  Query:
+  - name: Query
     fields:
       test:
         type:
