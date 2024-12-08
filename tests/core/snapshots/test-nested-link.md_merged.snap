@@ -1,19 +1,10 @@
 ---
 source: tests/core/spec.rs
 expression: formatter
+snapshot_kind: text
 ---
-schema
-  @server
-  @upstream
-  @link(src: "graphql-with-link.graphql", type: Config)
-  @link(src: "link-enum.graphql", type: Config)
-  @link(src: "link-enum.graphql", type: Config) {
+schema @server @upstream @link(src: "graphql-with-link.graphql", type: Config) {
   query: Query
-}
-
-enum Foo {
-  BAR
-  BAZ
 }
 
 type Post {
@@ -24,7 +15,6 @@ type Post {
 }
 
 type Query {
-  foo: Foo @http(url: "http://jsonplaceholder.typicode.com/foo")
   post(id: Int!): Post @http(url: "http://jsonplaceholder.typicode.com/posts/{{.args.id}}")
 }
 

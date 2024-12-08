@@ -1,4 +1,4 @@
-schema {
+schema @server(port: 8000) @upstream(httpCache: 42, batch: {delay: 100}) {
   #   @link(src: "http://localhost:4000", type: SubGraph, meta: {name: "Users"})
   #   @link(src: "http://localhost:5000", type: SubGraph, meta: {name: "Posts"})
   query: Query

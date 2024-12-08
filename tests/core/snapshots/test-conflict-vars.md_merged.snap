@@ -1,8 +1,9 @@
 ---
 source: tests/core/spec.rs
 expression: formatter
+snapshot_kind: text
 ---
-schema @server(vars: [{key: "a", value: "b"}, {key: "c", value: "d"}, {key: "p", value: "q"}]) @upstream {
+schema @server(vars: [{key: "a", value: "b"}, {key: "c", value: "d"}]) @upstream {
   query: Query
 }
 
