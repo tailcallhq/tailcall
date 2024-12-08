@@ -1,0 +1,26 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+---
+type Buzz {
+  first: String!
+  second: String!
+}
+
+type Fizz {
+  bar: String!
+  buzz: Buzz!
+}
+
+type Foo {
+  bar: [String!]!
+}
+
+type Query {
+  fizz: Fizz!
+  foo: Foo!
+}
+
+schema {
+  query: Query
+}
