@@ -94,14 +94,21 @@ fn parse_expression(input: &str) -> IResult<&str, JqTemplateIR> {
                     JqTemplateError::JqIsMustache => {
                         let expression: Vec<_> = template
                             .trim()
-                            .split('.')
-                            .skip(1)
+                            .trim_start_matches('.')
+                            .split(".")
                             .map(String::from)
                             .collect();
                         let segment = Segment::Expression(expression);
                         JqTemplateIR::Mustache(Mustache::from(vec![segment]))
                     }
-                    _ => JqTemplateIR::Literal(template.to_string()),
+                    _ => {
+                        let m = Mustache::parse(&format!("{{{{{}}}}}", template.trim()));
+                        if !m.is_const() {
+                            JqTemplateIR::Mustache(m)
+                        } else {
+                            JqTemplateIR::Literal(template.to_string())
+                        }
+                    }
                 },
             }
         }),
