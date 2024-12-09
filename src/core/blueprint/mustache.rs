@@ -216,7 +216,7 @@ mod test {
                 ..Default::default()
             },
         );
-        config.types.insert("T1".to_string(), t1_type);
+        config.types.push(t1_type.name("T1"));
 
         let type_ = Type::List {
             of_type: Box::new(Type::Named { name: "Int".to_string(), non_null: false }),
@@ -246,7 +246,7 @@ mod test {
         let (config, field_def) = initialize_test_config_and_field();
 
         let parts_validator =
-            MustachePartsValidator::new(config.types.get("T1").unwrap(), &config, &field_def);
+            MustachePartsValidator::new(config.find_type("T1").unwrap(), &config, &field_def);
         let validation_result =
             parts_validator.validate(&["args".to_string(), "q".to_string()], true);
 
@@ -258,7 +258,7 @@ mod test {
         let (config, field_def) = initialize_test_config_and_field();
 
         let parts_validator =
-            MustachePartsValidator::new(config.types.get("T1").unwrap(), &config, &field_def);
+            MustachePartsValidator::new(config.find_type("T1").unwrap(), &config, &field_def);
         let validation_result =
             parts_validator.validate(&["args".to_string(), "q".to_string()], false);
 

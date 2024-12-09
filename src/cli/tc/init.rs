@@ -100,7 +100,7 @@ fn main_config() -> Config {
         server: Default::default(),
         upstream: Default::default(),
         schema: RootSchema { query: Some("Query".to_string()), ..Default::default() },
-        types: BTreeMap::from([("Query".into(), query_type)]),
+        types: Vec::from([query_type.name("Query")]),
         ..Default::default()
     }
 }

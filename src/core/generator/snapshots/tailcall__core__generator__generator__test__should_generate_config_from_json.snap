@@ -6,11 +6,11 @@ schema @server @upstream(allowedHeaders: ["authorization"]) {
   query: Query
 }
 
+type Query {
+  inCompatibleProperties: InCompatibleProperty @http(url: "https://example.com/")
+}
+
 type InCompatibleProperty {
   campaignTemplates: JSON
   colors: [JSON]
-}
-
-type Query {
-  inCompatibleProperties: InCompatibleProperty @http(url: "https://example.com/")
 }

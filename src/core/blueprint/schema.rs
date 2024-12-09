@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashSet};
+use std::collections::HashSet;
 
 use directive::to_directive;
 use tailcall_valid::{Valid, Validator};
@@ -27,7 +27,7 @@ fn validate_query(config: &Config) -> Valid<(), BlueprintError> {
 fn validate_type_has_resolvers(
     name: &str,
     ty: &Type,
-    types: &BTreeMap<String, Type>,
+    types: &[Type],
     visited: &mut HashSet<String>,
 ) -> Valid<(), BlueprintError> {
     if ty.scalar() || visited.contains(name) {
@@ -46,14 +46,14 @@ fn validate_type_has_resolvers(
 pub fn validate_field_has_resolver(
     name: &str,
     field: &Field,
-    types: &BTreeMap<String, Type>,
+    types: &[Type],
     visited: &mut HashSet<String>,
 ) -> Valid<(), BlueprintError> {
     Valid::<(), BlueprintError>::fail(BlueprintError::NoResolverFoundInSchema)
         .when(|| {
             if !field.has_resolver() {
                 let type_name = field.type_of.name();
-                if let Some(ty) = types.get(type_name) {
+                if let Some(ty) = types.iter().find(|ty| ty.name.eq(type_name)) {
                     let res = validate_type_has_resolvers(type_name, ty, types, visited);
                     return !res.is_succeed();
                 }

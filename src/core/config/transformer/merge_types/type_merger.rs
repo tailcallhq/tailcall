@@ -49,7 +49,7 @@ impl TypeMerger {
         // them.
         for type_name_1 in types.iter() {
             let type_name_1 = type_name_1.as_str();
-            if let Some(type_info_1) = config.types.get(type_name_1) {
+            if let Some(type_info_1) = config.find_type(type_name_1) {
                 if visited_types.contains(type_name_1) {
                     continue;
                 }
@@ -65,7 +65,7 @@ impl TypeMerger {
                         continue;
                     }
 
-                    if let Some(type_info_2) = config.types.get(type_name_2) {
+                    if let Some(type_info_2) = config.find_type(type_name_2) {
                         let threshold = mergeable_types.get_threshold(type_name_1, type_name_2);
                         visited_types.insert(type_name_1.to_owned());
                         let is_similar = stat_gen
@@ -97,11 +97,11 @@ impl TypeMerger {
 
         // step 2: merge similar types into single merged type.
         for same_types in similar_type_group_list {
-            let mut merged_into = Type::default();
             let merged_type_name = format!("{}M{}", PREFIX, merge_counter);
+            let mut merged_into = Type::default().name(&merged_type_name);
             let mut did_we_merge = false;
             for type_name in same_types {
-                if let Some(type_) = config.types.get(type_name.as_str()) {
+                if let Some(type_) = config.find_type(type_name.as_str()) {
                     type_to_merge_type_mapping.insert(type_name.clone(), merged_type_name.clone());
                     merged_into = merge_type(type_, merged_into);
                     did_we_merge = true;
@@ -109,7 +109,7 @@ impl TypeMerger {
             }
 
             if did_we_merge {
-                config.types.insert(merged_type_name, merged_into);
+                config.types.push(merged_into);
                 merge_counter += 1;
             }
         }
@@ -119,7 +119,7 @@ impl TypeMerger {
         }
 
         // step 3: replace typeof of fields with newly merged types.
-        for type_info in config.types.values_mut() {
+        for type_info in config.types.iter_mut() {
             for actual_field in type_info.fields.values_mut() {
                 if let Some(merged_into_type_name) =
                     type_to_merge_type_mapping.get(actual_field.type_of.name())
@@ -276,8 +276,8 @@ mod test {
 
         let mut config = Config::default();
 
-        config.types.insert("T1".to_string(), ty1);
-        config.types.insert("T2".to_string(), ty2);
+        config.types.push(ty1.name("T1"));
+        config.types.push(ty2.name("T2"));
 
         let mut q_type = Type::default();
         q_type.fields.insert(
@@ -289,7 +289,7 @@ mod test {
             Field { type_of: "T2".to_string().into(), ..Default::default() },
         );
 
-        config.types.insert("Query".to_owned(), q_type);
+        config.types.push(q_type.name("Query"));
         config = config.query("Query");
 
         config = TypeMerger::new(0.5).transform(config).to_result()?;
@@ -315,10 +315,10 @@ mod test {
         ty.fields.insert("f5".to_string(), id_field.clone());
 
         let mut config = Config::default();
-        config.types.insert("T1".to_string(), ty.clone());
-        config.types.insert("T2".to_string(), ty.clone());
-        config.types.insert("T3".to_string(), ty.clone());
-        config.types.insert("T4".to_string(), ty.clone());
+        config.types.push(ty.clone().name("T1"));
+        config.types.push(ty.clone().name("T2"));
+        config.types.push(ty.clone().name("T3"));
+        config.types.push(ty.clone().name("T4"));
 
         let mut q_type = Type::default();
         q_type.fields.insert(
@@ -338,7 +338,7 @@ mod test {
             Field { type_of: "T4".to_string().into(), ..Default::default() },
         );
 
-        config.types.insert("Query".to_owned(), q_type);
+        config.types.push(q_type.name("Query"));
         config = config.query("Query");
 
         assert_eq!(config.types.len(), 5);
@@ -390,8 +390,8 @@ mod test {
         ty2.fields.insert("c".to_string(), str_field.clone());
 
         let mut config = Config::default();
-        config.types.insert("T1".to_string(), ty1);
-        config.types.insert("T2".to_string(), ty2);
+        config.types.push(ty1.name("T1"));
+        config.types.push(ty2.name("T2"));
 
         let config = TypeMerger::new(0.5).transform(config).to_result().unwrap();
         insta::assert_snapshot!(config.to_sdl());
@@ -414,9 +414,9 @@ mod test {
         ty3.implements.insert("B".to_string());
 
         let mut config = Config::default();
-        config.types.insert("A".to_string(), ty1);
-        config.types.insert("B".to_string(), ty2);
-        config.types.insert("C".to_string(), ty3);
+        config.types.push(ty1.name("A"));
+        config.types.push(ty2.name("B"));
+        config.types.push(ty3.name("C"));
 
         let config = TypeMerger::default().transform(config).to_result().unwrap();
         insta::assert_snapshot!(config.to_sdl());

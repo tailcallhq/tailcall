@@ -58,7 +58,7 @@ impl Context {
 
     /// Resolves the actual name and inserts the type.
     fn insert_type(mut self, name: String, ty: config::Type) -> Self {
-        self.config.types.insert(name.to_string(), ty);
+        self.config.types.push(ty.name(name));
         self
     }
 
@@ -137,7 +137,7 @@ impl Context {
         // to actually create union and use just this type
         if union_types.len() == 1 {
             let (_, ty) = union_types.pop().unwrap();
-            self.config.types.insert(type_name, ty);
+            self.config.types.push(ty.name(type_name));
             return self;
         }
 
@@ -152,7 +152,7 @@ impl Context {
         }
 
         // base interface type
-        self.config.types.insert(interface_name, base_type);
+        self.config.types.push(base_type.name(interface_name));
         self.config.unions.insert(type_name, union_);
 
         self
@@ -383,14 +383,10 @@ impl Context {
                     PathBuilder::new(&path).extend(PathField::Method, method_index as i32);
                 cfg_field.doc = self.comments_builder.get_comments(&method_path);
 
-                let ty = self
-                    .config
-                    .types
-                    .entry(self.query.clone())
-                    .or_insert_with(|| {
-                        self.config.schema.query = Some(self.query.clone());
-                        config::Type::default()
-                    });
+                if self.config.find_type(self.query.as_str()).is_none() {
+                    self.config.schema.query = Some(self.query.clone());
+                }
+                let ty = self.config.ty_entry_or_default(self.query.clone());
 
                 ty.fields.insert(field_name.to_string(), cfg_field);
             }
@@ -500,7 +496,7 @@ mod test {
     macro_rules! assert_gen {
         ($( $set:expr ), +) => {
             let set = compile_protobuf(&[$( $set ),+]).unwrap();
-            let config = from_proto(&[set], "Query", "http://localhost:50051").unwrap();
+            let config = from_proto(&[set], "Query", "http://localhost:50051").unwrap().sort_types();
             let config_module = ConfigModule::from(config);
             let result = config_module.to_sdl();
             insta::assert_snapshot!(result);

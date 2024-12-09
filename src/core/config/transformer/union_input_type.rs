@@ -1,5 +1,5 @@
 use std::borrow::Cow;
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 
 use tailcall_valid::Valid;
 
@@ -52,7 +52,7 @@ struct Visitor<'cfg> {
     /// Original config
     config: &'cfg Config,
     /// Result types that will replace original config.types
-    new_types: BTreeMap<String, Type>,
+    new_types: Vec<Type>,
     // maps type name to UnionPresence
     union_presence: HashMap<&'cfg String, UnionPresence>,
     // track visited types
@@ -64,7 +64,7 @@ impl<'cfg> Visitor<'cfg> {
         Self {
             config,
             union_presence: HashMap::new(),
-            new_types: BTreeMap::new(),
+            new_types: vec![],
             visited_types: HashSet::new(),
         }
     }
@@ -72,8 +72,9 @@ impl<'cfg> Visitor<'cfg> {
     /// Walks over all the types to see if we need to add new types
     /// or replace the field set for the type if any of the arguments use
     /// a union somewhere down the fields tree.
-    fn visit(mut self) -> BTreeMap<String, Type> {
-        for (type_name, type_) in &self.config.types {
+    fn visit(mut self) -> Vec<Type> {
+        for type_ in &self.config.types {
+            let type_name = &type_.name;
             let fields = type_
                 .fields
                 .iter()
@@ -90,7 +91,7 @@ impl<'cfg> Visitor<'cfg> {
 
             // new type will replace existing type in the config
             self.new_types
-                .insert(type_name.clone(), Type { fields, ..type_.clone() });
+                .push(Type { name: type_name.to_string(), fields, ..type_.clone() });
         }
 
         self.new_types
@@ -133,7 +134,7 @@ impl<'cfg> Visitor<'cfg> {
 
             self.union_presence
                 .insert(type_name, UnionPresence::Union(types.into_iter().collect()));
-        } else if let Some(type_) = self.config.types.get(type_name) {
+        } else if let Some(type_) = self.config.find_type(type_name) {
             // first, recursively walk over nested fields to see if there any nested unions
             for field in type_.fields.values() {
                 self.collect_nested_unions_for_type(field.type_of.name());
@@ -165,10 +166,7 @@ impl<'cfg> Visitor<'cfg> {
                 self.union_presence.insert(
                     type_name,
                     UnionPresence::Union(
-                        union_types
-                            .iter()
-                            .map(|(type_name, _)| type_name.clone())
-                            .collect(),
+                        union_types.iter().map(|type_| type_.name.clone()).collect(),
                     ),
                 );
 
@@ -235,16 +233,16 @@ impl<'cfg> Visitor<'cfg> {
         type_name: &str,
         type_: &Type,
         union_fields: Vec<(&String, &Vec<String>)>,
-    ) -> Vec<(String, Type)> {
+    ) -> Vec<Type> {
         fn inner_create(
             type_name: String,                        // name of the new type to set
             base_type: Type,                          // current representation of the type
             union_fields: &[(&String, &Vec<String>)], // list of fields that are union
-            result: &mut Vec<(String, Type)>,         /* the result list of new types with their
+            result: &mut Vec<Type>,                   /* the result list of new types with their
                                                        * names */
         ) {
             let Some((field_name, union_types)) = union_fields.first().as_ref() else {
-                result.push((type_name, base_type));
+                result.push(base_type.name(type_name));
 
                 return;
             };
@@ -288,10 +286,16 @@ mod tests {
     use crate::core::transform::Transform;
     use crate::include_config;
 
+    // TODO: maybe introduce a macro to reduce duplication?
+
     #[test]
     fn test_union() {
         let config = include_config!("./fixtures/union.graphql").unwrap();
-        let config = UnionInputType.transform(config).to_result().unwrap();
+        let config = UnionInputType
+            .transform(config)
+            .to_result()
+            .unwrap()
+            .sort_types();
 
         assert_snapshot!(config.to_sdl());
     }
@@ -299,7 +303,11 @@ mod tests {
     #[test]
     fn test_union_in_type() {
         let config = include_config!("./fixtures/union-in-type.graphql").unwrap();
-        let config = UnionInputType.transform(config).to_result().unwrap();
+        let config = UnionInputType
+            .transform(config)
+            .to_result()
+            .unwrap()
+            .sort_types();
 
         assert_snapshot!(config.to_sdl());
     }
@@ -307,14 +315,22 @@ mod tests {
     #[test]
     fn test_nested_unions() {
         let config = include_config!("./fixtures/nested-unions.graphql").unwrap();
-        let config = UnionInputType.transform(config).to_result().unwrap();
+        let config = UnionInputType
+            .transform(config)
+            .to_result()
+            .unwrap()
+            .sort_types();
 
         assert_snapshot!(config.to_sdl());
     }
     #[test]
     fn test_recursive_input() {
         let config = include_config!("./fixtures/recursive-input.graphql").unwrap();
-        let config = UnionInputType.transform(config).to_result().unwrap();
+        let config = UnionInputType
+            .transform(config)
+            .to_result()
+            .unwrap()
+            .sort_types();
 
         assert_snapshot!(config.to_sdl());
     }

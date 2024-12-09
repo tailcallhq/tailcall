@@ -144,11 +144,12 @@ fn pos_name_to_string(pos: &Positioned<Name>) -> String {
 }
 fn to_types(
     type_definitions: &Vec<&Positioned<TypeDefinition>>,
-) -> Valid<BTreeMap<String, config::Type>, String> {
+) -> Valid<Vec<config::Type>, String> {
     Valid::from_iter(type_definitions, |type_definition| {
         let type_name = pos_name_to_string(&type_definition.node.name);
         match type_definition.node.kind.clone() {
             TypeKind::Object(object_type) => to_object_type(
+                type_name.as_str(),
                 &object_type,
                 &type_definition.node.description,
                 &type_definition.node.directives,
@@ -156,6 +157,7 @@ fn to_types(
             .trace(&type_name)
             .some(),
             TypeKind::Interface(interface_type) => to_object_type(
+                type_name.as_str(),
                 &interface_type,
                 &type_definition.node.description,
                 &type_definition.node.directives,
@@ -176,10 +178,9 @@ fn to_types(
         .map(|option| (type_name, option))
     })
     .map(|vec| {
-        BTreeMap::from_iter(
-            vec.into_iter()
-                .filter_map(|(name, option)| option.map(|tpe| (name, tpe))),
-        )
+        vec.into_iter()
+            .filter_map(|(name, option)| option.map(|tpe| tpe.name(name)))
+            .collect()
     })
 }
 fn to_scalar_type() -> config::Type {
@@ -228,6 +229,7 @@ fn to_enum_types(
 }
 
 fn to_object_type<T>(
+    type_name: &str,
     object: &T,
     description: &Option<Positioned<String>>,
     directives: &[Positioned<ConstDirective>],
@@ -249,6 +251,7 @@ where
                 let doc = description.to_owned().map(|pos| pos.node);
                 let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
                 config::Type {
+                    name: type_name.to_string(),
                     fields,
                     added_fields,
                     doc,

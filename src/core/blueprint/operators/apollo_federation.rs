@@ -95,7 +95,7 @@ pub fn update_federation<'a>() -> TryFoldConfig<'a, Blueprint> {
                 return Valid::fail(BlueprintError::QueryTypeNotObject);
             };
 
-            let Some(config_type) = config_module.types.get(&query_name) else {
+            let Some(config_type) = config_module.find_type(&query_name) else {
                 return Valid::fail(BlueprintError::TypeNotFoundInConfig(query_name.clone()));
             };
 

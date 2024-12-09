@@ -25,7 +25,7 @@ fn get_single_field_path(
     if config.is_scalar(type_name) || config.enums.contains_key(type_name) {
         return Some(path);
     }
-    let ty = config.types.get(type_name);
+    let ty = config.find_type(type_name);
     if let Some(ty) = ty {
         if ty.fields.len() == 1 {
             if let Some((sub_field_name, sub_field)) = ty.fields.first_key_value() {
@@ -60,7 +60,8 @@ impl Transform for FlattenSingleField {
 
         let input_types = config.input_types();
 
-        for (ty_name, ty) in config.types.iter_mut() {
+        for ty in config.types.iter_mut() {
+            let ty_name = &ty.name;
             if input_types.contains(ty_name) {
                 continue;
             }
@@ -103,7 +104,8 @@ mod test {
     fn test_type_name_generator_transform() {
         let config = Config::from_sdl(read_fixture(configs::FLATTEN_SINGLE_FIELD).as_str())
             .to_result()
-            .unwrap();
+            .unwrap()
+            .sort_types();
 
         let transformed_config = FlattenSingleField.transform(config).to_result().unwrap();
         insta::assert_snapshot!(transformed_config.to_sdl());
