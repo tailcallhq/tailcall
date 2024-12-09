@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use tailcall_valid::{Valid, Validator};
 use template_validation::validate_argument;
 
@@ -67,10 +65,9 @@ pub fn compile_http(
         })
         .and_then(|request_template| {
             if !http.batch_key.is_empty() && (http.body.is_some() || http.method != Method::GET) {
-                let keys = http.body.as_ref().map(|b| extract_expression_paths(b));
-                if let Some(keys) = keys {
-                    // only one dynamic value allowed in body for batching to work.
-                    if keys.len() != 1 {
+                if let Some(body) = http.body.as_ref() {
+                    let dynamic_paths = count_dynamic_paths(body);
+                    if dynamic_paths != 1 {
                         Valid::fail(BlueprintError::BatchRequiresDynamicParameter).trace("body")
                     } else {
                         Valid::succeed(request_template)
@@ -128,40 +125,28 @@ pub fn compile_http(
         .and_then(apply_select)
 }
 
-/// extracts the keys from the json representation, if the value is of mustache
-/// template type.
-fn extract_expression_paths(json: &serde_json::Value) -> Vec<Vec<Cow<'_, str>>> {
-    fn extract_paths<'a>(
-        json: &'a serde_json::Value,
-        path: &mut Vec<Cow<'a, str>>,
-    ) -> Vec<Vec<Cow<'a, str>>> {
-        let mut keys = vec![];
-        match json {
-            serde_json::Value::Array(arr) => {
-                arr.iter().enumerate().for_each(|(idx, v)| {
-                    let idx = idx.to_string();
-                    path.push(Cow::Owned(idx));
-                    keys.extend(extract_paths(v, path));
-                });
+/// Count the number of dynamic expressions in the JSON value.
+fn count_dynamic_paths(json: &serde_json::Value) -> usize {
+    let mut count = 0;
+    match json {
+        serde_json::Value::Array(arr) => {
+            for v in arr {
+                count += count_dynamic_paths(v)
             }
-            serde_json::Value::Object(obj) => {
-                obj.iter().for_each(|(k, v)| {
-                    path.push(Cow::Borrowed(k));
-                    keys.extend(extract_paths(v, path));
-                    path.pop();
-                });
-            }
-            serde_json::Value::String(s) => {
-                if !Mustache::parse(s).is_const() {
-                    keys.push(path.to_vec());
-                }
-            }
-            _ => {}
         }
-        keys
+        serde_json::Value::Object(obj) => {
+            for (_, v) in obj {
+                count += count_dynamic_paths(v)
+            }
+        }
+        serde_json::Value::String(s) => {
+            if !Mustache::parse(s).is_const() {
+                count += 1;
+            }
+        }
+        _ => {}
     }
-
-    extract_paths(json, &mut Vec::new())
+    count
 }
 
 #[cfg(test)]
@@ -174,31 +159,22 @@ mod test {
     fn test_extract_expression_keys_from_nested_objects() {
         let json = r#"{"body":"d","userId":"{{.value.uid}}","nested":{"other":"{{test}}"}}"#;
         let json = serde_json::from_str(json).unwrap();
-        let keys = extract_expression_paths(&json);
-        assert_eq!(keys.len(), 2);
-        assert_eq!(keys, vec![vec!["userId"], vec!["nested", "other"]]);
+        let keys = count_dynamic_paths(&json);
+        assert_eq!(keys, 2);
     }
 
     #[test]
     fn test_extract_expression_keys_from_mixed_json() {
         let json = r#"{"body":"d","userId":"{{.value.uid}}","nested":{"other":"{{test}}"},"meta":[{"key": "id", "value": "{{.value.userId}}"}]}"#;
         let json = serde_json::from_str(json).unwrap();
-        let keys = extract_expression_paths(&json);
-        assert_eq!(keys.len(), 3);
-        assert_eq!(
-            keys,
-            vec![
-                vec!["userId"],
-                vec!["nested", "other"],
-                vec!["meta", "0", "value"]
-            ]
-        );
+        let keys = count_dynamic_paths(&json);
+        assert_eq!(keys, 3);
     }
 
     #[test]
     fn test_with_non_json_value() {
         let json = json!(r#"{{.value}}"#);
-        let keys = extract_expression_paths(&json);
-        assert!(keys.iter().all(|f| f.is_empty()));
+        let keys = count_dynamic_paths(&json);
+        assert_eq!(keys, 1);
     }
 }

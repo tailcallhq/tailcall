@@ -111,7 +111,7 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         let worker = worker_ctx.worker;
         let js_worker = worker_ctx.js_worker;
 
-        let response = match js_hooks.on_request(worker, &request.request()).await? {
+        let response = match js_hooks.on_request(worker, request.request()).await? {
             Some(command) => match command {
                 worker::Command::Request(w_request) => {
                     let response = self.execute(w_request.try_into()?).await?;

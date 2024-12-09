@@ -871,9 +871,7 @@ mod tests {
         fn test_with_json_template() {
             let tmpl = RequestTemplate::form_encoded_url("http://localhost:3000")
                 .unwrap()
-                .body_path(Some(Mustache::parse(
-                    r#"{"foo": "{{baz}}"}"#,
-                )));
+                .body_path(Some(Mustache::parse(r#"{"foo": "{{baz}}"}"#)));
             let ctx = Context::default().value(json!({"baz": "baz"}));
             let body = tmpl.to_body(&ctx).unwrap();
             assert_eq!(body, "foo=baz");
@@ -905,9 +903,7 @@ mod tests {
         fn test_with_mustache_literal() {
             let tmpl = RequestTemplate::form_encoded_url("http://localhost:3000")
                 .unwrap()
-                .body_path(Some(Mustache::parse(
-                    r#"{"foo": "bar"}"#,
-                )));
+                .body_path(Some(Mustache::parse(r#"{"foo": "bar"}"#)));
             let ctx = Context::default().value(json!({}));
             let body = tmpl.to_body(&ctx).unwrap();
             assert_eq!(body, r#"foo=bar"#);
