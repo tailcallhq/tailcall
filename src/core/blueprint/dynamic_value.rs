@@ -2,7 +2,6 @@ use async_graphql_value::{ConstValue, Name};
 use indexmap::IndexMap;
 use serde_json::Value;
 
-use crate::core::json::JsonLike;
 use crate::core::mustache::Mustache;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -91,7 +90,7 @@ impl<A> DynamicValue<A> {
     }
 }
 
-impl<A: for<'a> JsonLike<'a>> TryFrom<&Value> for DynamicValue<A> {
+impl TryFrom<&Value> for DynamicValue<ConstValue> {
     type Error = anyhow::Error;
 
     fn try_from(value: &Value) -> Result<Self, Self::Error> {
@@ -105,19 +104,19 @@ impl<A: for<'a> JsonLike<'a>> TryFrom<&Value> for DynamicValue<A> {
                 Ok(DynamicValue::Object(out))
             }
             Value::Array(arr) => {
-                let out: Result<Vec<DynamicValue<A>>, Self::Error> =
+                let out: Result<Vec<DynamicValue<ConstValue>>, Self::Error> =
                     arr.iter().map(DynamicValue::try_from).collect();
                 Ok(DynamicValue::Array(out?))
             }
             Value::String(s) => {
                 let m = Mustache::parse(s.as_str());
                 if m.is_const() {
-                    Ok(DynamicValue::Value(A::clone_from(value)))
+                    Ok(DynamicValue::Value(ConstValue::from_json(value.clone())?))
                 } else {
                     Ok(DynamicValue::Mustache(m))
                 }
             }
-            _ => Ok(DynamicValue::Value(A::clone_from(value))),
+            _ => Ok(DynamicValue::Value(ConstValue::from_json(value.clone())?)),
         }
     }
 }
