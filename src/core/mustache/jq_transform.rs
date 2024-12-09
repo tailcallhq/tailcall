@@ -20,8 +20,8 @@ lazy_static! {
 
 /// Used to represent a JQ template. Currently used only on @expr directive.
 #[derive(Clone)]
-pub struct JqTemplate {
-    /// TODO
+pub struct JqTransform {
+    /// The compiled template transformation
     template_id: usize,
     /// The IR representation, used for debug purposes
     representation: String,
@@ -636,7 +636,7 @@ impl From<bool> for PathValueEnum<'_> {
     }
 }
 
-impl JqTemplate {
+impl JqTransform {
     /// Used to parse a `template` and try to convert it into a JqTemplate
     pub fn try_new(template: &str) -> Result<Self, JqTemplateError> {
         let template = transform_to_jq(template);
@@ -830,7 +830,7 @@ impl JqTemplate {
     }
 }
 
-impl Default for JqTemplate {
+impl Default for JqTransform {
     fn default() -> Self {
         Self {
             template_id: 0,
@@ -840,7 +840,7 @@ impl Default for JqTemplate {
     }
 }
 
-impl std::fmt::Debug for JqTemplate {
+impl std::fmt::Debug for JqTransform {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("JqTemplate")
             .field("representation", &self.representation)
@@ -848,7 +848,7 @@ impl std::fmt::Debug for JqTemplate {
     }
 }
 
-impl Display for JqTemplate {
+impl Display for JqTransform {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         format!(
             "[JqTemplate](is_const={})({})",
@@ -858,13 +858,13 @@ impl Display for JqTemplate {
     }
 }
 
-impl std::cmp::PartialEq for JqTemplate {
+impl std::cmp::PartialEq for JqTransform {
     fn eq(&self, other: &Self) -> bool {
         self.representation.eq(&other.representation)
     }
 }
 
-impl std::hash::Hash for JqTemplate {
+impl std::hash::Hash for JqTransform {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.to_string().hash(state);
     }
@@ -943,7 +943,7 @@ mod tests {
     fn test_is_select_operation_simple_property() {
         let template = ".fruit";
         assert!(
-            JqTemplate::is_select_operation(template),
+            JqTransform::is_select_operation(template),
             "Should return true for simple property access"
         );
     }
@@ -952,7 +952,7 @@ mod tests {
     fn test_is_select_operation_nested_property() {
         let template = ".fruit.name";
         assert!(
-            JqTemplate::is_select_operation(template),
+            JqTransform::is_select_operation(template),
             "Should return true for nested property access"
         );
     }
@@ -961,7 +961,7 @@ mod tests {
     fn test_is_select_operation_array_index() {
         let template = ".fruits[1]";
         assert!(
-            !JqTemplate::is_select_operation(template),
+            !JqTransform::is_select_operation(template),
             "Should return false for array index access"
         );
     }
@@ -970,7 +970,7 @@ mod tests {
     fn test_is_select_operation_pipe_operator() {
         let template = ".fruits[] | .name";
         assert!(
-            !JqTemplate::is_select_operation(template),
+            !JqTransform::is_select_operation(template),
             "Should return false for pipe operator usage"
         );
     }
@@ -979,7 +979,7 @@ mod tests {
     fn test_is_select_operation_filter() {
         let template = ".fruits[] | select(.price > 1)";
         assert!(
-            !JqTemplate::is_select_operation(template),
+            !JqTransform::is_select_operation(template),
             "Should return false for select filter usage"
         );
     }
@@ -988,7 +988,7 @@ mod tests {
     fn test_is_select_operation_function_call() {
         let template = "map(.price)";
         assert!(
-            !JqTemplate::is_select_operation(template),
+            !JqTransform::is_select_operation(template),
             "Should return false for function call"
         );
     }
@@ -996,7 +996,7 @@ mod tests {
     #[test]
     fn test_render_value_no_results() {
         let template_str = ".[] | select(.non_existent)";
-        let jq_template = JqTemplate::try_new(template_str).expect("Failed to create JqTemplate");
+        let jq_template = JqTransform::try_new(template_str).expect("Failed to create JqTemplate");
         let input_json = json!([{"foo": 1}, {"foo": 2}]);
         let result = jq_template.render_value(PathValueEnum::Val(Val::from(input_json)));
         assert_eq!(
@@ -1009,7 +1009,7 @@ mod tests {
     #[test]
     fn test_render_value_single_result() {
         let template_str = ".[0]";
-        let jq_template = JqTemplate::try_new(template_str).expect("Failed to create JqTemplate");
+        let jq_template = JqTransform::try_new(template_str).expect("Failed to create JqTemplate");
         let input_json = json!([{"foo": 1}, {"foo": 2}]);
         let result = jq_template.render_value(PathValueEnum::Val(Val::from(input_json)));
         assert_eq!(
@@ -1022,7 +1022,7 @@ mod tests {
     #[test]
     fn test_render_value_multiple_results() {
         let template_str = ".[] | .foo";
-        let jq_template = JqTemplate::try_new(template_str).expect("Failed to create JqTemplate");
+        let jq_template = JqTransform::try_new(template_str).expect("Failed to create JqTemplate");
         let input_json = json!([{"foo": 1}, {"foo": 2}]);
         let result = jq_template.render_value(PathValueEnum::Val(Val::from(input_json)));
         let expected = async_graphql_value::ConstValue::array(vec![
@@ -1037,35 +1037,35 @@ mod tests {
         // Test with a constant number
         let term_num = Term::Num("42");
         assert!(
-            JqTemplate::calculate_is_const(&term_num),
+            JqTransform::calculate_is_const(&term_num),
             "Expected true for a constant number"
         );
 
         // Test with a string without formatter
         let term_str = Term::Str(None, vec![]);
         assert!(
-            JqTemplate::calculate_is_const(&term_str),
+            JqTransform::calculate_is_const(&term_str),
             "Expected true for a simple string"
         );
 
         // Test with a string with formatter
         let term_str_fmt = Term::Str(Some("fmt"), vec![]);
         assert!(
-            !JqTemplate::calculate_is_const(&term_str_fmt),
+            !JqTransform::calculate_is_const(&term_str_fmt),
             "Expected false for a formatted string"
         );
 
         // Test with an identity operation
         let term_id = Term::Id;
         assert!(
-            !JqTemplate::calculate_is_const(&term_id),
+            !JqTransform::calculate_is_const(&term_id),
             "Expected false for an identity operation"
         );
 
         // Test with a recursive operation
         let term_recurse = Term::Recurse;
         assert!(
-            !JqTemplate::calculate_is_const(&term_recurse),
+            !JqTransform::calculate_is_const(&term_recurse),
             "Expected false for a recursive operation"
         );
 
@@ -1076,14 +1076,14 @@ mod tests {
             Box::new(Term::Num("2")),
         );
         assert!(
-            !JqTemplate::calculate_is_const(&term_bin_op),
+            !JqTransform::calculate_is_const(&term_bin_op),
             "Expected false for a binary operation"
         );
 
         // Test with a pipe operation without pattern
         let term_pipe = Term::Pipe(Box::new(Term::Num("1")), None, Box::new(Term::Num("2")));
         assert!(
-            JqTemplate::calculate_is_const(&term_pipe),
+            JqTransform::calculate_is_const(&term_pipe),
             "Expected true for a constant pipe operation"
         );
 
@@ -1095,7 +1095,7 @@ mod tests {
             Box::new(Term::Num("2")),
         );
         assert!(
-            !JqTemplate::calculate_is_const(&term_pipe_with_pattern),
+            !JqTransform::calculate_is_const(&term_pipe_with_pattern),
             "Expected false for a pipe operation with pattern"
         );
     }
@@ -1105,35 +1105,35 @@ mod tests {
         // Test with simple identity operation
         let term_id = Term::Id;
         assert!(
-            JqTemplate::recursive_is_select_operation(term_id),
+            JqTransform::recursive_is_select_operation(term_id),
             "Expected true for identity operation"
         );
 
         // Test with a number
         let term_num = Term::Num("42");
         assert!(
-            !JqTemplate::recursive_is_select_operation(term_num),
+            !JqTransform::recursive_is_select_operation(term_num),
             "Expected false for a number"
         );
 
         // Test with a string without formatter
         let term_str = Term::Str(None, vec![]);
         assert!(
-            JqTemplate::recursive_is_select_operation(term_str),
+            JqTransform::recursive_is_select_operation(term_str),
             "Expected true for a simple string"
         );
 
         // Test with a string with formatter
         let term_str_fmt = Term::Str(Some("fmt"), vec![]);
         assert!(
-            !JqTemplate::recursive_is_select_operation(term_str_fmt),
+            !JqTransform::recursive_is_select_operation(term_str_fmt),
             "Expected false for a formatted string"
         );
 
         // Test with a recursive operation
         let term_recurse = Term::Recurse;
         assert!(
-            !JqTemplate::recursive_is_select_operation(term_recurse),
+            !JqTransform::recursive_is_select_operation(term_recurse),
             "Expected false for a recursive operation"
         );
 
@@ -1144,14 +1144,14 @@ mod tests {
             Box::new(Term::Num("2")),
         );
         assert!(
-            !JqTemplate::recursive_is_select_operation(term_bin_op),
+            !JqTransform::recursive_is_select_operation(term_bin_op),
             "Expected false for a binary operation"
         );
 
         // Test with a pipe operation without pattern
         let term_pipe = Term::Pipe(Box::new(Term::Num("1")), None, Box::new(Term::Num("2")));
         assert!(
-            !JqTemplate::recursive_is_select_operation(term_pipe),
+            !JqTransform::recursive_is_select_operation(term_pipe),
             "Expected false for a constant pipe operation"
         );
 
@@ -1163,14 +1163,14 @@ mod tests {
             Box::new(Term::Num("2")),
         );
         assert!(
-            !JqTemplate::recursive_is_select_operation(term_pipe_with_pattern),
+            !JqTransform::recursive_is_select_operation(term_pipe_with_pattern),
             "Expected false for a pipe operation with pattern"
         );
     }
 
     #[test]
     fn test_default() {
-        let jq_template: JqTemplate = JqTemplate::default();
+        let jq_template: JqTransform = JqTransform::default();
         assert_eq!(jq_template.representation, "");
         assert!(jq_template.is_const);
         // Assuming `filter` has a sensible default implementation
@@ -1178,7 +1178,7 @@ mod tests {
 
     #[test]
     fn test_debug() {
-        let jq_template: JqTemplate = JqTemplate {
+        let jq_template: JqTransform = JqTransform {
             template_id: 0,
             representation: "test".to_string(),
             is_const: false,
@@ -1189,7 +1189,7 @@ mod tests {
 
     #[test]
     fn test_display() {
-        let jq_template: JqTemplate = JqTemplate {
+        let jq_template: JqTransform = JqTransform {
             template_id: 0,
             representation: "test".to_string(),
             is_const: false,
@@ -1200,12 +1200,12 @@ mod tests {
 
     #[test]
     fn test_partial_eq() {
-        let jq_template1: JqTemplate = JqTemplate {
+        let jq_template1: JqTransform = JqTransform {
             template_id: 0,
             representation: "test".to_string(),
             is_const: false,
         };
-        let jq_template2: JqTemplate = JqTemplate {
+        let jq_template2: JqTransform = JqTransform {
             template_id: 0,
             representation: "test".to_string(),
             is_const: true, // Different `is_const` value should not affect equality
@@ -1215,12 +1215,12 @@ mod tests {
 
     #[test]
     fn test_hash() {
-        let jq_template1: JqTemplate = JqTemplate {
+        let jq_template1: JqTransform = JqTransform {
             template_id: 0,
             representation: "test".to_string(),
             is_const: false,
         };
-        let jq_template2: JqTemplate = JqTemplate {
+        let jq_template2: JqTransform = JqTransform {
             template_id: 0,
             representation: "test".to_string(),
             is_const: false,

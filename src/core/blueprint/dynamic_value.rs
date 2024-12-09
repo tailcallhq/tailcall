@@ -2,13 +2,13 @@ use async_graphql_value::{ConstValue, Name};
 use indexmap::IndexMap;
 use serde_json::Value;
 
-use crate::core::mustache::{JqTemplate, Mustache};
+use crate::core::mustache::{JqTransform, Mustache};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum DynamicValue<A> {
     Value(A),
     Mustache(Mustache),
-    JqTemplate(JqTemplate),
+    JqTemplate(JqTransform),
     Object(IndexMap<Name, DynamicValue<A>>),
     Array(Vec<DynamicValue<A>>),
 }
@@ -121,7 +121,7 @@ impl TryFrom<&Value> for DynamicValue<ConstValue> {
                     return Ok(DynamicValue::Mustache(m));
                 }
 
-                match JqTemplate::try_new(s.as_str()) {
+                match JqTransform::try_new(s.as_str()) {
                     Ok(t) => {
                         if t.is_const() {
                             tracing::info!("Successfully loaded const value template: {}", s);
