@@ -1,6 +1,7 @@
 use std::fs;
 use std::path::Path;
 
+use anyhow::anyhow;
 use http::header::{HeaderMap, HeaderName, HeaderValue};
 use inquire::Confirm;
 use pathdiff::diff_paths;
@@ -34,9 +35,8 @@ impl Generator {
     async fn write(self, graphql_config: &ConfigModule, output_path: &str) -> anyhow::Result<()> {
         let output_source = config::Source::detect(output_path)?;
         let config = match output_source {
-            config::Source::Json => graphql_config.to_json(true)?,
-            config::Source::Yml => graphql_config.to_yaml()?,
             config::Source::GraphQL => graphql_config.to_sdl(),
+            _ => return Err(anyhow!("Only graphql output format is currently supported")),
         };
 
         if self.should_overwrite(output_path)? {

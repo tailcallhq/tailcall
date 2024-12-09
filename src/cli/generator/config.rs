@@ -11,7 +11,6 @@ use tailcall_valid::{Valid, ValidateFrom, Validator};
 use url::Url;
 
 use crate::core::config::transformer::Preset;
-use crate::core::config::{self};
 use crate::core::http::Method;
 
 #[derive(Deserialize, Serialize, Debug, Default, Setters)]
@@ -102,8 +101,6 @@ pub enum Source<Status = UnResolved> {
 pub struct Output<Status = UnResolved> {
     #[serde(skip_serializing_if = "Location::is_empty")]
     pub path: Location<Status>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub format: Option<config::Source>,
 }
 
 #[derive(Debug)]
@@ -202,10 +199,7 @@ impl Headers {
 
 impl Output<UnResolved> {
     pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<Output<Resolved>> {
-        Ok(Output {
-            format: self.format,
-            path: self.path.into_resolved(parent_dir),
-        })
+        Ok(Output { path: self.path.into_resolved(parent_dir) })
     }
 }
 
@@ -451,10 +445,9 @@ mod tests {
         let json = r#"
           {"output": {
               "paths": "./output.graphql",
-          }} 
+          }}
         "#;
-        let expected_error =
-            "unknown field `paths`, expected `path` or `format` at line 3 column 21";
+        let expected_error = "unknown field `paths`, expected `path` at line 3 column 21";
         assert_deserialization_error(json, expected_error);
     }
 
@@ -463,7 +456,7 @@ mod tests {
         let json = r#"
           {"schema": {
               "querys": "Query",
-          }} 
+          }}
         "#;
         let expected_error =
             "unknown field `querys`, expected `query` or `mutation` at line 3 column 22";
