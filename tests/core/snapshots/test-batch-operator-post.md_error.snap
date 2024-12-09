@@ -4,12 +4,11 @@ expression: errors
 ---
 [
   {
-    "message": "Request body batching requires exactly one dynamic value in the body.",
+    "message": "batchKey requires either body or query parameters",
     "trace": [
       "Query",
       "user",
-      "@http",
-      "body"
+      "@http"
     ],
     "description": null
   }

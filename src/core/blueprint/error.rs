@@ -55,6 +55,9 @@ pub enum BlueprintError {
     #[error("Batching capability was used without enabling it in upstream")]
     IncorrectBatchingUsage,
 
+    #[error("batchKey requires either body or query parameters")]
+    BatchKeyRequiresEitherBodyOrQuery,
+
     #[error("script is required")]
     ScriptIsRequired,
 

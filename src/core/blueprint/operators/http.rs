@@ -34,6 +34,12 @@ pub fn compile_http(
             .unit()
             .trace("query"),
         )
+        .and(
+            Valid::<(), BlueprintError>::fail(BlueprintError::BatchKeyRequiresEitherBodyOrQuery)
+                .when(|| {
+                    !http.batch_key.is_empty() && (http.body.is_none() && http.query.is_empty())
+                }),
+        )
         .and(Valid::succeed(http.url.as_str()))
         .zip(mustache_headers)
         .and_then(|(base_url, headers)| {
