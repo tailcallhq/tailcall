@@ -1,22 +1,28 @@
 use std::fmt::Display;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 use jaq_core::load::parse::Term;
 use jaq_core::load::{Arena, File, Loader};
 use jaq_core::val::Range;
 use jaq_core::{Compiler, Ctx, Error, Exn, Filter, Native, RcIter, ValR};
 use jaq_json::Val;
+use lazy_static::lazy_static;
 use regex::Regex;
 
 use crate::core::ir::{EvalContext, ResolverContextLike};
 use crate::core::json::JsonLike;
 use crate::core::path::{PathString, PathValue, ValueString};
 
+lazy_static! {
+    static ref JQ_TEMPLATE_STORAGE: RwLock<Vec<Box<Filter<Native<PathValueEnum<'static>>>>>> =
+        RwLock::new(Vec::new());
+}
+
 /// Used to represent a JQ template. Currently used only on @expr directive.
 #[derive(Clone)]
 pub struct JqTemplate {
-    /// The compiled filter
-    template: String,
+    /// TODO
+    template_id: usize,
     /// The IR representation, used for debug purposes
     representation: String,
     /// If the transformer returns a constant value
@@ -83,7 +89,9 @@ impl jaq_std::ValT for PathValueEnum<'_> {
 
     fn as_f64(&self) -> Result<f64, Error<Self>> {
         match self {
-            PathValueEnum::PathValue(_) => Err(Error::new(Self::Val(Val::from("Cannot convert context to f64".to_string())))),
+            PathValueEnum::PathValue(_) => Err(Error::new(Self::Val(Val::from(
+                "Cannot convert context to f64".to_string(),
+            )))),
             PathValueEnum::Val(val) => match val.as_f64() {
                 Ok(val) => Ok(val),
                 Err(err) => {
@@ -639,30 +647,8 @@ impl JqTemplate {
         // calculate if the expression returns always a constant value
         let is_const = Self::calculate_is_const(&term);
 
-        Ok(Self {
-            template: template.to_string(),
-            representation: format!("{:?}", term),
-            is_const,
-        })
-    }
-
-    /// Used to execute the transformation of the JqTemplate
-    pub fn run<'obj>(&'obj self, data: PathValueEnum<'obj>) -> Vec<ValR<PathValueEnum<'obj>>> {
-        let inputs = RcIter::new(core::iter::empty());
-        let ctx = Ctx::new([], &inputs);
-
-        match self.get_filter() {
-            Ok(filter) => filter.run((ctx, data)).collect::<Vec<_>>(),
-            Err(err) => {
-                println!("JQ Create Err: {:?}", err);
-                vec![]
-            }
-        }
-    }
-
-    fn get_filter(&self) -> Result<Filter<Native<PathValueEnum<'_>>>, JqTemplateError> {
         // the template is used to be parsed in to the IR AST
-        let template = File { code: self.template.as_str(), path: () };
+        let template = File { code: template.as_str(), path: () };
         // defs is used to extend the syntax with custom definitions of functions, like
         // 'toString'
         let defs = jaq_std::defs();
@@ -685,11 +671,33 @@ impl JqTemplate {
                 )
             })?;
 
-        Ok(filter)
+        let mut write_lock = JQ_TEMPLATE_STORAGE.write().unwrap();
+
+        let template_id = write_lock.len();
+        let filter = Box::new(filter);
+        write_lock.push(filter);
+
+        Ok(Self { template_id, representation: format!("{:?}", term), is_const })
+    }
+
+    /// Used to execute the transformation of the JqTemplate
+    pub fn run<'input>(&self, data: PathValueEnum<'input>) -> Vec<ValR<PathValueEnum<'input>>> {
+        let inputs = RcIter::new(core::iter::empty());
+        let ctx = Ctx::new([], &inputs);
+
+        let read_guard = JQ_TEMPLATE_STORAGE.read().unwrap();
+
+        let filter: &Box<Filter<Native<PathValueEnum<'input>>>> =
+            unsafe { std::mem::transmute(read_guard.get(self.template_id).unwrap()) };
+
+        filter.run((ctx, data)).collect::<Vec<_>>()
     }
 
     /// Used to calculate the result and return it as json
-    pub fn render_value(&self, value: PathValueEnum) -> async_graphql_value::ConstValue {
+    pub fn render_value(
+        &self,
+        value: PathValueEnum<'_>,
+    ) -> async_graphql_value::ConstValue {
         let res = self.run(value);
         let res: Vec<async_graphql_value::ConstValue> = res
             .into_iter()
@@ -825,7 +833,7 @@ impl JqTemplate {
 impl Default for JqTemplate {
     fn default() -> Self {
         Self {
-            template: "".to_string(),
+            template_id: 0,
             representation: String::default(),
             is_const: true,
         }
@@ -1171,7 +1179,7 @@ mod tests {
     #[test]
     fn test_debug() {
         let jq_template: JqTemplate = JqTemplate {
-            template: "".to_string(),
+            template_id: 0,
             representation: "test".to_string(),
             is_const: false,
         };
@@ -1182,7 +1190,7 @@ mod tests {
     #[test]
     fn test_display() {
         let jq_template: JqTemplate = JqTemplate {
-            template: "".to_string(),
+            template_id: 0,
             representation: "test".to_string(),
             is_const: false,
         };
@@ -1193,12 +1201,12 @@ mod tests {
     #[test]
     fn test_partial_eq() {
         let jq_template1: JqTemplate = JqTemplate {
-            template: "".to_string(),
+            template_id: 0,
             representation: "test".to_string(),
             is_const: false,
         };
         let jq_template2: JqTemplate = JqTemplate {
-            template: "".to_string(),
+            template_id: 0,
             representation: "test".to_string(),
             is_const: true, // Different `is_const` value should not affect equality
         };
@@ -1208,12 +1216,12 @@ mod tests {
     #[test]
     fn test_hash() {
         let jq_template1: JqTemplate = JqTemplate {
-            template: "".to_string(),
+            template_id: 0,
             representation: "test".to_string(),
             is_const: false,
         };
         let jq_template2: JqTemplate = JqTemplate {
-            template: "".to_string(),
+            template_id: 0,
             representation: "test".to_string(),
             is_const: false,
         };
