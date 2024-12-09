@@ -42,6 +42,6 @@ impl<A> Transform for CheckProtected<A> {
             None => true,
         });
 
-        Valid::succeed(plan)
+        Valid::ok(plan)
     }
 }

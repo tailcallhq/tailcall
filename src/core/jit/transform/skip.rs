@@ -30,7 +30,7 @@ where
         let variables: &Variables<Var> = self.variables;
         skip(&mut plan.selection, variables);
 
-        Valid::succeed(plan)
+        Valid::ok(plan)
     }
 }
 

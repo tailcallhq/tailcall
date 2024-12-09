@@ -46,6 +46,6 @@ impl<A> Transform for CheckDedupe<A> {
 
         plan.is_dedupe = dedupe;
 
-        Valid::succeed(plan)
+        Valid::ok(plan)
     }
 }

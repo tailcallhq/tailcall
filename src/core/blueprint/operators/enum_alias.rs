@@ -19,7 +19,7 @@ pub fn update_enum_alias<'a>() -> TryFold<
             let enum_type = config.enums.get(field.type_of.name());
             if let Some(enum_type) = enum_type {
                 let has_alias = enum_type.variants.iter().any(|v| v.alias.is_some());
-                if !has_alias {
+                if (!has_alias) {
                     return Valid::succeed(b_field);
                 }
                 let mut map = HashMap::<String, String>::new();

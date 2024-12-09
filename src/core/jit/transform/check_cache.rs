@@ -49,6 +49,6 @@ impl<A> Transform for CheckCache<A> {
 
         plan.min_cache_ttl = ttl;
 
-        Valid::succeed(plan)
+        Valid::ok(plan)
     }
 }

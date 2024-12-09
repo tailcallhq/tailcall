@@ -26,7 +26,7 @@ impl Transform for ConnectRPC {
             }
         }
 
-        Valid::succeed(config)
+        Valid::success(config)
     }
 }
 

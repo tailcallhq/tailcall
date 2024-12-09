@@ -61,6 +61,6 @@ pub trait Covariant: Sized {
 /// of the type.
 impl<A: Primitive + Sized> Invariant for A {
     fn unify(self, other: Self) -> Valid<Self, String> {
-        Valid::succeed(self.merge_right(other))
+        Valid::ok(self.merge_right(other))
     }
 }

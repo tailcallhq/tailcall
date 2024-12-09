@@ -33,7 +33,7 @@ impl<A: Debug> Transform for AuthPlanner<A> {
             .reduce(|a, b| a.and(b))
             .map(|auth| IR::Protect(auth, Box::new(IR::Dynamic(DynamicValue::default()))));
 
-        Valid::succeed(plan)
+        Valid::ok(plan)
     }
 }
 

@@ -133,7 +133,7 @@ impl Transform for RenameTypes {
                     .collect();
             }
 
-            config
+            Valid::succeed(config)
         })
     }
 }

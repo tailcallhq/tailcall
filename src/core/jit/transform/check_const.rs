@@ -44,6 +44,6 @@ impl<A> Transform for CheckConst<A> {
 
         plan.is_const = is_const;
 
-        Valid::succeed(plan)
+        Valid::ok(plan)
     }
 }
