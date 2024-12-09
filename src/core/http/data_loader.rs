@@ -65,7 +65,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
         if let Some(group_by) = &self.group_by {
             let query_name = group_by.key();
             let mut dl_requests = keys.to_vec();
-            if cfg!(feature = "integration_test") || cfg!(test) {
+            if cfg!(debug_assertions) {
                 // Sort keys to build consistent URLs only in Testing environment.
                 dl_requests.sort_by(|a, b| a.to_request().url().cmp(b.to_request().url()));
             }

@@ -36,7 +36,7 @@ impl Transform for BodyBatching<'_> {
         }
 
         if !request_bodies.is_empty() {
-            if cfg!(feature = "integration_test") || cfg!(test) {
+            if cfg!(debug_assertions) {
                 // sort the body to make it consistent for testing env.
                 request_bodies.sort();
             }
