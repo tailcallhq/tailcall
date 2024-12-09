@@ -14,6 +14,12 @@ type User {
   name: String
 }
 
+type Post {
+  id: Int
+  title: String
+  body: String
+}
+
 type Query {
   user(id: Int!): User
     @http(
@@ -22,6 +28,7 @@ type Query {
       body: {uId: "{{.args.id}}", userId: "{{.args.id}}"}
       batchKey: ["id"]
     )
+  posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts", batchKey: ["id"])
   userWithId(id: Int!): User
     @http(
       url: "http://jsonplaceholder.typicode.com/users"
