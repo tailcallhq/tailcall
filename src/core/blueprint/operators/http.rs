@@ -25,6 +25,11 @@ pub fn compile_http(
     Valid::<(), BlueprintError>::fail(BlueprintError::GroupByOnlyForGet)
         .when(|| !http.batch_key.is_empty() && http.method != Method::GET)
         .and(
+            Valid::<(), BlueprintError>::fail(BlueprintError::BatchKeyListConflict)
+                .when(|| !http.batch_key.is_empty() && is_list)
+                .trace("batchKey"),
+        )
+        .and(
             Valid::<(), BlueprintError>::fail(BlueprintError::IncorrectBatchingUsage).when(|| {
                 (config_module.upstream.get_delay() < 1
                     || config_module.upstream.get_max_size() < 1)
