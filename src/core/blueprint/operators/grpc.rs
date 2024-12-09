@@ -14,6 +14,7 @@ use crate::core::helpers;
 use crate::core::ir::model::{IO, IR};
 use crate::core::json::JsonSchema;
 use crate::core::mustache::Mustache;
+use crate::core::worker_hooks::WorkerHooks;
 
 fn to_url(grpc: &Grpc, method: &GrpcMethod) -> Valid<Mustache, String> {
     Valid::succeed(grpc.url.as_str()).and_then(|base_url| {
@@ -225,15 +226,19 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, BlueprintError> {
                 body,
                 operation_type: operation_type.clone(),
             };
+            let on_response = grpc.on_response_body.clone();
+            let hook = WorkerHooks::try_new(None, on_response).ok();
+
             let io = if !grpc.batch_key.is_empty() {
                 IR::IO(IO::Grpc {
                     req_template,
                     group_by: Some(GroupBy::new(grpc.batch_key.clone(), None)),
                     dl_id: None,
                     dedupe,
+                    hook,
                 })
             } else {
-                IR::IO(IO::Grpc { req_template, group_by: None, dl_id: None, dedupe })
+                IR::IO(IO::Grpc { req_template, group_by: None, dl_id: None, dedupe, hook })
             };
 
             (io, &grpc.select)

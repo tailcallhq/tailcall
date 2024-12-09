@@ -40,6 +40,8 @@ impl ConfigReader {
         config_module: ConfigModule,
         parent_dir: Option<&'async_recursion Path>,
     ) -> anyhow::Result<ConfigModule> {
+        let reader_ctx = ConfigReaderContext::new(&self.runtime);
+
         let links: Vec<Link> = config_module
             .config()
             .links
@@ -65,7 +67,11 @@ impl ConfigReader {
 
             match link.type_of {
                 LinkType::Config => {
-                    let source = self.resource_reader.read_file(path).await?;
+                    let source = self
+                        .resource_reader
+                        .read_file(path)
+                        .await?
+                        .render(&reader_ctx);
                     let content = source.content;
                     let config = Config::from_source(Source::detect(&source.path)?, &content)?;
                     config_module = config_module.and_then(|config_module| {
@@ -184,7 +190,16 @@ impl ConfigReader {
         &self,
         files: &[T],
     ) -> anyhow::Result<ConfigModule> {
-        let files = self.resource_reader.read_files(files).await?;
+        let reader_ctx = ConfigReaderContext::new(&self.runtime);
+
+        let files = self
+            .resource_reader
+            .read_files(files)
+            .await?
+            .into_iter()
+            .map(|file| file.render(&reader_ctx))
+            .collect::<Vec<_>>();
+
         let mut config_module = Valid::succeed(ConfigModule::default());
 
         for file in files.iter() {
@@ -214,16 +229,13 @@ impl ConfigReader {
         parent_dir: Option<&Path>,
     ) -> anyhow::Result<ConfigModule> {
         // Setup telemetry in Config
-        let reader_ctx = ConfigReaderContext {
-            runtime: &self.runtime,
-            vars: &config
-                .server
-                .vars
-                .iter()
-                .map(|vars| (vars.key.clone(), vars.value.clone()))
-                .collect(),
-            headers: Default::default(),
-        };
+        let vars = &config
+            .server
+            .vars
+            .iter()
+            .map(|vars| (vars.key.clone(), vars.value.clone()))
+            .collect();
+        let reader_ctx = ConfigReaderContext::new(&self.runtime).vars(vars);
         config.telemetry.render_mustache(&reader_ctx)?;
 
         // Create initial config set & extend it with the links

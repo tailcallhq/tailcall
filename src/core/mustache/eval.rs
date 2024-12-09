@@ -10,9 +10,36 @@ pub trait Eval<'a> {
 
 pub struct PathStringEval<A>(std::marker::PhantomData<A>);
 
+impl<A> Default for PathStringEval<A> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<A> PathStringEval<A> {
     pub fn new() -> Self {
         Self(std::marker::PhantomData)
+    }
+
+    /// Tries to evaluate the mustache template with the given value.
+    /// If a path/value is not found, the template will be rendered as is.
+    pub fn eval_partial(&self, mustache: &Mustache, in_value: &A) -> String
+    where
+        A: PathString,
+    {
+        mustache
+            .segments()
+            .iter()
+            .map(|segment| match segment {
+                Segment::Literal(text) => text.clone(),
+                Segment::Expression(parts) => in_value
+                    .path_string(parts)
+                    .map(|a| a.to_string())
+                    .unwrap_or(
+                        Mustache::from(vec![Segment::Expression(parts.to_vec())]).to_string(),
+                    ),
+            })
+            .collect()
     }
 }
 
@@ -107,7 +134,6 @@ impl Mustache {
 
 #[cfg(test)]
 mod tests {
-
     mod render {
         use std::borrow::Cow;
 

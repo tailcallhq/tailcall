@@ -387,7 +387,7 @@ impl Config {
     }
 
     pub fn to_yaml(&self) -> Result<String> {
-        Ok(serde_yaml::to_string(self)?)
+        Ok(serde_yaml_ng::to_string(self)?)
     }
 
     pub fn to_json(&self, pretty: bool) -> Result<String> {
@@ -428,7 +428,7 @@ impl Config {
     }
 
     pub fn from_yaml(yaml: &str) -> Result<Self> {
-        Ok(serde_yaml::from_str(yaml)?)
+        Ok(serde_yaml_ng::from_str(yaml)?)
     }
 
     pub fn from_sdl(sdl: &str) -> Valid<Self, String> {

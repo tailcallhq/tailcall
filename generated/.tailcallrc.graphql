@@ -71,7 +71,7 @@ directive @graphQL(
   argument to batch several requests into a single batch request.Make sure you have 
   also specified batch settings to the `@upstream` and to the `@graphQL` operator.
   """
-  batch: Boolean!
+  batch: Boolean
   """
   Enables deduplication of IO operations to enhance performance.This flag prevents 
   duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
@@ -135,6 +135,12 @@ directive @grpc(
   This refers to the gRPC method you're going to call. For instance `GetAllNews`.
   """
   method: String!
+  """
+  Specifies a JavaScript function to be executed after receiving the response body. 
+  This function can modify or transform the response body before it's sent back to 
+  the client.
+  """
+  onResponseBody: String
   """
   You can use `select` with mustache syntax to re-construct the directives response 
   to the desired format. This is useful when data are deeply nested or want to keep 
@@ -204,6 +210,12 @@ directive @http(
   """
   onRequest: String
   """
+  Specifies a JavaScript function to be executed after receiving the response body. 
+  This function can modify or transform the response body before it's sent back to 
+  the client.
+  """
+  onResponseBody: String
+  """
   Schema of the output of the API call. It is automatically inferred in most cases.
   """
   output: Schema
@@ -257,7 +269,7 @@ directive @link(
   The source of the link. It can be a URL or a path to a file. If a path is provided, 
   it is relative to the file that imports the link.
   """
-  src: String!
+  src: String
   """
   The type of the link. It can be `Config`, or `Protobuf`.
   """
@@ -716,8 +728,8 @@ input Headers {
 }
 
 input Routes {
-  graphQL: String!
-  status: String!
+  graphQL: String
+  status: String
 }
 
 input ScriptOptions {
@@ -760,7 +772,7 @@ Output the telemetry metrics data to prometheus server
 """
 input PrometheusExporter {
   format: PrometheusFormat
-  path: String!
+  path: String
 }
 
 """
@@ -770,7 +782,7 @@ input StdoutExporter {
   """
   Output to stdout in pretty human-readable format
   """
-  pretty: Boolean!
+  pretty: Boolean
 }
 
 input TelemetryExporter {
@@ -781,7 +793,7 @@ input TelemetryExporter {
 }
 
 input Batch {
-  delay: Int!
+  delay: Int
   headers: [String!]
   maxSize: Int
 }
@@ -804,7 +816,7 @@ input GraphQL {
   argument to batch several requests into a single batch request.Make sure you have 
   also specified batch settings to the `@upstream` and to the `@graphQL` operator.
   """
-  batch: Boolean!
+  batch: Boolean
   """
   Enables deduplication of IO operations to enhance performance.This flag prevents 
   duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
@@ -868,6 +880,12 @@ input Grpc {
   This refers to the gRPC method you're going to call. For instance `GetAllNews`.
   """
   method: String!
+  """
+  Specifies a JavaScript function to be executed after receiving the response body. 
+  This function can modify or transform the response body before it's sent back to 
+  the client.
+  """
+  onResponseBody: String
   """
   You can use `select` with mustache syntax to re-construct the directives response 
   to the desired format. This is useful when data are deeply nested or want to keep 
@@ -936,6 +954,12 @@ input Http {
   handler.
   """
   onRequest: String
+  """
+  Specifies a JavaScript function to be executed after receiving the response body. 
+  This function can modify or transform the response body before it's sent back to 
+  the client.
+  """
+  onResponseBody: String
   """
   Schema of the output of the API call. It is automatically inferred in most cases.
   """
