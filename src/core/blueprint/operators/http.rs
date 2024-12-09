@@ -14,6 +14,7 @@ pub fn compile_http(
     config_module: &config::ConfigModule,
     http: &config::Http,
     field: &Field,
+    container_type: &str,
 ) -> Valid<IR, BlueprintError> {
     let is_list = field.type_of.is_list();
     let dedupe = http.dedupe.unwrap_or_default();
@@ -26,7 +27,11 @@ pub fn compile_http(
         .when(|| !http.batch_key.is_empty() && http.method != Method::GET)
         .and(
             Valid::<(), BlueprintError>::fail(BlueprintError::BatchKeyListConflict)
-                .when(|| !http.batch_key.is_empty() && is_list)
+                .when(|| {
+                    !http.batch_key.is_empty()
+                        && is_list
+                        && config_module.is_root_operation_type(container_type)
+                })
                 .trace("batchKey"),
         )
         .and(
