@@ -39,7 +39,24 @@ impl<A> DynamicValue<A> {
                     DynamicValue::Mustache(mustache)
                 }
             }
-            DynamicValue::JqTemplate(_) => self,
+            DynamicValue::JqTemplate(jqt) => DynamicValue::JqTemplate(JqTemplate(
+                jqt.0
+                    .into_iter()
+                    .map(|mut f| match &mut f {
+                        crate::core::mustache::JqTemplateIR::JqTransform(_) => f,
+                        crate::core::mustache::JqTemplateIR::Literal(_) => f,
+                        crate::core::mustache::JqTemplateIR::Mustache(mustache) => {
+                            let segments = mustache.segments_mut();
+                            if let Some(crate::core::mustache::Segment::Expression(vec)) =
+                                segments.get_mut(0)
+                            {
+                                vec.insert(0, name.to_string());
+                            }
+                            f
+                        }
+                    })
+                    .collect(),
+            )),
             DynamicValue::Object(index_map) => {
                 let index_map = index_map
                     .into_iter()

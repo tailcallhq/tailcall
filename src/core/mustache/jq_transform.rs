@@ -574,14 +574,7 @@ impl PartialEq for PathValueEnum<'_> {
 
 impl PartialOrd for PathValueEnum<'_> {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        match (self, other) {
-            (PathValueEnum::PathValue(_), PathValueEnum::PathValue(_)) => None,
-            (PathValueEnum::PathValue(_), PathValueEnum::Val(_)) => None,
-            (PathValueEnum::Val(_), PathValueEnum::PathValue(_)) => None,
-            (PathValueEnum::Val(self_val), PathValueEnum::Val(other_val)) => {
-                self_val.partial_cmp(other_val)
-            }
-        }
+        Some(self.cmp(other))
     }
 }
 
@@ -678,7 +671,6 @@ impl JqTransform {
         let mut write_lock = JQ_TEMPLATE_STORAGE.write().unwrap();
 
         let template_id = write_lock.len();
-        let filter = filter;
         write_lock.push(filter);
 
         Ok(Self { template_id, representation: format!("{:?}", term) })
