@@ -1,6 +1,3 @@
-# Using union types inside other union types
-
-```graphql @config
 schema {
   query: Query
 }
@@ -33,4 +30,3 @@ union U = U1 | U2 | T5
 type Query {
   test(u: U!): U @http(url: "http://localhost/users/{{args.u}}")
 }
-```
