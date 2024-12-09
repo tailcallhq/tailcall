@@ -131,7 +131,8 @@ impl RequestTemplate {
         let batching_value = if let Some(body_path) = &self.body_path {
             match &self.encoding {
                 Encoding::ApplicationJson => {
-                    let (body, batching_value) = ExpressionValueEval::default().eval(body_path, ctx);
+                    let (body, batching_value) =
+                        ExpressionValueEval::default().eval(body_path, ctx);
                     req.body_mut().replace(body.into());
                     batching_value
                 }

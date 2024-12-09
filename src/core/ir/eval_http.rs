@@ -162,7 +162,8 @@ pub async fn execute_request_with_dl<
         .unwrap_or_default();
 
     let (req, batching_value) = req.into_parts();
-    let endpoint_key = crate::core::http::DataLoaderRequest::new(req, headers).with_batching_value(batching_value);
+    let endpoint_key =
+        crate::core::http::DataLoaderRequest::new(req, headers).with_batching_value(batching_value);
 
     Ok(data_loader
         .unwrap()
