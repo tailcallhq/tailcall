@@ -88,9 +88,7 @@ pub fn compile_http(
             let on_response_body = http.on_response_body.clone();
             let hook = WorkerHooks::try_new(on_request, on_response_body).ok();
 
-            let group_by_clause = !http.batch_key.is_empty()
-                && (http.method == Method::GET || http.method == Method::POST);
-            let io = if group_by_clause {
+            let io = if !http.batch_key.is_empty() {
                 // Find a query parameter that contains a reference to the {{.value}} key
                 let key = if http.method == Method::GET {
                     http.query.iter().find_map(|q| {
