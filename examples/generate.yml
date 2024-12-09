@@ -41,6 +41,5 @@ preset:
   inferTypeNames: true
 output:
   path: "./jsonplaceholder-generated.graphql"
-  format: graphQL
 schema:
   query: Query
