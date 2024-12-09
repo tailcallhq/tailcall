@@ -1,0 +1,16 @@
+---
+source: tests/core/spec.rs
+expression: errors
+---
+[
+  {
+    "message": "batchKey is incompatible with list type resolvers",
+    "trace": [
+      "Query",
+      "userByUserIds",
+      "@http",
+      "batchKey"
+    ],
+    "description": null
+  }
+]

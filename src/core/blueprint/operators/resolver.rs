@@ -18,12 +18,16 @@ pub fn compile_resolver(
     inputs: &CompileResolver,
     resolver: &Resolver,
 ) -> Valid<Option<IR>, BlueprintError> {
-    let CompileResolver { config_module, field, operation_type, object_name } = inputs;
+    let CompileResolver {
+        config_module,
+        field,
+        operation_type,
+        object_name: container_type,
+    } = inputs;
 
     match resolver {
-        Resolver::Http(http) => {
-            compile_http(config_module, http, field).trace(config::Http::trace_name().as_str())
-        }
+        Resolver::Http(http) => compile_http(config_module, http, field, container_type)
+            .trace(config::Http::trace_name().as_str()),
         Resolver::Grpc(grpc) => compile_grpc(super::CompileGrpc {
             config_module,
             operation_type,
@@ -36,7 +40,7 @@ pub fn compile_resolver(
             compile_graphql(config_module, operation_type, field.type_of.name(), graphql)
                 .trace(config::GraphQL::trace_name().as_str())
         }
-        Resolver::Call(call) => compile_call(config_module, call, operation_type, object_name)
+        Resolver::Call(call) => compile_call(config_module, call, operation_type, container_type)
             .trace(config::Call::trace_name().as_str()),
         Resolver::Js(js) => {
             compile_js(super::CompileJs { js, script: &config_module.extensions().script })

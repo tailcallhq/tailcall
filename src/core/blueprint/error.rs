@@ -178,6 +178,9 @@ pub enum BlueprintError {
     #[error("Parsing failed because of {0}")]
     InvalidHeaderValue(#[from] http::header::InvalidHeaderValue),
 
+    #[error("batchKey is incompatible with list type resolvers")]
+    BatchKeyListConflict,
+
     #[error(transparent)]
     Error(#[from] anyhow::Error),
 }
