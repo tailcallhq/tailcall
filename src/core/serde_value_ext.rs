@@ -1,12 +1,10 @@
 use std::borrow::Cow;
-use std::sync::Arc;
 
 use async_graphql::{Name, Value as GraphQLValue};
 use indexmap::IndexMap;
 
 use super::mustache::PathJqValueString;
 use crate::core::blueprint::DynamicValue;
-use crate::core::mustache::PathValueEnum;
 
 pub trait ValueExt {
     fn render_value(&self, ctx: &impl PathJqValueString) -> GraphQLValue;
@@ -25,10 +23,7 @@ impl ValueExt for DynamicValue<async_graphql::Value> {
                     // but, we can just use that string as is
                     .unwrap_or_else(|_| GraphQLValue::String(rendered.into_owned()))
             }
-            DynamicValue::JqTemplate(t) => {
-                let v = PathValueEnum::PathValue(Arc::new(ctx));
-                t.render_value(v)
-            }
+            DynamicValue::JqTemplate(t) => t.render_value(ctx),
             DynamicValue::Object(obj) => {
                 let out: IndexMap<_, _> = obj
                     .iter()

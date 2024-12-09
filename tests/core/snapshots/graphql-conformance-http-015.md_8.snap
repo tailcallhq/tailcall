@@ -12,7 +12,7 @@ expression: response
       "user": {
         "id": 4,
         "name": "User 4",
-        "searchComments": "video_4_[[\"test\",\"tost\"],[\"foo\"],[\"bar\"],[\"bizz\",\"buzz\"]]"
+        "searchComments": "video_4_[[\"test\", \"tost\"], [\"foo\"], [\"bar\"], [\"bizz\", \"buzz\"]]"
       }
     }
   }

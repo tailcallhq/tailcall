@@ -2,13 +2,13 @@ use async_graphql_value::{ConstValue, Name};
 use indexmap::IndexMap;
 use serde_json::Value;
 
-use crate::core::mustache::{JqTransform, Mustache};
+use crate::core::mustache::{JqTemplate, Mustache};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum DynamicValue<A> {
     Value(A),
     Mustache(Mustache),
-    JqTemplate(JqTransform),
+    JqTemplate(JqTemplate),
     Object(IndexMap<Name, DynamicValue<A>>),
     Array(Vec<DynamicValue<A>>),
 }
@@ -115,27 +115,12 @@ impl TryFrom<&Value> for DynamicValue<ConstValue> {
                 Ok(DynamicValue::Array(out?))
             }
             Value::String(s) => {
-                let m = Mustache::parse(s.as_str());
-                if !m.is_const() {
-                    tracing::info!("Successfully loaded Mustache template: {}", s);
-                    return Ok(DynamicValue::Mustache(m));
-                }
+                let jqt = JqTemplate::parse(s);
 
-                match JqTransform::try_new(s.as_str()) {
-                    Ok(t) => {
-                        if t.is_const() {
-                            tracing::info!("Successfully loaded const value template: {}", s);
-                            Ok(DynamicValue::Value(ConstValue::from_json(value.clone())?))
-                        } else {
-                            tracing::info!("Successfully loaded JQ template: {}", s);
-                            Ok(DynamicValue::JqTemplate(t))
-                        }
-                    }
-                    Err(err) => {
-                        tracing::info!("Defaulting to const value template: {}", s);
-                        tracing::warn!("JQ template error: {:?}", err);
-                        Ok(DynamicValue::Value(ConstValue::from_json(value.clone())?))
-                    }
+                if jqt.is_const() {
+                    Ok(DynamicValue::Value(ConstValue::from_json(value.clone())?))
+                } else {
+                    Ok(DynamicValue::JqTemplate(jqt))
                 }
             }
             _ => Ok(DynamicValue::Value(ConstValue::from_json(value.clone())?)),

@@ -12,7 +12,7 @@ expression: response
       "user": {
         "id": 4,
         "name": "User 4",
-        "spam": "FIZZ: [{\"bar\":\"BUZZ\"},{\"bar\":\"test\"}]"
+        "spam": "FIZZ: [{bar: \"BUZZ\"}, {bar: \"test\"}]"
       }
     }
   }

@@ -10,7 +10,7 @@ type Query {
   userDetails(id: Int!): UserDetails
     @http(
       url: "http://upstream/users/{{.args.id}}"
-      select: {id: "{{.id}}", city: "{{.address.city}}", phone: "{{.phone}}"}
+      select: {id: "{{.args.id}}", city: "{{.args.address.city}}", phone: "{{.args.phone}}"}
     )
 }
 

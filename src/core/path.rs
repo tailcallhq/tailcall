@@ -2,6 +2,7 @@
 //! structure.
 use std::borrow::Cow;
 
+use indexmap::IndexMap;
 use serde_json::json;
 
 use crate::core::ir::{EvalContext, ResolverContextLike};
@@ -79,6 +80,27 @@ impl<Ctx: ResolverContextLike> EvalContext<'_, Ctx> {
                 "vars" => Some(ValueString::String(Cow::Owned(
                     json!(ctx.vars()).to_string(),
                 ))),
+                "headers" => {
+                    let arr = ctx
+                        .headers()
+                        .iter()
+                        .map(|(k, v)| (k.to_string(), v.to_str()))
+                        .filter_map(|(k, v)| {
+                            if let Ok(v) = v {
+                                Some((async_graphql_value::Name::new(k), v))
+                            } else {
+                                None
+                            }
+                        })
+                        .fold(IndexMap::new(), |mut acc, (k, v)| {
+                            acc.insert(k, v.into());
+                            acc
+                        });
+
+                    Some(ValueString::Value(Cow::Owned(
+                        async_graphql_value::ConstValue::object(arr),
+                    )))
+                }
                 _ => None,
             };
         }
