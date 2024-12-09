@@ -285,13 +285,12 @@ mod tests {
     use tailcall_valid::Validator;
 
     use super::UnionInputType;
-    use crate::core::config::Config;
     use crate::core::transform::Transform;
+    use crate::include_config;
 
     #[test]
     fn test_union() {
-        let config = std::fs::read_to_string(tailcall_fixtures::configs::YAML_UNION).unwrap();
-        let config = Config::from_yaml(&config).unwrap();
+        let config = include_config!("./fixtures/union.graphql").unwrap();
         let config = UnionInputType.transform(config).to_result().unwrap();
 
         assert_snapshot!(config.to_sdl());
@@ -299,9 +298,7 @@ mod tests {
 
     #[test]
     fn test_union_in_type() {
-        let config =
-            std::fs::read_to_string(tailcall_fixtures::configs::YAML_UNION_IN_TYPE).unwrap();
-        let config = Config::from_yaml(&config).unwrap();
+        let config = include_config!("./fixtures/union-in-type.graphql").unwrap();
         let config = UnionInputType.transform(config).to_result().unwrap();
 
         assert_snapshot!(config.to_sdl());
@@ -309,18 +306,14 @@ mod tests {
 
     #[test]
     fn test_nested_unions() {
-        let config =
-            std::fs::read_to_string(tailcall_fixtures::configs::YAML_NESTED_UNIONS).unwrap();
-        let config = Config::from_yaml(&config).unwrap();
+        let config = include_config!("./fixtures/nested-unions.graphql").unwrap();
         let config = UnionInputType.transform(config).to_result().unwrap();
 
         assert_snapshot!(config.to_sdl());
     }
     #[test]
     fn test_recursive_input() {
-        let config =
-            std::fs::read_to_string(tailcall_fixtures::configs::YAML_RECURSIVE_INPUT).unwrap();
-        let config = Config::from_yaml(&config).unwrap();
+        let config = include_config!("./fixtures/recursive-input.graphql").unwrap();
         let config = UnionInputType.transform(config).to_result().unwrap();
 
         assert_snapshot!(config.to_sdl());
