@@ -104,13 +104,14 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
     pub async fn execute_with_worker<'worker: 'async_recursion>(
         &self,
         mut request: DynamicRequest<String>,
-        worker: &Arc<dyn WorkerIO<worker::Event, worker::Command>>,
-        http_filter: &HttpFilter,
+        worker_ctx: WorkerContext<'worker>,
     ) -> Result<Response<async_graphql::Value>, Error> {
-        let js_request = worker::WorkerRequest::try_from(request.request())?;
-        let event = worker::Event::Request(js_request);
+        // extract variables from the worker context.
+        let js_hooks = worker_ctx.js_hooks;
+        let worker = worker_ctx.worker;
+        let js_worker = worker_ctx.js_worker;
 
-        let response = match js_hooks.on_request(worker, &request).await? {
+        let response = match js_hooks.on_request(worker, &request.request()).await? {
             Some(command) => match command {
                 worker::Command::Request(w_request) => {
                     let response = self.execute(w_request.try_into()?).await?;
