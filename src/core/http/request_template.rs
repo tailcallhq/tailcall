@@ -7,7 +7,6 @@ use tailcall_hasher::TailcallHasher;
 use url::Url;
 
 use super::query_encoder::QueryEncoder;
-use crate::core::blueprint::DynamicValue;
 use crate::core::config::Encoding;
 use crate::core::endpoint::Endpoint;
 use crate::core::has_headers::HasHeaders;
@@ -16,7 +15,6 @@ use crate::core::ir::model::{CacheKey, IoId};
 use crate::core::ir::DynamicRequest;
 use crate::core::mustache::{Eval, Mustache, Segment};
 use crate::core::path::{PathString, PathValue, ValueString};
-use crate::core::serde_value_ext::ValueExt;
 
 /// RequestTemplate is an extension of a Mustache template.
 /// Various parts of the template can be written as a mustache template.
@@ -28,7 +26,7 @@ pub struct RequestTemplate {
     pub query: Vec<Query>,
     pub method: reqwest::Method,
     pub headers: MustacheHeaders,
-    pub body_path: Option<DynamicValue<serde_json::Value>>,
+    pub body_path: Option<Mustache>,
     pub endpoint: Endpoint,
     pub encoding: Encoding,
     pub query_encoder: QueryEncoder,
@@ -206,7 +204,7 @@ impl RequestTemplate {
     }
 
     pub fn with_body(mut self, body: Mustache) -> Self {
-        self.body_path = Some(DynamicValue::Mustache(body));
+        self.body_path = Some(body);
         self
     }
 }
@@ -270,7 +268,7 @@ impl<Ctx: PathString + HasHeaders + PathValue> CacheKey<Ctx> for RequestTemplate
         }
 
         if let Some(body) = self.body_path.as_ref() {
-            body.render_value(ctx).hash(state)
+            body.render(ctx).hash(state)
         }
 
         let url = self.create_url(ctx).unwrap();
@@ -361,7 +359,6 @@ mod tests {
     use serde_json::json;
 
     use super::{Query, RequestTemplate};
-    use crate::core::blueprint::DynamicValue;
     use crate::core::has_headers::HasHeaders;
     use crate::core::json::JsonLike;
     use crate::core::mustache::Mustache;
@@ -453,7 +450,7 @@ mod tests {
         let req = request_wrapper.request();
         assert_eq!(
             req.url().to_string(),
-            "http://localhost:3000/?foo=12&baz=1&baz=2&baz=3"
+            "http://localhost:3000/?baz=1&baz=2&baz=3&foo=12"
         );
     }
 
@@ -675,26 +672,24 @@ mod tests {
     fn test_body() {
         let tmpl = RequestTemplate::new("http://localhost:3000")
             .unwrap()
-            .body_path(Some(DynamicValue::Value(serde_json::Value::String(
-                "foo".to_string(),
-            ))));
+            .body_path(Some(Mustache::parse("foo")));
         let ctx = Context::default();
         let body = tmpl.to_body(&ctx).unwrap();
-        assert_eq!(body, "\"foo\"");
+        assert_eq!(body, "foo");
     }
 
     #[test]
     fn test_body_template() {
         let tmpl = RequestTemplate::new("http://localhost:3000")
             .unwrap()
-            .body_path(Some(DynamicValue::Mustache(Mustache::parse("{{foo.bar}}"))));
+            .body_path(Some(Mustache::parse("{{foo.bar}}")));
         let ctx = Context::default().value(json!({
           "foo": {
             "bar": "baz"
           }
         }));
         let body = tmpl.to_body(&ctx).unwrap();
-        assert_eq!(body, "\"baz\"");
+        assert_eq!(body, "baz");
     }
 
     #[test]
@@ -702,14 +697,14 @@ mod tests {
         let tmpl = RequestTemplate::new("http://localhost:3000")
             .unwrap()
             .encoding(crate::core::config::Encoding::ApplicationJson)
-            .body_path(Some(DynamicValue::Mustache(Mustache::parse("{{foo.bar}}"))));
+            .body_path(Some(Mustache::parse("{{foo.bar}}")));
         let ctx = Context::default().value(json!({
           "foo": {
             "bar": "baz"
           }
         }));
         let body = tmpl.to_body(&ctx).unwrap();
-        assert_eq!(body, "\"baz\"");
+        assert_eq!(body, "baz");
     }
 
     mod endpoint {
@@ -762,7 +757,7 @@ mod tests {
             assert_eq!(req.method(), reqwest::Method::POST);
             assert_eq!(req.headers().get("foo").unwrap(), "abc");
             let body = req.body().unwrap().as_bytes().unwrap().to_owned();
-            assert_eq!(body, "\"baz\"".as_bytes());
+            assert_eq!(body, "baz".as_bytes());
             assert_eq!(req.url().to_string(), "http://localhost:3000/baz?foo=baz");
         }
 
@@ -856,7 +851,6 @@ mod tests {
     mod form_encoded_url {
         use serde_json::json;
 
-        use crate::core::blueprint::DynamicValue;
         use crate::core::http::request_template::tests::Context;
         use crate::core::http::RequestTemplate;
         use crate::core::mustache::Mustache;
@@ -877,9 +871,9 @@ mod tests {
         fn test_with_json_template() {
             let tmpl = RequestTemplate::form_encoded_url("http://localhost:3000")
                 .unwrap()
-                .body_path(Some(DynamicValue::Mustache(Mustache::parse(
+                .body_path(Some(Mustache::parse(
                     r#"{"foo": "{{baz}}"}"#,
-                ))));
+                )));
             let ctx = Context::default().value(json!({"baz": "baz"}));
             let body = tmpl.to_body(&ctx).unwrap();
             assert_eq!(body, "foo=baz");
@@ -889,7 +883,7 @@ mod tests {
         fn test_with_json_body() {
             let tmpl = RequestTemplate::form_encoded_url("http://localhost:3000")
                 .unwrap()
-                .body_path(Some(DynamicValue::Mustache(Mustache::parse("{{foo}}"))));
+                .body_path(Some(Mustache::parse("{{foo}}")));
             let ctx = Context::default().value(json!({"foo": {"bar": "baz"}}));
             let body = tmpl.to_body(&ctx).unwrap();
             assert_eq!(body, "bar=baz");
@@ -899,7 +893,7 @@ mod tests {
         fn test_with_json_body_nested() {
             let tmpl = RequestTemplate::form_encoded_url("http://localhost:3000")
                 .unwrap()
-                .body_path(Some(DynamicValue::Mustache(Mustache::parse("{{a}}"))));
+                .body_path(Some(Mustache::parse("{{a}}")));
             let ctx = Context::default()
                 .value(json!({"a": {"special chars": "a !@#$%^&*()<>?:{}-=1[];',./"}}));
             let a = tmpl.to_body(&ctx).unwrap();
@@ -911,9 +905,9 @@ mod tests {
         fn test_with_mustache_literal() {
             let tmpl = RequestTemplate::form_encoded_url("http://localhost:3000")
                 .unwrap()
-                .body_path(Some(DynamicValue::Mustache(Mustache::parse(
+                .body_path(Some(Mustache::parse(
                     r#"{"foo": "bar"}"#,
-                ))));
+                )));
             let ctx = Context::default().value(json!({}));
             let body = tmpl.to_body(&ctx).unwrap();
             assert_eq!(body, r#"foo=bar"#);
