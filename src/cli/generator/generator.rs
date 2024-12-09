@@ -135,9 +135,11 @@ impl Generator {
                         headers: headers.into_btree_map(),
                     });
                 }
-                Source::Proto { src, url, connect_rpc } => {
+                Source::Proto { src, url, proto_paths, connect_rpc } => {
                     let path = src.0;
-                    let mut metadata = proto_reader.read(&path).await?;
+                    let proto_paths =
+                        proto_paths.map(|paths| paths.into_iter().map(|l| l.0).collect::<Vec<_>>());
+                    let mut metadata = proto_reader.read(&path, proto_paths.as_deref()).await?;
                     if let Some(relative_path_to_proto) = to_relative_path(output_dir, &path) {
                         metadata.path = relative_path_to_proto;
                     }
