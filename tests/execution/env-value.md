@@ -1,77 +1,21 @@
 # Env value
 
-```json @config
-{
-  "server": {},
-  "schema": {
-    "query": "Query"
-  },
-  "types": [
-    {
-      "name": "Post",
-      "fields": {
-        "body": {
-          "type": {
-            "name": "String"
-          },
-          "cache": null
-        },
-        "id": {
-          "type": {
-            "name": "Int"
-          },
-          "cache": null
-        },
-        "title": {
-          "type": {
-            "name": "String"
-          },
-          "cache": null
-        },
-        "userId": {
-          "type": {
-            "name": "Int",
-            "required": true
-          },
-          "cache": null
-        }
-      },
-      "cache": null
-    },
-    {
-      "name": "Query",
-      "fields": {
-        "post1": {
-          "type": {
-            "name": "Post"
-          },
-          "http": {
-            "url": "http://jsonplaceholder.typicode.com/posts/{{.env.ID}}"
-          },
-          "cache": null
-        },
-        "post2": {
-          "type": {
-            "name": "Post"
-          },
-          "http": {
-            "url": "http://jsonplaceholder.typicode.com/posts/{{.env.POST_ID}}"
-          },
-          "cache": null
-        },
-        "post3": {
-          "type": {
-            "name": "Post"
-          },
-          "http": {
-            "url": "http://jsonplaceholder.typicode.com/posts/{{.env.NESTED_POST_ID}}"
-          },
-          "cache": null
-        }
-      },
-      "cache": null
-    }
-  ]
+```graphql @config
+schema @server {
+  query: Query
+}
+
+type Post {
+  body: String
+  id: Int
+  title: String
+  userId: Int!
+}
+
+type Query {
+  post1: Post @http(url: "http://jsonplaceholder.typicode.com/posts/{{.env.ID}}")
+  post2: Post @http(url: "http://jsonplaceholder.typicode.com/posts/{{.env.POST_ID}}")
+  post3: Post @http(url: "http://jsonplaceholder.typicode.com/posts/{{.env.NESTED_POST_ID}}")
 }
 ```
 

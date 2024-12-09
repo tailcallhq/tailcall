@@ -80,7 +80,7 @@ pub fn into_directive_definition(
         TypeSystemDefinition::Directive(pos(async_graphql::parser::types::DirectiveDefinition {
             description: description.map(|inner| pos(inner.clone())),
             name: pos(Name::new(name)),
-            arguments: into_input_value_definition(&schema),
+            arguments: into_input_value_definition(schema),
             is_repeatable: attrs.repeatable,
             locations: attrs
                 .locations

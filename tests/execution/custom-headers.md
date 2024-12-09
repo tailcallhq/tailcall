@@ -1,42 +1,12 @@
 # Custom Headers
 
-```json @config
-{
-  "server": {
-    "headers": {
-      "custom": [
-        {
-          "key": "x-id",
-          "value": "1"
-        },
-        {
-          "key": "x-name",
-          "value": "John Doe"
-        }
-      ]
-    }
-  },
-  "upstream": {},
-  "schema": {
-    "query": "Query"
-  },
-  "types": [
-    {
-      "name": "Query",
-      "fields": {
-        "greet": {
-          "type": {
-            "name": "String"
-          },
-          "expr": {
-            "body": "Hello World!"
-          },
-          "cache": null
-        }
-      },
-      "cache": null
-    }
-  ]
+```graphql @config
+schema @server(headers: {custom: [{key: "x-id", value: "1"}, {key: "x-name", value: "John Doe"}]}) @upstream {
+  query: Query
+}
+
+type Query {
+  greet: String @expr(body: "Hello World!")
 }
 ```
 

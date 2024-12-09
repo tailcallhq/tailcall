@@ -1,64 +1,18 @@
 # Sending requests to verify Cache-Control behavior
 
-```json @config
-{
-  "server": {
-    "headers": {
-      "cacheControl": true
-    }
-  },
-  "upstream": {},
-  "schema": {
-    "query": "Query"
-  },
-  "types": [
-    {
-      "name": "Query",
-      "fields": {
-        "user": {
-          "type": {
-            "name": "User"
-          },
-          "args": {
-            "id": {
-              "type": {
-                "name": "Int"
-              }
-            }
-          },
-          "http": {
-            "url": "http://jsonplaceholder.typicode.com/users",
-            "query": [
-              {
-                "key": "id",
-                "value": "{{.args.id}}"
-              }
-            ]
-          },
-          "cache": null
-        }
-      },
-      "cache": null
-    },
-    {
-      "name": "User",
-      "fields": {
-        "id": {
-          "type": {
-            "name": "Int"
-          },
-          "cache": null
-        },
-        "name": {
-          "type": {
-            "name": "String"
-          },
-          "cache": null
-        }
-      },
-      "cache": null
-    }
-  ]
+```graphql @config
+schema @server(headers: {cacheControl: true}) @upstream {
+  query: Query
+}
+
+type Query {
+  user(id: Int): User
+    @http(url: "http://jsonplaceholder.typicode.com/users", query: [{key: "id", value: "{{.args.id}}"}])
+}
+
+type User {
+  id: Int
+  name: String
 }
 ```
 

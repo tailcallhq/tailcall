@@ -1,49 +1,17 @@
 # Sending a batched graphql request
 
-```json @config
-{
-  "server": {
-    "batchRequests": true
-  },
-  "upstream": {},
-  "schema": {
-    "query": "Query"
-  },
-  "types": [
-    {
-      "name": "Query",
-      "fields": {
-        "user": {
-          "type": {
-            "name": "User"
-          },
-          "http": {
-            "url": "http://jsonplaceholder.typicode.com/users/1"
-          },
-          "cache": null
-        }
-      },
-      "cache": null
-    },
-    {
-      "name": "User",
-      "fields": {
-        "id": {
-          "type": {
-            "name": "Int"
-          },
-          "cache": null
-        },
-        "name": {
-          "type": {
-            "name": "String"
-          },
-          "cache": null
-        }
-      },
-      "cache": null
-    }
-  ]
+```graphql @config
+schema @server(batchRequests: true) @upstream {
+  query: Query
+}
+
+type Query {
+  user: User @http(url: "http://jsonplaceholder.typicode.com/users/1")
+}
+
+type User {
+  id: Int
+  name: String
 }
 ```
 

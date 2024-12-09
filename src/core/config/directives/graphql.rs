@@ -55,5 +55,5 @@ pub struct GraphQL {
     /// concurrently, reducing resource load. Caution: May lead to issues
     /// with APIs that expect unique results for identical inputs, such as
     /// nonce-based APIs.
-    pub dedupe: Option<bool>,
+    pub dedupe: bool,
 }
