@@ -37,11 +37,10 @@ inputs:
       fieldName: postComments
 preset:
   mergeType: 1
-  consolidateURL: 0.5
   treeShake: true
   inferTypeNames: true
 output:
-  path: "./jsonplaceholder.graphql"
+  path: "./jsonplaceholder-generated.graphql"
   format: graphQL
 schema:
   query: Query

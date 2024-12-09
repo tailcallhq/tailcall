@@ -2,8 +2,6 @@ use clap::{Parser, Subcommand};
 use strum_macros::Display;
 use tailcall_version::VERSION;
 
-use crate::core::config;
-
 const ABOUT: &str = r"
    __        _ __           ____
   / /_____ _(_) /________ _/ / /
@@ -48,10 +46,6 @@ pub enum Command {
         /// Display schema
         #[arg(short, long)]
         schema: bool,
-
-        /// Prints the input config in the provided format
-        #[clap(short, long)]
-        format: Option<config::Source>,
 
         /// Controls SSL/TLS certificate verification for remote config files
         /// Set to false to skip certificate verification (not recommended for

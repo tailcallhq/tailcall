@@ -1,0 +1,78 @@
+schema @server @upstream(allowedHeaders: ["Accept", "Content-Type"]) {
+  query: Query
+}
+
+type Address {
+  city: String
+  geo: Geo
+  street: String
+  suite: String
+  zipcode: String
+}
+
+type Comment {
+  body: String
+  email: String
+  id: Int
+  name: String
+  postId: Int
+}
+
+type Company {
+  bs: String
+  catchPhrase: String
+  name: String
+}
+
+type Geo {
+  lat: String
+  lng: String
+}
+
+type Photo {
+  albumId: Int
+  id: Int
+  thumbnailUrl: String
+  title: String
+  url: String
+}
+
+type Post {
+  body: String
+  id: Int
+  title: String
+  userId: Int
+}
+
+type Query {
+  comment(GEN__1: Int!): Comment @http(url: "https://jsonplaceholder.typicode.com/comments/{{.args.GEN__1}}")
+  comments: [Comment] @http(url: "https://jsonplaceholder.typicode.com/comments")
+  photo(GEN__1: Int!): Photo @http(url: "https://jsonplaceholder.typicode.com/photos/{{.args.GEN__1}}")
+  photos: [Photo] @http(url: "https://jsonplaceholder.typicode.com/photos")
+  post(GEN__1: Int!): Post @http(url: "https://jsonplaceholder.typicode.com/posts/{{.args.GEN__1}}")
+  postComments(postId: Int): [Comment]
+    @http(url: "https://jsonplaceholder.typicode.com/comments", query: [{key: "postId", value: "{{.args.postId}}"}])
+  posts: [Post] @http(url: "https://jsonplaceholder.typicode.com/posts")
+  todo(GEN__1: Int!): Todo @http(url: "https://jsonplaceholder.typicode.com/todos/{{.args.GEN__1}}")
+  todos: [Todo] @http(url: "https://jsonplaceholder.typicode.com/todos")
+  user(GEN__1: Int!): User @http(url: "https://jsonplaceholder.typicode.com/users/{{.args.GEN__1}}")
+  users: [User] @http(url: "https://jsonplaceholder.typicode.com/users")
+}
+
+type Todo {
+  completed: Boolean
+  id: Int
+  title: String
+  userId: Int
+}
+
+type User {
+  address: Address
+  company: Company
+  email: String
+  id: Int
+  name: String
+  phone: String
+  username: String
+  website: String
+}
