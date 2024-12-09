@@ -87,7 +87,7 @@ impl ConfigReader {
                     }
                 }
                 LinkType::Protobuf => {
-                    let meta = self.proto_reader.read(path).await?;
+                    let meta = self.proto_reader.read(path, None).await?;
                     extensions.add_proto(meta);
                 }
                 LinkType::Script => {
