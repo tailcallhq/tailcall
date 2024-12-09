@@ -275,7 +275,7 @@ mod reader_tests {
 
         let server = start_mock_server();
         let mut cfg = Config::default();
-        cfg = cfg.types([("User", Type::default())].to_vec());
+        cfg = cfg.types([Type::default().name("User")].to_vec());
 
         let foo_mock = server.mock(|when, then| {
             when.method(httpmock::Method::GET).path("/foo.graphql");
@@ -299,7 +299,7 @@ mod reader_tests {
         let cr = ConfigReader::init(runtime);
         let c = cr.read_all(&files).await.unwrap();
         assert_eq!(
-            ["Test", "User"]
+            ["User", "Test",]
                 .iter()
                 .map(|i| i.to_string())
                 .collect::<Vec<String>>(),
