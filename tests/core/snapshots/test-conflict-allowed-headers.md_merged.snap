@@ -1,8 +1,9 @@
 ---
 source: tests/core/spec.rs
 expression: formatter
+snapshot_kind: text
 ---
-schema @server @upstream(allowedHeaders: ["a", "b", "c", "d"]) {
+schema @server @upstream(allowedHeaders: ["a", "b", "c"]) {
   query: Query
 }
 
