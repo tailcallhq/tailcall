@@ -61,9 +61,9 @@ type Comment {
     url: https://jsonplaceholder.typicode.com/posts
     body:
       [
-        {"userId": "1", "title": "foo", "body": "bar"},
-        {"userId": "2", "title": "foo", "body": "bar"},
-        {"userId": "3", "title": "foo", "body": "bar"},
+        {"userId": 1, "title": "foo", "body": "bar"},
+        {"userId": 2, "title": "foo", "body": "bar"},
+        {"userId": 3, "title": "foo", "body": "bar"},
       ]
   response:
     status: 200
