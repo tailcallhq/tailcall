@@ -128,12 +128,12 @@ impl RequestTemplate {
         mut req: reqwest::Request,
         ctx: &C,
     ) -> anyhow::Result<DynamicRequest<String>> {
-        let body_value = if let Some(body_path) = &self.body_path {
+        let batching_value = if let Some(body_path) = &self.body_path {
             match &self.encoding {
                 Encoding::ApplicationJson => {
-                    let (body, body_key) = ExpressionValueEval::default().eval(body_path, ctx);
+                    let (body, batching_value) = ExpressionValueEval::default().eval(body_path, ctx);
                     req.body_mut().replace(body.into());
-                    body_key
+                    batching_value
                 }
                 Encoding::ApplicationXWwwFormUrlencoded => {
                     // TODO: this is a performance bottleneck
@@ -151,7 +151,7 @@ impl RequestTemplate {
         } else {
             None
         };
-        Ok(DynamicRequest::new(req).with_body_key(body_value))
+        Ok(DynamicRequest::new(req).with_batching_value(batching_value))
     }
 
     /// Sets the headers for the request

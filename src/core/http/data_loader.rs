@@ -130,8 +130,8 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
                     }
                 } else {
                     for dl_req in dl_requests.into_iter() {
-                        let body_key = dl_req.body_key().ok_or(anyhow::anyhow!(
-                            "Unable to find body key in data loader request {}",
+                        let body_key = dl_req.batching_value().ok_or(anyhow::anyhow!(
+                            "Unable to find batching value in the body for data loader request {}",
                             dl_req.url().as_str()
                         ))?;
                         let extracted_value = data_extractor(&response_map, body_key);
