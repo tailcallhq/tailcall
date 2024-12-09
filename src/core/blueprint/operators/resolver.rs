@@ -18,12 +18,16 @@ pub fn compile_resolver(
     inputs: &CompileResolver,
     resolver: &Resolver,
 ) -> Valid<Option<IR>, BlueprintError> {
-    let CompileResolver { config_module, field, operation_type, object_name: container_type } = inputs;
+    let CompileResolver {
+        config_module,
+        field,
+        operation_type,
+        object_name: container_type,
+    } = inputs;
 
     match resolver {
-        Resolver::Http(http) => {
-            compile_http(config_module, http, field, container_type).trace(config::Http::trace_name().as_str())
-        }
+        Resolver::Http(http) => compile_http(config_module, http, field, container_type)
+            .trace(config::Http::trace_name().as_str()),
         Resolver::Grpc(grpc) => compile_grpc(super::CompileGrpc {
             config_module,
             operation_type,
