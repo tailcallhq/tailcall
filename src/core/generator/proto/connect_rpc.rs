@@ -55,7 +55,7 @@ impl From<Grpc> for Http {
 
         Self {
             url: new_url,
-            body: body.map(|b| b.to_string()),
+            body,
             method: crate::core::http::Method::POST,
             headers,
             batch_key,
@@ -91,7 +91,7 @@ mod tests {
 
         assert_eq!(http.url, "http://localhost:8080/package.service/method");
         assert_eq!(http.method, crate::core::http::Method::POST);
-        assert_eq!(http.body, Some(r#"{"key":"value"}"#.to_string()));
+        assert_eq!(http.body, Some(json!({"key": "value"})));
     }
 
     #[test]
@@ -109,7 +109,7 @@ mod tests {
 
         let http = Http::from(grpc);
 
-        assert_eq!(http.body, Some("{}".to_string()));
+        assert_eq!(http.body, Some(json!({})));
     }
 
     #[test]
@@ -136,6 +136,7 @@ mod tests {
                 .value,
             "bar".to_string()
         );
+        assert_eq!(http.body, Some(json!({})));
     }
 
     #[test]
@@ -155,7 +156,7 @@ mod tests {
 
         assert_eq!(http.url, "http://localhost:8080/package.service/method");
         assert_eq!(http.method, crate::core::http::Method::POST);
-        assert_eq!(http.body, Some(r#"{"key":"value"}"#.to_string()));
+        assert_eq!(http.body, Some(json!({"key": "value"})));
         assert_eq!(
             http.headers
                 .iter()
