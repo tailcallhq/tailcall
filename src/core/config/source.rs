@@ -5,7 +5,7 @@ use thiserror::Error;
 
 use super::Config;
 
-#[derive(Clone, Default, Debug, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Default, Debug, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub enum Source {
     Json,
