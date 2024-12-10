@@ -1,6 +1,7 @@
 ---
 source: src/core/jit/response.rs
 expression: response
+snapshot_kind: text
 ---
 Response {
     data: Null,

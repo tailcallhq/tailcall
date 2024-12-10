@@ -1,6 +1,7 @@
 ---
 source: src/core/mod.rs
 expression: cfg
+snapshot_kind: text
 ---
 schema @server @upstream {
   query: Query

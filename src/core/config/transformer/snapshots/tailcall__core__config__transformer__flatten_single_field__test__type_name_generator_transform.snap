@@ -1,6 +1,7 @@
 ---
 source: src/core/config/transformer/flatten_single_field.rs
 expression: transformed_config.to_sdl()
+snapshot_kind: text
 ---
 schema @server @upstream {
   query: Query

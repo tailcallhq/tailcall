@@ -1,6 +1,7 @@
 ---
 source: src/core/config/transformer/nested_unions.rs
 expression: error
+snapshot_kind: text
 ---
 Validation Error
 • Recursive type U1 [U]

@@ -1,6 +1,7 @@
 ---
 source: src/cli/generator/config.rs
 expression: actual
+snapshot_kind: text
 ---
 {
   "inputs": [

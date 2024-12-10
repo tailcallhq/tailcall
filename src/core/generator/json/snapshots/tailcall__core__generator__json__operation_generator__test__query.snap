@@ -1,6 +1,7 @@
 ---
 source: src/core/generator/json/operation_generator.rs
 expression: config.to_sdl()
+snapshot_kind: text
 ---
 type Query {
   postComments(postId: Int): T44 @http(url: "https://jsonplaceholder.typicode.com/comments", query: [{key: "postId", value: "{{.args.postId}}"}])

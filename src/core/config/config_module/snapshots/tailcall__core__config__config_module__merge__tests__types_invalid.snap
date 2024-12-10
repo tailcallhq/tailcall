@@ -1,6 +1,7 @@
 ---
 source: src/core/config/config_module/merge.rs
 expression: merged.unwrap_err()
+snapshot_kind: text
 ---
 Validation Error
 • Type mismatch: expected `String`, got `Int` [A, a]
