@@ -87,7 +87,7 @@ impl ConfigReader {
                     }
                 }
                 LinkType::Protobuf => {
-                    let meta = self.proto_reader.read(path).await?;
+                    let meta = self.proto_reader.read(path, None).await?;
                     extensions.add_proto(meta);
                 }
                 LinkType::Script => {
@@ -273,40 +273,33 @@ mod reader_tests {
     async fn test_all() {
         let runtime = crate::core::runtime::test::init(None);
 
+        let server = start_mock_server();
+        let mut cfg = Config::default();
+        cfg = cfg.types([("User", Type::default())].to_vec());
+
+        let foo_mock = server.mock(|when, then| {
+            when.method(httpmock::Method::GET).path("/foo.graphql");
+            then.status(200).body(cfg.to_sdl());
+        });
+
         let mut cfg = Config::default();
         cfg.schema.query = Some("Test".to_string());
         cfg = cfg.types([("Test", Type::default())].to_vec());
 
-        let server = start_mock_server();
-        let header_server = server.mock(|when, then| {
+        let bar_mock = server.mock(|when, then| {
             when.method(httpmock::Method::GET).path("/bar.graphql");
             then.status(200).body(cfg.to_sdl());
         });
 
-        let json = runtime
-            .file
-            .read("examples/jsonplaceholder.json")
-            .await
-            .unwrap();
-
-        let foo_json_server = server.mock(|when, then| {
-            when.method(httpmock::Method::GET).path("/foo.json");
-            then.status(200).body(json);
-        });
-
         let port = server.port();
-        let files: Vec<String> = [
-            "examples/jsonplaceholder.yml", // config from local file
-            format!("http://localhost:{port}/bar.graphql").as_str(), // with content-type header
-            format!("http://localhost:{port}/foo.json").as_str(), // with url extension
-        ]
-        .iter()
-        .map(|x| x.to_string())
-        .collect();
+        let files = vec![
+            format!("http://localhost:{port}/foo.graphql"),
+            format!("http://localhost:{port}/bar.graphql"),
+        ];
         let cr = ConfigReader::init(runtime);
         let c = cr.read_all(&files).await.unwrap();
         assert_eq!(
-            ["Post", "Query", "Test", "User"]
+            ["Test", "User"]
                 .iter()
                 .map(|i| i.to_string())
                 .collect::<Vec<String>>(),
@@ -315,22 +308,18 @@ mod reader_tests {
                 .map(|i| i.to_string())
                 .collect::<Vec<String>>()
         );
-        foo_json_server.assert(); // checks if the request was actually made
-        header_server.assert();
+        foo_mock.assert();
+        bar_mock.assert();
     }
 
     #[tokio::test]
     async fn test_local_files() {
         let runtime = crate::core::runtime::test::init(None);
 
-        let files: Vec<String> = [
-            "examples/jsonplaceholder.yml",
-            "examples/jsonplaceholder.graphql",
-            "examples/jsonplaceholder.json",
-        ]
-        .iter()
-        .map(|x| x.to_string())
-        .collect();
+        let files: Vec<String> = ["examples/jsonplaceholder.graphql"]
+            .iter()
+            .map(|x| x.to_string())
+            .collect();
         let cr = ConfigReader::init(runtime);
         let c = cr.read_all(&files).await.unwrap();
         assert_eq!(

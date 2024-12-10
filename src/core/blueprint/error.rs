@@ -46,11 +46,17 @@ pub enum BlueprintError {
     #[error("Protobuf files were not specified in the config")]
     ProtobufFilesNotSpecifiedInConfig,
 
-    #[error("GroupBy is only supported for GET requests")]
-    GroupByOnlyForGet,
+    #[error("GroupBy is only supported for GET and POST requests")]
+    GroupByOnlyForGetAndPost,
+
+    #[error("Request body batching requires exactly one dynamic value in the body.")]
+    BatchRequiresDynamicParameter,
 
     #[error("Batching capability was used without enabling it in upstream")]
     IncorrectBatchingUsage,
+
+    #[error("batchKey requires either body or query parameters")]
+    BatchKeyRequiresEitherBodyOrQuery,
 
     #[error("script is required")]
     ScriptIsRequired,

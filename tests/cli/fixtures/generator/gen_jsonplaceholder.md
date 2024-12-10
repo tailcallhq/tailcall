@@ -78,8 +78,7 @@
     "inferTypeNames": true
   },
   "output": {
-    "path": "./output.graphql",
-    "format": "graphQL"
+    "path": "./output.graphql"
   },
   "schema": {
     "query": "Query"
