@@ -65,7 +65,7 @@ impl ProtoReader {
 
     /// Asynchronously reads all proto files from a list of paths
     pub async fn read_all<T: AsRef<str>>(&self, paths: &[T]) -> anyhow::Result<Vec<ProtoMetadata>> {
-        let resolved_protos = join_all(paths.iter().map(|v| self.read(v.as_ref())))
+        let resolved_protos = join_all(paths.iter().map(|v| self.read(v.as_ref(), None)))
             .await
             .into_iter()
             .collect::<anyhow::Result<Vec<_>>>()?;
@@ -73,12 +73,20 @@ impl ProtoReader {
     }
 
     /// Reads a proto file from a path
-    pub async fn read<T: AsRef<str>>(&self, path: T) -> anyhow::Result<ProtoMetadata> {
-        let file_read = self.read_proto(path.as_ref(), None).await?;
+    pub async fn read<T: AsRef<str>>(
+        &self,
+        path: T,
+        proto_paths: Option<&[String]>,
+    ) -> anyhow::Result<ProtoMetadata> {
+        let file_read = self.read_proto(path.as_ref(), None, None).await?;
         Self::check_package(&file_read)?;
 
         let descriptors = self
-            .file_resolve(file_read, PathBuf::from(path.as_ref()).parent())
+            .file_resolve(
+                file_read,
+                PathBuf::from(path.as_ref()).parent(),
+                proto_paths,
+            )
             .await?;
         let metadata = ProtoMetadata {
             descriptor_set: FileDescriptorSet { file: descriptors },
@@ -130,12 +138,22 @@ impl ProtoReader {
         &self,
         parent_proto: FileDescriptorProto,
         parent_path: Option<&Path>,
+        proto_paths: Option<&[String]>,
     ) -> anyhow::Result<Vec<FileDescriptorProto>> {
         self.resolve_dependencies(parent_proto, |import| {
             let parent_path = parent_path.map(|p| p.to_path_buf());
             let this = self.clone();
-
-            async move { this.read_proto(import, parent_path.as_deref()).await }.boxed()
+            let proto_paths = proto_paths.map(|paths| {
+                paths
+                    .iter()
+                    .map(|p| Path::new(p).to_path_buf())
+                    .collect::<Vec<_>>()
+            });
+            async move {
+                this.read_proto(import, parent_path.as_deref(), proto_paths.as_deref())
+                    .await
+            }
+            .boxed()
         })
         .await
     }
@@ -159,27 +177,39 @@ impl ProtoReader {
         &self,
         path: T,
         parent_dir: Option<&Path>,
+        proto_paths: Option<&[PathBuf]>,
     ) -> anyhow::Result<FileDescriptorProto> {
         let content = if let Ok(file) = GoogleFileResolver::new().open_file(path.as_ref()) {
             file.source()
                 .context("Unable to extract content of google well-known proto file")?
                 .to_string()
         } else {
-            let path = Self::resolve_path(path.as_ref(), parent_dir);
+            let path = Self::resolve_path(path.as_ref(), parent_dir, proto_paths);
             self.reader.read_file(path).await?.content
         };
         Ok(protox_parse::parse(path.as_ref(), &content)?)
     }
     /// Checks if path is absolute else it joins file path with relative dir
     /// path
-    fn resolve_path(src: &str, root_dir: Option<&Path>) -> String {
+    fn resolve_path(src: &str, root_dir: Option<&Path>, proto_paths: Option<&[PathBuf]>) -> String {
         if src.starts_with("http") {
             return src.to_string();
         }
 
         if Path::new(&src).is_absolute() {
-            src.to_string()
-        } else if let Some(path) = root_dir {
+            return src.to_string();
+        }
+
+        if let Some(proto_paths) = proto_paths {
+            for proto_path in proto_paths {
+                let path = proto_path.join(src);
+                if path.exists() {
+                    return path.to_string_lossy().to_string();
+                }
+            }
+        }
+
+        if let Some(path) = root_dir {
             path.join(src).to_string_lossy().to_string()
         } else {
             src.to_string()
@@ -210,7 +240,7 @@ mod test_proto_config {
         let runtime = crate::core::runtime::test::init(None);
         let reader = ProtoReader::init(ResourceReader::<Cached>::cached(runtime.clone()), runtime);
         reader
-            .read_proto("google/protobuf/empty.proto", None)
+            .read_proto("google/protobuf/empty.proto", None, None)
             .await
             .unwrap();
     }
@@ -225,7 +255,11 @@ mod test_proto_config {
 
         let reader = ProtoReader::init(ResourceReader::<Cached>::cached(runtime.clone()), runtime);
         let file_descriptors = reader
-            .file_resolve(reader.read_proto(&test_file, None).await?, Some(test_dir))
+            .file_resolve(
+                reader.read_proto(&test_file, None, None).await?,
+                Some(test_dir),
+                None,
+            )
             .await?;
         for file in file_descriptors
             .iter()
@@ -248,7 +282,7 @@ mod test_proto_config {
         let reader = ProtoReader::init(ResourceReader::<Cached>::cached(runtime.clone()), runtime);
         let proto_no_pkg =
             PathBuf::from(tailcall_fixtures::configs::SELF).join("proto_no_pkg.graphql");
-        let config_module = reader.read(proto_no_pkg.to_str().unwrap()).await;
+        let config_module = reader.read(proto_no_pkg.to_str().unwrap(), None).await;
         assert!(config_module.is_err());
         Ok(())
     }

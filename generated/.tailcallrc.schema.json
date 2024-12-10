@@ -2,32 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Config",
   "type": "object",
-  "required": [
-    "schema"
-  ],
   "properties": {
-    "enums": {
-      "description": "A map of all the enum types in the schema",
-      "type": "object",
-      "additionalProperties": {
-        "$ref": "#/definitions/Enum"
-      }
-    },
-    "links": {
-      "description": "A list of all links in the schema.",
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/Link"
-      }
-    },
-    "schema": {
-      "description": "Specifies the entry points for query and mutation in the generated GraphQL schema.",
-      "allOf": [
-        {
-          "$ref": "#/definitions/RootSchema"
-        }
-      ]
-    },
     "server": {
       "description": "Dictates how the server behaves and helps tune tailcall for all ingress requests. Features such as request batching, SSL, HTTP2 etc. can be configured here.",
       "default": {},
@@ -45,21 +20,6 @@
         }
       ]
     },
-    "types": {
-      "description": "A map of all the types in the schema.",
-      "default": {},
-      "type": "object",
-      "additionalProperties": {
-        "$ref": "#/definitions/Type"
-      }
-    },
-    "unions": {
-      "description": "A map of all the union types in the schema.",
-      "type": "object",
-      "additionalProperties": {
-        "$ref": "#/definitions/Union"
-      }
-    },
     "upstream": {
       "description": "Dictates how tailcall should handle upstream requests/responses. Tuning upstream can improve performance and reliability for connections.",
       "default": {},
@@ -71,44 +31,6 @@
     }
   },
   "definitions": {
-    "AddField": {
-      "description": "The @addField operator simplifies data structures and queries by adding a field that inlines or flattens a nested field or node within your schema. more info [here](https://tailcall.run/docs/guides/operators/#addfield)",
-      "type": "object",
-      "required": [
-        "name",
-        "path"
-      ],
-      "properties": {
-        "name": {
-          "description": "Name of the new field to be added",
-          "type": "string"
-        },
-        "path": {
-          "description": "Path of the data where the field should point to",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    "Alias": {
-      "description": "The @alias directive indicates that aliases of one enum value.",
-      "type": "object",
-      "required": [
-        "options"
-      ],
-      "properties": {
-        "options": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "uniqueItems": true
-        }
-      }
-    },
     "Apollo": {
       "type": "object",
       "required": [
@@ -147,34 +69,6 @@
         }
       }
     },
-    "Arg": {
-      "type": "object",
-      "required": [
-        "type"
-      ],
-      "properties": {
-        "default_value": true,
-        "doc": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "modify": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Modify"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "type": {
-          "$ref": "#/definitions/Type2"
-        }
-      }
-    },
     "Batch": {
       "type": "object",
       "properties": {
@@ -205,45 +99,6 @@
     "Bytes": {
       "title": "Bytes",
       "description": "Field whose value is a sequence of bytes."
-    },
-    "Cache": {
-      "description": "The @cache operator enables caching for the query, field or type it is applied to.",
-      "type": "object",
-      "required": [
-        "maxAge"
-      ],
-      "properties": {
-        "maxAge": {
-          "description": "Specifies the duration, in milliseconds, of how long the value has to be stored in the cache.",
-          "type": "integer",
-          "format": "uint64",
-          "minimum": 1.0
-        }
-      },
-      "additionalProperties": false
-    },
-    "Call": {
-      "description": "Provides the ability to refer to multiple fields in the Query or Mutation root.",
-      "type": "object",
-      "required": [
-        "steps"
-      ],
-      "properties": {
-        "dedupe": {
-          "description": "Enables deduplication of IO operations to enhance performance.\n\nThis flag prevents duplicate IO requests from being executed concurrently, reducing resource load. Caution: May lead to issues with APIs that expect unique results for identical inputs, such as nonce-based APIs.",
-          "type": [
-            "boolean",
-            "null"
-          ]
-        },
-        "steps": {
-          "description": "Steps are composed together to form a call. If you have multiple steps, the output of the previous step is passed as input to the next step.",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/Step"
-          }
-        }
-      }
     },
     "Cors": {
       "description": "Type to configure Cross-Origin Resource Sharing (CORS) for a server.",
@@ -322,34 +177,6 @@
       "title": "DateTime",
       "description": "Field whose value conforms to the standard datetime format as specified in RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339\")."
     },
-    "Directive": {
-      "type": "object",
-      "required": [
-        "name"
-      ],
-      "properties": {
-        "arguments": {
-          "type": "object",
-          "additionalProperties": true
-        },
-        "name": {
-          "type": "string"
-        }
-      }
-    },
-    "Discriminate": {
-      "description": "The `@discriminate` directive is used to drive Tailcall discriminator to use a field of an object to resolve the type. For example with the directive applied on a field `@discriminate(field: \"object_type\")` and the given value `{\"foo\": \"bar\", \"object_type\": \"Buzz\"}` the resolved type of the object will be `Buzz`. If `field` is not applied it defaults to \"type\". The `field` does not have to be part of the GraphQL Schema, but it is required to be part of the JSON response. In case this field is missing from the response an appropriate error message will be displayed.",
-      "type": "object",
-      "properties": {
-        "field": {
-          "type": [
-            "string",
-            "null"
-          ]
-        }
-      },
-      "additionalProperties": false
-    },
     "Email": {
       "title": "Email",
       "description": "Field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address."
@@ -357,246 +184,6 @@
     "Empty": {
       "title": "Empty",
       "description": "Empty scalar type represents an empty value."
-    },
-    "Encoding": {
-      "type": "string",
-      "enum": [
-        "ApplicationJson",
-        "ApplicationXWwwFormUrlencoded"
-      ]
-    },
-    "Enum": {
-      "description": "Definition of GraphQL enum type",
-      "type": "object",
-      "required": [
-        "variants"
-      ],
-      "properties": {
-        "doc": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "variants": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/Variant"
-          },
-          "uniqueItems": true
-        }
-      }
-    },
-    "Expr": {
-      "description": "The `@expr` operators allows you to specify an expression that can evaluate to a value. The expression can be a static value or built form a Mustache template. schema.",
-      "type": "object",
-      "required": [
-        "body"
-      ],
-      "properties": {
-        "body": true
-      },
-      "additionalProperties": false
-    },
-    "Field": {
-      "description": "A field definition containing all the metadata information about resolving a field.",
-      "type": [
-        "object",
-        "array"
-      ],
-      "items": {
-        "$ref": "#/definitions/Resolver"
-      },
-      "properties": {
-        "args": {
-          "description": "Map of argument name and its definition.",
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/Arg"
-          }
-        },
-        "cache": {
-          "description": "Sets the cache configuration for a field",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Cache"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "default_value": {
-          "description": "Stores the default value for the field"
-        },
-        "directives": {
-          "description": "Any additional directives",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/Directive"
-          }
-        },
-        "discriminate": {
-          "description": "Used to overwrite the default discrimination strategy",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Discriminate"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "doc": {
-          "description": "Publicly visible documentation for the field.",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "modify": {
-          "description": "Allows modifying existing fields.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Modify"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "omit": {
-          "description": "Omits a field from public consumption.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Omit"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "protected": {
-          "description": "Marks field as protected by auth provider",
-          "default": null,
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Protected"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "type": {
-          "description": "Refers to the type of the value the field can be resolved to.",
-          "allOf": [
-            {
-              "$ref": "#/definitions/Type2"
-            }
-          ]
-        }
-      }
-    },
-    "GraphQL": {
-      "description": "The @graphQL operator allows to specify GraphQL API server request to fetch data from.",
-      "type": "object",
-      "required": [
-        "name",
-        "url"
-      ],
-      "properties": {
-        "args": {
-          "description": "Named arguments for the requested field. More info [here](https://tailcall.run/docs/guides/operators/#args)",
-          "type": [
-            "array",
-            "null"
-          ],
-          "items": {
-            "$ref": "#/definitions/KeyValue"
-          }
-        },
-        "batch": {
-          "description": "If the upstream GraphQL server supports request batching, you can specify the 'batch' argument to batch several requests into a single batch request.\n\nMake sure you have also specified batch settings to the `@upstream` and to the `@graphQL` operator.",
-          "type": "boolean"
-        },
-        "dedupe": {
-          "description": "Enables deduplication of IO operations to enhance performance.\n\nThis flag prevents duplicate IO requests from being executed concurrently, reducing resource load. Caution: May lead to issues with APIs that expect unique results for identical inputs, such as nonce-based APIs.",
-          "type": [
-            "boolean",
-            "null"
-          ]
-        },
-        "headers": {
-          "description": "The headers parameter allows you to customize the headers of the GraphQL request made by the `@graphQL` operator. It is used by specifying a key-value map of header names and their values.",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/KeyValue"
-          }
-        },
-        "name": {
-          "description": "Specifies the root field on the upstream to request data from. This maps a field in your schema to a field in the upstream schema. When a query is received for this field, Tailcall requests data from the corresponding upstream field.",
-          "type": "string"
-        },
-        "url": {
-          "description": "This refers URL of the API.",
-          "type": "string"
-        }
-      },
-      "additionalProperties": false
-    },
-    "Grpc": {
-      "description": "The @grpc operator indicates that a field or node is backed by a gRPC API.\n\nFor instance, if you add the @grpc operator to the `users` field of the Query type with a service argument of `NewsService` and method argument of `GetAllNews`, it signifies that the `users` field is backed by a gRPC API. The `service` argument specifies the name of the gRPC service. The `method` argument specifies the name of the gRPC method. In this scenario, the GraphQL server will make a gRPC request to the gRPC endpoint specified when the `users` field is queried.",
-      "type": "object",
-      "required": [
-        "method",
-        "url"
-      ],
-      "properties": {
-        "batchKey": {
-          "description": "The `batchKey` dictates the path Tailcall will follow to group the returned items from the batch request. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "body": {
-          "description": "This refers to the arguments of your gRPC call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added in the body in `protobuf` format."
-        },
-        "dedupe": {
-          "description": "Enables deduplication of IO operations to enhance performance.\n\nThis flag prevents duplicate IO requests from being executed concurrently, reducing resource load. Caution: May lead to issues with APIs that expect unique results for identical inputs, such as nonce-based APIs.",
-          "type": [
-            "boolean",
-            "null"
-          ]
-        },
-        "headers": {
-          "description": "The `headers` parameter allows you to customize the headers of the HTTP request made by the `@grpc` operator. It is used by specifying a key-value map of header names and their values. Note: content-type is automatically set to application/grpc",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/KeyValue"
-          }
-        },
-        "method": {
-          "description": "This refers to the gRPC method you're going to call. For instance `GetAllNews`.",
-          "type": "string"
-        },
-        "onResponseBody": {
-          "description": "Specifies a JavaScript function to be executed after receiving the response body. This function can modify or transform the response body before it's sent back to the client.",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "select": {
-          "description": "You can use `select` with mustache syntax to re-construct the directives response to the desired format. This is useful when data are deeply nested or want to keep specific fields only from the response.\n\n* EXAMPLE 1: if we have a call that returns `{ \"user\": { \"items\": [...], ... } ... }` we can use `\"{{.user.items}}\"`, to extract the `items`. * EXAMPLE 2: if we have a call that returns `{ \"foo\": \"bar\", \"fizz\": { \"buzz\": \"eggs\", ... }, ... }` we can use { foo: \"{{.foo}}\", buzz: \"{{.fizz.buzz}}\" }`"
-        },
-        "url": {
-          "description": "This refers to URL of the API.",
-          "type": "string"
-        }
-      },
-      "additionalProperties": false
     },
     "Headers": {
       "type": "object",
@@ -646,110 +233,6 @@
         }
       }
     },
-    "Http": {
-      "description": "The @http operator indicates that a field or node is backed by a REST API.\n\nFor instance, if you add the @http operator to the `users` field of the Query type with a path argument of `\"/users\"`, it signifies that the `users` field is backed by a REST API. The path argument specifies the path of the REST API. In this scenario, the GraphQL server will make a GET request to the API endpoint specified when the `users` field is queried.",
-      "type": "object",
-      "required": [
-        "url"
-      ],
-      "properties": {
-        "batchKey": {
-          "description": "The `batchKey` dictates the path Tailcall will follow to group the returned items from the batch request. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "body": {
-          "description": "The body of the API call. It's used for methods like POST or PUT that send data to the server. You can pass it as a static object or use a Mustache template to substitute variables from the GraphQL variables.",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "dedupe": {
-          "description": "Enables deduplication of IO operations to enhance performance.\n\nThis flag prevents duplicate IO requests from being executed concurrently, reducing resource load. Caution: May lead to issues with APIs that expect unique results for identical inputs, such as nonce-based APIs.",
-          "type": [
-            "boolean",
-            "null"
-          ]
-        },
-        "encoding": {
-          "description": "The `encoding` parameter specifies the encoding of the request body. It can be `ApplicationJson` or `ApplicationXWwwFormUrlEncoded`. @default `ApplicationJson`.",
-          "allOf": [
-            {
-              "$ref": "#/definitions/Encoding"
-            }
-          ]
-        },
-        "headers": {
-          "description": "The `headers` parameter allows you to customize the headers of the HTTP request made by the `@http` operator. It is used by specifying a key-value map of header names and their values.",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/KeyValue"
-          }
-        },
-        "input": {
-          "description": "Schema of the input of the API call. It is automatically inferred in most cases.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/schema"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "method": {
-          "description": "This refers to the HTTP method of the API call. Commonly used methods include `GET`, `POST`, `PUT`, `DELETE` etc. @default `GET`.",
-          "allOf": [
-            {
-              "$ref": "#/definitions/Method"
-            }
-          ]
-        },
-        "onRequest": {
-          "description": "onRequest field in @http directive gives the ability to specify the request interception handler.",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "onResponseBody": {
-          "description": "Specifies a JavaScript function to be executed after receiving the response body. This function can modify or transform the response body before it's sent back to the client.",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "output": {
-          "description": "Schema of the output of the API call. It is automatically inferred in most cases.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/schema"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "query": {
-          "description": "This represents the query parameters of your API call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added to the URL. NOTE: Query parameter order is critical for batching in Tailcall. The first parameter referencing a field in the current value using mustache syntax is automatically selected as the batching parameter.",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/URLQuery"
-          }
-        },
-        "select": {
-          "description": "You can use `select` with mustache syntax to re-construct the directives response to the desired format. This is useful when data are deeply nested or want to keep specific fields only from the response.\n\n* EXAMPLE 1: if we have a call that returns `{ \"user\": { \"items\": [...], ... } ... }` we can use `\"{{.user.items}}\"`, to extract the `items`. * EXAMPLE 2: if we have a call that returns `{ \"foo\": \"bar\", \"fizz\": { \"buzz\": \"eggs\", ... }, ... }` we can use { foo: \"{{.foo}}\", buzz: \"{{.fizz.buzz}}\" }`"
-        },
-        "url": {
-          "description": "This refers to URL of the API.",
-          "type": "string"
-        }
-      },
-      "additionalProperties": false
-    },
     "HttpVersion": {
       "type": "string",
       "enum": [
@@ -777,17 +260,6 @@
       "title": "Int8",
       "description": "Field whose value is an 8-bit signed integer."
     },
-    "JS": {
-      "type": "object",
-      "required": [
-        "name"
-      ],
-      "properties": {
-        "name": {
-          "type": "string"
-        }
-      }
-    },
     "JSON": {
       "title": "JSON",
       "description": "Field whose value conforms to the standard JSON format as specified in RFC 8259 (https://datatracker.ietf.org/doc/html/rfc8259)."
@@ -807,112 +279,6 @@
         }
       }
     },
-    "Link": {
-      "description": "The @link directive allows you to import external resources, such as configuration – which will be merged into the config importing it –, or a .proto file – which will be later used by `@grpc` directive –.",
-      "type": "object",
-      "properties": {
-        "headers": {
-          "description": "Custom headers for gRPC reflection server.",
-          "type": [
-            "array",
-            "null"
-          ],
-          "items": {
-            "$ref": "#/definitions/KeyValue"
-          }
-        },
-        "id": {
-          "description": "The id of the link. It is used to reference the link in the schema.",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "meta": {
-          "description": "Additional metadata pertaining to the linked resource."
-        },
-        "src": {
-          "description": "The source of the link. It can be a URL or a path to a file. If a path is provided, it is relative to the file that imports the link.",
-          "type": "string"
-        },
-        "type": {
-          "description": "The type of the link. It can be `Config`, or `Protobuf`.",
-          "allOf": [
-            {
-              "$ref": "#/definitions/LinkType"
-            }
-          ]
-        }
-      },
-      "additionalProperties": false
-    },
-    "LinkType": {
-      "oneOf": [
-        {
-          "description": "Points to another Tailcall Configuration file. The imported configuration will be merged into the importing configuration.",
-          "type": "string",
-          "enum": [
-            "Config"
-          ]
-        },
-        {
-          "description": "Points to a Protobuf file. The imported Protobuf file will be used by the `@grpc` directive. If your API exposes a reflection endpoint, you should set the type to `Grpc` instead.",
-          "type": "string",
-          "enum": [
-            "Protobuf"
-          ]
-        },
-        {
-          "description": "Points to a JS file. The imported JS file will be used by the `@js` directive.",
-          "type": "string",
-          "enum": [
-            "Script"
-          ]
-        },
-        {
-          "description": "Points to a Cert file. The imported Cert file will be used by the server to serve over HTTPS.",
-          "type": "string",
-          "enum": [
-            "Cert"
-          ]
-        },
-        {
-          "description": "Points to a Key file. The imported Key file will be used by the server to serve over HTTPS.",
-          "type": "string",
-          "enum": [
-            "Key"
-          ]
-        },
-        {
-          "description": "A trusted document that contains GraphQL operations (queries, mutations) that can be exposed a REST API using the `@rest` directive.",
-          "type": "string",
-          "enum": [
-            "Operation"
-          ]
-        },
-        {
-          "description": "Points to a Htpasswd file. The imported Htpasswd file will be used by the server to authenticate users.",
-          "type": "string",
-          "enum": [
-            "Htpasswd"
-          ]
-        },
-        {
-          "description": "Points to a Jwks file. The imported Jwks file will be used by the server to authenticate users.",
-          "type": "string",
-          "enum": [
-            "Jwks"
-          ]
-        },
-        {
-          "description": "Points to a reflection endpoint. The imported reflection endpoint will be used by the `@grpc` directive to resolve data from gRPC services.",
-          "type": "string",
-          "enum": [
-            "Grpc"
-          ]
-        }
-      ]
-    },
     "Method": {
       "type": "string",
       "enum": [
@@ -926,29 +292,6 @@
         "CONNECT",
         "TRACE"
       ]
-    },
-    "Modify": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "omit": {
-          "type": [
-            "boolean",
-            "null"
-          ]
-        }
-      },
-      "additionalProperties": false
-    },
-    "Omit": {
-      "description": "Used to omit a field from public consumption.",
-      "type": "object",
-      "additionalProperties": false
     },
     "OtlpExporter": {
       "description": "Output the opentelemetry data to otlp collector",
@@ -993,22 +336,6 @@
         "protobuf"
       ]
     },
-    "Protected": {
-      "description": "Specifies the authentication requirements for accessing a field or type.\n\nThis allows you to control access by listing the IDs of authentication providers. - If `id` is not provided, all available providers must authorize the request. - If multiple provider IDs are listed, the request must be authorized by all of them.\n\nExample: If you want only specific providers to allow access, include their IDs in the list. Otherwise, leave it empty to require authorization from all available providers.",
-      "type": "object",
-      "properties": {
-        "id": {
-          "description": "List of authentication provider IDs that can access this field or type. - Leave empty to require authorization from all providers. - Include multiple IDs to require authorization from each one.",
-          "type": [
-            "array",
-            "null"
-          ],
-          "items": {
-            "type": "string"
-          }
-        }
-      }
-    },
     "Proxy": {
       "type": "object",
       "required": [
@@ -1017,105 +344,6 @@
       "properties": {
         "url": {
           "type": "string"
-        }
-      }
-    },
-    "Resolver": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "http"
-          ],
-          "properties": {
-            "http": {
-              "$ref": "#/definitions/Http"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "grpc"
-          ],
-          "properties": {
-            "grpc": {
-              "$ref": "#/definitions/Grpc"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "graphql"
-          ],
-          "properties": {
-            "graphql": {
-              "$ref": "#/definitions/GraphQL"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "call"
-          ],
-          "properties": {
-            "call": {
-              "$ref": "#/definitions/Call"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "js"
-          ],
-          "properties": {
-            "js": {
-              "$ref": "#/definitions/JS"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "expr"
-          ],
-          "properties": {
-            "expr": {
-              "$ref": "#/definitions/Expr"
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
-    "RootSchema": {
-      "type": "object",
-      "properties": {
-        "mutation": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "query": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "subscription": {
-          "type": [
-            "string",
-            "null"
-          ]
         }
       }
     },
@@ -1308,31 +536,6 @@
         }
       }
     },
-    "Step": {
-      "description": "Provides the ability to refer to a field defined in the root Query or Mutation.",
-      "type": "object",
-      "properties": {
-        "args": {
-          "description": "The arguments that will override the actual arguments of the field.",
-          "type": "object",
-          "additionalProperties": true
-        },
-        "mutation": {
-          "description": "The name of the field on the `Mutation` type that you want to call.",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "query": {
-          "description": "The name of the field on the `Query` type that you want to call.",
-          "type": [
-            "string",
-            "null"
-          ]
-        }
-      }
-    },
     "Telemetry": {
       "description": "The @telemetry directive facilitates seamless integration with OpenTelemetry, enhancing the observability of your GraphQL services powered by Tailcall.  By leveraging this directive, developers gain access to valuable insights into the performance and behavior of their applications.",
       "type": "object",
@@ -1409,121 +612,6 @@
         }
       ]
     },
-    "Type": {
-      "description": "Represents a GraphQL type. A type can be an object, interface, enum or scalar.",
-      "type": [
-        "object",
-        "array"
-      ],
-      "items": {
-        "$ref": "#/definitions/Resolver"
-      },
-      "required": [
-        "fields"
-      ],
-      "properties": {
-        "added_fields": {
-          "description": "Additional fields to be added to the type",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/AddField"
-          }
-        },
-        "cache": {
-          "description": "Setting to indicate if the type can be cached.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Cache"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "directives": {
-          "description": "Any additional directives",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/Directive"
-          }
-        },
-        "doc": {
-          "description": "Documentation for the type that is publicly visible.",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "fields": {
-          "description": "A map of field name and its definition.",
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/Field"
-          }
-        },
-        "implements": {
-          "description": "Interfaces that the type implements.",
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "uniqueItems": true
-        },
-        "protected": {
-          "description": "Marks field as protected by auth providers",
-          "default": null,
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Protected"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      }
-    },
-    "Type2": {
-      "description": "Type to represent GraphQL type usage with modifiers [spec](https://spec.graphql.org/October2021/#sec-Wrapping-Types)",
-      "anyOf": [
-        {
-          "type": "object",
-          "required": [
-            "name"
-          ],
-          "properties": {
-            "name": {
-              "description": "Name of the type",
-              "type": "string"
-            },
-            "required": {
-              "description": "Flag to indicate the type is required.",
-              "type": "boolean"
-            }
-          }
-        },
-        {
-          "type": "object",
-          "required": [
-            "list"
-          ],
-          "properties": {
-            "list": {
-              "description": "Type is a list",
-              "allOf": [
-                {
-                  "$ref": "#/definitions/Type2"
-                }
-              ]
-            },
-            "required": {
-              "description": "Flag to indicate the type is required.",
-              "type": "boolean"
-            }
-          }
-        }
-      ]
-    },
     "UInt128": {
       "title": "UInt128",
       "description": "Field whose value is a 128-bit unsigned integer."
@@ -1543,52 +631,6 @@
     "UInt8": {
       "title": "UInt8",
       "description": "Field whose value is an 8-bit unsigned integer."
-    },
-    "URLQuery": {
-      "description": "The URLQuery input type represents a query parameter to be included in a URL.",
-      "type": "object",
-      "required": [
-        "key",
-        "value"
-      ],
-      "properties": {
-        "key": {
-          "description": "The key or name of the query parameter.",
-          "type": "string"
-        },
-        "skipEmpty": {
-          "description": "Determines whether to ignore query parameters with empty values.",
-          "type": [
-            "boolean",
-            "null"
-          ]
-        },
-        "value": {
-          "description": "The actual value or a mustache template to resolve the value dynamically for the query parameter.",
-          "type": "string"
-        }
-      }
-    },
-    "Union": {
-      "type": "object",
-      "required": [
-        "types"
-      ],
-      "properties": {
-        "doc": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "types": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "uniqueItems": true
-        }
-      }
     },
     "Upstream": {
       "description": "The `upstream` directive allows you to control various aspects of the upstream server connection. This includes settings like connection timeouts, keep-alive intervals, and more. If not specified, default values are used.",
@@ -1740,97 +782,6 @@
     "Url": {
       "title": "Url",
       "description": "Field whose value conforms to the standard URL format as specified in RFC 3986 (https://datatracker.ietf.org/doc/html/rfc3986)."
-    },
-    "Variant": {
-      "description": "Definition of GraphQL value",
-      "type": "object",
-      "required": [
-        "name"
-      ],
-      "properties": {
-        "alias": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Alias"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "name": {
-          "type": "string"
-        }
-      }
-    },
-    "schema": {
-      "oneOf": [
-        {
-          "type": "string",
-          "enum": [
-            "Str",
-            "Num",
-            "Bool",
-            "Empty",
-            "Any"
-          ]
-        },
-        {
-          "type": "object",
-          "required": [
-            "Obj"
-          ],
-          "properties": {
-            "Obj": {
-              "type": "object",
-              "additionalProperties": {
-                "$ref": "#/definitions/schema"
-              }
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "Arr"
-          ],
-          "properties": {
-            "Arr": {
-              "$ref": "#/definitions/schema"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "Opt"
-          ],
-          "properties": {
-            "Opt": {
-              "$ref": "#/definitions/schema"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "Enum"
-          ],
-          "properties": {
-            "Enum": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              },
-              "uniqueItems": true
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
     }
   }
 }

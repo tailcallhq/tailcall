@@ -1,0 +1,43 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema
+  @server(port: 8000, queryValidation: false)
+  @upstream(batch: {delay: 1, headers: [], maxSize: 1000}, httpCache: 42) {
+  query: Query
+}
+
+type Comment {
+  id: Int
+}
+
+type Post {
+  body: String
+  id: Int
+  title: String
+  userId: Int!
+}
+
+type Query {
+  users: [User] @http(url: "http://jsonplaceholder.typicode.com/users")
+}
+
+type User {
+  comments: [Comment]
+    @http(
+      url: "https://jsonplaceholder.typicode.com/comments"
+      body: {title: "foo", body: "bar", meta: {information: {userId: "{{.value.id}}"}}}
+      batchKey: ["userId"]
+      method: "POST"
+    )
+  id: Int!
+  name: String!
+  posts: [Post]
+    @http(
+      url: "https://jsonplaceholder.typicode.com/posts"
+      body: {userId: "{{.value.id}}", title: "foo", body: "bar"}
+      batchKey: ["userId"]
+      method: "POST"
+    )
+}

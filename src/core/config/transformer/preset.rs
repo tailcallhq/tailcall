@@ -18,7 +18,7 @@ impl Preset {
         Self {
             merge_type: 0.0,
             tree_shake: false,
-            infer_type_names: false,
+            infer_type_names: true,
             unwrap_single_field_types: true,
         }
     }

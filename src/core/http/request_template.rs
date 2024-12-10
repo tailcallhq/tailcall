@@ -12,6 +12,7 @@ use crate::core::endpoint::Endpoint;
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
 use crate::core::ir::model::{CacheKey, IoId};
+use crate::core::ir::DynamicRequest;
 use crate::core::mustache::{Eval, Mustache, Segment};
 use crate::core::path::{PathString, PathValue, ValueString};
 
@@ -91,7 +92,7 @@ impl RequestTemplate {
     /// Returns true if there are not templates
     pub fn is_const(&self) -> bool {
         self.root_url.is_const()
-            && self.body_path.as_ref().map_or(true, Mustache::is_const)
+            && self.body_path.as_ref().map_or(true, |b| b.is_const())
             && self.query.iter().all(|query| query.value.is_const())
             && self.headers.iter().all(|(_, v)| v.is_const())
     }
@@ -113,15 +114,12 @@ impl RequestTemplate {
     pub fn to_request<C: PathString + HasHeaders + PathValue>(
         &self,
         ctx: &C,
-    ) -> anyhow::Result<reqwest::Request> {
-        // Create url
+    ) -> anyhow::Result<DynamicRequest<String>> {
         let url = self.create_url(ctx)?;
         let method = self.method.clone();
-        let mut req = reqwest::Request::new(method, url);
-        req = self.set_headers(req, ctx);
-        req = self.set_body(req, ctx)?;
-
-        Ok(req)
+        let req = reqwest::Request::new(method, url);
+        let req = self.set_headers(req, ctx);
+        self.set_body(req, ctx)
     }
 
     /// Sets the body for the request
@@ -129,26 +127,32 @@ impl RequestTemplate {
         &self,
         mut req: reqwest::Request,
         ctx: &C,
-    ) -> anyhow::Result<reqwest::Request> {
-        if let Some(body_path) = &self.body_path {
+    ) -> anyhow::Result<DynamicRequest<String>> {
+        let batching_value = if let Some(body_path) = &self.body_path {
             match &self.encoding {
                 Encoding::ApplicationJson => {
-                    req.body_mut().replace(body_path.render(ctx).into());
+                    let (body, batching_value) =
+                        ExpressionValueEval::default().eval(body_path, ctx);
+                    req.body_mut().replace(body.into());
+                    batching_value
                 }
                 Encoding::ApplicationXWwwFormUrlencoded => {
                     // TODO: this is a performance bottleneck
                     // We first encode everything to string and then back to form-urlencoded
-                    let body: String = body_path.render(ctx);
+                    let body = body_path.render(ctx);
                     let form_data = match serde_json::from_str::<serde_json::Value>(&body) {
                         Ok(deserialized_data) => serde_urlencoded::to_string(deserialized_data)?,
                         Err(_) => body,
                     };
 
                     req.body_mut().replace(form_data.into());
+                    None
                 }
             }
-        }
-        Ok(req)
+        } else {
+            None
+        };
+        Ok(DynamicRequest::new(req).with_batching_value(batching_value))
     }
 
     /// Sets the headers for the request
@@ -231,7 +235,7 @@ impl TryFrom<Endpoint> for RequestTemplate {
         let body = endpoint
             .body
             .as_ref()
-            .map(|body| Mustache::parse(body.as_str()));
+            .map(|b| Mustache::parse(&b.to_string()));
         let encoding = endpoint.encoding.clone();
 
         Ok(Self {
@@ -302,6 +306,50 @@ impl<'a, A: PathValue> Eval<'a> for ValueStringEval<A> {
     }
 }
 
+struct ExpressionValueEval<A>(std::marker::PhantomData<A>);
+impl<A> Default for ExpressionValueEval<A> {
+    fn default() -> Self {
+        Self(std::marker::PhantomData)
+    }
+}
+
+impl<'a, A: PathString> Eval<'a> for ExpressionValueEval<A> {
+    type In = A;
+    type Out = (String, Option<String>);
+
+    fn eval(&self, mustache: &Mustache, in_value: &'a Self::In) -> Self::Out {
+        let mut result = String::new();
+        // This evaluator returns a tuple of (evaluated_string, body_key) where:
+        // 1. evaluated_string: The fully rendered template string
+        // 2. body_key: The value of the first expression found in the template
+        //
+        // This implementation is a critical optimization for request batching:
+        // - During batching, we need to extract individual request values from the
+        //   batch response and map them back to their original requests
+        // - Instead of parsing the body JSON multiple times, we extract the key during
+        //   initial template evaluation
+        // - Since we enforce that batch requests can only contain one expression in
+        //   their body, this key uniquely identifies each request
+        // - This approach eliminates the need for repeated JSON parsing/serialization
+        //   during the batching process, significantly improving performance
+        let mut first_expression_value = None;
+        for segment in mustache.segments().iter() {
+            match segment {
+                Segment::Literal(text) => result.push_str(text),
+                Segment::Expression(parts) => {
+                    if let Some(value) = in_value.path_string(parts) {
+                        result.push_str(value.as_ref());
+                        if first_expression_value.is_none() {
+                            first_expression_value = Some(value.into_owned());
+                        }
+                    }
+                }
+            }
+        }
+        (result, first_expression_value)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::borrow::Cow;
@@ -361,6 +409,7 @@ mod tests {
         ) -> anyhow::Result<String> {
             let body = self
                 .to_request(ctx)?
+                .into_request()
                 .body()
                 .and_then(|a| a.as_bytes())
                 .map(|a| a.to_vec())
@@ -398,8 +447,8 @@ mod tests {
           }
         }));
 
-        let req = tmpl.to_request(&ctx).unwrap();
-
+        let request_wrapper = tmpl.to_request(&ctx).unwrap();
+        let req = request_wrapper.request();
         assert_eq!(
             req.url().to_string(),
             "http://localhost:3000/?baz=1&baz=2&baz=3&foo=12"
@@ -410,7 +459,8 @@ mod tests {
     fn test_url() {
         let tmpl = RequestTemplate::new("http://localhost:3000/").unwrap();
         let ctx = Context::default();
-        let req = tmpl.to_request(&ctx).unwrap();
+        let request_wrapper = tmpl.to_request(&ctx).unwrap();
+        let req = request_wrapper.request();
         assert_eq!(req.url().to_string(), "http://localhost:3000/");
     }
 
@@ -418,7 +468,8 @@ mod tests {
     fn test_url_path() {
         let tmpl = RequestTemplate::new("http://localhost:3000/foo/bar").unwrap();
         let ctx = Context::default();
-        let req = tmpl.to_request(&ctx).unwrap();
+        let request_wrapper = tmpl.to_request(&ctx).unwrap();
+        let req = request_wrapper.request();
         assert_eq!(req.url().to_string(), "http://localhost:3000/foo/bar");
     }
 
@@ -431,7 +482,8 @@ mod tests {
           }
         }));
 
-        let req = tmpl.to_request(&ctx).unwrap();
+        let request_wrapper = tmpl.to_request(&ctx).unwrap();
+        let req = request_wrapper.request();
         assert_eq!(req.url().to_string(), "http://localhost:3000/foo/bar");
     }
 
@@ -446,7 +498,9 @@ mod tests {
             "booz": 1
           }
         }));
-        let req = tmpl.to_request(&ctx).unwrap();
+        let request_wrapper = tmpl.to_request(&ctx).unwrap();
+        let req = request_wrapper.request();
+
         assert_eq!(
             req.url().to_string(),
             "http://localhost:3000/foo/bar/boozes/1"
@@ -472,11 +526,15 @@ mod tests {
                 skip_empty: false,
             },
         ];
+
         let tmpl = RequestTemplate::new("http://localhost:3000")
             .unwrap()
             .query(query);
+
         let ctx = Context::default();
-        let req = tmpl.to_request(&ctx).unwrap();
+        let request_wrapper = tmpl.to_request(&ctx).unwrap();
+        let req = request_wrapper.request();
+
         assert_eq!(
             req.url().to_string(),
             "http://localhost:3000/?foo=0&bar=1&baz=2"
@@ -513,7 +571,8 @@ mod tests {
             "id": 2
           }
         }));
-        let req = tmpl.to_request(&ctx).unwrap();
+        let request_wrapper = tmpl.to_request(&ctx).unwrap();
+        let req = request_wrapper.request();
         assert_eq!(
             req.url().to_string(),
             "http://localhost:3000/?foo=0&bar=1&baz=2"
@@ -531,7 +590,8 @@ mod tests {
             .unwrap()
             .headers(headers);
         let ctx = Context::default();
-        let req = tmpl.to_request(&ctx).unwrap();
+        let request_wrapper = tmpl.to_request(&ctx).unwrap();
+        let req = request_wrapper.request();
         assert_eq!(req.headers().get("foo").unwrap(), "foo");
         assert_eq!(req.headers().get("bar").unwrap(), "bar");
         assert_eq!(req.headers().get("baz").unwrap(), "baz");
@@ -561,7 +621,8 @@ mod tests {
             "id": 2
           }
         }));
-        let req = tmpl.to_request(&ctx).unwrap();
+        let request_wrapper = tmpl.to_request(&ctx).unwrap();
+        let req = request_wrapper.request();
         assert_eq!(req.headers().get("foo").unwrap(), "0");
         assert_eq!(req.headers().get("bar").unwrap(), "1");
         assert_eq!(req.headers().get("baz").unwrap(), "2");
@@ -574,7 +635,8 @@ mod tests {
             .method(reqwest::Method::POST)
             .encoding(crate::core::config::Encoding::ApplicationJson);
         let ctx = Context::default();
-        let req = tmpl.to_request(&ctx).unwrap();
+        let request_wrapper = tmpl.to_request(&ctx).unwrap();
+        let req = request_wrapper.request();
         assert_eq!(
             req.headers().get("Content-Type").unwrap(),
             "application/json"
@@ -588,7 +650,8 @@ mod tests {
             .method(reqwest::Method::POST)
             .encoding(crate::core::config::Encoding::ApplicationXWwwFormUrlencoded);
         let ctx = Context::default();
-        let req = tmpl.to_request(&ctx).unwrap();
+        let request_wrapper = tmpl.to_request(&ctx).unwrap();
+        let req = request_wrapper.request();
         assert_eq!(
             req.headers().get("Content-Type").unwrap(),
             "application/x-www-form-urlencoded"
@@ -601,7 +664,8 @@ mod tests {
             .unwrap()
             .method(reqwest::Method::POST);
         let ctx = Context::default();
-        let req = tmpl.to_request(&ctx).unwrap();
+        let request_wrapper = tmpl.to_request(&ctx).unwrap();
+        let req = request_wrapper.request();
         assert_eq!(req.method(), reqwest::Method::POST);
     }
 
@@ -662,11 +726,12 @@ mod tests {
                     .body(Some("foo".into()));
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
             let ctx = Context::default();
-            let req = tmpl.to_request(&ctx).unwrap();
+            let req_wrapper = tmpl.to_request(&ctx).unwrap();
+            let req = req_wrapper.request();
             assert_eq!(req.method(), reqwest::Method::POST);
             assert_eq!(req.headers().get("foo").unwrap(), "bar");
             let body = req.body().unwrap().as_bytes().unwrap().to_owned();
-            assert_eq!(body, "foo".as_bytes());
+            assert_eq!(body, "\"foo\"".as_bytes());
             assert_eq!(req.url().to_string(), "http://localhost:3000/");
         }
 
@@ -688,7 +753,8 @@ mod tests {
                 "header": "abc"
               }
             }));
-            let req = tmpl.to_request(&ctx).unwrap();
+            let req_wrapper = tmpl.to_request(&ctx).unwrap();
+            let req = req_wrapper.request();
             assert_eq!(req.method(), reqwest::Method::POST);
             assert_eq!(req.headers().get("foo").unwrap(), "abc");
             let body = req.body().unwrap().as_bytes().unwrap().to_owned();
@@ -703,7 +769,8 @@ mod tests {
             );
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
             let ctx = Context::default();
-            let req = tmpl.to_request(&ctx).unwrap();
+            let request_wrapper = tmpl.to_request(&ctx).unwrap();
+            let req = request_wrapper.request();
             assert_eq!(req.url().to_string(), "http://localhost:3000/");
         }
 
@@ -718,7 +785,8 @@ mod tests {
             ]);
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
             let ctx = Context::default();
-            let req = tmpl.to_request(&ctx).unwrap();
+            let request_wrapper = tmpl.to_request(&ctx).unwrap();
+            let req = request_wrapper.request();
             assert_eq!(req.url().to_string(), "http://localhost:3000/?q=1&b=1&c");
         }
 
@@ -734,7 +802,8 @@ mod tests {
                 "d": "bar"
               }
             }));
-            let req = tmpl.to_request(&ctx).unwrap();
+            let request_wrapper = tmpl.to_request(&ctx).unwrap();
+            let req = request_wrapper.request();
             assert_eq!(
                 req.url().to_string(),
                 "http://localhost:3000/foo?b=foo&d=bar"
@@ -758,7 +827,8 @@ mod tests {
                 "d": "bar",
               }
             }));
-            let req = tmpl.to_request(&ctx).unwrap();
+            let request_wrapper = tmpl.to_request(&ctx).unwrap();
+            let req = request_wrapper.request();
             assert_eq!(
                 req.url().to_string(),
                 "http://localhost:3000/foo?b=foo&d=bar&f=baz&e"
@@ -773,7 +843,8 @@ mod tests {
             let mut headers = HeaderMap::new();
             headers.insert("baz", "qux".parse().unwrap());
             let ctx = Context::default().headers(headers);
-            let req = tmpl.to_request(&ctx).unwrap();
+            let request_wrapper = tmpl.to_request(&ctx).unwrap();
+            let req = request_wrapper.request();
             assert_eq!(req.headers().get("baz").unwrap(), "qux");
         }
     }
@@ -790,7 +861,8 @@ mod tests {
             let tmpl = RequestTemplate::form_encoded_url("http://localhost:3000")
                 .unwrap()
                 .body_path(Some(Mustache::parse("{{foo.bar}}")));
-            let ctx = Context::default().value(json!({"foo": {"bar": "baz"}}));
+            let ctx = Context::default().value(json!({"foo": {"bar":
+        "baz"}}));
             let request_body = tmpl.to_body(&ctx);
             let body = request_body.unwrap();
             assert_eq!(body, "baz");

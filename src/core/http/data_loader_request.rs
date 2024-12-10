@@ -5,34 +5,48 @@ use std::ops::Deref;
 use tailcall_hasher::TailcallHasher;
 
 #[derive(Debug)]
-pub struct DataLoaderRequest(reqwest::Request, BTreeSet<String>);
+pub struct DataLoaderRequest {
+    request: reqwest::Request,
+    headers: BTreeSet<String>,
+    /// used for request body batching.
+    batching_value: Option<String>,
+}
 
 impl DataLoaderRequest {
     pub fn new(req: reqwest::Request, headers: BTreeSet<String>) -> Self {
         // TODO: req should already have headers builtin, no?
-        DataLoaderRequest(req, headers)
+        Self { request: req, headers, batching_value: None }
     }
+
+    pub fn with_batching_value(self, body: Option<String>) -> Self {
+        Self { batching_value: body, ..self }
+    }
+
+    pub fn batching_value(&self) -> Option<&String> {
+        self.batching_value.as_ref()
+    }
+
     pub fn to_request(&self) -> reqwest::Request {
         // TODO: excessive clone for the whole structure instead of cloning only part of
         // it check if we really need to clone anything at all or just pass
         // references?
-        self.clone().0
+        self.clone().request
     }
     pub fn headers(&self) -> &BTreeSet<String> {
-        &self.1
+        &self.headers
     }
 }
 impl Hash for DataLoaderRequest {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.0.url().hash(state);
+        self.request.url().hash(state);
         // use body in hash for graphql queries with query operation as they used to
         // fetch data while http post and graphql mutation should not be loaded
         // through dataloader at all!
-        if let Some(body) = self.0.body() {
+        if let Some(body) = self.request.body() {
             body.as_bytes().hash(state);
         }
-        for name in &self.1 {
-            if let Some(value) = self.0.headers().get(name) {
+        for name in &self.headers {
+            if let Some(value) = self.request.headers().get(name) {
                 name.hash(state);
                 value.hash(state);
             }
@@ -58,13 +72,15 @@ impl Eq for DataLoaderRequest {}
 
 impl Clone for DataLoaderRequest {
     fn clone(&self) -> Self {
-        let req = self.0.try_clone().unwrap_or_else(|| {
-            let mut req = reqwest::Request::new(self.0.method().clone(), self.0.url().clone());
-            req.headers_mut().extend(self.0.headers().clone());
+        let req = self.request.try_clone().unwrap_or_else(|| {
+            let mut req =
+                reqwest::Request::new(self.request.method().clone(), self.request.url().clone());
+            req.headers_mut().extend(self.request.headers().clone());
             req
         });
 
-        DataLoaderRequest(req, self.1.clone())
+        DataLoaderRequest::new(req, self.headers.clone())
+            .with_batching_value(self.batching_value.clone())
     }
 }
 
@@ -72,7 +88,7 @@ impl Deref for DataLoaderRequest {
     type Target = reqwest::Request;
 
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.request
     }
 }
 

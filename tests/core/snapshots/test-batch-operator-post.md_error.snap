@@ -4,7 +4,7 @@ expression: errors
 ---
 [
   {
-    "message": "GroupBy is only supported for GET requests",
+    "message": "batchKey requires either body or query parameters",
     "trace": [
       "Query",
       "user",

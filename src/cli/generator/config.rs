@@ -11,7 +11,6 @@ use tailcall_valid::{Valid, ValidateFrom, Validator};
 use url::Url;
 
 use crate::core::config::transformer::Preset;
-use crate::core::config::{self};
 use crate::core::http::Method;
 
 #[derive(Deserialize, Serialize, Debug, Default, Setters)]
@@ -81,9 +80,15 @@ pub enum Source<Status = UnResolved> {
         is_mutation: Option<bool>,
         field_name: String,
     },
+    #[serde(rename_all = "camelCase")]
     Proto {
         src: Location<Status>,
         url: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        proto_paths: Option<Vec<Location<Status>>>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        #[serde(rename = "connectRPC")]
+        connect_rpc: Option<bool>,
     },
     Config {
         src: Location<Status>,
@@ -96,8 +101,6 @@ pub enum Source<Status = UnResolved> {
 pub struct Output<Status = UnResolved> {
     #[serde(skip_serializing_if = "Location::is_empty")]
     pub path: Location<Status>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub format: Option<config::Source>,
 }
 
 #[derive(Debug)]
@@ -196,10 +199,7 @@ impl Headers {
 
 impl Output<UnResolved> {
     pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<Output<Resolved>> {
-        Ok(Output {
-            format: self.format,
-            path: self.path.into_resolved(parent_dir),
-        })
+        Ok(Output { path: self.path.into_resolved(parent_dir) })
     }
 }
 
@@ -217,9 +217,20 @@ impl Source<UnResolved> {
                     is_mutation,
                 })
             }
-            Source::Proto { src, url } => {
+            Source::Proto { src, url, proto_paths, connect_rpc } => {
                 let resolved_path = src.into_resolved(parent_dir);
-                Ok(Source::Proto { src: resolved_path, url })
+                let resolved_proto_paths = proto_paths.map(|paths| {
+                    paths
+                        .into_iter()
+                        .map(|path| path.into_resolved(parent_dir))
+                        .collect()
+                });
+                Ok(Source::Proto {
+                    src: resolved_path,
+                    url,
+                    proto_paths: resolved_proto_paths,
+                    connect_rpc,
+                })
             }
             Source::Config { src } => {
                 let resolved_path = src.into_resolved(parent_dir);
@@ -434,10 +445,9 @@ mod tests {
         let json = r#"
           {"output": {
               "paths": "./output.graphql",
-          }} 
+          }}
         "#;
-        let expected_error =
-            "unknown field `paths`, expected `path` or `format` at line 3 column 21";
+        let expected_error = "unknown field `paths`, expected `path` at line 3 column 21";
         assert_deserialization_error(json, expected_error);
     }
 
@@ -446,7 +456,7 @@ mod tests {
         let json = r#"
           {"schema": {
               "querys": "Query",
-          }} 
+          }}
         "#;
         let expected_error =
             "unknown field `querys`, expected `query` or `mutation` at line 3 column 22";

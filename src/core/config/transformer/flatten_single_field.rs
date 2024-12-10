@@ -58,7 +58,12 @@ impl Transform for FlattenSingleField {
     fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
         let origin_config = config.clone();
 
-        for ty in config.types.values_mut() {
+        let input_types = config.input_types();
+
+        for (ty_name, ty) in config.types.iter_mut() {
+            if input_types.contains(ty_name) {
+                continue;
+            }
             for (field_name, field) in ty.fields.iter_mut() {
                 let mut visited_types = HashSet::<String>::new();
                 if let Some(path) = get_single_field_path(
