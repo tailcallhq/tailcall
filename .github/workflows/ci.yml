@@ -175,7 +175,7 @@ jobs:
 
       - name: Run cargo insta test
         if: ${{ env.WITH_COVERAGE == 'false' && matrix.test != 'false' }}
-        run: cargo insta test --unreferenced reject --workspace  --target ${{ matrix.target }}
+        run: cargo insta test --unreferenced reject --workspace --target ${{ matrix.target }}
 
       - name: Install llvm-cov test runner
         if: ${{ env.WITH_COVERAGE == 'true' && matrix.test != 'false' }}
@@ -188,7 +188,7 @@ jobs:
         run: cargo llvm-cov --workspace ${{ matrix.features }} --lcov --target ${{ matrix.target }} --output-path lcov.info
 
       - name: Upload Coverage to Codecov
-        if: ${{ env.WITH_COVERAGE == 'false' && matrix.build == 'darwin-arm64' }}
+        if: ${{ env.WITH_COVERAGE == 'true' && matrix.test != 'false' }}
         uses: Wandalen/wretry.action@v3
         with:
           action: codecov/codecov-action@v4
