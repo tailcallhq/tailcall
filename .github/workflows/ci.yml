@@ -167,28 +167,28 @@ jobs:
           }
           echo "$(Resolve-Path nasm-2.16.02)" >> $env:GITHUB_PATH
 
-      - name: Install test runner
-        if: ${{ !env.WITH_COVERAGE }}
+      - name: Install insta test runner
+        if: ${{ env.WITH_COVERAGE == 'true' }}
         uses: taiki-e/install-action@v2
         with:
           tool: cargo-insta
 
       - name: Run cargo insta test
-        if: ${{ !env.WITH_COVERAGE && matrix.test != 'false' }}
+        if: ${{ env.WITH_COVERAGE == 'true' && matrix.test != 'false' }}
         run: cargo insta test --unreferenced reject
 
-      - name: Install test runner
-        if: ${{ env.WITH_COVERAGE }}
+      - name: Install llvm-cov test runner
+        if: ${{ env.WITH_COVERAGE == 'false' }}
         uses: taiki-e/install-action@v2
         with:
           tool: cargo-llvm-cov
 
       - name: Run Cargo Test
-        if: ${{ env.WITH_COVERAGE && matrix.test != 'false' }}
+        if: ${{ env.WITH_COVERAGE == 'false' && matrix.test != 'false' }}
         run: cargo llvm-cov --workspace ${{ matrix.features }} --lcov --target ${{ matrix.target }} --output-path lcov.info
 
       - name: Upload Coverage to Codecov
-        if: ${{ env.WITH_COVERAGE && matrix.build == 'darwin-arm64' }}
+        if: ${{ env.WITH_COVERAGE == 'false' && matrix.build == 'darwin-arm64' }}
         uses: Wandalen/wretry.action@v3
         with:
           action: codecov/codecov-action@v4
