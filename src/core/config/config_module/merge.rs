@@ -4,10 +4,10 @@ use indexmap::IndexMap;
 use tailcall_valid::{Valid, Validator};
 
 use super::{Cache, ConfigModule};
-use crate::core;
-use crate::core::config::{Arg, Config, Enum, Field, Type};
+use crate::core::config::{Arg, Config, Enum, Field, RootSchema, Type};
 use crate::core::merge_right::MergeRight;
 use crate::core::variance::{Contravariant, Covariant, Invariant};
+use crate::core::{self};
 
 impl core::Type {
     fn merge(self, other: Self, non_null_merge: fn(bool, bool) -> bool) -> Valid<Self, String> {
@@ -183,6 +183,24 @@ impl Covariant for Enum {
     }
 }
 
+impl Invariant for RootSchema {
+    fn unify(self, other: Self) -> Valid<Self, String> {
+        fn unify_option<T>(left: Option<T>, right: Option<T>) -> Option<T> {
+            match (left, right) {
+                (None, None) => None,
+                (None, Some(that)) => Some(that),
+                (Some(this), _) => Some(this),
+            }
+        }
+
+        Valid::succeed(Self {
+            query: unify_option(self.query, other.query),
+            mutation: unify_option(self.mutation, other.mutation),
+            subscription: unify_option(self.subscription, other.subscription),
+        })
+    }
+}
+
 impl Invariant for Cache {
     fn unify(self, other: Self) -> Valid<Self, String> {
         let mut types = self.config.types;
@@ -270,12 +288,18 @@ impl Invariant for Cache {
             .map(|en| (name, en))
             .trace(&trace_name)
         }))
-        .map( |(merged_types, merged_enums)| {
+        .fuse(self.config.schema.unify(other.config.schema))
+        .map( |(merged_types, merged_enums, schema)| {
             types.extend(merged_types);
             enums.extend(merged_enums);
 
             let config = Config {
-                types, enums, unions: self.config.unions.merge_right(other.config.unions), server: self.config.server.merge_right(other.config.server), upstream: self.config.upstream.merge_right(other.config.upstream), schema: self.config.schema.merge_right(other.config.schema), links: self.config.links.merge_right(other.config.links), telemetry: self.config.telemetry.merge_right(other.config.telemetry)  };
+                types,
+                enums,
+                unions: self.config.unions.merge_right(other.config.unions),
+                schema,
+                ..self.config
+            };
 
             Cache {
                 config,
