@@ -1,9 +1,21 @@
 ---
 source: tests/core/spec.rs
 expression: formatted
+snapshot_kind: text
 ---
+type Foo {
+  foo: String
+}
+
+type Post {
+  id: Int!
+  user: User
+  userId: Int!
+}
+
 type Query {
-  firstUser: User
+  foo: Foo
+  post(id: Int!): Post
 }
 
 type User {
