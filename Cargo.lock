@@ -2814,7 +2814,7 @@ checksum = "8daf2b52304419d7bf5ec32891884c65274a3eedc0b5834b84627099901a1176"
 dependencies = [
  "foldhash",
  "hifijson",
- "indexmap 2.6.0",
+ "indexmap 2.7.0",
  "jaq-core",
  "jaq-std",
  "serde_json",
