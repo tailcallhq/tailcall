@@ -2,12 +2,12 @@ use async_graphql_value::{ConstValue, Name};
 use indexmap::IndexMap;
 use serde_json::Value;
 
-use crate::core::mustache::{JqTemplate, Mustache};
+use crate::core::mustache::JqTemplate;
 
 #[derive(Debug, Clone, PartialEq)]
+/// This is used to express dynamic value resolver engine.
 pub enum DynamicValue<A> {
     Value(A),
-    Mustache(Mustache),
     JqTemplate(JqTemplate),
     Object(IndexMap<Name, DynamicValue<A>>),
     Array(Vec<DynamicValue<A>>),
@@ -26,25 +26,13 @@ impl<A> DynamicValue<A> {
     pub fn prepend(self, name: &str) -> Self {
         match self {
             DynamicValue::Value(value) => DynamicValue::Value(value),
-            DynamicValue::Mustache(mut mustache) => {
-                if mustache.is_const() {
-                    DynamicValue::Mustache(mustache)
-                } else {
-                    let segments = mustache.segments_mut();
-                    if let Some(crate::core::mustache::Segment::Expression(vec)) =
-                        segments.get_mut(0)
-                    {
-                        vec.insert(0, name.to_string());
-                    }
-                    DynamicValue::Mustache(mustache)
-                }
-            }
             DynamicValue::JqTemplate(jqt) => DynamicValue::JqTemplate(JqTemplate(
                 jqt.0
                     .into_iter()
                     .map(|mut f| match &mut f {
                         crate::core::mustache::JqTemplateIR::JqTransform(_) => f,
                         crate::core::mustache::JqTemplateIR::Literal(_) => f,
+                        // this function can prepend a custom prefix to mustache only
                         crate::core::mustache::JqTemplateIR::Mustache(mustache) => {
                             let segments = mustache.segments_mut();
                             if let Some(crate::core::mustache::Segment::Expression(vec)) =
@@ -78,9 +66,6 @@ impl TryFrom<&DynamicValue<ConstValue>> for ConstValue {
     fn try_from(value: &DynamicValue<ConstValue>) -> Result<Self, Self::Error> {
         match value {
             DynamicValue::Value(v) => Ok(v.to_owned()),
-            DynamicValue::Mustache(_) => Err(anyhow::anyhow!(
-                "mustache cannot be converted to const value"
-            )),
             DynamicValue::JqTemplate(_) => Err(anyhow::anyhow!(
                 "jq template cannot be converted to const value"
             )),
@@ -104,7 +89,6 @@ impl<A> DynamicValue<A> {
     // Helper method to determine if the value is constant (non-mustache).
     pub fn is_const(&self) -> bool {
         match self {
-            DynamicValue::Mustache(m) => m.is_const(),
             DynamicValue::JqTemplate(t) => t.is_const(),
             DynamicValue::Object(obj) => obj.values().all(|v| v.is_const()),
             DynamicValue::Array(arr) => arr.iter().all(|v| v.is_const()),
@@ -116,6 +100,7 @@ impl<A> DynamicValue<A> {
 impl TryFrom<&Value> for DynamicValue<ConstValue> {
     type Error = anyhow::Error;
 
+    /// Used to convert json notation to dynamic value
     fn try_from(value: &Value) -> Result<Self, Self::Error> {
         match value {
             Value::Object(obj) => {
@@ -152,31 +137,33 @@ mod test {
     #[test]
     fn test_dynamic_value_inject() {
         let value: DynamicValue<ConstValue> =
-            DynamicValue::Mustache(Mustache::parse("{{.foo}}")).prepend("args");
+            DynamicValue::JqTemplate(JqTemplate::parse("{{.foo}}")).prepend("args");
         let expected: DynamicValue<ConstValue> =
-            DynamicValue::Mustache(Mustache::parse("{{.args.foo}}"));
+            DynamicValue::JqTemplate(JqTemplate::parse("{{.args.foo}}"));
         assert_eq!(value, expected);
 
         let mut value_map = IndexMap::new();
         value_map.insert(
             Name::new("foo"),
-            DynamicValue::Mustache(Mustache::parse("{{.foo}}")),
+            DynamicValue::JqTemplate(JqTemplate::parse("{{.foo}}")),
         );
         let value: DynamicValue<ConstValue> = DynamicValue::Object(value_map).prepend("args");
         let mut expected_map = IndexMap::new();
         expected_map.insert(
             Name::new("foo"),
-            DynamicValue::Mustache(Mustache::parse("{{.args.foo}}")),
+            DynamicValue::JqTemplate(JqTemplate::parse("{{.args.foo}}")),
         );
         let expected: DynamicValue<ConstValue> = DynamicValue::Object(expected_map);
         assert_eq!(value, expected);
 
-        let value: DynamicValue<ConstValue> =
-            DynamicValue::Array(vec![DynamicValue::Mustache(Mustache::parse("{{.foo}}"))])
-                .prepend("args");
-        let expected: DynamicValue<ConstValue> = DynamicValue::Array(vec![DynamicValue::Mustache(
-            Mustache::parse("{{.args.foo}}"),
-        )]);
+        let value: DynamicValue<ConstValue> = DynamicValue::Array(vec![DynamicValue::JqTemplate(
+            JqTemplate::parse("{{.foo}}"),
+        )])
+        .prepend("args");
+        let expected: DynamicValue<ConstValue> =
+            DynamicValue::Array(vec![DynamicValue::JqTemplate(JqTemplate::parse(
+                "{{.args.foo}}",
+            ))]);
         assert_eq!(value, expected);
 
         let value: DynamicValue<ConstValue> = DynamicValue::Value(ConstValue::Null).prepend("args");

@@ -7,20 +7,25 @@ use nom::multi::many0;
 use nom::sequence::delimited;
 use nom::{Finish, IResult};
 
-use super::{JqTransform, Mustache, PathJqValueString};
-use crate::core::mustache::{JqTemplateError, Segment};
+use super::{JqRuntimeError, JqTransform, Mustache, PathJqValueString};
+use crate::core::mustache::Segment;
 
 #[derive(Debug, Clone, PartialEq, Hash)]
+/// Used to represent a mixture of getters mustache, jq transformations and
+/// const values templates
+pub struct JqTemplate(pub Vec<JqTemplateIR>);
+
+#[derive(Debug, Clone, PartialEq, Hash)]
+/// The IR for each part of the template
 pub enum JqTemplateIR {
     JqTransform(JqTransform),
     Literal(String),
     Mustache(Mustache),
 }
 
-#[derive(Debug, Clone, PartialEq, Hash)]
-pub struct JqTemplate(pub Vec<JqTemplateIR>);
-
 impl JqTemplate {
+    /// Used to check if the returned expression resolves to a constant value
+    /// always
     pub fn is_const(&self) -> bool {
         self.0.iter().all(|v| match v {
             JqTemplateIR::JqTransform(jq) => jq.is_const(),
@@ -29,20 +34,42 @@ impl JqTemplate {
         })
     }
 
-    // TODO: return error
-    pub fn render_value(&self, ctx: &impl PathJqValueString) -> async_graphql_value::ConstValue {
+    /// Used to render the template
+    pub fn render_value(
+        &self,
+        ctx: &impl PathJqValueString,
+    ) -> Result<async_graphql_value::ConstValue, JqRuntimeError> {
         let expressions_len = self.0.len();
         match expressions_len {
-            0 => async_graphql_value::ConstValue::Null,
+            0 => Ok(async_graphql_value::ConstValue::Null),
             1 => {
                 let expression = self.0.first().unwrap();
                 self.execute_expression(ctx, expression)
             }
             _ => {
-                let result = self
+                let (errors, result): (Vec<_>, Vec<_>) = self
                     .0
                     .iter()
                     .map(|expr| self.execute_expression(ctx, expr))
+                    .partition(Result::is_err);
+
+                let errors: Vec<JqRuntimeError> = errors
+                    .into_iter()
+                    .filter_map(|e| match e {
+                        Ok(_) => None,
+                        Err(err) => Some(err),
+                    })
+                    .collect();
+                if !errors.is_empty() {
+                    return Err(JqRuntimeError::JqRuntimeErrors(errors));
+                }
+
+                let result = result
+                    .into_iter()
+                    .filter_map(|v| match v {
+                        Ok(v) => Some(v),
+                        Err(_) => None,
+                    })
                     .fold(String::new(), |mut acc, cur| {
                         match &cur {
                             async_graphql::Value::String(s) => acc += s,
@@ -50,7 +77,7 @@ impl JqTemplate {
                         }
                         acc
                     });
-                async_graphql_value::ConstValue::String(result)
+                Ok(async_graphql_value::ConstValue::String(result))
             }
         }
     }
@@ -59,17 +86,23 @@ impl JqTemplate {
         &self,
         ctx: &impl PathJqValueString,
         expression: &JqTemplateIR,
-    ) -> async_graphql_value::ConstValue {
+    ) -> Result<async_graphql_value::ConstValue, JqRuntimeError> {
         match expression {
             JqTemplateIR::JqTransform(jq_transform) => {
                 jq_transform.render_value(super::PathValueEnum::PathValue(Arc::new(ctx)))
             }
-            JqTemplateIR::Literal(value) => async_graphql_value::ConstValue::String(value.clone()),
+            JqTemplateIR::Literal(value) => {
+                Ok(async_graphql_value::ConstValue::String(value.clone()))
+            }
             JqTemplateIR::Mustache(mustache) => {
                 let mustache_result = mustache.render(ctx);
 
-                serde_json::from_str::<async_graphql_value::ConstValue>(&mustache_result)
-                    .unwrap_or_else(|_| async_graphql_value::ConstValue::String(mustache_result))
+                Ok(
+                    serde_json::from_str::<async_graphql_value::ConstValue>(&mustache_result)
+                        .unwrap_or_else(|_| {
+                            async_graphql_value::ConstValue::String(mustache_result)
+                        }),
+                )
             }
         }
     }
@@ -87,11 +120,10 @@ fn parse_expression(input: &str) -> IResult<&str, JqTemplateIR> {
     delimited(
         tag("{{"),
         map(take_until("}}"), |template| {
-            // TODO: use the error
             match JqTransform::try_new(template) {
                 Ok(jq) => JqTemplateIR::JqTransform(jq),
                 Err(err) => match err {
-                    JqTemplateError::JqIsMustache => {
+                    JqRuntimeError::JqIsMustache => {
                         let expression: Vec<_> = template
                             .trim()
                             .trim_start_matches('.')

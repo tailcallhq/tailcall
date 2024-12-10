@@ -1,18 +1,17 @@
 use std::fmt::Display;
-use std::sync::{Arc, RwLock};
+use std::sync::RwLock;
 
 use jaq_core::load::parse::Term;
 use jaq_core::load::{Arena, File, Loader};
-use jaq_core::val::Range;
-use jaq_core::{Compiler, Ctx, Error, Exn, Filter, Native, RcIter, ValR};
-use jaq_json::Val;
+use jaq_core::{Compiler, Ctx, Filter, Native, RcIter, ValR};
 use lazy_static::lazy_static;
 
-use crate::core::ir::{EvalContext, ResolverContextLike};
 use crate::core::json::JsonLike;
-use crate::core::path::{PathString, PathValue, ValueString};
+
+use super::PathValueEnum;
 
 lazy_static! {
+    /// Used to store the compiled JQ templates
     static ref JQ_TEMPLATE_STORAGE: RwLock<Vec<Filter<Native<PathValueEnum<'static>>>>> =
         RwLock::new(Vec::new());
 }
@@ -20,628 +19,29 @@ lazy_static! {
 /// Used to represent a JQ template. Currently used only on @expr directive.
 #[derive(Clone)]
 pub struct JqTransform {
-    /// The compiled template transformation
+    /// The compiled template index
     template_id: usize,
     /// The IR representation, used for debug purposes
     representation: String,
 }
 
-#[derive(Clone)]
-pub enum PathValueEnum<'a> {
-    PathValue(Arc<&'a dyn PathJqValue>),
-    Val(Val),
-}
-
-pub trait PathJqValue {
-    fn get_value<'a>(&'a self, index: &Val) -> Option<ValueString<'a>>;
-}
-
-impl<Ctx: ResolverContextLike> PathJqValue for EvalContext<'_, Ctx> {
-    fn get_value<'a>(&'a self, index: &Val) -> Option<ValueString<'a>> {
-        let Val::Str(index) = index else { return None };
-        self.raw_value(&[index.as_str()])
-    }
-}
-
-impl PathJqValue for serde_json::Value {
-    fn get_value(&self, index: &Val) -> Option<ValueString<'_>> {
-        match self {
-            serde_json::Value::Object(map) => {
-                let Val::Str(index) = index else { return None };
-                map.get(index.as_str()).map(|v| {
-                    ValueString::Value(std::borrow::Cow::Owned(
-                        async_graphql_value::ConstValue::from_json(v.clone()).unwrap(),
-                    ))
-                })
-            }
-            serde_json::Value::Array(list) => {
-                let Val::Int(index) = index else { return None };
-                list.get(*index as usize).map(|v| {
-                    ValueString::Value(std::borrow::Cow::Owned(
-                        async_graphql_value::ConstValue::from_json(v.clone()).unwrap(),
-                    ))
-                })
-            }
-            _ => None,
-        }
-    }
-}
-pub trait PathJqValueString: PathString + PathJqValue {}
-
-impl<Ctx: ResolverContextLike> PathJqValueString for EvalContext<'_, Ctx> {}
-
-impl PathJqValueString for serde_json::Value {}
-
-impl jaq_std::ValT for PathValueEnum<'_> {
-    fn into_seq<S: FromIterator<Self>>(self) -> Result<S, Self> {
-        todo!()
-    }
-
-    fn as_isize(&self) -> Option<isize> {
-        match self {
-            PathValueEnum::PathValue(_) => None,
-            PathValueEnum::Val(val) => val.as_isize(),
-        }
-    }
-
-    fn as_f64(&self) -> Result<f64, Error<Self>> {
-        match self {
-            PathValueEnum::PathValue(_) => Err(Error::new(Self::Val(Val::from(
-                "Cannot convert context to f64".to_string(),
-            )))),
-            PathValueEnum::Val(val) => match val.as_f64() {
-                Ok(val) => Ok(val),
-                Err(err) => {
-                    let val = err.into_val();
-                    Err(Error::new(Self::Val(val)))
-                }
-            },
-        }
-    }
-}
-
-impl jaq_core::ValT for PathValueEnum<'_> {
-    fn from_num(n: &str) -> ValR<Self> {
-        match Val::from_num(n) {
-            Ok(val) => ValR::Ok(Self::Val(val)),
-            Err(err) => {
-                let val = err.into_val();
-                Err(Error::new(Self::Val(val)))
-            }
-        }
-    }
-
-    fn from_map<I: IntoIterator<Item = (Self, Self)>>(iter: I) -> ValR<Self> {
-        let result: Result<Vec<(Val, Val)>, String> = iter
-            .into_iter()
-            .map(|(k, v)| match (k, v) {
-                (PathValueEnum::Val(key), PathValueEnum::Val(value)) => Ok((key, value)),
-                _ => Err("Invalid key or value type for map".into()),
-            })
-            .collect();
-
-        match result {
-            Ok(pairs) => match Val::from_map(pairs) {
-                Ok(val) => ValR::Ok(PathValueEnum::Val(val)),
-                Err(err) => {
-                    let val = err.into_val();
-                    Err(Error::new(Self::Val(val)))
-                }
-            },
-            Err(e) => Err(Error::new(Self::Val(Val::from(e)))),
-        }
-    }
-
-    fn values(self) -> Box<dyn Iterator<Item = ValR<Self>>> {
-        match self {
-            PathValueEnum::PathValue(_) => panic!("Cannot iterate context"),
-            PathValueEnum::Val(val) => Box::new(val.values().map(|v| {
-                v.map(PathValueEnum::Val).map_err(|err| {
-                    let val = err.into_val();
-                    Error::new(PathValueEnum::Val(val))
-                })
-            })),
-        }
-    }
-
-    fn index(self, index: &Self) -> ValR<Self> {
-        let PathValueEnum::Val(index) = index else {
-            return ValR::Err(Error::new(Self::Val(Val::from(format!(
-                "Could not convert index `{}` val.",
-                index
-            )))));
-        };
-
-        match self {
-            PathValueEnum::PathValue(pv) => {
-                let Some(v) = pv.get_value(index) else {
-                    return ValR::Err(Error::new(Self::Val(Val::from(format!(
-                        "Could not find key `{}` in context.",
-                        index
-                    )))));
-                };
-
-                match v {
-                    crate::core::path::ValueString::Value(cow) => {
-                        let cv = cow.as_ref().clone();
-                        match cv.into_json() {
-                            Ok(js) => Ok(Self::Val(Val::from(js))),
-                            Err(err) => ValR::Err(Error::new(Self::Val(Val::from(format!(
-                                "Could not convert value to json: {:?}",
-                                err
-                            ))))),
-                        }
-                    }
-                    crate::core::path::ValueString::String(cow) => {
-                        let v = cow.to_string();
-                        Ok(Self::Val(Val::from(v)))
-                    }
-                }
-            }
-            PathValueEnum::Val(val) => match val.index(index) {
-                Ok(val) => ValR::Ok(Self::Val(val)),
-                Err(err) => {
-                    let val = err.into_val();
-                    Err(Error::new(Self::Val(val)))
-                }
-            },
-        }
-    }
-
-    fn range(self, range: jaq_core::val::Range<&Self>) -> ValR<Self> {
-        let (start, end) = (
-            range
-                .start
-                .map(|v| match v {
-                    PathValueEnum::PathValue(_) => ValR::Err(Error::new(Val::from(
-                        "Could not convert range start to val.".to_string(),
-                    ))),
-                    PathValueEnum::Val(val) => Ok(val.clone()),
-                })
-                .transpose(),
-            range
-                .end
-                .map(|v| match v {
-                    PathValueEnum::PathValue(_) => ValR::Err(Error::new(Val::from(
-                        "Could not convert range end to val.".to_string(),
-                    ))),
-                    PathValueEnum::Val(val) => Ok(val.clone()),
-                })
-                .transpose(),
-        );
-
-        let (start, end) = match (start, end) {
-            (Ok(start), Ok(end)) => (start, end),
-            (Ok(_), Err(err)) => {
-                let val = err.into_val();
-                return Err(Error::new(Self::Val(val)));
-            }
-            (Err(err), Ok(_)) => {
-                let val = err.into_val();
-                return Err(Error::new(Self::Val(val)));
-            }
-            (Err(_), Err(_)) => {
-                return ValR::Err(Error::new(Self::Val(Val::from(
-                    "Could not convert range to val.".to_string(),
-                ))))
-            }
-        };
-
-        let range = Range { start: start.as_ref(), end: end.as_ref() };
-
-        match self {
-            PathValueEnum::PathValue(_) => ValR::Err(Error::new(Self::Val(Val::from(
-                "Cannot apply range operation at the context".to_string(),
-            )))),
-            PathValueEnum::Val(val) => match val.range(range) {
-                Ok(val) => ValR::Ok(Self::Val(val)),
-                Err(err) => {
-                    let val = err.into_val();
-                    Err(Error::new(Self::Val(val)))
-                }
-            },
-        }
-    }
-
-    fn map_values<'a, I: Iterator<Item = jaq_core::ValX<'a, Self>>>(
-        self,
-        opt: jaq_core::path::Opt,
-        f: impl Fn(Self) -> I,
-    ) -> jaq_core::ValX<'a, Self> {
-        let f_new = move |x: Val| -> _ {
-            let iter = f(Self::Val(x));
-            iter.map(|v| match v {
-                Ok(enum_val) => match enum_val {
-                    PathValueEnum::PathValue(_) => jaq_core::ValX::Err(Exn::from(Error::new(
-                        Val::from("Cannot convert context to val.".to_string()),
-                    ))),
-                    PathValueEnum::Val(val) => Ok(val),
-                },
-                Err(err) => jaq_core::ValX::Err(Exn::from(Error::new(Val::from(format!(
-                    "Function execution failed with: {:?}",
-                    err
-                ))))),
-            })
-        };
-
-        match self {
-            PathValueEnum::PathValue(_) => jaq_core::ValX::Err(Exn::from(Error::new(Self::Val(
-                Val::from("Cannot apply map_values operation at the context".to_string()),
-            )))),
-            PathValueEnum::Val(val) => match val.map_values(opt, f_new) {
-                Ok(val) => jaq_core::ValX::Ok(Self::Val(val)),
-                Err(err) => jaq_core::ValX::Err(Exn::from(Error::new(Self::Val(Val::from(
-                    format!("The map_values failed because: {:?}", err),
-                ))))),
-            },
-        }
-    }
-
-    fn map_index<'a, I: Iterator<Item = jaq_core::ValX<'a, Self>>>(
-        self,
-        index: &Self,
-        opt: jaq_core::path::Opt,
-        f: impl Fn(Self) -> I,
-    ) -> jaq_core::ValX<'a, Self> {
-        let PathValueEnum::Val(index) = index else {
-            return jaq_core::ValX::Err(Exn::from(Error::new(Self::Val(Val::from(format!(
-                "Could not convert index `{}` val.",
-                index
-            ))))));
-        };
-
-        let f_new = move |x: Val| -> _ {
-            let iter = f(Self::Val(x));
-            iter.map(|v| match v {
-                Ok(enum_val) => match enum_val {
-                    PathValueEnum::PathValue(_) => jaq_core::ValX::Err(Exn::from(Error::new(
-                        Val::from("Cannot convert context to val.".to_string()),
-                    ))),
-                    PathValueEnum::Val(val) => Ok(val),
-                },
-                Err(err) => jaq_core::ValX::Err(Exn::from(Error::new(Val::from(format!(
-                    "Function execution failed with: {:?}",
-                    err
-                ))))),
-            })
-        };
-
-        match self {
-            PathValueEnum::PathValue(_) => jaq_core::ValX::Err(Exn::from(Error::new(Self::Val(
-                Val::from("Cannot apply map_index operation at the context".to_string()),
-            )))),
-            PathValueEnum::Val(val) => match val.map_index(index, opt, f_new) {
-                Ok(val) => jaq_core::ValX::Ok(Self::Val(val)),
-                Err(err) => jaq_core::ValX::Err(Exn::from(Error::new(Self::Val(Val::from(
-                    format!("The map_index failed because: {:?}", err),
-                ))))),
-            },
-        }
-    }
-
-    fn map_range<'a, I: Iterator<Item = jaq_core::ValX<'a, Self>>>(
-        self,
-        range: jaq_core::val::Range<&Self>,
-        opt: jaq_core::path::Opt,
-        f: impl Fn(Self) -> I,
-    ) -> jaq_core::ValX<'a, Self> {
-        let (start, end) = (
-            range
-                .start
-                .map(|v| match v {
-                    PathValueEnum::PathValue(_) => ValR::Err(Error::new(Val::from(
-                        "Could not convert range start to val.".to_string(),
-                    ))),
-                    PathValueEnum::Val(val) => Ok(val.clone()),
-                })
-                .transpose(),
-            range
-                .end
-                .map(|v| match v {
-                    PathValueEnum::PathValue(_) => ValR::Err(Error::new(Val::from(
-                        "Could not convert range end to val.".to_string(),
-                    ))),
-                    PathValueEnum::Val(val) => Ok(val.clone()),
-                })
-                .transpose(),
-        );
-
-        let (start, end) = match (start, end) {
-            (Ok(start), Ok(end)) => (start, end),
-            (Ok(_), Err(err)) => {
-                let val = err.into_val();
-                return Err(Exn::from(Error::new(Self::Val(val))));
-            }
-            (Err(err), Ok(_)) => {
-                let val = err.into_val();
-                return Err(Exn::from(Error::new(Self::Val(val))));
-            }
-            (Err(_), Err(_)) => {
-                return Err(Exn::from(Error::new(Self::Val(Val::from(
-                    "Could not convert range to val.".to_string(),
-                )))))
-            }
-        };
-
-        let range = Range { start: start.as_ref(), end: end.as_ref() };
-
-        let f_new = move |x: Val| -> _ {
-            let iter = f(Self::Val(x));
-            iter.map(|v| match v {
-                Ok(enum_val) => match enum_val {
-                    PathValueEnum::PathValue(_) => jaq_core::ValX::Err(Exn::from(Error::new(
-                        Val::from("Cannot convert context to val.".to_string()),
-                    ))),
-                    PathValueEnum::Val(val) => Ok(val),
-                },
-                Err(err) => jaq_core::ValX::Err(Exn::from(Error::new(Val::from(format!(
-                    "Function execution failed with: {:?}",
-                    err
-                ))))),
-            })
-        };
-
-        match self {
-            PathValueEnum::PathValue(_) => jaq_core::ValX::Err(Exn::from(Error::new(Self::Val(
-                Val::from("Cannot apply map_range operation at the context".to_string()),
-            )))),
-            PathValueEnum::Val(val) => match val.map_range(range, opt, f_new) {
-                Ok(val) => jaq_core::ValX::Ok(Self::Val(val)),
-                Err(err) => jaq_core::ValX::Err(Exn::from(Error::new(Self::Val(Val::from(
-                    format!("The map_range failed because: {:?}", err),
-                ))))),
-            },
-        }
-    }
-
-    fn as_bool(&self) -> bool {
-        match self {
-            PathValueEnum::PathValue(_) => true,
-            PathValueEnum::Val(val) => val.as_bool(),
-        }
-    }
-
-    fn as_str(&self) -> Option<&str> {
-        match self {
-            PathValueEnum::PathValue(_) => Some("[Context]"),
-            PathValueEnum::Val(val) => val.as_str(),
-        }
-    }
-}
-
-impl<'a> FromIterator<PathValueEnum<'a>> for PathValueEnum<'a> {
-    fn from_iter<I: IntoIterator<Item = PathValueEnum<'a>>>(iter: I) -> Self {
-        let iter = iter.into_iter().filter_map(|v| match v {
-            PathValueEnum::PathValue(_) => None,
-            PathValueEnum::Val(val) => Some(val),
-        });
-        Self::Val(Val::from_iter(iter))
-    }
-}
-
-impl std::ops::Add for PathValueEnum<'_> {
-    type Output = ValR<Self>;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        match (self, rhs) {
-            (PathValueEnum::Val(self_val), PathValueEnum::Val(rhs_val)) => {
-                match self_val.add(rhs_val) {
-                    Ok(val) => ValR::Ok(Self::Val(val)),
-                    Err(err) => {
-                        let val = err.into_val();
-                        Err(Error::new(Self::Val(val)))
-                    }
-                }
-            }
-            _ => ValR::Err(Error::new(PathValueEnum::Val(Val::from(
-                "Cannot perform add operation with context.".to_string(),
-            )))),
-        }
-    }
-}
-
-impl std::ops::Sub for PathValueEnum<'_> {
-    type Output = ValR<Self>;
-
-    fn sub(self, rhs: Self) -> Self::Output {
-        match (self, rhs) {
-            (PathValueEnum::Val(self_val), PathValueEnum::Val(rhs_val)) => {
-                match self_val.sub(rhs_val) {
-                    Ok(val) => ValR::Ok(Self::Val(val)),
-                    Err(err) => {
-                        let val = err.into_val();
-                        Err(Error::new(Self::Val(val)))
-                    }
-                }
-            }
-            _ => ValR::Err(Error::new(PathValueEnum::Val(Val::from(
-                "Cannot perform sub operation with context.".to_string(),
-            )))),
-        }
-    }
-}
-
-impl std::ops::Mul for PathValueEnum<'_> {
-    type Output = ValR<Self>;
-
-    fn mul(self, rhs: Self) -> Self::Output {
-        match (self, rhs) {
-            (PathValueEnum::Val(self_val), PathValueEnum::Val(rhs_val)) => {
-                match self_val.mul(rhs_val) {
-                    Ok(val) => ValR::Ok(Self::Val(val)),
-                    Err(err) => {
-                        let val = err.into_val();
-                        Err(Error::new(Self::Val(val)))
-                    }
-                }
-            }
-            _ => ValR::Err(Error::new(PathValueEnum::Val(Val::from(
-                "Cannot perform mul operation with context.".to_string(),
-            )))),
-        }
-    }
-}
-
-impl std::ops::Div for PathValueEnum<'_> {
-    type Output = ValR<Self>;
-
-    fn div(self, rhs: Self) -> Self::Output {
-        match (self, rhs) {
-            (PathValueEnum::Val(self_val), PathValueEnum::Val(rhs_val)) => {
-                match self_val.div(rhs_val) {
-                    Ok(val) => ValR::Ok(Self::Val(val)),
-                    Err(err) => {
-                        let val = err.into_val();
-                        Err(Error::new(Self::Val(val)))
-                    }
-                }
-            }
-            _ => ValR::Err(Error::new(PathValueEnum::Val(Val::from(
-                "Cannot perform div operation with context.".to_string(),
-            )))),
-        }
-    }
-}
-
-impl std::ops::Rem for PathValueEnum<'_> {
-    type Output = ValR<Self>;
-
-    fn rem(self, rhs: Self) -> Self::Output {
-        match (self, rhs) {
-            (PathValueEnum::Val(self_val), PathValueEnum::Val(rhs_val)) => {
-                match self_val.rem(rhs_val) {
-                    Ok(val) => ValR::Ok(Self::Val(val)),
-                    Err(err) => {
-                        let val = err.into_val();
-                        Err(Error::new(Self::Val(val)))
-                    }
-                }
-            }
-            _ => ValR::Err(Error::new(PathValueEnum::Val(Val::from(
-                "Cannot perform rem operation with context.".to_string(),
-            )))),
-        }
-    }
-}
-
-impl std::ops::Neg for PathValueEnum<'_> {
-    type Output = ValR<Self>;
-
-    fn neg(self) -> Self::Output {
-        match self {
-            PathValueEnum::Val(self_val) => match self_val.neg() {
-                Ok(val) => ValR::Ok(Self::Val(val)),
-                Err(err) => {
-                    let val = err.into_val();
-                    Err(Error::new(Self::Val(val)))
-                }
-            },
-            _ => ValR::Err(Error::new(PathValueEnum::Val(Val::from(
-                "Cannot perform neg operation at context.".to_string(),
-            )))),
-        }
-    }
-}
-
-impl Display for PathValueEnum<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            PathValueEnum::PathValue(_) => "[Context]".to_string().fmt(f),
-            PathValueEnum::Val(val) => val.fmt(f),
-        }
-    }
-}
-
-impl std::fmt::Debug for PathValueEnum<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            PathValueEnum::PathValue(_) => derive_more::Debug::fmt(&"[Context]".to_string(), f),
-            PathValueEnum::Val(val) => derive_more::Debug::fmt(&val, f),
-        }
-    }
-}
-
-impl PartialEq for PathValueEnum<'_> {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (PathValueEnum::PathValue(_), PathValueEnum::PathValue(_)) => true,
-            (PathValueEnum::PathValue(_), PathValueEnum::Val(_)) => false,
-            (PathValueEnum::Val(_), PathValueEnum::PathValue(_)) => false,
-            (PathValueEnum::Val(self_val), PathValueEnum::Val(other_val)) => self_val.eq(other_val),
-        }
-    }
-}
-
-impl PartialOrd for PathValueEnum<'_> {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Eq for PathValueEnum<'_> {}
-
-impl Ord for PathValueEnum<'_> {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        match (self, other) {
-            (PathValueEnum::PathValue(_), PathValueEnum::PathValue(_)) => std::cmp::Ordering::Equal,
-            (PathValueEnum::PathValue(_), PathValueEnum::Val(_)) => std::cmp::Ordering::Greater,
-            (PathValueEnum::Val(_), PathValueEnum::PathValue(_)) => std::cmp::Ordering::Less,
-            (PathValueEnum::Val(self_val), PathValueEnum::Val(other_val)) => {
-                self_val.cmp(other_val)
-            }
-        }
-    }
-}
-
-impl From<f64> for PathValueEnum<'_> {
-    fn from(value: f64) -> Self {
-        Self::Val(Val::from(value))
-    }
-}
-
-impl From<PathValueEnum<'_>> for serde_json::Value {
-    fn from(value: PathValueEnum<'_>) -> Self {
-        match value {
-            PathValueEnum::PathValue(_) => serde_json::Value::String("[Context]".to_string()),
-            PathValueEnum::Val(val) => serde_json::Value::from(val),
-        }
-    }
-}
-
-impl From<String> for PathValueEnum<'_> {
-    fn from(value: String) -> Self {
-        Self::Val(Val::from(value))
-    }
-}
-
-impl From<isize> for PathValueEnum<'_> {
-    fn from(value: isize) -> Self {
-        Self::Val(Val::from(value))
-    }
-}
-
-impl From<bool> for PathValueEnum<'_> {
-    fn from(value: bool) -> Self {
-        Self::Val(Val::from(value))
-    }
-}
-
 impl JqTransform {
     /// Used to parse a `template` and try to convert it into a JqTemplate
-    pub fn try_new(template: &str) -> Result<Self, JqTemplateError> {
+    pub fn try_new(template: &str) -> Result<Self, JqRuntimeError> {
         // the term is used because it can be easily serialized, deserialized and hashed
-        let term = Self::parse_template(template);
+        let term =
+            Self::parse_template(template).map_err(|err| JqRuntimeError::JqTemplateErrors(err))?;
 
         // calculate if the expression can be replaced with mustache
         let is_mustache = Self::recursive_is_mustache(&term);
         if is_mustache {
-            return Err(JqTemplateError::JqIsMustache);
+            return Err(JqRuntimeError::JqIsMustache);
         }
 
         // calculate if the expression returns always a constant value
         let is_const = Self::calculate_is_const(&term);
         if is_const {
-            return Err(JqTemplateError::JqIstConst);
+            return Err(JqRuntimeError::JqIstConst);
         }
 
         // the template is used to be parsed in to the IR AST
@@ -655,7 +55,11 @@ impl JqTransform {
         let arena = Arena::default();
         // load the modules
         let modules = loader.load(&arena, template).map_err(|errs| {
-            JqTemplateError::JqLoadError(errs.into_iter().map(|e| format!("{:?}", e.1)).collect())
+            JqRuntimeError::JqTemplateErrors(
+                errs.into_iter()
+                    .map(|err| JqTemplateError::JqLoadError(format!("{:?}", err)))
+                    .collect::<Vec<_>>(),
+            )
         })?;
 
         // the AST of the operation, used to transform the data
@@ -663,13 +67,15 @@ impl JqTransform {
             .with_funs(jaq_std::funs())
             .compile(modules)
             .map_err(|errs| {
-                JqTemplateError::JqCompileError(
-                    errs.into_iter().map(|e| format!("{:?}", e.1)).collect(),
+                JqRuntimeError::JqTemplateErrors(
+                    errs.into_iter()
+                        .map(|err| JqTemplateError::JqCompileError(format!("{:?}", err)))
+                        .collect::<Vec<_>>(),
                 )
             })?;
 
+        // store the compiled template
         let mut write_lock = JQ_TEMPLATE_STORAGE.write().unwrap();
-
         let template_id = write_lock.len();
         write_lock.push(filter);
 
@@ -690,45 +96,66 @@ impl JqTransform {
     }
 
     /// Used to calculate the result and return it as json
-    pub fn render_value(&self, value: PathValueEnum<'_>) -> async_graphql_value::ConstValue {
-        let res = self.run(value);
-        let res: Vec<async_graphql_value::ConstValue> = res
+    pub fn render_value(
+        &self,
+        value: PathValueEnum<'_>,
+    ) -> Result<async_graphql_value::ConstValue, JqRuntimeError> {
+        let (errors, result): (Vec<_>, Vec<_>) = self
+            .run(value)
             .into_iter()
-            // TODO: handle error correct, now we ignore it
-            .filter_map(|v| match v {
-                Ok(v) => Some(v),
-                Err(err) => {
-                    println!("ERR: {:?}", err);
-                    None
-                }
+            .map(|v| match v {
+                Ok(v) => Ok(std::convert::Into::into(v)),
+                Err(err) => Err(err),
             })
-            .map(std::convert::Into::into)
-            .map(async_graphql_value::ConstValue::from_json)
-            // TODO: handle error correct, now we ignore it
-            .filter_map(|v| match v {
-                Ok(v) => Some(v),
-                Err(err) => {
-                    println!("ERR: {:?}", err);
-                    None
-                }
+            .map(|v| match v {
+                Ok(v) => async_graphql_value::ConstValue::from_json(v)
+                    .map_err(|err| JqTemplateError::JsonParseError(err.to_string())),
+                Err(err) => Err(JqTemplateError::JqRuntimeError(err.to_string())),
+            })
+            .partition(Result::is_err);
+
+        let errors: Vec<JqTemplateError> = errors
+            .into_iter()
+            .filter_map(|e| match e {
+                Ok(_) => None,
+                Err(err) => Some(err),
             })
             .collect();
-        let res_len = res.len();
+        if !errors.is_empty() {
+            return Err(JqRuntimeError::JqTemplateErrors(errors));
+        }
+
+        let result: Vec<_> = result
+            .into_iter()
+            .filter_map(|v| match v {
+                Ok(v) => Some(v),
+                Err(_) => None,
+            })
+            .collect();
+
+        // convert results to graphql value
+        let res_len = result.len();
         if res_len == 0 {
-            async_graphql_value::ConstValue::Null
+            Ok(async_graphql_value::ConstValue::Null)
         } else if res_len == 1 {
-            res.into_iter().next().unwrap()
+            Ok(result.into_iter().next().unwrap())
         } else {
-            async_graphql_value::ConstValue::array(res)
+            Ok(async_graphql_value::ConstValue::array(result))
         }
     }
 
     /// Used to parse the template string and return the IR representation
-    fn parse_template(template: &str) -> Term<&str> {
+    fn parse_template(template: &str) -> Result<Term<&str>, Vec<JqTemplateError>> {
         let lexer = jaq_core::load::Lexer::new(template);
-        let lex = lexer.lex().unwrap_or_default();
+        let lex = lexer.lex().map_err(|err| {
+            err.into_iter()
+                .map(|err| JqTemplateError::JqLexError(format!("{:?}", err)))
+                .collect::<Vec<_>>()
+        })?;
         let mut parser = jaq_core::load::parse::Parser::new(&lex);
-        parser.term().unwrap_or_default()
+        Ok(parser
+            .term()
+            .map_err(|err| vec![JqTemplateError::JqParseError(format!("{:?}", err))])?)
     }
 
     /// Used as a helper function to determine if the term can be supported with
@@ -864,17 +291,31 @@ impl std::hash::Hash for JqTransform {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Clone, Debug, thiserror::Error)]
 pub enum JqTemplateError {
-    #[error("{0}")]
-    Reason(String),
-    #[error("JQ Load Errors: {0:?}")]
-    JqLoadError(Vec<String>),
-    #[error("JQ Compile Errors: {0:?}")]
-    JqCompileError(Vec<String>),
-    #[error("JQ Transform can be replaced with a Mustache")]
+    #[error("[JQ Load Errors] {0:?}\n")]
+    JqLoadError(String),
+    #[error("[JQ Compile Error] {0:?}\n")]
+    JqCompileError(String),
+    #[error("[JQ Parse Error] {0:?}\n")]
+    JqParseError(String),
+    #[error("[JQ Lex Error] {0:?}\n")]
+    JqLexError(String),
+    #[error("[JQ Runtime Error] {0:?}\n")]
+    JqRuntimeError(String),
+    #[error("[JQ Json Parse Error] {0:?}\n")]
+    JsonParseError(String),
+}
+
+#[derive(Clone, Debug, thiserror::Error)]
+pub enum JqRuntimeError {
+    #[error("{0:?}\n")]
+    JqTemplateErrors(Vec<JqTemplateError>),
+    #[error("{0:?}\n")]
+    JqRuntimeErrors(Vec<Self>),
+    #[error("JQ Transform can be replaced with a Mustache.\n")]
     JqIsMustache,
-    #[error("JQ Transform can be replaced with a Literal")]
+    #[error("JQ Transform can be replaced with a Literal.\n")]
     JqIstConst,
 }
 
@@ -882,13 +323,14 @@ pub enum JqTemplateError {
 mod tests {
     use std::hash::{DefaultHasher, Hash, Hasher};
 
+    use jaq_json::Val;
     use serde_json::json;
 
     use super::*;
 
     #[test]
     fn test_is_mustache_simple_property() {
-        let term = JqTransform::parse_template(".fruit");
+        let term = JqTransform::parse_template(".fruit").unwrap();
         assert!(
             JqTransform::recursive_is_mustache(&term),
             "Should return true for simple property access"
@@ -897,7 +339,7 @@ mod tests {
 
     #[test]
     fn test_is_mustache_nested_property() {
-        let term = JqTransform::parse_template(".fruit.name");
+        let term = JqTransform::parse_template(".fruit.name").unwrap();
         assert!(
             JqTransform::recursive_is_mustache(&term),
             "Should return true for nested property access"
@@ -906,7 +348,7 @@ mod tests {
 
     #[test]
     fn test_is_mustache_optional() {
-        let term = JqTransform::parse_template(".fruit.name?");
+        let term = JqTransform::parse_template(".fruit.name?").unwrap();
         assert!(
             !JqTransform::recursive_is_mustache(&term),
             "Should return false for optional operator"
@@ -915,7 +357,7 @@ mod tests {
 
     #[test]
     fn test_is_mustache_array_index() {
-        let term = JqTransform::parse_template(".fruits[1]");
+        let term = JqTransform::parse_template(".fruits[1]").unwrap();
         assert!(
             !JqTransform::recursive_is_mustache(&term),
             "Should return false for array index access"
@@ -924,7 +366,7 @@ mod tests {
 
     #[test]
     fn test_is_mustache_pipe_operator() {
-        let term = JqTransform::parse_template(".fruits[] | .name");
+        let term = JqTransform::parse_template(".fruits[] | .name").unwrap();
         assert!(
             !JqTransform::recursive_is_mustache(&term),
             "Should return false for pipe operator usage"
@@ -933,7 +375,7 @@ mod tests {
 
     #[test]
     fn test_is_mustache_filter() {
-        let term = JqTransform::parse_template(".fruits[] | select(.price > 1)");
+        let term = JqTransform::parse_template(".fruits[] | select(.price > 1)").unwrap();
         assert!(
             !JqTransform::recursive_is_mustache(&term),
             "Should return false for select filter usage"
@@ -942,7 +384,7 @@ mod tests {
 
     #[test]
     fn test_is_mustache_true_value() {
-        let term = JqTransform::parse_template("true");
+        let term = JqTransform::parse_template("true").unwrap();
         assert!(
             JqTransform::recursive_is_mustache(&term),
             "Should return true for const true value"
@@ -951,7 +393,7 @@ mod tests {
 
     #[test]
     fn test_is_mustache_false_value() {
-        let term = JqTransform::parse_template("false");
+        let term = JqTransform::parse_template("false").unwrap();
         assert!(
             JqTransform::recursive_is_mustache(&term),
             "Should return true for const false value"
@@ -960,7 +402,7 @@ mod tests {
 
     #[test]
     fn test_is_mustache_number_value() {
-        let term = JqTransform::parse_template("1");
+        let term = JqTransform::parse_template("1").unwrap();
         assert!(
             JqTransform::recursive_is_mustache(&term),
             "Should return true for number value"
@@ -969,7 +411,7 @@ mod tests {
 
     #[test]
     fn test_is_mustache_str_value() {
-        let term = JqTransform::parse_template("\"foobar\"");
+        let term = JqTransform::parse_template("\"foobar\"").unwrap();
         assert!(
             JqTransform::recursive_is_mustache(&term),
             "Should return true for string value"
@@ -978,7 +420,7 @@ mod tests {
 
     #[test]
     fn test_is_mustache_str_interpolate_value() {
-        let term = JqTransform::parse_template("\"Hello, \\(.name)!\"");
+        let term = JqTransform::parse_template("\"Hello, \\(.name)!\"").unwrap();
         assert!(
             !JqTransform::recursive_is_mustache(&term),
             "Should return false for string interpolated value"
@@ -987,7 +429,7 @@ mod tests {
 
     #[test]
     fn test_is_mustache_function_call() {
-        let term = JqTransform::parse_template("map(.price)");
+        let term = JqTransform::parse_template("map(.price)").unwrap();
         assert!(
             !JqTransform::recursive_is_mustache(&term),
             "Should return false for function call"
@@ -996,7 +438,7 @@ mod tests {
 
     #[test]
     fn test_is_mustache_concat() {
-        let term = JqTransform::parse_template(".data.meat + .data.eggs");
+        let term = JqTransform::parse_template(".data.meat + .data.eggs").unwrap();
         assert!(
             !JqTransform::recursive_is_mustache(&term),
             "Should return false for concatenation"
@@ -1005,7 +447,7 @@ mod tests {
 
     #[test]
     fn test_is_const_simple_property() {
-        let term = JqTransform::parse_template(".fruit");
+        let term = JqTransform::parse_template(".fruit").unwrap();
         assert!(
             !JqTransform::calculate_is_const(&term),
             "Should return false for simple property access"
@@ -1014,7 +456,7 @@ mod tests {
 
     #[test]
     fn test_is_const_nested_property() {
-        let term = JqTransform::parse_template(".fruit.name");
+        let term = JqTransform::parse_template(".fruit.name").unwrap();
         assert!(
             !JqTransform::calculate_is_const(&term),
             "Should return false for nested property access"
@@ -1023,7 +465,7 @@ mod tests {
 
     #[test]
     fn test_is_const_array_index() {
-        let term = JqTransform::parse_template(".fruits[1]");
+        let term = JqTransform::parse_template(".fruits[1]").unwrap();
         assert!(
             !JqTransform::calculate_is_const(&term),
             "Should return false for array index access"
@@ -1032,7 +474,7 @@ mod tests {
 
     #[test]
     fn test_is_const_pipe_operator() {
-        let term = JqTransform::parse_template(".fruits[] | .name");
+        let term = JqTransform::parse_template(".fruits[] | .name").unwrap();
         assert!(
             !JqTransform::calculate_is_const(&term),
             "Should return false for pipe operator usage"
@@ -1041,7 +483,7 @@ mod tests {
 
     #[test]
     fn test_is_const_filter() {
-        let term = JqTransform::parse_template(".fruits[] | select(.price > 1)");
+        let term = JqTransform::parse_template(".fruits[] | select(.price > 1)").unwrap();
         assert!(
             !JqTransform::calculate_is_const(&term),
             "Should return false for select filter usage"
@@ -1050,7 +492,7 @@ mod tests {
 
     #[test]
     fn test_is_const_true_value() {
-        let term = JqTransform::parse_template("true");
+        let term = JqTransform::parse_template("true").unwrap();
         assert!(
             JqTransform::calculate_is_const(&term),
             "Should return true for const true value"
@@ -1059,7 +501,7 @@ mod tests {
 
     #[test]
     fn test_is_const_false_value() {
-        let term = JqTransform::parse_template("false");
+        let term = JqTransform::parse_template("false").unwrap();
         assert!(
             JqTransform::calculate_is_const(&term),
             "Should return true for const false value"
@@ -1068,7 +510,7 @@ mod tests {
 
     #[test]
     fn test_is_const_number_value() {
-        let term = JqTransform::parse_template("1");
+        let term = JqTransform::parse_template("1").unwrap();
         assert!(
             JqTransform::calculate_is_const(&term),
             "Should return true for number value"
@@ -1077,7 +519,7 @@ mod tests {
 
     #[test]
     fn test_is_const_str_value() {
-        let term = JqTransform::parse_template("\"foobar\"");
+        let term = JqTransform::parse_template("\"foobar\"").unwrap();
         assert!(
             JqTransform::calculate_is_const(&term),
             "Should return true for string value"
@@ -1086,7 +528,7 @@ mod tests {
 
     #[test]
     fn test_is_const_str_interpolate_value() {
-        let term = JqTransform::parse_template("\"Hello, \\(.name)!\"");
+        let term = JqTransform::parse_template("\"Hello, \\(.name)!\"").unwrap();
         assert!(
             !JqTransform::calculate_is_const(&term),
             "Should return false for string interpolated value"
@@ -1095,7 +537,7 @@ mod tests {
 
     #[test]
     fn test_is_const_function_call() {
-        let term = JqTransform::parse_template("map(.price)");
+        let term = JqTransform::parse_template("map(.price)").unwrap();
         assert!(
             !JqTransform::calculate_is_const(&term),
             "Should return false for function call"
@@ -1104,7 +546,7 @@ mod tests {
 
     #[test]
     fn test_is_const_concat() {
-        let term = JqTransform::parse_template(".data.meat + .data.eggs");
+        let term = JqTransform::parse_template(".data.meat + .data.eggs").unwrap();
         assert!(
             !JqTransform::calculate_is_const(&term),
             "Should return false for concatenation"
@@ -1116,7 +558,9 @@ mod tests {
         let template_str = ".[] | select(.non_existent)";
         let jq_template = JqTransform::try_new(template_str).expect("Failed to create JqTemplate");
         let input_json = json!([{"foo": 1}, {"foo": 2}]);
-        let result = jq_template.render_value(PathValueEnum::Val(Val::from(input_json)));
+        let result = jq_template
+            .render_value(PathValueEnum::Val(Val::from(input_json)))
+            .unwrap();
         assert_eq!(
             result,
             async_graphql_value::ConstValue::Null,
@@ -1129,7 +573,9 @@ mod tests {
         let template_str = ".[0]";
         let jq_template = JqTransform::try_new(template_str).expect("Failed to create JqTemplate");
         let input_json = json!([{"foo": 1}, {"foo": 2}]);
-        let result = jq_template.render_value(PathValueEnum::Val(Val::from(input_json)));
+        let result = jq_template
+            .render_value(PathValueEnum::Val(Val::from(input_json)))
+            .unwrap();
         assert_eq!(
             result,
             async_graphql_value::ConstValue::from_json(json!({"foo": 1})).unwrap(),
@@ -1142,7 +588,9 @@ mod tests {
         let template_str = ".[] | .foo";
         let jq_template = JqTransform::try_new(template_str).expect("Failed to create JqTemplate");
         let input_json = json!([{"foo": 1}, {"foo": 2}]);
-        let result = jq_template.render_value(PathValueEnum::Val(Val::from(input_json)));
+        let result = jq_template
+            .render_value(PathValueEnum::Val(Val::from(input_json)))
+            .unwrap();
         let expected = async_graphql_value::ConstValue::array(vec![
             async_graphql_value::ConstValue::from_json(json!(1)).unwrap(),
             async_graphql_value::ConstValue::from_json(json!(2)).unwrap(),
