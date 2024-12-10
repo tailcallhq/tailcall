@@ -3,9 +3,11 @@ use std::fmt::Display;
 
 use hyper::body::Bytes;
 use reqwest::Request;
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
 use super::error::{Error, Result};
+use crate::core::ir::DynamicRequest;
 use crate::core::{is_default, Response};
 
 #[derive(Serialize, Deserialize, Default, Debug, PartialEq, Eq)]
@@ -183,6 +185,14 @@ impl TryFrom<&reqwest::Request> for WorkerRequest {
 impl From<WorkerRequest> for reqwest::Request {
     fn from(val: WorkerRequest) -> Self {
         val.0
+    }
+}
+
+impl<Body: DeserializeOwned> TryFrom<WorkerRequest> for DynamicRequest<Body> {
+    type Error = anyhow::Error;
+
+    fn try_from(value: WorkerRequest) -> std::result::Result<Self, Self::Error> {
+        Ok(DynamicRequest::new(value.0))
     }
 }
 

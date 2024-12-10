@@ -22,21 +22,23 @@ pub fn compile_http(
         Err(e) => Valid::from_validation_err(BlueprintError::from_validation_string(e)),
     };
 
-    Valid::<(), BlueprintError>::fail(BlueprintError::GroupByOnlyForGet)
-        .when(|| !http.batch_key.is_empty() && http.method != Method::GET)
-        .and(
-            Valid::<(), BlueprintError>::fail(BlueprintError::IncorrectBatchingUsage).when(|| {
-                (config_module.upstream.get_delay() < 1
-                    || config_module.upstream.get_max_size() < 1)
-                    && !http.batch_key.is_empty()
-            }),
-        )
+    Valid::<(), BlueprintError>::fail(BlueprintError::IncorrectBatchingUsage)
+        .when(|| {
+            (config_module.upstream.get_delay() < 1 || config_module.upstream.get_max_size() < 1)
+                && !http.batch_key.is_empty()
+        })
         .and(
             Valid::from_iter(http.query.iter(), |query| {
                 validate_argument(config_module, Mustache::parse(query.value.as_str()), field)
             })
             .unit()
             .trace("query"),
+        )
+        .and(
+            Valid::<(), BlueprintError>::fail(BlueprintError::BatchKeyRequiresEitherBodyOrQuery)
+                .when(|| {
+                    !http.batch_key.is_empty() && (http.body.is_none() && http.query.is_empty())
+                }),
         )
         .and(Valid::succeed(http.url.as_str()))
         .zip(mustache_headers)
@@ -67,6 +69,22 @@ pub fn compile_http(
                 Err(e) => Valid::fail(BlueprintError::Error(e)),
             }
         })
+        .and_then(|request_template| {
+            if !http.batch_key.is_empty() && (http.body.is_some() || http.method != Method::GET) {
+                if let Some(body) = http.body.as_ref() {
+                    let dynamic_paths = count_dynamic_paths(body);
+                    if dynamic_paths != 1 {
+                        Valid::fail(BlueprintError::BatchRequiresDynamicParameter).trace("body")
+                    } else {
+                        Valid::succeed(request_template)
+                    }
+                } else {
+                    Valid::fail(BlueprintError::BatchRequiresDynamicParameter).trace("body")
+                }
+            } else {
+                Valid::succeed(request_template)
+            }
+        })
         .map(|req_template| {
             // marge http and upstream on_request
             let on_request = http
@@ -76,13 +94,18 @@ pub fn compile_http(
             let on_response_body = http.on_response_body.clone();
             let hook = WorkerHooks::try_new(on_request, on_response_body).ok();
 
-            let io = if !http.batch_key.is_empty() && http.method == Method::GET {
+            let io = if !http.batch_key.is_empty() {
                 // Find a query parameter that contains a reference to the {{.value}} key
-                let key = http.query.iter().find_map(|q| {
-                    Mustache::parse(&q.value)
-                        .expression_contains("value")
-                        .then(|| q.key.clone())
-                });
+                let key = if http.method == Method::GET {
+                    http.query.iter().find_map(|q| {
+                        Mustache::parse(&q.value)
+                            .expression_contains("value")
+                            .then(|| q.key.clone())
+                    })
+                } else {
+                    None
+                };
+
                 IR::IO(IO::Http {
                     req_template,
                     group_by: Some(GroupBy::new(http.batch_key.clone(), key)),
@@ -104,4 +127,58 @@ pub fn compile_http(
             (io, &http.select)
         })
         .and_then(apply_select)
+}
+
+/// Count the number of dynamic expressions in the JSON value.
+fn count_dynamic_paths(json: &serde_json::Value) -> usize {
+    let mut count = 0;
+    match json {
+        serde_json::Value::Array(arr) => {
+            for v in arr {
+                count += count_dynamic_paths(v)
+            }
+        }
+        serde_json::Value::Object(obj) => {
+            for (_, v) in obj {
+                count += count_dynamic_paths(v)
+            }
+        }
+        serde_json::Value::String(s) => {
+            if !Mustache::parse(s).is_const() {
+                count += 1;
+            }
+        }
+        _ => {}
+    }
+    count
+}
+
+#[cfg(test)]
+mod test {
+    use serde_json::json;
+
+    use super::*;
+
+    #[test]
+    fn test_extract_expression_keys_from_nested_objects() {
+        let json = r#"{"body":"d","userId":"{{.value.uid}}","nested":{"other":"{{test}}"}}"#;
+        let json = serde_json::from_str(json).unwrap();
+        let keys = count_dynamic_paths(&json);
+        assert_eq!(keys, 2);
+    }
+
+    #[test]
+    fn test_extract_expression_keys_from_mixed_json() {
+        let json = r#"{"body":"d","userId":"{{.value.uid}}","nested":{"other":"{{test}}"},"meta":[{"key": "id", "value": "{{.value.userId}}"}]}"#;
+        let json = serde_json::from_str(json).unwrap();
+        let keys = count_dynamic_paths(&json);
+        assert_eq!(keys, 3);
+    }
+
+    #[test]
+    fn test_with_non_json_value() {
+        let json = json!(r#"{{.value}}"#);
+        let keys = count_dynamic_paths(&json);
+        assert_eq!(keys, 1);
+    }
 }
