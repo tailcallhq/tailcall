@@ -10,4 +10,4 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 postgrest = "1.6.0"
-keygen-rs = { git = "https://github.com/laststylebender14/keygen-rs.git", rev = "388ce9c53679b6d2a5d16a92a5129f6919162f1e" }
+keygen-rs = "0.3.1"

@@ -2938,8 +2938,9 @@ dependencies = [
 
 [[package]]
 name = "keygen-rs"
-version = "0.3.0"
-source = "git+https://github.com/laststylebender14/keygen-rs.git?rev=388ce9c53679b6d2a5d16a92a5129f6919162f1e#388ce9c53679b6d2a5d16a92a5129f6919162f1e"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fff9289f9aff6746dbdb6c15382e26fb949ddb69386f4999387026094276039c"
 dependencies = [
  "aes-gcm",
  "async-trait",
