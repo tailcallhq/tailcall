@@ -14,6 +14,7 @@ type Query {
   foobar: [String!]! @expr(body: "{{ .env.FOOBAR | split(\" \") }}")
   token: String! @expr(body: "{{ .headers.authorization | split(\" \") | .[1] }}")
   var: [String!]! @expr(body: "{{ .vars | .id | split(\" \") }}")
+  arg(text: String!): String! @expr(body: "{{ .args.text | split(\" \") | .[0] }}")
 }
 
 type Foo {
@@ -106,11 +107,17 @@ type Buzz {
 
 - method: POST
   url: http://localhost:8080/graphql
-  headers:
-    authorization: "Bearer JWT_TOKEN"
   body:
     query: |
       {
         var
+      }
+
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: |
+      {
+        arg(text: "Hello World")
       }
 ```

@@ -21,6 +21,7 @@ type Foo {
 }
 
 type Query {
+  arg(text: String!): String!
   bar: Bar!
   fizz: Fizz!
   foo: Foo!

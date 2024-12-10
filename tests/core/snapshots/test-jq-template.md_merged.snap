@@ -27,6 +27,7 @@ type Foo {
 }
 
 type Query {
+  arg(text: String!): String! @expr(body: "{{ .args.text | split(\" \") | .[0] }}")
   bar: Bar! @http(url: "http://upstream/foo")
   fizz: Fizz! @http(url: "http://upstream/foo")
   foo: Foo! @http(url: "http://upstream/foo")
