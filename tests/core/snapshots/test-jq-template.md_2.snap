@@ -1,0 +1,24 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": null,
+    "errors": [
+      {
+        "message": "Dynamic Value Rendering Error: [JqRuntimeError(\"\\\"split input and separator must be strings\\\"\")]",
+        "locations": [
+          {
+            "line": 3,
+            "column": 5
+          }
+        ]
+      }
+    ]
+  }
+}

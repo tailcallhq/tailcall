@@ -20,9 +20,7 @@ impl EnvIO for LambdaEnv {
     }
 
     fn get_raw(&self) -> Vec<(String, String)> {
-        std::env::vars()
-            .map(|(k, v)| (k.to_string(), v.to_string()))
-            .collect()
+        std::env::vars().collect()
     }
 }
 

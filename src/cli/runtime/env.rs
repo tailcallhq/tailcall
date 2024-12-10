@@ -16,7 +16,7 @@ impl EnvIO for EnvNative {
     fn get_raw(&self) -> Vec<(String, String)> {
         self.vars
             .iter()
-            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .map(|(k, v)| (k.clone(), v.clone()))
             .collect()
     }
 }

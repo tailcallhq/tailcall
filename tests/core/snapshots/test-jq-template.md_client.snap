@@ -2,6 +2,10 @@
 source: tests/core/spec.rs
 expression: formatted
 ---
+type Bar {
+  bar: [String!]!
+}
+
 type Buzz {
   first: String!
   second: String!
@@ -17,8 +21,12 @@ type Foo {
 }
 
 type Query {
+  bar: Bar!
   fizz: Fizz!
   foo: Foo!
+  foobar: [String!]!
+  token: String!
+  var: [String!]!
 }
 
 schema {

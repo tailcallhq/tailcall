@@ -1,18 +1,27 @@
 # Basic queries with field ordering check
 
 ```graphql @config
-schema @server(port: 8000, hostname: "0.0.0.0") {
+schema
+  @server(port: 8000, hostname: "0.0.0.0", vars: [{key: "id", value: "spam eggs"}])
+  @upstream(allowedHeaders: ["Authorization"]) {
   query: Query
 }
 
 type Query {
   foo: Foo! @http(url: "http://upstream/foo")
+  bar: Bar! @http(url: "http://upstream/foo")
   fizz: Fizz! @http(url: "http://upstream/foo")
+  foobar: [String!]! @expr(body: "{{ .env.FOOBAR | split(\" \") }}")
+  token: String! @expr(body: "{{ .headers.authorization | split(\" \") | .[1] }}")
+  var: [String!]! @expr(body: "{{ .vars | .id | split(\" \") }}")
 }
 
 type Foo {
-  bar: String!
   bar: [String!]! @expr(body: "{{.value.bar | split(\" \")}}")
+}
+
+type Bar {
+  bar: [String!]! @expr(body: "{{.value.foo | split(\" \")}}")
 }
 
 type Fizz {
@@ -26,11 +35,17 @@ type Buzz {
 }
 ```
 
+```json @env
+{
+  "FOOBAR": "foo bar"
+}
+```
+
 ```yml @mock
 - request:
     method: GET
     url: http://upstream/foo
-  expectedHits: 2
+  expectedHits: 3
   response:
     status: 200
     body:
@@ -59,5 +74,43 @@ type Buzz {
             second
           }
         }
+      }
+
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: |
+      {
+        bar {
+          bar
+        }
+      }
+
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: |
+      {
+        foobar
+      }
+
+- method: POST
+  url: http://localhost:8080/graphql
+  headers:
+    authorization: "Bearer JWT_TOKEN"
+  body:
+    query: |
+      {
+        token
+      }
+
+- method: POST
+  url: http://localhost:8080/graphql
+  headers:
+    authorization: "Bearer JWT_TOKEN"
+  body:
+    query: |
+      {
+        var
       }
 ```

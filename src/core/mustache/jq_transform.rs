@@ -291,29 +291,29 @@ impl std::hash::Hash for JqTransform {
 
 #[derive(Clone, Debug, thiserror::Error)]
 pub enum JqTemplateError {
-    #[error("[JQ Load Errors] {0:?}\n")]
+    #[error("[JQ Load Errors] {0:?}")]
     JqLoadError(String),
-    #[error("[JQ Compile Error] {0:?}\n")]
+    #[error("[JQ Compile Error] {0:?}")]
     JqCompileError(String),
-    #[error("[JQ Parse Error] {0:?}\n")]
+    #[error("[JQ Parse Error] {0:?}")]
     JqParseError(String),
-    #[error("[JQ Lex Error] {0:?}\n")]
+    #[error("[JQ Lex Error] {0:?}")]
     JqLexError(String),
-    #[error("[JQ Runtime Error] {0:?}\n")]
+    #[error("[JQ Runtime Error] {0:?}")]
     JqRuntimeError(String),
-    #[error("[JQ Json Parse Error] {0:?}\n")]
+    #[error("[JQ Json Parse Error] {0:?}")]
     JsonParseError(String),
 }
 
 #[derive(Clone, Debug, thiserror::Error)]
 pub enum JqRuntimeError {
-    #[error("{0:?}\n")]
+    #[error("{0:?}")]
     JqTemplateErrors(Vec<JqTemplateError>),
-    #[error("{0:?}\n")]
+    #[error("{0:?}")]
     JqRuntimeErrors(Vec<Self>),
-    #[error("JQ Transform can be replaced with a Mustache.\n")]
+    #[error("JQ Transform can be replaced with a Mustache.")]
     JqIsMustache,
-    #[error("JQ Transform can be replaced with a Literal.\n")]
+    #[error("JQ Transform can be replaced with a Literal.")]
     JqIstConst,
 }
 

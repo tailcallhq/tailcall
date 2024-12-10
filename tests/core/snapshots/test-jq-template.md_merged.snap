@@ -2,8 +2,14 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema @server(hostname: "0.0.0.0", port: 8000) @upstream {
+schema
+  @server(hostname: "0.0.0.0", port: 8000, vars: [{key: "id", value: "spam eggs"}])
+  @upstream(allowedHeaders: ["Authorization"]) {
   query: Query
+}
+
+type Bar {
+  bar: [String!]! @expr(body: "{{.value.foo | split(\" \")}}")
 }
 
 type Buzz {
@@ -21,6 +27,10 @@ type Foo {
 }
 
 type Query {
+  bar: Bar! @http(url: "http://upstream/foo")
   fizz: Fizz! @http(url: "http://upstream/foo")
   foo: Foo! @http(url: "http://upstream/foo")
+  foobar: [String!]! @expr(body: "{{ .env.FOOBAR | split(\" \") }}")
+  token: String! @expr(body: "{{ .headers.authorization | split(\" \") | .[1] }}")
+  var: [String!]! @expr(body: "{{ .vars | .id | split(\" \") }}")
 }

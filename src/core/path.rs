@@ -77,8 +77,8 @@ impl<Ctx: ResolverContextLike> EvalContext<'_, Ctx> {
             return match path[0].as_ref() {
                 "value" => Some(ValueString::Value(ctx.path_value(&[] as &[T])?)),
                 "args" => Some(ValueString::Value(ctx.path_arg::<&str>(&[])?)),
-                "vars" => Some(ValueString::String(Cow::Owned(
-                    json!(ctx.vars()).to_string(),
+                "vars" => Some(ValueString::Value(Cow::Owned(
+                    async_graphql_value::ConstValue::from_json(json!(ctx.vars())).unwrap(),
                 ))),
                 "headers" => {
                     let arr = ctx
@@ -180,7 +180,7 @@ mod tests {
             fn get_raw(&self) -> Vec<(String, String)> {
                 self.env
                     .iter()
-                    .map(|(k, v)| (k.to_string(), v.to_string()))
+                    .map(|(k, v)| (k.clone(), v.clone()))
                     .collect()
             }
         }

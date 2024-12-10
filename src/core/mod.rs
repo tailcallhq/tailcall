@@ -153,10 +153,7 @@ pub mod tests {
         }
 
         fn get_raw(&self) -> Vec<(String, String)> {
-            self.0
-                .iter()
-                .map(|(k, v)| (k.to_string(), v.to_string()))
-                .collect()
+            self.0.iter().map(|(k, v)| (k.clone(), v.clone())).collect()
         }
     }
 

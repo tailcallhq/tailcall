@@ -101,7 +101,8 @@ impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
             .map(|(k, v)| {
                 (
                     async_graphql_value::Name::new(&k),
-                    async_graphql_value::ConstValue::String(v),
+                    serde_json::from_str::<async_graphql_value::ConstValue>(&v)
+                        .unwrap_or_else(|_| async_graphql_value::ConstValue::String(v)),
                 )
             })
             .collect();
