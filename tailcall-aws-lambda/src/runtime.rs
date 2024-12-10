@@ -18,6 +18,12 @@ impl EnvIO for LambdaEnv {
         // as real env vars in the runtime.
         std::env::var(key).ok().map(Cow::from)
     }
+
+    fn get_raw(&self) -> Vec<(String, String)> {
+        std::env::vars()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect()
+    }
 }
 
 pub fn init_env() -> Arc<LambdaEnv> {

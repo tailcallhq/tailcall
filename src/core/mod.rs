@@ -67,6 +67,7 @@ pub const fn default_verify_ssl() -> Option<bool> {
 
 pub trait EnvIO: Send + Sync + 'static {
     fn get(&self, key: &str) -> Option<Cow<'_, str>>;
+    fn get_raw(&self) -> Vec<(String, String)>;
 }
 
 #[async_trait::async_trait]
@@ -149,6 +150,13 @@ pub mod tests {
     impl EnvIO for TestEnvIO {
         fn get(&self, key: &str) -> Option<Cow<'_, str>> {
             self.0.get(key).map(Cow::from)
+        }
+
+        fn get_raw(&self) -> Vec<(String, String)> {
+            self.0
+                .iter()
+                .map(|(k, v)| (k.to_string(), v.to_string()))
+                .collect()
         }
     }
 

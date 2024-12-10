@@ -166,6 +166,13 @@ pub mod test {
         fn get(&self, key: &str) -> Option<Cow<'_, str>> {
             self.vars.get(key).map(Cow::from)
         }
+
+        fn get_raw(&self) -> Vec<(String, String)> {
+            self.vars
+                .iter()
+                .map(|(k, v)| (k.to_string(), v.to_string()))
+                .collect()
+        }
     }
 
     impl TestEnvIO {

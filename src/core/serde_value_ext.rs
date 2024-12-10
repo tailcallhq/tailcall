@@ -11,10 +11,7 @@ pub trait ValueExt {
 }
 
 impl ValueExt for DynamicValue<async_graphql::Value> {
-    fn render_value(
-        &self,
-        ctx: &impl PathJqValueString,
-    ) -> Result<GraphQLValue, JqRuntimeError> {
+    fn render_value(&self, ctx: &impl PathJqValueString) -> Result<GraphQLValue, JqRuntimeError> {
         match self {
             DynamicValue::Value(value) => Ok(value.to_owned()),
             DynamicValue::JqTemplate(t) => t.render_value(ctx),

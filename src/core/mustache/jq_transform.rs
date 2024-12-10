@@ -6,9 +6,8 @@ use jaq_core::load::{Arena, File, Loader};
 use jaq_core::{Compiler, Ctx, Filter, Native, RcIter, ValR};
 use lazy_static::lazy_static;
 
-use crate::core::json::JsonLike;
-
 use super::PathValueEnum;
+use crate::core::json::JsonLike;
 
 lazy_static! {
     /// Used to store the compiled JQ templates
@@ -29,8 +28,7 @@ impl JqTransform {
     /// Used to parse a `template` and try to convert it into a JqTemplate
     pub fn try_new(template: &str) -> Result<Self, JqRuntimeError> {
         // the term is used because it can be easily serialized, deserialized and hashed
-        let term =
-            Self::parse_template(template).map_err(|err| JqRuntimeError::JqTemplateErrors(err))?;
+        let term = Self::parse_template(template).map_err(JqRuntimeError::JqTemplateErrors)?;
 
         // calculate if the expression can be replaced with mustache
         let is_mustache = Self::recursive_is_mustache(&term);
@@ -153,9 +151,9 @@ impl JqTransform {
                 .collect::<Vec<_>>()
         })?;
         let mut parser = jaq_core::load::parse::Parser::new(&lex);
-        Ok(parser
+        parser
             .term()
-            .map_err(|err| vec![JqTemplateError::JqParseError(format!("{:?}", err))])?)
+            .map_err(|err| vec![JqTemplateError::JqParseError(format!("{:?}", err))])
     }
 
     /// Used as a helper function to determine if the term can be supported with

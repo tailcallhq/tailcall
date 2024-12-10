@@ -101,6 +101,7 @@ impl<Ctx: ResolverContextLike> EvalContext<'_, Ctx> {
                         async_graphql_value::ConstValue::object(arr),
                     )))
                 }
+                "env" => Some(ValueString::Value(Cow::Owned(ctx.env_vars()))),
                 _ => None,
             };
         }
@@ -174,6 +175,13 @@ mod tests {
         impl EnvIO for Env {
             fn get(&self, key: &str) -> Option<Cow<'_, str>> {
                 self.env.get(key).map(Cow::from)
+            }
+
+            fn get_raw(&self) -> Vec<(String, String)> {
+                self.env
+                    .iter()
+                    .map(|(k, v)| (k.to_string(), v.to_string()))
+                    .collect()
             }
         }
 
