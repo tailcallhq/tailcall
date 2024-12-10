@@ -168,23 +168,23 @@ jobs:
           echo "$(Resolve-Path nasm-2.16.02)" >> $env:GITHUB_PATH
 
       - name: Install insta test runner
-        if: ${{ env.WITH_COVERAGE == 'true' }}
+        if: ${{ env.WITH_COVERAGE == 'false' && matrix.test != 'false' }}
         uses: taiki-e/install-action@v2
         with:
           tool: cargo-insta
 
       - name: Run cargo insta test
-        if: ${{ env.WITH_COVERAGE == 'true' && matrix.test != 'false' }}
-        run: cargo insta test --unreferenced reject
+        if: ${{ env.WITH_COVERAGE == 'false' && matrix.test != 'false' }}
+        run: cargo insta test --unreferenced reject --workspace  --target ${{ matrix.target }}
 
       - name: Install llvm-cov test runner
-        if: ${{ env.WITH_COVERAGE == 'false' }}
+        if: ${{ env.WITH_COVERAGE == 'true' && matrix.test != 'false' }}
         uses: taiki-e/install-action@v2
         with:
           tool: cargo-llvm-cov
 
-      - name: Run Cargo Test
-        if: ${{ env.WITH_COVERAGE == 'false' && matrix.test != 'false' }}
+      - name: Run cargo llvm-cov test
+        if: ${{ env.WITH_COVERAGE == 'true' && matrix.test != 'false' }}
         run: cargo llvm-cov --workspace ${{ matrix.features }} --lcov --target ${{ matrix.target }} --output-path lcov.info
 
       - name: Upload Coverage to Codecov
