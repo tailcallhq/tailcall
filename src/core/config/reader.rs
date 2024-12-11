@@ -1,10 +1,11 @@
 use std::path::Path;
 
+use futures_util::future::join_all;
 use rustls_pemfile;
 use rustls_pki_types::{
     CertificateDer, PrivateKeyDer, PrivatePkcs1KeyDer, PrivatePkcs8KeyDer, PrivateSec1KeyDer,
 };
-use tailcall_valid::{Valid, Validator};
+use tailcall_valid::{Valid, ValidationError, Validator};
 use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType, PrivateKey};
@@ -34,11 +35,10 @@ impl ConfigReader {
     }
 
     /// Reads the links in a Config and fill the content
-    #[async_recursion::async_recursion]
     async fn ext_links(
         &self,
         config_module: ConfigModule,
-        parent_dir: Option<&'async_recursion Path>,
+        parent_dir: Option<&Path>,
     ) -> anyhow::Result<ConfigModule> {
         let reader_ctx = ConfigReaderContext::new(&self.runtime);
 
@@ -77,14 +77,6 @@ impl ConfigReader {
                     config_module = config_module.and_then(|config_module| {
                         config_module.unify(ConfigModule::from(config.clone()))
                     });
-
-                    if !config.links.is_empty() {
-                        let cfg_module = self
-                            .ext_links(ConfigModule::from(config), Path::new(&link.src).parent())
-                            .await?;
-                        config_module =
-                            config_module.and_then(|config_module| config_module.unify(cfg_module));
-                    }
                 }
                 LinkType::Protobuf => {
                     let meta = self.proto_reader.read(path, None).await?;
@@ -200,24 +192,32 @@ impl ConfigReader {
             .map(|file| file.render(&reader_ctx))
             .collect::<Vec<_>>();
 
-        let mut config_module = Valid::succeed(ConfigModule::default());
-
-        for file in files.iter() {
+        let mut config_modules = join_all(files.iter().map(|file| async {
             let source = Source::detect(&file.path)?;
             let schema = &file.content;
 
             // Create initial config module
-            let new_config_module = self
-                .resolve(
-                    Config::from_source(source, schema)?,
-                    Path::new(&file.path).parent(),
-                )
-                .await?;
+            self.resolve(
+                Config::from_source(source, schema)?,
+                Path::new(&file.path).parent(),
+            )
+            .await
+        }))
+        .await
+        .into_iter();
 
-            // Merge it with the original config set
-            config_module =
-                config_module.and_then(|config_module| config_module.unify(new_config_module));
-        }
+        let config_module = Valid::from(
+            config_modules
+                .next()
+                .ok_or(anyhow::anyhow!("At least one config should be defined"))?
+                .map_err(to_validation_error),
+        );
+
+        let config_module = config_modules.fold(config_module, |acc, other| {
+            acc.and_then(|cfg| {
+                Valid::from(other.map_err(to_validation_error)).and_then(|other| cfg.unify(other))
+            })
+        });
 
         Ok(config_module.to_result()?)
     }
@@ -253,6 +253,13 @@ impl ConfigReader {
             let path = root_dir.unwrap_or(Path::new(""));
             path.join(src).to_string_lossy().to_string()
         }
+    }
+}
+
+fn to_validation_error(error: anyhow::Error) -> ValidationError<String> {
+    match error.downcast::<ValidationError<String>>() {
+        Ok(err) => err,
+        Err(err) => ValidationError::new(err.to_string()),
     }
 }
 

@@ -1,19 +1,18 @@
 ---
 source: tests/core/spec.rs
 expression: formatter
+snapshot_kind: text
 ---
 schema
-  @server
-  @upstream
-  @link(src: "graphql-with-link.graphql", type: Config)
-  @link(src: "link-enum.graphql", type: Config)
-  @link(src: "link-enum.graphql", type: Config) {
+  @server(port: 8000)
+  @upstream(batch: {delay: 10, headers: []}, httpCache: 10)
+  @link(src: "link-1.graphql", type: Config)
+  @link(src: "link-2.graphql", type: Config) {
   query: Query
 }
 
-enum Foo {
-  BAR
-  BAZ
+type Foo {
+  foo: String
 }
 
 type Post {

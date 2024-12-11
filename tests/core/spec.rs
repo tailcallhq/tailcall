@@ -220,10 +220,12 @@ async fn test_spec(spec: ExecutionSpec) {
         }))
     })
     .and_then(|cfgs| {
-        cfgs.into_iter()
-            .fold(Valid::succeed(ConfigModule::default()), |acc, c| {
-                acc.and_then(|acc| acc.unify(c.clone()))
-            })
+        let mut cfgs = cfgs.into_iter();
+        let config_module = cfgs.next().expect("At least one config should be defined");
+
+        cfgs.fold(Valid::succeed(config_module.clone()), |acc, c| {
+            acc.and_then(|acc| acc.unify(c.clone()))
+        })
     })
     // Apply required transformers to the configuration
     .and_then(|cfg| cfg.transform(Required));

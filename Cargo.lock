@@ -4217,7 +4217,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "157c5a9d7ea5c2ed2d9fb8f495b64759f7816c7eaea54ba3978f0d63000162e3"
 dependencies = [
  "anyhow",
- "itertools 0.11.0",
+ "itertools 0.12.1",
  "proc-macro2",
  "quote",
  "syn 2.0.90",
@@ -5237,8 +5237,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json_borrow"
-version = "0.7.0"
-source = "git+https://github.com/PSeitz/serde_json_borrow?rev=6ad7127e0fb9c31f6fd927e934a21112e9ac0fdb#6ad7127e0fb9c31f6fd927e934a21112e9ac0fdb"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "724685c39b301aa2cf7de617fed340d6529694a72fc0f5cc3b1846423e71c630"
 dependencies = [
  "serde",
  "serde_json",
