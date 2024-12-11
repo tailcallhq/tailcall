@@ -2,6 +2,7 @@
 //! structure.
 use std::borrow::Cow;
 
+use indexmap::IndexMap;
 use serde_json::json;
 
 use crate::core::ir::{EvalContext, ResolverContextLike};
@@ -76,9 +77,31 @@ impl<Ctx: ResolverContextLike> EvalContext<'_, Ctx> {
             return match path[0].as_ref() {
                 "value" => Some(ValueString::Value(ctx.path_value(&[] as &[T])?)),
                 "args" => Some(ValueString::Value(ctx.path_arg::<&str>(&[])?)),
-                "vars" => Some(ValueString::String(Cow::Owned(
-                    json!(ctx.vars()).to_string(),
+                "vars" => Some(ValueString::Value(Cow::Owned(
+                    async_graphql_value::ConstValue::from_json(json!(ctx.vars())).unwrap(),
                 ))),
+                "headers" => {
+                    let arr = ctx
+                        .headers()
+                        .iter()
+                        .map(|(k, v)| (k.to_string(), v.to_str()))
+                        .filter_map(|(k, v)| {
+                            if let Ok(v) = v {
+                                Some((async_graphql_value::Name::new(k), v))
+                            } else {
+                                None
+                            }
+                        })
+                        .fold(IndexMap::new(), |mut acc, (k, v)| {
+                            acc.insert(k, v.into());
+                            acc
+                        });
+
+                    Some(ValueString::Value(Cow::Owned(
+                        async_graphql_value::ConstValue::object(arr),
+                    )))
+                }
+                "env" => Some(ValueString::Value(Cow::Owned(ctx.env_vars()))),
                 _ => None,
             };
         }
@@ -152,6 +175,13 @@ mod tests {
         impl EnvIO for Env {
             fn get(&self, key: &str) -> Option<Cow<'_, str>> {
                 self.env.get(key).map(Cow::from)
+            }
+
+            fn get_raw(&self) -> Vec<(String, String)> {
+                self.env
+                    .iter()
+                    .map(|(k, v)| (k.clone(), v.clone()))
+                    .collect()
             }
         }
 

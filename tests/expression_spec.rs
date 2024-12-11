@@ -7,7 +7,7 @@ mod tests {
     use tailcall::core::http::RequestContext;
     use tailcall::core::ir::model::IR;
     use tailcall::core::ir::{EmptyResolverContext, Error, EvalContext};
-    use tailcall::core::mustache::Mustache;
+    use tailcall::core::mustache::JqTemplate;
 
     async fn eval(expr: &IR) -> Result<Value, Error> {
         let runtime = tailcall::cli::runtime::init(&Blueprint::default());
@@ -21,16 +21,16 @@ mod tests {
     async fn test_and_then() {
         let abcde = DynamicValue::try_from(&json!({"a": {"b": {"c": {"d": "e"}}}})).unwrap();
         let expr = IR::Dynamic(abcde)
-            .pipe(IR::Dynamic(DynamicValue::Mustache(Mustache::parse(
+            .pipe(IR::Dynamic(DynamicValue::JqTemplate(JqTemplate::parse(
                 "{{args.a}}",
             ))))
-            .pipe(IR::Dynamic(DynamicValue::Mustache(Mustache::parse(
+            .pipe(IR::Dynamic(DynamicValue::JqTemplate(JqTemplate::parse(
                 "{{args.b}}",
             ))))
-            .pipe(IR::Dynamic(DynamicValue::Mustache(Mustache::parse(
+            .pipe(IR::Dynamic(DynamicValue::JqTemplate(JqTemplate::parse(
                 "{{args.c}}",
             ))))
-            .pipe(IR::Dynamic(DynamicValue::Mustache(Mustache::parse(
+            .pipe(IR::Dynamic(DynamicValue::JqTemplate(JqTemplate::parse(
                 "{{args.d}}",
             ))));
 
@@ -44,7 +44,7 @@ mod tests {
     async fn test_with_args() {
         let expr =
             IR::Dynamic(DynamicValue::try_from(&json!({"a": {"b": {"c": {"d": "e"}}}})).unwrap())
-                .pipe(IR::Dynamic(DynamicValue::Mustache(Mustache::parse(
+                .pipe(IR::Dynamic(DynamicValue::JqTemplate(JqTemplate::parse(
                     "{{args.a.b.c.d}}",
                 ))));
 
@@ -58,16 +58,16 @@ mod tests {
     async fn test_with_args_piping() {
         let expr =
             IR::Dynamic(DynamicValue::try_from(&json!({"a": {"b": {"c": {"d": "e"}}}})).unwrap())
-                .pipe(IR::Dynamic(DynamicValue::Mustache(Mustache::parse(
+                .pipe(IR::Dynamic(DynamicValue::JqTemplate(JqTemplate::parse(
                     "{{args.a}}",
                 ))))
-                .pipe(IR::Dynamic(DynamicValue::Mustache(Mustache::parse(
+                .pipe(IR::Dynamic(DynamicValue::JqTemplate(JqTemplate::parse(
                     "{{args.b}}",
                 ))))
-                .pipe(IR::Dynamic(DynamicValue::Mustache(Mustache::parse(
+                .pipe(IR::Dynamic(DynamicValue::JqTemplate(JqTemplate::parse(
                     "{{args.c}}",
                 ))))
-                .pipe(IR::Dynamic(DynamicValue::Mustache(Mustache::parse(
+                .pipe(IR::Dynamic(DynamicValue::JqTemplate(JqTemplate::parse(
                     "{{args.d}}",
                 ))));
 
@@ -84,11 +84,11 @@ mod tests {
 
         let expr_with_dot =
             args.clone()
-                .pipe(IR::Dynamic(DynamicValue::Mustache(Mustache::parse(
+                .pipe(IR::Dynamic(DynamicValue::JqTemplate(JqTemplate::parse(
                     "{{.args.a.b.c.d}}",
                 ))));
 
-        let expr_without_dot = args.pipe(IR::Dynamic(DynamicValue::Mustache(Mustache::parse(
+        let expr_without_dot = args.pipe(IR::Dynamic(DynamicValue::JqTemplate(JqTemplate::parse(
             "{{args.a.b.c.d}}",
         ))));
 
@@ -104,16 +104,16 @@ mod tests {
     async fn test_optional_dot_piping() {
         let expr =
             IR::Dynamic(DynamicValue::try_from(&json!({"a": {"b": {"c": {"d": "e"}}}})).unwrap())
-                .pipe(IR::Dynamic(DynamicValue::Mustache(Mustache::parse(
+                .pipe(IR::Dynamic(DynamicValue::JqTemplate(JqTemplate::parse(
                     "{{.args.a}}",
                 ))))
-                .pipe(IR::Dynamic(DynamicValue::Mustache(Mustache::parse(
+                .pipe(IR::Dynamic(DynamicValue::JqTemplate(JqTemplate::parse(
                     "{{.args.b}}",
                 ))))
-                .pipe(IR::Dynamic(DynamicValue::Mustache(Mustache::parse(
+                .pipe(IR::Dynamic(DynamicValue::JqTemplate(JqTemplate::parse(
                     "{{.args.c}}",
                 ))))
-                .pipe(IR::Dynamic(DynamicValue::Mustache(Mustache::parse(
+                .pipe(IR::Dynamic(DynamicValue::JqTemplate(JqTemplate::parse(
                     "{{.args.d}}",
                 ))));
 
@@ -127,16 +127,16 @@ mod tests {
     async fn test_mixed_dot_usages() {
         let expr =
             IR::Dynamic(DynamicValue::try_from(&json!({"a": {"b": {"c": {"d": "e"}}}})).unwrap())
-                .pipe(IR::Dynamic(DynamicValue::Mustache(Mustache::parse(
+                .pipe(IR::Dynamic(DynamicValue::JqTemplate(JqTemplate::parse(
                     "{{.args.a}}",
                 ))))
-                .pipe(IR::Dynamic(DynamicValue::Mustache(Mustache::parse(
+                .pipe(IR::Dynamic(DynamicValue::JqTemplate(JqTemplate::parse(
                     "{{args.b}}",
                 ))))
-                .pipe(IR::Dynamic(DynamicValue::Mustache(Mustache::parse(
+                .pipe(IR::Dynamic(DynamicValue::JqTemplate(JqTemplate::parse(
                     "{{.args.c}}",
                 ))))
-                .pipe(IR::Dynamic(DynamicValue::Mustache(Mustache::parse(
+                .pipe(IR::Dynamic(DynamicValue::JqTemplate(JqTemplate::parse(
                     "{{args.d}}",
                 ))));
 

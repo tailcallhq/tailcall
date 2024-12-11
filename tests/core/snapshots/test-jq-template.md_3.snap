@@ -1,7 +1,6 @@
 ---
 source: tests/core/spec.rs
 expression: response
-snapshot_kind: text
 ---
 {
   "status": 200,
@@ -10,11 +9,10 @@ snapshot_kind: text
   },
   "body": {
     "data": {
-      "user": {
-        "id": 4,
-        "name": "User 4",
-        "spam": "FIZZ: [{bar: \"BUZZ\"}, {bar: \"test\"}]"
-      }
+      "foobar": [
+        "foo",
+        "bar"
+      ]
     }
   }
 }
