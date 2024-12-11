@@ -1,5 +1,6 @@
 ---
 source: src/core/generator/from_proto.rs
 expression: result
+snapshot_kind: text
 ---
 

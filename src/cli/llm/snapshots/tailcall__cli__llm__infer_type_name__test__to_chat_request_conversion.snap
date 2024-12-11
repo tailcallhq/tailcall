@@ -1,6 +1,7 @@
 ---
 source: src/cli/llm/infer_type_name.rs
 expression: request
+snapshot_kind: text
 ---
 ChatRequest {
     system: None,

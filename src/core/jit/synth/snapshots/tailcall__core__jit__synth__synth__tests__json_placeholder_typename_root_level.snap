@@ -1,6 +1,7 @@
 ---
 source: src/core/jit/synth/synth.rs
 expression: "serde_json::to_string_pretty(&val).unwrap()"
+snapshot_kind: text
 ---
 {
   "__typename": "Query",

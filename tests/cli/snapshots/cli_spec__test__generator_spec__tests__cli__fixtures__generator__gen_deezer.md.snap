@@ -1,6 +1,7 @@
 ---
 source: tests/cli/gen.rs
 expression: config.to_sdl()
+snapshot_kind: text
 ---
 schema @server @upstream {
   query: Query

@@ -1,6 +1,7 @@
 ---
 source: src/core/config/transformer/improve_type_names.rs
 expression: transformed_config.to_sdl()
+snapshot_kind: text
 ---
 schema @server @upstream {
   query: Query

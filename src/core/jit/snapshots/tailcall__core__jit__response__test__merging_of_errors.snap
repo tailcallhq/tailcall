@@ -1,6 +1,7 @@
 ---
 source: src/core/jit/response.rs
 expression: merged_resp
+snapshot_kind: text
 ---
 {
   "data": null,
