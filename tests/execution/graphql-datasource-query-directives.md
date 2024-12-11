@@ -21,7 +21,7 @@ type Query {
 - request:
     method: POST
     url: http://upstream/graphql
-    textBody: '{ "query": "query { user @cascade(fields: [\\\"id\\\"]) { id @options(paging: false) } }" }'
+    textBody: '{ "query": "query { user @cascade(fields: [\\\"id\\\"]) { id @options(paging: false) name } }" }'
   response:
     status: 200
     body:
