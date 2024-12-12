@@ -18,6 +18,7 @@ impl JqTransform {
     /// Used to parse a `template` and try to convert it into a JqTemplate
     pub fn try_new(template: &str) -> Result<Self, JqRuntimeError> {
         let template = template.replace("\\\"", "\"");
+
         // the term is used because it can be easily serialized, deserialized and hashed
         let term = Self::parse_template(&template).map_err(JqRuntimeError::JqTemplateErrors)?;
 

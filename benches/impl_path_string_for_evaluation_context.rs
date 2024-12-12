@@ -84,10 +84,6 @@ impl EnvIO for Env {
     fn get(&self, _: &str) -> Option<Cow<'_, str>> {
         unimplemented!("Not needed for this bench")
     }
-
-    fn get_raw(&self) -> Vec<(String, String)> {
-        unimplemented!("Not needed for this bench")
-    }
 }
 
 struct File;

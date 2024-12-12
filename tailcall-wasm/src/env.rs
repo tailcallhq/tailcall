@@ -20,11 +20,4 @@ impl EnvIO for WasmEnv {
     fn get(&self, key: &str) -> Option<Cow<'_, str>> {
         self.env.get(key).map(|v| Cow::Owned(v.value().clone()))
     }
-
-    fn get_raw(&self) -> Vec<(String, String)> {
-        self.env
-            .iter()
-            .map(|entry| (entry.key().clone(), entry.value().clone()))
-            .collect()
-    }
 }

@@ -4,7 +4,6 @@ use std::sync::Arc;
 
 use async_graphql::{ServerError, Value};
 use http::header::HeaderMap;
-use indexmap::IndexMap;
 
 use super::{GraphQLOperationContext, RelatedFields, ResolverContextLike, SelectionField};
 use crate::core::document::print_directives;
@@ -92,22 +91,6 @@ impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
 
     pub fn env_var(&self, key: &str) -> Option<Cow<'_, str>> {
         self.request_ctx.runtime.env.get(key)
-    }
-
-    pub fn env_vars(&self) -> async_graphql_value::ConstValue {
-        let env = self.request_ctx.runtime.env.get_raw();
-        let env: Vec<_> = env
-            .into_iter()
-            .map(|(k, v)| {
-                (
-                    async_graphql_value::Name::new(&k),
-                    serde_json::from_str::<async_graphql_value::ConstValue>(&v)
-                        .unwrap_or_else(|_| async_graphql_value::ConstValue::String(v)),
-                )
-            })
-            .collect();
-        let map = IndexMap::from_iter(env);
-        async_graphql_value::ConstValue::Object(map)
     }
 
     pub fn var(&self, key: &str) -> Option<&str> {
