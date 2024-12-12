@@ -1,25 +1,15 @@
 use std::fmt::Display;
-use std::sync::RwLock;
 
 use jaq_core::load::parse::Term;
 use jaq_core::load::{Arena, File, Loader};
 use jaq_core::{Compiler, Ctx, Filter, Native, RcIter, ValR};
-use lazy_static::lazy_static;
 
 use super::PathValueEnum;
 use crate::core::json::JsonLike;
-
-lazy_static! {
-    /// Used to store the compiled JQ templates
-    static ref JQ_TEMPLATE_STORAGE: RwLock<Vec<Filter<Native<PathValueEnum<'static>>>>> =
-        RwLock::new(Vec::new());
-}
-
 /// Used to represent a JQ template. Currently used only on @expr directive.
 #[derive(Clone)]
 pub struct JqTransform {
-    /// The compiled template index
-    template_id: usize,
+    template: String,
     /// The IR representation, used for debug purposes
     representation: String,
 }
@@ -27,8 +17,9 @@ pub struct JqTransform {
 impl JqTransform {
     /// Used to parse a `template` and try to convert it into a JqTemplate
     pub fn try_new(template: &str) -> Result<Self, JqRuntimeError> {
+        let template = template.replace("\\\"", "\"");
         // the term is used because it can be easily serialized, deserialized and hashed
-        let term = Self::parse_template(template).map_err(JqRuntimeError::JqTemplateErrors)?;
+        let term = Self::parse_template(&template).map_err(JqRuntimeError::JqTemplateErrors)?;
 
         // calculate if the expression can be replaced with mustache
         let is_mustache = Self::recursive_is_mustache(&term);
@@ -42,6 +33,22 @@ impl JqTransform {
             return Err(JqRuntimeError::JqIstConst);
         }
 
+        Self::compile_template(&template)?;
+
+        Ok(Self {
+            template: template.to_string(),
+            representation: format!("{:?}", term),
+        })
+    }
+
+    /// Used to get the template string
+    pub fn template(&self) -> &str {
+        &self.template
+    }
+
+    fn compile_template(
+        template: &str,
+    ) -> Result<Filter<Native<PathValueEnum<'_>>>, JqRuntimeError> {
         // the template is used to be parsed in to the IR AST
         let template = File { code: template, path: () };
         // defs is used to extend the syntax with custom definitions of functions, like
@@ -72,23 +79,19 @@ impl JqTransform {
                 )
             })?;
 
-        // store the compiled template
-        let mut write_lock = JQ_TEMPLATE_STORAGE.write().unwrap();
-        let template_id = write_lock.len();
-        write_lock.push(filter);
-
-        Ok(Self { template_id, representation: format!("{:?}", term) })
+        Ok(filter)
     }
 
     /// Used to execute the transformation of the JqTemplate
-    pub fn run<'input>(&self, data: PathValueEnum<'input>) -> Vec<ValR<PathValueEnum<'input>>> {
+    pub fn run<'input>(
+        &'input self,
+        data: PathValueEnum<'input>,
+    ) -> Vec<ValR<PathValueEnum<'input>>> {
         let inputs = RcIter::new(core::iter::empty());
         let ctx = Ctx::new([], &inputs);
 
-        let read_guard = JQ_TEMPLATE_STORAGE.read().unwrap();
-
-        let filter: &Filter<Native<PathValueEnum<'input>>> =
-            unsafe { std::mem::transmute(read_guard.get(self.template_id).unwrap()) };
+        let filter: Filter<Native<PathValueEnum<'input>>> =
+            Self::compile_template(&self.template).unwrap();
 
         filter.run((ctx, data)).collect::<Vec<_>>()
     }
@@ -599,7 +602,7 @@ mod tests {
     #[test]
     fn test_debug() {
         let jq_template: JqTransform =
-            JqTransform { template_id: 0, representation: "test".to_string() };
+            JqTransform { template: "".to_string(), representation: "test".to_string() };
         let debug_string = format!("{:?}", jq_template);
         assert_eq!(debug_string, "JqTemplate { representation: \"test\" }");
     }
@@ -607,7 +610,7 @@ mod tests {
     #[test]
     fn test_display() {
         let jq_template: JqTransform =
-            JqTransform { template_id: 0, representation: "test".to_string() };
+            JqTransform { template: "".to_string(), representation: "test".to_string() };
         let display_string = format!("{}", jq_template);
         assert_eq!(display_string, "[JqTemplate](test)");
     }
@@ -615,18 +618,18 @@ mod tests {
     #[test]
     fn test_partial_eq() {
         let jq_template1: JqTransform =
-            JqTransform { template_id: 0, representation: "test".to_string() };
+            JqTransform { template: "".to_string(), representation: "test".to_string() };
         let jq_template2: JqTransform =
-            JqTransform { template_id: 0, representation: "test".to_string() };
+            JqTransform { template: "".to_string(), representation: "test".to_string() };
         assert_eq!(jq_template1, jq_template2);
     }
 
     #[test]
     fn test_hash() {
         let jq_template1: JqTransform =
-            JqTransform { template_id: 0, representation: "test".to_string() };
+            JqTransform { template: "".to_string(), representation: "test".to_string() };
         let jq_template2: JqTransform =
-            JqTransform { template_id: 0, representation: "test".to_string() };
+            JqTransform { template: "".to_string(), representation: "test".to_string() };
         let mut hasher1 = DefaultHasher::new();
         let mut hasher2 = DefaultHasher::new();
         jq_template1.hash(&mut hasher1);

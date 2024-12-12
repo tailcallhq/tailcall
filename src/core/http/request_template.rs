@@ -301,6 +301,7 @@ impl<'a, A: PathValue> Eval<'a> for ValueStringEval<A> {
                     async_graphql::Value::String(text.to_owned()),
                 ))),
                 Segment::Expression(parts) => in_value.raw_value(parts),
+                Segment::JqTransform(_) => panic!("Cannot eval JQ for PathValue"),
             })
             .next() // Return the first value that is found
     }
@@ -344,6 +345,7 @@ impl<'a, A: PathString> Eval<'a> for ExpressionValueEval<A> {
                         }
                     }
                 }
+                Segment::JqTransform(_) => panic!("Cannot eval JQ for PathString"),
             }
         }
         (result, first_expression_value)

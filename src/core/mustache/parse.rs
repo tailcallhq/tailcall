@@ -18,32 +18,18 @@ impl Mustache {
     }
 }
 
-fn parse_name(input: &str) -> IResult<&str, String> {
-    let spaces = nom::character::complete::multispace0;
-    let alpha = nom::character::complete::alpha1;
-    let alphanumeric_or_underscore = nom::multi::many0(nom::branch::alt((
-        nom::character::complete::alphanumeric1,
-        nom::bytes::complete::tag("_"),
-    )));
-
-    let parser = nom::sequence::tuple((spaces, alpha, alphanumeric_or_underscore, spaces));
-
-    nom::combinator::map(parser, |(_, a, b, _)| {
-        let b: String = b.into_iter().collect();
-        format!("{}{}", a, b)
-    })(input)
-}
-
 fn parse_expression(input: &str) -> IResult<&str, Segment> {
     delimited(
         tag("{{"),
-        map(
-            nom::sequence::tuple((
-                nom::combinator::opt(char('.')), // Optional leading dot
-                nom::multi::separated_list1(char('.'), parse_name),
-            )),
-            |(_, expr_parts)| Segment::Expression(expr_parts),
-        ),
+        map(take_until("}}"), |template| {
+            if let Ok(jq) = JqTransform::try_new(template) {
+                Segment::JqTransform(jq)
+            } else if let Ok((_, seg)) = parse_mustache_expression(input) {
+                seg
+            } else {
+                Segment::Literal(template.to_string())
+            }
+        }),
         tag("}}"),
     )(input)
 }
@@ -67,6 +53,36 @@ fn parse_segment(input: &str) -> IResult<&str, Vec<Segment>> {
     } else {
         Ok(("", vec![Segment::Literal(input.to_string())]))
     }
+}
+
+fn parse_mustache_expression(input: &str) -> IResult<&str, Segment> {
+    delimited(
+        tag("{{"),
+        map(
+            nom::sequence::tuple((
+                nom::combinator::opt(char('.')), // Optional leading dot
+                nom::multi::separated_list1(char('.'), parse_name),
+            )),
+            |(_, expr_parts)| Segment::Expression(expr_parts),
+        ),
+        tag("}}"),
+    )(input)
+}
+
+fn parse_name(input: &str) -> IResult<&str, String> {
+    let spaces = nom::character::complete::multispace0;
+    let alpha = nom::character::complete::alpha1;
+    let alphanumeric_or_underscore = nom::multi::many0(nom::branch::alt((
+        nom::character::complete::alphanumeric1,
+        nom::bytes::complete::tag("_"),
+    )));
+
+    let parser = nom::sequence::tuple((spaces, alpha, alphanumeric_or_underscore, spaces));
+
+    nom::combinator::map(parser, |(_, a, b, _)| {
+        let b: String = b.into_iter().collect();
+        format!("{}{}", a, b)
+    })(input)
 }
 
 fn parse_mustache(input: &str) -> IResult<&str, Mustache> {
@@ -226,7 +242,7 @@ mod tests {
 
     #[test]
     fn parse_env_name() {
-        let result = Mustache::parse("{{env.FOO}}");
+        let result = Mustache::parse("{{.env.FOO}}");
         assert_eq!(
             result,
             Mustache::from(vec![Segment::Expression(vec![
@@ -238,7 +254,7 @@ mod tests {
 
     #[test]
     fn parse_env_with_underscores() {
-        let result = Mustache::parse("{{env.FOO_BAR}}");
+        let result = Mustache::parse("{{.env.FOO_BAR}}");
         assert_eq!(
             result,
             Mustache::from(vec![Segment::Expression(vec![

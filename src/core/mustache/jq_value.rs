@@ -617,7 +617,7 @@ impl PathJqValue for serde_json::Value {
 }
 
 /// Used as a type parameter to accept objects that implement both traits
-pub trait PathJqValueString: PathString + PathJqValue {}
+pub trait PathJqValueString: PathString + PathJqValue + PathValue {}
 
 impl<Ctx: ResolverContextLike> PathJqValueString for EvalContext<'_, Ctx> {}
 

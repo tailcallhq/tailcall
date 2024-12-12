@@ -128,6 +128,26 @@ impl<Ctx: ResolverContextLike> PathValue for EvalContext<'_, Ctx> {
     }
 }
 
+impl PathValue for serde_json::Value {
+    fn raw_value<'a, T: AsRef<str>>(&'a self, path: &[T]) -> Option<ValueString<'a>> {
+        let serde_json::Value::Object(map) = self else {
+            return None;
+        };
+
+        let (first, rest) = path.split_first()?;
+
+        if rest.is_empty() {
+            map.get(first.as_ref()).map(|v| {
+                ValueString::Value(Cow::Owned(
+                    async_graphql_value::ConstValue::from_json(v.clone()).unwrap(),
+                ))
+            })
+        } else {
+            map.get(first.as_ref()).and_then(|v| v.raw_value(rest))
+        }
+    }
+}
+
 impl<Ctx: ResolverContextLike> PathString for EvalContext<'_, Ctx> {
     fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
         self.to_raw_value(path).and_then(|value| match value {

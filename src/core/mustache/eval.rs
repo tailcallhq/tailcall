@@ -38,6 +38,11 @@ impl<A> PathStringEval<A> {
                     .unwrap_or(
                         Mustache::from(vec![Segment::Expression(parts.to_vec())]).to_string(),
                     ),
+                Segment::JqTransform(jqt) => {
+                    Mustache::from(vec![Segment::JqTransform(jqt.clone())])
+                        .to_string()
+                        .replace("\"", "\\\"")
+                }
             })
             .collect()
     }
@@ -57,6 +62,7 @@ impl<A: PathString> Eval<'_> for PathStringEval<A> {
                     .path_string(parts)
                     .map(|a| a.to_string())
                     .unwrap_or_default(),
+                Segment::JqTransform(_) => panic!("Cannot eval JQ for PathString"),
             })
             .collect()
     }
@@ -92,6 +98,7 @@ impl<'a, A: Path + 'a> Eval<'a> for PathEval<&'a A> {
             .filter_map(|segment| match segment {
                 Segment::Literal(text) => Some(Exit::Text(text)),
                 Segment::Expression(parts) => in_value.get_path(parts).map(Exit::Value),
+                Segment::JqTransform(_) => panic!("Cannot eval JQ for Path"),
             })
             .collect::<Vec<_>>()
     }
@@ -116,6 +123,7 @@ impl<A: PathGraphql> Eval<'_> for PathGraphqlEval<A> {
             .map(|segment| match segment {
                 Segment::Literal(text) => text.to_string(),
                 Segment::Expression(parts) => in_value.path_graphql(parts).unwrap_or_default(),
+                Segment::JqTransform(_) => panic!("Cannot eval JQ for PathGraphql"),
             })
             .collect()
     }
