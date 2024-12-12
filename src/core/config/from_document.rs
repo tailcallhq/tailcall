@@ -12,7 +12,7 @@ use indexmap::IndexMap;
 use tailcall_valid::{Valid, ValidationError, Validator};
 
 use super::directive::{to_directive, Directive};
-use super::{Alias, Discriminate, Resolver, Telemetry, FEDERATION_DIRECTIVES};
+use super::{Alias, Discriminate, Resolver, RuntimeConfig, Telemetry, FEDERATION_DIRECTIVES};
 use crate::core::config::{
     self, Cache, Config, Enum, Link, Modify, Omit, Protected, RootSchema, Server, Union, Upstream,
     Variant,
@@ -51,15 +51,11 @@ pub fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
             .fuse(links(sd))
             .fuse(telemetry(sd))
             .map(
-                |(server, upstream, types, unions, enums, schema, links, telemetry)| Config {
-                    server,
-                    upstream,
-                    types,
-                    unions,
-                    enums,
-                    schema,
-                    links,
-                    telemetry,
+                |(server, upstream, types, unions, enums, schema, links, telemetry)| {
+                    let runtime_config = RuntimeConfig { server, upstream, links, telemetry };
+                    let config = Config { types, unions, enums, schema, ..Default::default() };
+
+                    config.with_runtime_config(runtime_config)
                 },
             )
     })
