@@ -22,11 +22,11 @@ fn parse_expression(input: &str) -> IResult<&str, Segment> {
     delimited(
         tag("{{"),
         map(take_until("}}"), |template| {
-            if let Ok(jq) = JqTransform::try_new(template) {
-                Segment::JqTransform(jq)
-            } else if let Ok((_, seg)) = parse_mustache_expression(input) {
+            if let Ok((_, seg)) = parse_mustache_expression(input) {
                 seg
-            } else {
+            } else if let Ok(jq) = JqTransform::try_new(template) {
+                Segment::JqTransform(jq)
+            } else  {
                 Segment::Literal(template.to_string())
             }
         }),
