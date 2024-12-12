@@ -62,7 +62,7 @@ impl<A: PathString> Eval<'_> for PathStringEval<A> {
                     .path_string(parts)
                     .map(|a| a.to_string())
                     .unwrap_or_default(),
-                Segment::JqTransform(_) => panic!("Cannot eval JQ for PathString"),
+                Segment::JqTransform(_) => Default::default(),
             })
             .collect()
     }

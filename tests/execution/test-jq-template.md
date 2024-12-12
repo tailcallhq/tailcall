@@ -11,8 +11,8 @@ type Query {
   foo: Foo! @http(url: "http://upstream/foo")
   bar: Bar! @http(url: "http://upstream/foo")
   fizz: Fizz! @http(url: "http://upstream/foo")
-  foobar: [String!]! @expr(body: "{{ .env.FOOBAR | split(\" \") }}")
-  token: String! @expr(body: "{{ .headers.authorization | split(\" \") | .[1] }}")
+  foobar: [String!]! @expr(body: "{{ from_context(\"env.FOOBAR\") | split(\" \") }}")
+  token: String! @expr(body: "{{ from_context(\"headers.authorization\") | split(\" \") | .[1] }}")
   var: [String!]! @expr(body: "{{ .vars | .id | split(\" \") }}")
   arg(text: String!): String! @expr(body: "{{ .args.text | split(\" \") | .[0] }}")
 }

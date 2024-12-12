@@ -2,10 +2,11 @@ use std::fmt::Display;
 
 use jaq_core::load::parse::Term;
 use jaq_core::load::{Arena, File, Loader};
-use jaq_core::{Compiler, Ctx, Filter, Native, RcIter, ValR};
+use jaq_core::{Compiler, Ctx, Exn, Filter, Native, RcIter, ValR};
 
 use super::PathValueEnum;
 use crate::core::json::JsonLike;
+use crate::core::path::ValueString;
 /// Used to represent a JQ template. Currently used only on @expr directive.
 #[derive(Clone)]
 pub struct JqTransform {
@@ -67,10 +68,62 @@ impl JqTransform {
                     .collect::<Vec<_>>(),
             )
         })?;
+        type FnBind = Box<[jaq_core::Bind]>;
+        type NativeVal<'a> = Native<PathValueEnum<'a>>;
+        let custom_funs: [(&str, FnBind, NativeVal<'_>); 1] = [(
+            "from_context",
+            jaq_std::v(1),
+            Native::new(|_, mut cv: jaq_core::Cv<'_, PathValueEnum<'_>>| {
+                let path = match cv.0.pop_var() {
+                    PathValueEnum::PathValue(_) => {
+                        return Box::new(core::iter::once(Err(Exn::from(jaq_core::Error::new(
+                            PathValueEnum::Val(jaq_json::Val::from(
+                                "You cannot pass the context as a variable.".to_string(),
+                            )),
+                        )))))
+                    }
+                    PathValueEnum::Val(val) => {
+                        if let jaq_json::Val::Str(rc) = val {
+                            rc.to_string()
+                        } else {
+                            return Box::new(core::iter::once(Err(Exn::from(jaq_core::Error::new(PathValueEnum::Val(jaq_json::Val::from(
+                                "The function `from_context` receives a single string argument.".to_string(),
+                            )))))));
+                        }
+                    }
+                };
+
+                match cv.1 {
+                    PathValueEnum::PathValue(arc) => {
+                        let path: Vec<_> = path.split(".").collect();
+                        let res = arc.get_values(&path).unwrap_or_else(|| {
+                            ValueString::Value(std::borrow::Cow::Owned(
+                                async_graphql_value::ConstValue::Null,
+                            ))
+                        });
+                        let res = match res {
+                            ValueString::Value(cow) => PathValueEnum::Val(jaq_json::Val::from(
+                                cow.into_owned().into_json().unwrap(),
+                            )),
+                            ValueString::String(cow) => {
+                                PathValueEnum::Val(jaq_json::Val::from(cow.to_string()))
+                            }
+                        };
+
+                        Box::new(core::iter::once(Ok(res)))
+                    }
+                    PathValueEnum::Val(_) => Box::new(core::iter::once(Err(Exn::from(
+                        jaq_core::Error::new(PathValueEnum::Val(jaq_json::Val::from(
+                            "You can only use `from_context` on root level value.".to_string(),
+                        ))),
+                    )))),
+                }
+            }),
+        )];
 
         // the AST of the operation, used to transform the data
         let filter = Compiler::<_, Native<PathValueEnum>>::default()
-            .with_funs(jaq_std::funs())
+            .with_funs(jaq_std::funs().chain(custom_funs))
             .compile(modules)
             .map_err(|errs| {
                 JqRuntimeError::JqTemplateErrors(

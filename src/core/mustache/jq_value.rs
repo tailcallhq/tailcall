@@ -583,12 +583,17 @@ impl From<bool> for PathValueEnum<'_> {
 /// Used to get get keys/index out of json compatible objects like EvalContext
 pub trait PathJqValue {
     fn get_value<'a>(&'a self, index: &Val) -> Option<ValueString<'a>>;
+    fn get_values<'a>(&'a self, index: &[&str]) -> Option<ValueString<'a>>;
 }
 
 impl<Ctx: ResolverContextLike> PathJqValue for EvalContext<'_, Ctx> {
     fn get_value<'a>(&'a self, index: &Val) -> Option<ValueString<'a>> {
         let Val::Str(index) = index else { return None };
         self.raw_value(&[index.as_str()])
+    }
+
+    fn get_values<'a>(&'a self, path: &[&str]) -> Option<ValueString<'a>> {
+        self.raw_value(path)
     }
 }
 
@@ -613,6 +618,10 @@ impl PathJqValue for serde_json::Value {
             }
             _ => None,
         }
+    }
+
+    fn get_values<'a>(&'a self, _index: &[&str]) -> Option<ValueString<'a>> {
+        todo!()
     }
 }
 

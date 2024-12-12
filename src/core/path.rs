@@ -381,9 +381,11 @@ mod tests {
                 Some(ValueString::String(Cow::Borrowed("var")))
             );
             assert_eq!(EVAL_CTX.raw_value(&["vars", "missing"]), None);
+            let mut map = IndexMap::new();
+            map.insert(Name::new("existing"), Value::String("var".to_string()));
             assert_eq!(
                 EVAL_CTX.raw_value(&["vars"]),
-                Some(ValueString::String(Cow::Borrowed(r#"{"existing":"var"}"#)))
+                Some(ValueString::Value(Cow::Owned(Value::Object(map))))
             );
 
             // envs
