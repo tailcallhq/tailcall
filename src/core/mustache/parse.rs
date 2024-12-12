@@ -26,7 +26,7 @@ fn parse_expression(input: &str) -> IResult<&str, Segment> {
                 seg
             } else if let Ok(jq) = JqTransform::try_new(template) {
                 Segment::JqTransform(jq)
-            } else  {
+            } else {
                 Segment::Literal(template.to_string())
             }
         }),
