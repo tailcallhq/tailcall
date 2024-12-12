@@ -1,6 +1,7 @@
 ---
 source: src/core/jit/builder.rs
 expression: plan.selection
+snapshot_kind: text
 ---
 [
     Field {

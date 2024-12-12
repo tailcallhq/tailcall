@@ -1,6 +1,7 @@
 ---
 source: tests/core/spec.rs
 expression: formatter
+snapshot_kind: text
 ---
 schema @server(hostname: "0.0.0.0", introspection: false, port: 8001, queryValidation: false) @upstream(httpCache: 42) {
   query: Query

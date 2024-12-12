@@ -1,6 +1,7 @@
 ---
 source: src/core/config/transformer/subgraph.rs
 expression: keys
+snapshot_kind: text
 ---
 Valid(
     Err(

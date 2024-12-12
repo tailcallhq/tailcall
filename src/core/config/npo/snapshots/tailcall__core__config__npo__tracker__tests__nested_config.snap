@@ -1,6 +1,7 @@
 ---
 source: src/core/config/npo/tracker.rs
 expression: actual
+snapshot_kind: text
 ---
 query { bar { spam } }
 query { buzz { spam } }
