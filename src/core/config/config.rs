@@ -642,13 +642,9 @@ impl Config {
             .add_directive(Grpc::directive_definition(generated_types))
             .add_directive(Http::directive_definition(generated_types))
             .add_directive(JS::directive_definition(generated_types))
-            .add_directive(Link::directive_definition(generated_types))
             .add_directive(Modify::directive_definition(generated_types))
             .add_directive(Omit::directive_definition(generated_types))
             .add_directive(Protected::directive_definition(generated_types))
-            .add_directive(Server::directive_definition(generated_types))
-            .add_directive(Telemetry::directive_definition(generated_types))
-            .add_directive(Upstream::directive_definition(generated_types))
             .add_directive(Discriminate::directive_definition(generated_types))
             .add_input(GraphQL::input_definition())
             .add_input(Grpc::input_definition())
@@ -656,8 +652,7 @@ impl Config {
             .add_input(Expr::input_definition())
             .add_input(JS::input_definition())
             .add_input(Modify::input_definition())
-            .add_input(Cache::input_definition())
-            .add_input(Telemetry::input_definition());
+            .add_input(Cache::input_definition());
 
         for scalar in Scalar::iter() {
             builder = builder.add_scalar(scalar.scalar_definition());
