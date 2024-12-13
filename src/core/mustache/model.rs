@@ -62,7 +62,7 @@ impl Display for Mustache {
             .iter()
             .map(|segment| match segment {
                 Segment::Literal(text) => text.clone(),
-                Segment::Expression(parts) => format!("{{{{{}}}}}", parts.join(".")),
+                Segment::Expression(parts) => format!("{{{{.{}}}}}", parts.join(".")),
             })
             .collect::<Vec<String>>()
             .join("");

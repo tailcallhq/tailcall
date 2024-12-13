@@ -24,7 +24,7 @@ jobs:
 
   check_if_build:
     name: Check if Build
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2204
 
     steps:
       - uses: actions/checkout@v4
@@ -40,7 +40,7 @@ jobs:
   test_aws_build:
     name: Test AWS Lambda Build
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     defaults:
       run:
         working-directory: ./tailcall-aws-lambda
@@ -52,7 +52,7 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
 
       - name: Install Python
-        uses: actions/setup-python@v5
+        uses: useblacksmith/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -64,7 +64,7 @@ jobs:
 
   test_wasm:
     name: Run Tests (WASM)
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     defaults:
       run:
         working-directory: ./tailcall-wasm
@@ -76,7 +76,7 @@ jobs:
           target: wasm32-unknown-unknown
 
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: useblacksmith/setup-node@v5
         with:
           node-version: "20.11.0"
 
@@ -90,7 +90,7 @@ jobs:
 
   test_cf:
     name: Run Tests (Cloudflare)
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     defaults:
       run:
         working-directory: ./tailcall-cloudflare
@@ -104,7 +104,7 @@ jobs:
           target: wasm32-unknown-unknown
 
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: useblacksmith/setup-node@v5
         with:
           node-version: "20.11.0"
 
@@ -116,17 +116,20 @@ jobs:
 
   test:
     name: Run Tests on ${{ matrix.build }}
-    runs-on: ${{ matrix.os || 'ubuntu-latest' }}
+    runs-on: ${{ matrix.os || 'blacksmith-4vcpu-ubuntu-2204' }}
     needs: setup_build_matrix
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup_build_matrix.outputs.matrix) }}
 
+    env:
+      WITH_COVERAGE: ${{ matrix.build == 'darwin-arm64' }}
+
     steps:
       - uses: actions/checkout@v4
 
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: useblacksmith/setup-node@v5
         with:
           node-version: "20.11.0"
       - name: Install Prettier
@@ -142,7 +145,7 @@ jobs:
 
       - name: Cache NASM
         if: runner.os == 'Windows'
-        uses: actions/cache@v4
+        uses: useblacksmith/cache@v5
         with:
           path: |
             nasm-2.16.02
@@ -164,15 +167,28 @@ jobs:
           }
           echo "$(Resolve-Path nasm-2.16.02)" >> $env:GITHUB_PATH
 
-      - uses: taiki-e/install-action@cargo-llvm-cov
+      - name: Install insta test runner
+        if: ${{ env.WITH_COVERAGE == 'false' && matrix.test != 'false' }}
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-insta
 
-      - name: Run Cargo Test
-        if: matrix.test != 'false'
-        # TODO: run llvm-cov only for single build since other builds are not sent to codecov anyway
+      - name: Run cargo insta test
+        if: ${{ env.WITH_COVERAGE == 'false' && matrix.test != 'false' }}
+        run: cargo insta test --unreferenced reject --workspace --target ${{ matrix.target }}
+
+      - name: Install llvm-cov test runner
+        if: ${{ env.WITH_COVERAGE == 'true' && matrix.test != 'false' }}
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-llvm-cov
+
+      - name: Run cargo llvm-cov test
+        if: ${{ env.WITH_COVERAGE == 'true' && matrix.test != 'false' }}
         run: cargo llvm-cov --workspace ${{ matrix.features }} --lcov --target ${{ matrix.target }} --output-path lcov.info
 
       - name: Upload Coverage to Codecov
-        if: matrix.build == 'darwin-arm64'
+        if: ${{ env.WITH_COVERAGE == 'true' && matrix.test != 'false' }}
         uses: Wandalen/wretry.action@v3
         with:
           action: codecov/codecov-action@v4
@@ -185,7 +201,7 @@ jobs:
 
   check-examples:
     name: Check Examples
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4
       - name: Set up Rust
@@ -207,7 +223,7 @@ jobs:
   draft_release:
     name: Draft Release
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     permissions:
       contents: write
       pull-requests: write
@@ -237,7 +253,7 @@ jobs:
     needs: [setup_build_matrix, test, draft_release, check_if_build, test_cf, test_wasm]
     # TODO: put a condition to separate job that other will depend on to remove duplication?
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true')
-    runs-on: ${{ matrix.os || 'ubuntu-latest' }}
+    runs-on: ${{ matrix.os || 'blacksmith-4vcpu-ubuntu-2204' }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup_build_matrix.outputs.matrix) }}
@@ -272,7 +288,7 @@ jobs:
 
       - name: Install Node.js
         if: (startsWith(github.event.head_commit.message, 'feat') || startsWith(github.event.head_commit.message, 'fix')) && (github.event_name == 'push' && github.ref == 'refs/heads/main')
-        uses: actions/setup-node@v4
+        uses: useblacksmith/setup-node@v5
         with:
           node-version: 20.11.0
           registry-url: https://registry.npmjs.org
@@ -316,7 +332,7 @@ jobs:
     name: Release (AWS Lambda)
     needs: [test, draft_release, check_if_build, test_cf]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true')
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     permissions:
       contents: write
       pull-requests: write
@@ -332,7 +348,7 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
 
       - name: Install Python
-        uses: actions/setup-python@v5
+        uses: useblacksmith/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -360,7 +376,7 @@ jobs:
     name: Semantic Release
     if: (startsWith(github.event.head_commit.message, 'feat') || startsWith(github.event.head_commit.message, 'fix')) && (github.event_name == 'push' && github.ref == 'refs/heads/main')
     needs: [draft_release, release, release_lambda]
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     permissions:
       contents: write
       pull-requests: write
@@ -380,12 +396,12 @@ jobs:
     name: Publish NPM main package
     needs: [draft_release, release]
     if: (startsWith(github.event.head_commit.message, 'feat') || startsWith(github.event.head_commit.message, 'fix')) && (github.event_name == 'push' && github.ref == 'refs/heads/main')
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     steps:
       - name: Checkout Current Branch (Fast)
         uses: actions/checkout@v4
       - name: Install Node
-        uses: actions/setup-node@v4
+        uses: useblacksmith/setup-node@v5
         with:
           node-version: 20.11.0
           registry-url: https://registry.npmjs.org
@@ -425,7 +441,7 @@ jobs:
       APP_VERSION: ${{ needs.draft_release.outputs.create_release_name }} # Ensure APP_VERSION is set correctly
     needs: [draft_release, release]
     if: (startsWith(github.event.head_commit.message, 'feat') || startsWith(github.event.head_commit.message, 'fix')) && (github.event_name == 'push' && github.ref == 'refs/heads/main')
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     # Sets the permissions granted to the `GITHUB_TOKEN` for the actions in this job.
     permissions:
       contents: read
@@ -468,7 +484,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4
         with:

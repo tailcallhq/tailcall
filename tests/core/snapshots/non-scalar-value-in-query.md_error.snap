@@ -1,0 +1,61 @@
+---
+source: tests/core/spec.rs
+expression: errors
+snapshot_kind: text
+---
+[
+  {
+    "message": "too few parts in template",
+    "trace": [
+      "Query",
+      "invalidArgument",
+      "@http",
+      "query"
+    ],
+    "description": null
+  },
+  {
+    "message": "value 'Nested' is not of a scalar type",
+    "trace": [
+      "Query",
+      "invalidArgumentType",
+      "@http",
+      "query",
+      "criteria"
+    ],
+    "description": null
+  },
+  {
+    "message": "no argument 'criterias' found",
+    "trace": [
+      "Query",
+      "unknownArgument",
+      "@http",
+      "query",
+      "criterias"
+    ],
+    "description": null
+  },
+  {
+    "message": "Cannot find type Criteria in the config",
+    "trace": [
+      "Query",
+      "unknownArgumentType",
+      "@http",
+      "query",
+      "criteria"
+    ],
+    "description": null
+  },
+  {
+    "message": "field unknown_field not found",
+    "trace": [
+      "Query",
+      "unknownField",
+      "@http",
+      "query",
+      "criteria"
+    ],
+    "description": null
+  }
+]

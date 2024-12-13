@@ -106,7 +106,7 @@ impl ExecutionSpec {
                             "env" => {
                                 let vars: HashMap<String, String> = match source {
                                     Source::Json => Ok(serde_json::from_str(&content)?),
-                                    Source::Yml => Ok(serde_yaml::from_str(&content)?),
+                                    Source::Yml => Ok(serde_yaml_ng::from_str(&content)?),
                                     _ => Err(anyhow!("Unexpected language in env block in {:?} (only JSON and YAML are supported)", path)),
                                 }?;
 

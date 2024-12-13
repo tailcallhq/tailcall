@@ -128,9 +128,9 @@ impl MergeRight for async_graphql_value::ConstValue {
     }
 }
 
-impl MergeRight for serde_yaml::Value {
+impl MergeRight for serde_yaml_ng::Value {
     fn merge_right(self, other: Self) -> Self {
-        use serde_yaml::Value;
+        use serde_yaml_ng::Value;
 
         match (self, other) {
             (Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_), other) => other,

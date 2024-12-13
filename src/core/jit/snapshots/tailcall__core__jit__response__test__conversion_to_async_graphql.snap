@@ -1,6 +1,7 @@
 ---
 source: src/core/jit/response.rs
 expression: async_response
+snapshot_kind: text
 ---
 Response {
     data: Null,

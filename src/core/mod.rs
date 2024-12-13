@@ -41,6 +41,7 @@ mod transform;
 pub mod try_fold;
 pub mod variance;
 pub mod worker;
+pub mod worker_hooks;
 pub mod wrapping_type;
 
 // Re-export everything from `tailcall_macros` as `macros`

@@ -1,0 +1,29 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+snapshot_kind: text
+---
+schema
+  @server(port: 8000)
+  @upstream
+  @link(src: "test.js", type: Script)
+  @link(id: "news", src: "news.proto", type: Protobuf) {
+  query: Query
+}
+
+type News {
+  body: String
+  id: Int
+  postImage: String
+  title: String
+}
+
+type Query {
+  newsById: News!
+    @grpc(
+      url: "http://localhost:50051"
+      body: {id: 2}
+      method: "news.NewsService.GetNews"
+      onResponseBody: "onResponse"
+    )
+}

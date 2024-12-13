@@ -1,0 +1,19 @@
+---
+source: tests/core/spec.rs
+expression: response
+snapshot_kind: text
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "newsById": {
+        "id": 2,
+        "title": "Note 2 - Changed by JS"
+      }
+    }
+  }
+}

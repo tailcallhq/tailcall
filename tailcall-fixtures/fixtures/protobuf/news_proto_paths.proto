@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package news;
+
+import "protobuf/news_dto.proto";
+import "google/protobuf/empty.proto";
+
+service NewsService {
+  rpc GetAllNews(google.protobuf.Empty) returns (NewsList) {}
+  rpc GetNews(NewsId) returns (News) {}
+  rpc GetMultipleNews(MultipleNewsId) returns (NewsList) {}
+  rpc DeleteNews(NewsId) returns (google.protobuf.Empty) {}
+  rpc EditNews(News) returns (News) {}
+  rpc AddNews(News) returns (News) {}
+}

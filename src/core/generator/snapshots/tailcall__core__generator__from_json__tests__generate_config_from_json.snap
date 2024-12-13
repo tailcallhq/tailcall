@@ -1,6 +1,7 @@
 ---
 source: src/core/generator/from_json.rs
 expression: config.to_sdl()
+snapshot_kind: text
 ---
 schema @server @upstream(allowedHeaders: ["authorization"]) {
   query: Query

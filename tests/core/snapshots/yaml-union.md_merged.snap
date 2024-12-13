@@ -1,6 +1,7 @@
 ---
 source: tests/core/spec.rs
 expression: formatter
+snapshot_kind: text
 ---
 schema @server @upstream {
   query: Query
@@ -30,9 +31,9 @@ type NU {
 }
 
 type Query {
-  testVar0(u: T1Input!): U @http(url: "http://localhost/users/{{args.u}}/")
-  testVar1(u: T2Input!): U @http(url: "http://localhost/users/{{args.u}}/")
-  testVar2(u: T3Input!): U @http(url: "http://localhost/users/{{args.u}}/")
+  testVar0(u: T1Input!): U @http(url: "http://localhost/users/{{.args.u}}/")
+  testVar1(u: T2Input!): U @http(url: "http://localhost/users/{{.args.u}}/")
+  testVar2(u: T3Input!): U @http(url: "http://localhost/users/{{.args.u}}/")
 }
 
 type T1 {

@@ -179,7 +179,7 @@ impl ExecutionSpec {
                                     if mock.is_none() {
                                         mock = match source {
                                             Source::Json => Ok(serde_json::from_str(&content)?),
-                                            Source::Yml => Ok(serde_yaml::from_str(&content)?),
+                                            Source::Yml => Ok(serde_yaml_ng::from_str(&content)?),
                                             _ => Err(anyhow!("Unexpected language in mock block in {:?} (only JSON and YAML are supported)", path)),
                                         }?;
                                     } else {
@@ -190,7 +190,7 @@ impl ExecutionSpec {
                                     if env.is_none() {
                                         env = match source {
                                             Source::Json => Ok(serde_json::from_str(&content)?),
-                                            Source::Yml => Ok(serde_yaml::from_str(&content)?),
+                                            Source::Yml => Ok(serde_yaml_ng::from_str(&content)?),
                                             _ => Err(anyhow!("Unexpected language in env block in {:?} (only JSON and YAML are supported)", path)),
                                         }?;
                                     } else {
@@ -201,7 +201,7 @@ impl ExecutionSpec {
                                     if test.is_none() {
                                         test = match source {
                                             Source::Json => Ok(serde_json::from_str(&content)?),
-                                            Source::Yml => Ok(serde_yaml::from_str(&content)?),
+                                            Source::Yml => Ok(serde_yaml_ng::from_str(&content)?),
                                             _ => Err(anyhow!("Unexpected language in test block in {:?} (only JSON and YAML are supported)", path)),
                                         }?;
                                     } else {

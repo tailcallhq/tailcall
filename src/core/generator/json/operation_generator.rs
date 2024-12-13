@@ -41,7 +41,10 @@ impl OperationTypeGenerator {
             let arg_name_gen = NameGenerator::new(prefix.as_str());
             let arg_name = arg_name_gen.next();
 
-            http_resolver.body = Some(format!("{{{{.args.{}}}}}", arg_name));
+            http_resolver.body = Some(serde_json::Value::String(format!(
+                "{{{{.args.{}}}}}",
+                arg_name
+            )));
             http_resolver.method = request_sample.method.to_owned();
 
             field.args.insert(

@@ -1,6 +1,7 @@
 ---
 source: src/core/generator/tests/json_to_config_spec.rs
 expression: cfg.to_sdl()
+snapshot_kind: text
 ---
 schema @server @upstream {
   mutation: Mutation
