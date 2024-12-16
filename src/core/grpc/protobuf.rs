@@ -254,6 +254,18 @@ pub mod tests {
     use crate::core::config::{Config, Field, Grpc, Link, LinkType, Resolver, Type};
 
     pub async fn get_proto_file(path: &str) -> Result<FileDescriptorSet> {
+        get_proto_file_with_config(path, LinkConfig::default()).await
+    }
+
+    #[derive(Default)]
+    pub struct LinkConfig {
+        proto_paths: Option<Vec<String>>,
+    }
+
+    pub async fn get_proto_file_with_config(
+        path: &str,
+        link_config: LinkConfig,
+    ) -> Result<FileDescriptorSet> {
         let runtime = crate::core::runtime::test::init(None);
         let reader = ConfigReader::init(runtime);
 
@@ -268,6 +280,7 @@ pub mod tests {
             type_of: LinkType::Protobuf,
             headers: None,
             meta: None,
+            proto_paths: link_config.proto_paths,
         }]);
 
         let method = GrpcMethod { package: id, service: "a".to_owned(), name: "b".to_owned() };
@@ -374,6 +387,41 @@ pub mod tests {
         let grpc_method = GrpcMethod::try_from("news.NewsService.GetNews").unwrap();
 
         let file = ProtobufSet::from_proto_file(get_proto_file(protobuf::NEWS).await?)?;
+        let service = file.find_service(&grpc_method)?;
+        let operation = service.find_operation(&grpc_method)?;
+
+        let input = operation.convert_input(r#"{ "id": 1 }"#)?;
+
+        assert_eq!(input, b"\0\0\0\0\x02\x08\x01");
+
+        let output = b"\0\0\0\x005\x08\x01\x12\x06Note 1\x1a\tContent 1\"\x0cPost image 1";
+
+        let parsed = operation.convert_output::<serde_json::Value>(output)?;
+
+        assert_eq!(
+            serde_json::to_value(parsed)?,
+            json!({
+              "id": 1, "title": "Note 1", "body": "Content 1", "postImage": "Post image 1", "status": "PUBLISHED"
+            })
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn news_proto_file_with_proto_paths() -> Result<()> {
+        let grpc_method = GrpcMethod::try_from("news.NewsService.GetNews").unwrap();
+
+        let path: &str = protobuf::NEWS_PROTO_PATHS;
+        let proto_paths = Some(vec![Path::new(path)
+            .ancestors()
+            .nth(2)
+            .unwrap()
+            .to_string_lossy()
+            .to_string()]);
+        let file = ProtobufSet::from_proto_file(
+            get_proto_file_with_config(path, LinkConfig { proto_paths }).await?,
+        )?;
         let service = file.find_service(&grpc_method)?;
         let operation = service.find_operation(&grpc_method)?;
 
