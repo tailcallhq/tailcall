@@ -79,7 +79,13 @@ impl ConfigReader {
                     });
                 }
                 LinkType::Protobuf => {
-                    let meta = self.proto_reader.read(path, None).await?;
+                    let proto_paths = link.proto_paths.as_ref().map(|paths| {
+                        paths
+                            .iter()
+                            .map(|p| Self::resolve_path(p, parent_dir))
+                            .collect::<Vec<_>>()
+                    });
+                    let meta = self.proto_reader.read(path, proto_paths.as_deref()).await?;
                     extensions.add_proto(meta);
                 }
                 LinkType::Script => {

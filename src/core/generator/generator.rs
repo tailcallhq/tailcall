@@ -99,6 +99,7 @@ impl Generator {
             type_of: LinkType::Protobuf,
             headers: None,
             meta: None,
+            proto_paths: None,
         });
         Ok(config)
     }
