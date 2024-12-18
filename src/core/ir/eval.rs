@@ -36,7 +36,7 @@ impl IR {
                         .unwrap_or(&async_graphql::Value::Null)
                         .clone())
                 }
-                IR::Dynamic(value) => Ok(value.render_value(ctx)),
+                IR::Dynamic(value) => Ok(value.render_value(ctx)?),
                 IR::Protect(auth, expr) => {
                     let verifier = AuthVerifier::from(auth.clone());
                     verifier.verify(ctx.request_ctx).await.to_result()?;

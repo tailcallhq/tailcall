@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+use super::JqTransform;
+
 #[derive(Debug, Clone, PartialEq, Hash, Default)]
 pub struct Mustache(Vec<Segment>);
 
@@ -7,6 +9,7 @@ pub struct Mustache(Vec<Segment>);
 pub enum Segment {
     Literal(String),
     Expression(Vec<String>),
+    JqTransform(JqTransform),
 }
 
 impl<A: IntoIterator<Item = Segment>> From<A> for Mustache {
@@ -16,17 +19,14 @@ impl<A: IntoIterator<Item = Segment>> From<A> for Mustache {
 }
 
 impl Mustache {
+    /// Used to check if the returned expression resolves to a constant value
+    /// always
     pub fn is_const(&self) -> bool {
-        match self {
-            Mustache(segments) => {
-                for s in segments {
-                    if let Segment::Expression(_) = s {
-                        return false;
-                    }
-                }
-                true
-            }
-        }
+        self.0.iter().all(|v| match v {
+            Segment::Literal(_) => true,
+            Segment::Expression(_) => false,
+            Segment::JqTransform(jq_transform) => jq_transform.is_const(),
+        })
     }
 
     pub fn segments(&self) -> &Vec<Segment> {
@@ -63,6 +63,7 @@ impl Display for Mustache {
             .map(|segment| match segment {
                 Segment::Literal(text) => text.clone(),
                 Segment::Expression(parts) => format!("{{{{.{}}}}}", parts.join(".")),
+                Segment::JqTransform(jq) => format!("{{{{{}}}}}", jq.template()),
             })
             .collect::<Vec<String>>()
             .join("");
