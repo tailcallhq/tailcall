@@ -1,10 +1,11 @@
 ---
 source: tests/core/spec.rs
 expression: errors
+snapshot_kind: text
 ---
 [
   {
-    "message": "GroupBy is only supported for GET requests",
+    "message": "batchKey requires either body or query parameters",
     "trace": [
       "Query",
       "user",

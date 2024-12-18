@@ -55,7 +55,7 @@ input PostInput {
 
 type Mutation {
   createUser(input: UserInput!): User!
-    @http(url: "http://jsonplaceholder.typicode.com/users", body: "{{.args.input}}", method: "POST")
+    @http(url: "http://jsonplaceholder.typicode.com/users", body: "{{.args.input}}", method: POST)
   createPost(input: PostInput): Post!
-    @http(url: "http://jsonplaceholder.typicode.com/posts", body: "{{.args.input}}", method: "POST")
+    @http(url: "http://jsonplaceholder.typicode.com/posts", body: "{{.args.input}}", method: POST)
 }

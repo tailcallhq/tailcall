@@ -1,13 +1,18 @@
 ---
 source: src/core/config/transformer/flatten_single_field.rs
 expression: transformed_config.to_sdl()
+snapshot_kind: text
 ---
 schema @server @upstream {
   query: Query
 }
 
-type Bar {
+input Bar {
   a: Int
+}
+
+input Input {
+  a: Bar
 }
 
 type Connection {
@@ -28,6 +33,7 @@ type NotSingleMiddle {
 }
 
 type Query @addField(name: "foo", path: ["foo", "bar", "a"]) {
+  a(input: Input!): Empty
   foo: Foo @omit
   not_single: NotSingle
   not_single_middle: NotSingleMiddle

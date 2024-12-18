@@ -1,6 +1,7 @@
 ---
 source: src/core/config/transformer/nested_unions.rs
 expression: config.to_sdl()
+snapshot_kind: text
 ---
 schema @server @upstream {
   query: Query

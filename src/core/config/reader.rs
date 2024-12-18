@@ -1,10 +1,11 @@
 use std::path::Path;
 
+use futures_util::future::join_all;
 use rustls_pemfile;
 use rustls_pki_types::{
     CertificateDer, PrivateKeyDer, PrivatePkcs1KeyDer, PrivatePkcs8KeyDer, PrivateSec1KeyDer,
 };
-use tailcall_valid::{Valid, Validator};
+use tailcall_valid::{Valid, ValidationError, Validator};
 use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType, PrivateKey};
@@ -34,12 +35,13 @@ impl ConfigReader {
     }
 
     /// Reads the links in a Config and fill the content
-    #[async_recursion::async_recursion]
     async fn ext_links(
         &self,
         config_module: ConfigModule,
-        parent_dir: Option<&'async_recursion Path>,
+        parent_dir: Option<&Path>,
     ) -> anyhow::Result<ConfigModule> {
+        let reader_ctx = ConfigReaderContext::new(&self.runtime);
+
         let links: Vec<Link> = config_module
             .config()
             .links
@@ -65,23 +67,25 @@ impl ConfigReader {
 
             match link.type_of {
                 LinkType::Config => {
-                    let source = self.resource_reader.read_file(path).await?;
+                    let source = self
+                        .resource_reader
+                        .read_file(path)
+                        .await?
+                        .render(&reader_ctx);
                     let content = source.content;
                     let config = Config::from_source(Source::detect(&source.path)?, &content)?;
                     config_module = config_module.and_then(|config_module| {
                         config_module.unify(ConfigModule::from(config.clone()))
                     });
-
-                    if !config.links.is_empty() {
-                        let cfg_module = self
-                            .ext_links(ConfigModule::from(config), Path::new(&link.src).parent())
-                            .await?;
-                        config_module =
-                            config_module.and_then(|config_module| config_module.unify(cfg_module));
-                    }
                 }
                 LinkType::Protobuf => {
-                    let meta = self.proto_reader.read(path).await?;
+                    let proto_paths = link.proto_paths.as_ref().map(|paths| {
+                        paths
+                            .iter()
+                            .map(|p| Self::resolve_path(p, parent_dir))
+                            .collect::<Vec<_>>()
+                    });
+                    let meta = self.proto_reader.read(path, proto_paths.as_deref()).await?;
                     extensions.add_proto(meta);
                 }
                 LinkType::Script => {
@@ -184,25 +188,42 @@ impl ConfigReader {
         &self,
         files: &[T],
     ) -> anyhow::Result<ConfigModule> {
-        let files = self.resource_reader.read_files(files).await?;
-        let mut config_module = Valid::succeed(ConfigModule::default());
+        let reader_ctx = ConfigReaderContext::new(&self.runtime);
 
-        for file in files.iter() {
+        let files = self
+            .resource_reader
+            .read_files(files)
+            .await?
+            .into_iter()
+            .map(|file| file.render(&reader_ctx))
+            .collect::<Vec<_>>();
+
+        let mut config_modules = join_all(files.iter().map(|file| async {
             let source = Source::detect(&file.path)?;
             let schema = &file.content;
 
             // Create initial config module
-            let new_config_module = self
-                .resolve(
-                    Config::from_source(source, schema)?,
-                    Path::new(&file.path).parent(),
-                )
-                .await?;
+            self.resolve(
+                Config::from_source(source, schema)?,
+                Path::new(&file.path).parent(),
+            )
+            .await
+        }))
+        .await
+        .into_iter();
 
-            // Merge it with the original config set
-            config_module =
-                config_module.and_then(|config_module| config_module.unify(new_config_module));
-        }
+        let config_module = Valid::from(
+            config_modules
+                .next()
+                .ok_or(anyhow::anyhow!("At least one config should be defined"))?
+                .map_err(to_validation_error),
+        );
+
+        let config_module = config_modules.fold(config_module, |acc, other| {
+            acc.and_then(|cfg| {
+                Valid::from(other.map_err(to_validation_error)).and_then(|other| cfg.unify(other))
+            })
+        });
 
         Ok(config_module.to_result()?)
     }
@@ -214,16 +235,13 @@ impl ConfigReader {
         parent_dir: Option<&Path>,
     ) -> anyhow::Result<ConfigModule> {
         // Setup telemetry in Config
-        let reader_ctx = ConfigReaderContext {
-            runtime: &self.runtime,
-            vars: &config
-                .server
-                .vars
-                .iter()
-                .map(|vars| (vars.key.clone(), vars.value.clone()))
-                .collect(),
-            headers: Default::default(),
-        };
+        let vars = &config
+            .server
+            .vars
+            .iter()
+            .map(|vars| (vars.key.clone(), vars.value.clone()))
+            .collect();
+        let reader_ctx = ConfigReaderContext::new(&self.runtime).vars(vars);
         config.telemetry.render_mustache(&reader_ctx)?;
 
         // Create initial config set & extend it with the links
@@ -244,6 +262,13 @@ impl ConfigReader {
     }
 }
 
+fn to_validation_error(error: anyhow::Error) -> ValidationError<String> {
+    match error.downcast::<ValidationError<String>>() {
+        Ok(err) => err,
+        Err(err) => ValidationError::new(err.to_string()),
+    }
+}
+
 #[cfg(test)]
 mod reader_tests {
     use std::path::{Path, PathBuf};
@@ -261,40 +286,33 @@ mod reader_tests {
     async fn test_all() {
         let runtime = crate::core::runtime::test::init(None);
 
+        let server = start_mock_server();
+        let mut cfg = Config::default();
+        cfg = cfg.types([("User", Type::default())].to_vec());
+
+        let foo_mock = server.mock(|when, then| {
+            when.method(httpmock::Method::GET).path("/foo.graphql");
+            then.status(200).body(cfg.to_sdl());
+        });
+
         let mut cfg = Config::default();
         cfg.schema.query = Some("Test".to_string());
         cfg = cfg.types([("Test", Type::default())].to_vec());
 
-        let server = start_mock_server();
-        let header_server = server.mock(|when, then| {
+        let bar_mock = server.mock(|when, then| {
             when.method(httpmock::Method::GET).path("/bar.graphql");
             then.status(200).body(cfg.to_sdl());
         });
 
-        let json = runtime
-            .file
-            .read("examples/jsonplaceholder.json")
-            .await
-            .unwrap();
-
-        let foo_json_server = server.mock(|when, then| {
-            when.method(httpmock::Method::GET).path("/foo.json");
-            then.status(200).body(json);
-        });
-
         let port = server.port();
-        let files: Vec<String> = [
-            "examples/jsonplaceholder.yml", // config from local file
-            format!("http://localhost:{port}/bar.graphql").as_str(), // with content-type header
-            format!("http://localhost:{port}/foo.json").as_str(), // with url extension
-        ]
-        .iter()
-        .map(|x| x.to_string())
-        .collect();
+        let files = vec![
+            format!("http://localhost:{port}/foo.graphql"),
+            format!("http://localhost:{port}/bar.graphql"),
+        ];
         let cr = ConfigReader::init(runtime);
         let c = cr.read_all(&files).await.unwrap();
         assert_eq!(
-            ["Post", "Query", "Test", "User"]
+            ["Test", "User"]
                 .iter()
                 .map(|i| i.to_string())
                 .collect::<Vec<String>>(),
@@ -303,22 +321,18 @@ mod reader_tests {
                 .map(|i| i.to_string())
                 .collect::<Vec<String>>()
         );
-        foo_json_server.assert(); // checks if the request was actually made
-        header_server.assert();
+        foo_mock.assert();
+        bar_mock.assert();
     }
 
     #[tokio::test]
     async fn test_local_files() {
         let runtime = crate::core::runtime::test::init(None);
 
-        let files: Vec<String> = [
-            "examples/jsonplaceholder.yml",
-            "examples/jsonplaceholder.graphql",
-            "examples/jsonplaceholder.json",
-        ]
-        .iter()
-        .map(|x| x.to_string())
-        .collect();
+        let files: Vec<String> = ["examples/jsonplaceholder.graphql"]
+            .iter()
+            .map(|x| x.to_string())
+            .collect();
         let cr = ConfigReader::init(runtime);
         let c = cr.read_all(&files).await.unwrap();
         assert_eq!(

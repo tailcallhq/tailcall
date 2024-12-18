@@ -1,68 +1,37 @@
 # Using Union types inside usual type
 
-```yml @config
-schema:
+```graphql @config
+schema {
   query: Query
+}
 
-types:
-  T1:
-    fields:
-      t1:
-        type:
-          name: String
-  T2:
-    fields:
-      t2:
-        type:
-          name: Int
-  T3:
-    fields:
-      t3:
-        type:
-          name: Boolean
-      t33:
-        type:
-          name: Float
-          required: true
+type T1 {
+  t1: String
+}
 
-  NU:
-    fields:
-      test:
-        type:
-          name: String
-      u:
-        type:
-          name: U
+type T2 {
+  t2: Int
+}
 
-  NNU:
-    fields:
-      other:
-        type:
-          name: Int
-      new:
-        type:
-          name: Boolean
-      nu:
-        type:
-          name: NU
+type T3 {
+  t3: Boolean
+  t33: Float!
+}
 
-  Query:
-    fields:
-      test:
-        type:
-          name: U
-        args:
-          nu:
-            type:
-              name: NU
-              required: true
-          nnu:
-            type:
-              name: NNU
-        http:
-          url: http://localhost/users/{{args.nu.u}}
+type NU {
+  test: String
+  u: U
+}
 
-unions:
-  U:
-    types: ["T1", "T2", "T3"]
+type NNU {
+  other: Int
+  new: Boolean
+  nu: NU
+}
+
+union U = T1 | T2 | T3
+
+type Query {
+  test(nu: NU!, nnu: NNU): U @http(url: "http://localhost/users/{{args.nu.u}}")
+}
 ```

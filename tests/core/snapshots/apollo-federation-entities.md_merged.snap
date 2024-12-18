@@ -1,6 +1,7 @@
 ---
 source: tests/core/spec.rs
 expression: formatter
+snapshot_kind: text
 ---
 schema
   @server(enableFederation: true, port: 8000)

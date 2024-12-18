@@ -10,7 +10,7 @@ use super::{EvalContext, ResolverContextLike};
 use crate::core::blueprint::{Auth, DynamicValue};
 use crate::core::config::group_by::GroupBy;
 use crate::core::graphql::{self};
-use crate::core::http::HttpFilter;
+use crate::core::worker_hooks::WorkerHooks;
 use crate::core::{grpc, http};
 
 #[derive(Clone, Debug, Display)]
@@ -47,9 +47,9 @@ pub enum IO {
         req_template: http::RequestTemplate,
         group_by: Option<GroupBy>,
         dl_id: Option<DataLoaderId>,
-        http_filter: Option<HttpFilter>,
         is_list: bool,
         dedupe: bool,
+        hook: Option<WorkerHooks>,
     },
     GraphQL {
         req_template: graphql::RequestTemplate,
@@ -63,6 +63,7 @@ pub enum IO {
         group_by: Option<GroupBy>,
         dl_id: Option<DataLoaderId>,
         dedupe: bool,
+        hook: Option<WorkerHooks>,
     },
     Js {
         name: String,
@@ -130,6 +131,28 @@ impl Cache {
 }
 
 impl IR {
+    // allows to modify the IO node in the IR tree
+    pub fn modify_io(&mut self, io_modifier: &mut dyn FnMut(&mut IO)) {
+        match self {
+            IR::IO(io) => io_modifier(io),
+            IR::Cache(cache) => io_modifier(&mut cache.io),
+            IR::Discriminate(_, ir) | IR::Protect(_, ir) | IR::Path(ir, _) => {
+                ir.modify_io(io_modifier)
+            }
+            IR::Pipe(ir1, ir2) => {
+                ir1.modify_io(io_modifier);
+                ir2.modify_io(io_modifier);
+            }
+            IR::Entity(hash_map) => {
+                for ir in hash_map.values_mut() {
+                    ir.modify_io(io_modifier);
+                }
+            }
+            IR::Map(map) => map.input.modify_io(io_modifier),
+            _ => {}
+        }
+    }
+
     pub fn pipe(self, next: Self) -> Self {
         IR::Pipe(Box::new(self), Box::new(next))
     }

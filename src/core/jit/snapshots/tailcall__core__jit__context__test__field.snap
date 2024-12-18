@@ -1,6 +1,7 @@
 ---
 source: src/core/jit/context.rs
-expression: "<Context<_, _> as ResolverContextLike>::field(&ctx).unwrap()"
+expression: expected
+snapshot_kind: text
 ---
 SelectionField {
     name: "posts",

@@ -6,8 +6,9 @@ schema
 }
 
 type Query {
-  posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts")
-  user(id: Int!): User @http(url: "http://jsonplaceholder.typicode.com/users/{{.args.id}}")
+  posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts", onResponseBody: "onResponse")
+  user(id: Int!): User
+    @http(url: "http://jsonplaceholder.typicode.com/users/{{.args.id}}", onResponseBody: "onResponse")
 }
 
 type User {

@@ -5,17 +5,38 @@ use reqwest::Request;
 use tailcall_valid::Validator;
 
 use super::model::DataLoaderId;
+use super::request::DynamicRequest;
 use super::{EvalContext, ResolverContextLike};
 use crate::core::data_loader::{DataLoader, Loader};
 use crate::core::grpc::protobuf::ProtobufOperation;
 use crate::core::grpc::request::execute_grpc_request;
 use crate::core::grpc::request_template::RenderedRequestTemplate;
 use crate::core::http::{
-    cache_policy, DataLoaderRequest, HttpDataLoader, HttpFilter, RequestTemplate, Response,
+    cache_policy, DataLoaderRequest, HttpDataLoader, RequestTemplate, Response,
 };
 use crate::core::ir::Error;
 use crate::core::json::JsonLike;
+use crate::core::worker_hooks::WorkerHooks;
 use crate::core::{grpc, http, worker, WorkerIO};
+
+pub struct WorkerContext<'a> {
+    pub worker: &'a Arc<dyn WorkerIO<worker::Event, worker::Command>>,
+    pub js_worker:
+        &'a Arc<dyn WorkerIO<async_graphql_value::ConstValue, async_graphql_value::ConstValue>>,
+    pub js_hooks: &'a WorkerHooks,
+}
+
+impl<'a> WorkerContext<'a> {
+    pub fn new(
+        worker: &'a Arc<dyn WorkerIO<worker::Event, worker::Command>>,
+        js_worker: &'a Arc<
+            dyn WorkerIO<async_graphql_value::ConstValue, async_graphql_value::ConstValue>,
+        >,
+        js_hooks: &'a WorkerHooks,
+    ) -> Self {
+        Self { worker, js_worker, js_hooks }
+    }
+}
 
 ///
 /// Executing a HTTP request is a bit more complex than just sending a request
@@ -48,15 +69,18 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         Self { evaluation_ctx, data_loader, request_template }
     }
 
-    pub fn init_request(&self) -> Result<Request, Error> {
-        Ok(self.request_template.to_request(self.evaluation_ctx)?)
+    pub fn init_request(&self) -> Result<DynamicRequest<String>, Error> {
+        let inner = self.request_template.to_request(self.evaluation_ctx)?;
+        Ok(inner)
     }
 
-    pub async fn execute(&self, req: Request) -> Result<Response<async_graphql::Value>, Error> {
+    pub async fn execute(
+        &self,
+        req: DynamicRequest<String>,
+    ) -> Result<Response<async_graphql::Value>, Error> {
         let ctx = &self.evaluation_ctx;
-        let is_get = req.method() == reqwest::Method::GET;
         let dl = &self.data_loader;
-        let response = if is_get && dl.is_some() {
+        let response = if dl.is_some() {
             execute_request_with_dl(ctx, req, self.data_loader).await?
         } else {
             execute_raw_request(ctx, req).await?
@@ -77,21 +101,20 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
     }
 
     #[async_recursion::async_recursion]
-    pub async fn execute_with_worker(
+    pub async fn execute_with_worker<'worker: 'async_recursion>(
         &self,
-        mut request: reqwest::Request,
-        worker: &Arc<dyn WorkerIO<worker::Event, worker::Command>>,
-        http_filter: &HttpFilter,
+        mut request: DynamicRequest<String>,
+        worker_ctx: WorkerContext<'worker>,
     ) -> Result<Response<async_graphql::Value>, Error> {
-        let js_request = worker::WorkerRequest::try_from(&request)?;
-        let event = worker::Event::Request(js_request);
+        // extract variables from the worker context.
+        let js_hooks = worker_ctx.js_hooks;
+        let worker = worker_ctx.worker;
+        let js_worker = worker_ctx.js_worker;
 
-        let command = worker.call(&http_filter.on_request, event).await?;
-
-        match command {
+        let response = match js_hooks.on_request(worker, request.request()).await? {
             Some(command) => match command {
                 worker::Command::Request(w_request) => {
-                    let response = self.execute(w_request.into()).await?;
+                    let response = self.execute(w_request.try_into()?).await?;
                     Ok(response)
                 }
                 worker::Command::Response(w_response) => {
@@ -100,15 +123,23 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
                         && w_response.headers().contains_key("location")
                     {
                         request
+                            .request_mut()
                             .url_mut()
                             .set_path(w_response.headers()["location"].as_str());
-                        self.execute_with_worker(request, worker, http_filter).await
+                        self.execute_with_worker(request, worker_ctx).await
                     } else {
                         Ok(w_response.try_into()?)
                     }
                 }
             },
             None => self.execute(request).await,
+        };
+
+        // send the final response to JS script for futher evaluation.
+        if let Ok(resp) = response {
+            js_hooks.on_response(js_worker, resp).await
+        } else {
+            response
         }
     }
 }
@@ -119,7 +150,7 @@ pub async fn execute_request_with_dl<
     Dl: Loader<DataLoaderRequest, Value = Response<async_graphql::Value>, Error = Arc<anyhow::Error>>,
 >(
     ctx: &EvalContext<'ctx, Ctx>,
-    req: Request,
+    req: DynamicRequest<String>,
     data_loader: Option<&DataLoader<DataLoaderRequest, Dl>>,
 ) -> Result<Response<async_graphql::Value>, Error> {
     let headers = ctx
@@ -129,7 +160,10 @@ pub async fn execute_request_with_dl<
         .clone()
         .map(|s| s.headers)
         .unwrap_or_default();
-    let endpoint_key = crate::core::http::DataLoaderRequest::new(req, headers);
+
+    let (req, batching_value) = req.into_parts();
+    let endpoint_key =
+        crate::core::http::DataLoaderRequest::new(req, headers).with_batching_value(batching_value);
 
     Ok(data_loader
         .unwrap()
@@ -177,13 +211,13 @@ fn set_cookie_headers<Ctx: ResolverContextLike>(
 
 pub async fn execute_raw_request<Ctx: ResolverContextLike>(
     ctx: &EvalContext<'_, Ctx>,
-    req: Request,
+    req: DynamicRequest<String>,
 ) -> Result<Response<async_graphql::Value>, Error> {
     let response = ctx
         .request_ctx
         .runtime
         .http
-        .execute(req)
+        .execute(req.into_request())
         .await
         .map_err(Error::from)?
         .to_json()?;

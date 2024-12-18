@@ -1,0 +1,41 @@
+---
+source: tests/core/spec.rs
+expression: response
+snapshot_kind: text
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "users": [
+        {
+          "id": 1,
+          "comments": [
+            {
+              "id": 1
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "comments": [
+            {
+              "id": 2
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "comments": [
+            {
+              "id": 3
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

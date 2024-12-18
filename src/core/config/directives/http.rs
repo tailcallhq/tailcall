@@ -40,8 +40,9 @@ pub struct Http {
     #[serde(default, skip_serializing_if = "is_default")]
     /// The body of the API call. It's used for methods like POST or PUT that
     /// send data to the server. You can pass it as a static object or use a
-    /// Mustache template to substitute variables from the GraphQL variables.
-    pub body: Option<String>,
+    /// Mustache template with object to substitute variables from the GraphQL
+    /// variables.
+    pub body: Option<Value>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// The `encoding` parameter specifies the encoding of the request body. It
@@ -101,4 +102,10 @@ pub struct Http {
     ///   "buzz": "eggs", ... }, ... }` we can use { foo: "{{.foo}}", buzz:
     ///   "{{.fizz.buzz}}" }`
     pub select: Option<Value>,
+
+    /// Specifies a JavaScript function to be executed after receiving the
+    /// response body. This function can modify or transform the response
+    /// body before it's sent back to the client.
+    #[serde(rename = "onResponseBody", default, skip_serializing_if = "is_default")]
+    pub on_response_body: Option<String>,
 }

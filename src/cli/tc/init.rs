@@ -1,24 +1,28 @@
 use std::collections::BTreeMap;
 use std::path::Path;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
 use super::helpers::{GRAPHQL_RC, TAILCALL_RC, TAILCALL_RC_SCHEMA};
 use crate::cli::runtime::{confirm_and_write, create_directory, select_prompt};
-use crate::core::config::{Config, Expr, Field, Resolver, RootSchema, Source};
+use crate::core::config::{
+    Config, Expr, Field, Link, LinkType, Resolver, RootSchema, RuntimeConfig, Source,
+};
 use crate::core::merge_right::MergeRight;
 use crate::core::runtime::TargetRuntime;
 use crate::core::{config, Type};
+
+const SCHEMA_FILENAME: &str = "main.graphql";
 
 pub(super) async fn init_command(runtime: TargetRuntime, folder_path: &str) -> Result<()> {
     create_directory(folder_path).await?;
 
     let detected_configuration_format = detect_configuration_format(folder_path).map(Ok);
 
-    let configuration_format = detected_configuration_format.unwrap_or_else(|| {
+    let selection = detected_configuration_format.unwrap_or_else(|| {
         select_prompt(
             "Please select the format in which you want to generate the config.",
-            vec![Source::GraphQL, Source::Json, Source::Yml],
+            vec![Source::Json, Source::Yml],
         )
     })?;
 
@@ -58,10 +62,10 @@ pub(super) async fn init_command(runtime: TargetRuntime, folder_path: &str) -> R
     Ok(())
 }
 
-fn default_graphqlrc() -> serde_yaml::Value {
-    serde_yaml::Value::Mapping(serde_yaml::mapping::Mapping::from_iter([(
+fn default_graphqlrc() -> serde_yaml_ng::Value {
+    serde_yaml_ng::Value::Mapping(serde_yaml_ng::mapping::Mapping::from_iter([(
         "schema".into(),
-        serde_yaml::Value::Sequence(vec!["./.tailcallrc.graphql".into(), "./*.graphql".into()]),
+        serde_yaml_ng::Value::Sequence(vec!["./.tailcallrc.graphql".into(), "./*.graphql".into()]),
     )]))
 }
 
@@ -75,13 +79,13 @@ async fn confirm_and_write_yml(
 
     match runtime.file.read(yml_file_path.as_ref()).await {
         Ok(yml_content) => {
-            let graphqlrc: serde_yaml::Value = serde_yaml::from_str(&yml_content)?;
+            let graphqlrc: serde_yaml_ng::Value = serde_yaml_ng::from_str(&yml_content)?;
             final_graphqlrc = graphqlrc.merge_right(final_graphqlrc);
-            let content = serde_yaml::to_string(&final_graphqlrc)?;
+            let content = serde_yaml_ng::to_string(&final_graphqlrc)?;
             confirm_and_write(runtime.clone(), &yml_file_path, content.as_bytes()).await
         }
         Err(_) => {
-            let content = serde_yaml::to_string(&final_graphqlrc)?;
+            let content = serde_yaml_ng::to_string(&final_graphqlrc)?;
             runtime.file.write(&yml_file_path, content.as_bytes()).await
         }
     }
@@ -100,12 +104,21 @@ fn main_config() -> Config {
     };
 
     Config {
-        server: Default::default(),
-        upstream: Default::default(),
         schema: RootSchema { query: Some("Query".to_string()), ..Default::default() },
         types: BTreeMap::from([("Query".into(), query_type)]),
         ..Default::default()
     }
+}
+
+fn runtime_config() -> RuntimeConfig {
+    let config = RuntimeConfig::default();
+
+    config.links(vec![Link {
+        id: Some("main".to_string()),
+        src: SCHEMA_FILENAME.to_string(),
+        type_of: LinkType::Config,
+        ..Default::default()
+    }])
 }
 
 async fn create_main(
@@ -125,14 +138,39 @@ async fn create_main(
     }
 
     let config = main_config();
+    let runtime_config = runtime_config();
 
-    let content = match source {
-        Source::GraphQL => config.to_sdl(),
-        Source::Json => config.to_json(true)?,
-        Source::Yml => config.to_yaml()?,
+    let runtime_config = match source {
+        Source::Json => runtime_config.to_json(true)?,
+        Source::Yml => runtime_config.to_yaml()?,
+        _ => {
+            return Err(anyhow!(
+                "Only json/yaml formats are supported for json configs"
+            ))
+        }
     };
 
-    confirm_and_write(runtime.clone(), &path, content.as_bytes()).await?;
+    let schema = config.to_sdl();
+
+    let runtime_config_path = folder_path
+        .as_ref()
+        .join(format!("main.{}", source.ext()))
+        .display()
+        .to_string();
+    let schema_path = folder_path
+        .as_ref()
+        .join(SCHEMA_FILENAME)
+        .display()
+        .to_string();
+  
+    confirm_and_write(
+        runtime.clone(),
+        &runtime_config_path,
+        runtime_config.as_bytes(),
+    )
+    .await?;
+    confirm_and_write(runtime.clone(), &schema_path, schema.as_bytes()).await?;
+
     Ok(())
 }
 

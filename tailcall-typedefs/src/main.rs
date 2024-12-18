@@ -7,14 +7,12 @@ use std::process::exit;
 use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
-use schemars::schema::{RootSchema, Schema};
-use schemars::Map;
+use schemars::schema::RootSchema;
 use serde_json::{json, Value};
-use strum::IntoEnumIterator;
 use tailcall::cli;
-use tailcall::core::config::Config;
+use tailcall::core::config::RuntimeConfig;
 use tailcall::core::tracing::default_tracing_for_name;
-use tailcall::core::{scalar, FileIO};
+use tailcall::core::FileIO;
 
 static JSON_SCHEMA_FILE: &str = "generated/.tailcallrc.schema.json";
 static GRAPHQL_SCHEMA_FILE: &str = "generated/.tailcallrc.graphql";
@@ -143,11 +141,7 @@ fn get_graphql_path() -> PathBuf {
 }
 
 fn get_updated_json() -> Result<Value> {
-    let mut schema: RootSchema = schemars::schema_for!(Config);
-    let scalar = scalar::Scalar::iter()
-        .map(|scalar| (scalar.name(), scalar.schema()))
-        .collect::<Map<String, Schema>>();
-    schema.definitions.extend(scalar);
+    let schema: RootSchema = schemars::schema_for!(RuntimeConfig);
 
     let schema = json!(schema);
     Ok(schema)

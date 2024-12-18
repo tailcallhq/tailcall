@@ -375,6 +375,7 @@ impl Context {
                     method: field_name.id(),
                     dedupe: None,
                     select: None,
+                    on_response_body: None,
                 })
                 .into();
 

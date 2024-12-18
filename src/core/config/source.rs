@@ -1,9 +1,9 @@
+use std::path::Path;
+use std::str::FromStr;
+
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use tailcall_valid::{ValidationError, Validator};
 use thiserror::Error;
-
-use super::Config;
 
 #[derive(Clone, Default, Debug, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -27,21 +27,24 @@ impl std::fmt::Display for Source {
 const JSON_EXT: &str = "json";
 const YML_EXT: &str = "yml";
 const GRAPHQL_EXT: &str = "graphql";
-const ALL: [Source; 3] = [Source::Json, Source::Yml, Source::GraphQL];
 
 #[derive(Debug, Error, PartialEq)]
-#[error("Unsupported config extension: {0}")]
-pub struct UnsupportedConfigFormat(pub String);
+pub enum SourceError {
+    #[error("Unsupported config extension: {0}")]
+    UnsupportedFileFormat(String),
+    #[error("Cannot parse")]
+    InvalidPath(String),
+}
 
 impl std::str::FromStr for Source {
-    type Err = UnsupportedConfigFormat;
+    type Err = SourceError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "json" => Ok(Source::Json),
             "yml" | "yaml" => Ok(Source::Yml),
             "graphql" | "gql" => Ok(Source::GraphQL),
-            _ => Err(UnsupportedConfigFormat(s.to_string())),
+            _ => Err(SourceError::UnsupportedFileFormat(s.to_string())),
         }
     }
 }
@@ -56,34 +59,12 @@ impl Source {
         }
     }
 
-    fn ends_with(&self, file: &str) -> bool {
-        file.ends_with(&format!(".{}", self.ext()))
-    }
-
     /// Detect the config format from the file name
-    pub fn detect(name: &str) -> Result<Source, UnsupportedConfigFormat> {
-        ALL.into_iter()
-            .find(|format| format.ends_with(name))
-            .ok_or(UnsupportedConfigFormat(name.to_string()))
-    }
-
-    /// Encode the config to the given format
-    pub fn encode(&self, config: &Config) -> Result<String, anyhow::Error> {
-        match self {
-            Source::Yml => Ok(config.to_yaml()?),
-            Source::GraphQL => Ok(config.to_sdl()),
-            Source::Json => Ok(config.to_json(true)?),
-        }
-    }
-
-    /// Decode the config from the given data
-    pub fn decode(&self, data: &str) -> Result<Config, ValidationError<String>> {
-        match self {
-            Source::Yml => Config::from_yaml(data).map_err(|e| ValidationError::new(e.to_string())),
-            Source::GraphQL => Config::from_sdl(data).to_result(),
-            Source::Json => {
-                Config::from_json(data).map_err(|e| ValidationError::new(e.to_string()))
-            }
-        }
+    pub fn detect(name: &str) -> Result<Source, SourceError> {
+        Path::new(name)
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .map(Source::from_str)
+            .ok_or(SourceError::InvalidPath(name.to_string()))?
     }
 }

@@ -1,6 +1,7 @@
 ---
 source: src/core/config/npo/tracker.rs
 expression: actual
+snapshot_kind: text
 ---
 query { t2 { t2 { n } } }
 query { t2_ls { t2 } }
