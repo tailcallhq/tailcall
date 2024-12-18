@@ -38,8 +38,7 @@ use crate::core::scalar::Scalar;
     schemars::JsonSchema,
     MergeRight,
 )]
-#[serde(rename_all = "camelCase")]
-pub struct Config {
+pub struct RuntimeConfig {
     ///
     /// Dictates how the server behaves and helps tune tailcall for all ingress
     /// requests. Features such as request batching, SSL, HTTP2 etc. can be
@@ -54,34 +53,50 @@ pub struct Config {
     pub upstream: Upstream,
 
     ///
+    /// A list of all links in the schema.
+    pub links: Vec<Link>,
+
+    /// Enable [opentelemetry](https://opentelemetry.io) support
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub telemetry: Telemetry,
+}
+
+#[derive(Clone, Debug, Default, Setters, PartialEq, Eq, MergeRight)]
+pub struct Config {
+    ///
+    /// Dictates how the server behaves and helps tune tailcall for all ingress
+    /// requests. Features such as request batching, SSL, HTTP2 etc. can be
+    /// configured here.
+    pub server: Server,
+
+    ///
+    /// Dictates how tailcall should handle upstream requests/responses.
+    /// Tuning upstream can improve performance and reliability for connections.
+    pub upstream: Upstream,
+
+    ///
     /// Specifies the entry points for query and mutation in the generated
     /// GraphQL schema.
-    #[serde(skip)]
     pub schema: RootSchema,
 
     ///
     /// A map of all the types in the schema.
-    #[serde(skip)]
     #[setters(skip)]
     pub types: BTreeMap<String, Type>,
 
     ///
     /// A map of all the union types in the schema.
-    #[serde(skip)]
     pub unions: BTreeMap<String, Union>,
 
     ///
     /// A map of all the enum types in the schema
-    #[serde(skip)]
     pub enums: BTreeMap<String, Enum>,
 
     ///
     /// A list of all links in the schema.
-    #[serde(skip)]
     pub links: Vec<Link>,
 
     /// Enable [opentelemetry](https://opentelemetry.io) support
-    #[serde(default, skip_serializing_if = "is_default")]
     pub telemetry: Telemetry,
 }
 
@@ -305,7 +320,47 @@ impl Display for GraphQLOperationType {
     }
 }
 
+impl RuntimeConfig {
+    pub fn from_json(json: &str) -> Result<Self> {
+        Ok(serde_json::from_str(json)?)
+    }
+
+    pub fn from_yaml(yaml: &str) -> Result<Self> {
+        Ok(serde_yaml_ng::from_str(yaml)?)
+    }
+
+    pub fn from_source(source: Source, config: &str) -> Result<Self> {
+        match source {
+            Source::Json => RuntimeConfig::from_json(config),
+            Source::Yml => RuntimeConfig::from_yaml(config),
+            _ => Err(anyhow!("Only the json/yaml runtime configs are supported")),
+        }
+    }
+
+    pub fn to_yaml(&self) -> Result<String> {
+        Ok(serde_yaml_ng::to_string(self)?)
+    }
+
+    pub fn to_json(&self, pretty: bool) -> Result<String> {
+        if pretty {
+            Ok(serde_json::to_string_pretty(self)?)
+        } else {
+            Ok(serde_json::to_string(self)?)
+        }
+    }
+}
+
 impl Config {
+    pub fn with_runtime_config(self, runtime_config: RuntimeConfig) -> Self {
+        Self {
+            server: runtime_config.server,
+            upstream: runtime_config.upstream,
+            links: runtime_config.links,
+            telemetry: runtime_config.telemetry,
+            ..self
+        }
+    }
+
     pub fn is_root_operation_type(&self, type_name: &str) -> bool {
         let type_name = type_name.to_lowercase();
 
@@ -335,18 +390,6 @@ impl Config {
         self.enums.get(name)
     }
 
-    pub fn to_yaml(&self) -> Result<String> {
-        Ok(serde_yaml_ng::to_string(self)?)
-    }
-
-    pub fn to_json(&self, pretty: bool) -> Result<String> {
-        if pretty {
-            Ok(serde_json::to_string_pretty(self)?)
-        } else {
-            Ok(serde_json::to_string(self)?)
-        }
-    }
-
     /// Renders current config to graphQL string
     pub fn to_sdl(&self) -> String {
         crate::core::document::print(self.into())
@@ -372,14 +415,6 @@ impl Config {
             || self.enums.contains_key(name)
     }
 
-    pub fn from_json(json: &str) -> Result<Self> {
-        Ok(serde_json::from_str(json)?)
-    }
-
-    pub fn from_yaml(yaml: &str) -> Result<Self> {
-        Ok(serde_yaml_ng::from_str(yaml)?)
-    }
-
     pub fn from_sdl(sdl: &str) -> Valid<Self, String> {
         let doc = async_graphql::parser::parse_schema(sdl);
         match doc {
@@ -388,10 +423,10 @@ impl Config {
         }
     }
 
-    pub fn from_source(source: Source, schema: &str) -> Result<Self> {
+    pub fn from_source(source: Source, content: &str) -> Result<Self> {
         match source {
-            Source::GraphQL => Ok(Config::from_sdl(schema).to_result()?),
-            _ => Err(anyhow!("Only the graphql config is currently supported")),
+            Source::GraphQL => Ok(Config::from_sdl(content).to_result()?),
+            source => Ok(Config::from(RuntimeConfig::from_source(source, content)?)),
         }
     }
 
@@ -607,13 +642,9 @@ impl Config {
             .add_directive(Grpc::directive_definition(generated_types))
             .add_directive(Http::directive_definition(generated_types))
             .add_directive(JS::directive_definition(generated_types))
-            .add_directive(Link::directive_definition(generated_types))
             .add_directive(Modify::directive_definition(generated_types))
             .add_directive(Omit::directive_definition(generated_types))
             .add_directive(Protected::directive_definition(generated_types))
-            .add_directive(Server::directive_definition(generated_types))
-            .add_directive(Telemetry::directive_definition(generated_types))
-            .add_directive(Upstream::directive_definition(generated_types))
             .add_directive(Discriminate::directive_definition(generated_types))
             .add_input(GraphQL::input_definition())
             .add_input(Grpc::input_definition())
@@ -621,14 +652,25 @@ impl Config {
             .add_input(Expr::input_definition())
             .add_input(JS::input_definition())
             .add_input(Modify::input_definition())
-            .add_input(Cache::input_definition())
-            .add_input(Telemetry::input_definition());
+            .add_input(Cache::input_definition());
 
         for scalar in Scalar::iter() {
             builder = builder.add_scalar(scalar.scalar_definition());
         }
 
         builder.build()
+    }
+}
+
+impl From<RuntimeConfig> for Config {
+    fn from(config: RuntimeConfig) -> Self {
+        Self {
+            server: config.server,
+            upstream: config.upstream,
+            links: config.links,
+            telemetry: config.telemetry,
+            ..Default::default()
+        }
     }
 }
 

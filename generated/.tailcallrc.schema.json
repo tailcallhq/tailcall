@@ -1,8 +1,18 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Config",
+  "title": "RuntimeConfig",
   "type": "object",
+  "required": [
+    "links"
+  ],
   "properties": {
+    "links": {
+      "description": "A list of all links in the schema.",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Link"
+      }
+    },
     "server": {
       "description": "Dictates how the server behaves and helps tune tailcall for all ingress requests. Features such as request batching, SSL, HTTP2 etc. can be configured here.",
       "default": {},
@@ -96,10 +106,6 @@
         }
       }
     },
-    "Bytes": {
-      "title": "Bytes",
-      "description": "Field whose value is a sequence of bytes."
-    },
     "Cors": {
       "description": "Type to configure Cross-Origin Resource Sharing (CORS) for a server.",
       "type": "object",
@@ -169,22 +175,6 @@
         }
       }
     },
-    "Date": {
-      "title": "Date",
-      "description": "Field whose value conforms to the standard date format as specified in RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339)."
-    },
-    "DateTime": {
-      "title": "DateTime",
-      "description": "Field whose value conforms to the standard datetime format as specified in RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339\")."
-    },
-    "Email": {
-      "title": "Email",
-      "description": "Field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address."
-    },
-    "Empty": {
-      "title": "Empty",
-      "description": "Empty scalar type represents an empty value."
-    },
     "Headers": {
       "type": "object",
       "properties": {
@@ -240,30 +230,6 @@
         "HTTP2"
       ]
     },
-    "Int128": {
-      "title": "Int128",
-      "description": "Field whose value is a 128-bit signed integer."
-    },
-    "Int16": {
-      "title": "Int16",
-      "description": "Field whose value is a 16-bit signed integer."
-    },
-    "Int32": {
-      "title": "Int32",
-      "description": "Field whose value is a 32-bit signed integer."
-    },
-    "Int64": {
-      "title": "Int64",
-      "description": "Field whose value is a 64-bit signed integer."
-    },
-    "Int8": {
-      "title": "Int8",
-      "description": "Field whose value is an 8-bit signed integer."
-    },
-    "JSON": {
-      "title": "JSON",
-      "description": "Field whose value conforms to the standard JSON format as specified in RFC 8259 (https://datatracker.ietf.org/doc/html/rfc8259)."
-    },
     "KeyValue": {
       "type": "object",
       "required": [
@@ -278,6 +244,122 @@
           "type": "string"
         }
       }
+    },
+    "Link": {
+      "description": "The @link directive allows you to import external resources, such as configuration – which will be merged into the config importing it –, or a .proto file – which will be later used by `@grpc` directive –.",
+      "type": "object",
+      "properties": {
+        "headers": {
+          "description": "Custom headers for gRPC reflection server.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/KeyValue"
+          }
+        },
+        "id": {
+          "description": "The id of the link. It is used to reference the link in the schema.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "meta": {
+          "description": "Additional metadata pertaining to the linked resource."
+        },
+        "proto_paths": {
+          "description": "The proto paths to be used when resolving dependencies. Only valid when [`Link::type_of`] is [`LinkType::Protobuf`]",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "src": {
+          "description": "The source of the link. It can be a URL or a path to a file. If a path is provided, it is relative to the file that imports the link.",
+          "type": "string"
+        },
+        "type": {
+          "description": "The type of the link. It can be `Config`, or `Protobuf`.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/LinkType"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "LinkType": {
+      "oneOf": [
+        {
+          "description": "Points to another Tailcall Configuration file. The imported configuration will be merged into the importing configuration.",
+          "type": "string",
+          "enum": [
+            "Config"
+          ]
+        },
+        {
+          "description": "Points to a Protobuf file. The imported Protobuf file will be used by the `@grpc` directive. If your API exposes a reflection endpoint, you should set the type to `Grpc` instead.",
+          "type": "string",
+          "enum": [
+            "Protobuf"
+          ]
+        },
+        {
+          "description": "Points to a JS file. The imported JS file will be used by the `@js` directive.",
+          "type": "string",
+          "enum": [
+            "Script"
+          ]
+        },
+        {
+          "description": "Points to a Cert file. The imported Cert file will be used by the server to serve over HTTPS.",
+          "type": "string",
+          "enum": [
+            "Cert"
+          ]
+        },
+        {
+          "description": "Points to a Key file. The imported Key file will be used by the server to serve over HTTPS.",
+          "type": "string",
+          "enum": [
+            "Key"
+          ]
+        },
+        {
+          "description": "A trusted document that contains GraphQL operations (queries, mutations) that can be exposed a REST API using the `@rest` directive.",
+          "type": "string",
+          "enum": [
+            "Operation"
+          ]
+        },
+        {
+          "description": "Points to a Htpasswd file. The imported Htpasswd file will be used by the server to authenticate users.",
+          "type": "string",
+          "enum": [
+            "Htpasswd"
+          ]
+        },
+        {
+          "description": "Points to a Jwks file. The imported Jwks file will be used by the server to authenticate users.",
+          "type": "string",
+          "enum": [
+            "Jwks"
+          ]
+        },
+        {
+          "description": "Points to a reflection endpoint. The imported reflection endpoint will be used by the `@grpc` directive to resolve data from gRPC services.",
+          "type": "string",
+          "enum": [
+            "Grpc"
+          ]
+        }
+      ]
     },
     "Method": {
       "type": "string",
@@ -310,10 +392,6 @@
           "type": "string"
         }
       }
-    },
-    "PhoneNumber": {
-      "title": "PhoneNumber",
-      "description": "Field whose value conforms to the standard E.164 format as specified in E.164 specification (https://en.wikipedia.org/wiki/E.164)."
     },
     "PrometheusExporter": {
       "description": "Output the telemetry metrics data to prometheus server",
@@ -612,26 +690,6 @@
         }
       ]
     },
-    "UInt128": {
-      "title": "UInt128",
-      "description": "Field whose value is a 128-bit unsigned integer."
-    },
-    "UInt16": {
-      "title": "UInt16",
-      "description": "Field whose value is a 16-bit unsigned integer."
-    },
-    "UInt32": {
-      "title": "UInt32",
-      "description": "Field whose value is a 32-bit unsigned integer."
-    },
-    "UInt64": {
-      "title": "UInt64",
-      "description": "Field whose value is a 64-bit unsigned integer."
-    },
-    "UInt8": {
-      "title": "UInt8",
-      "description": "Field whose value is an 8-bit unsigned integer."
-    },
     "Upstream": {
       "description": "The `upstream` directive allows you to control various aspects of the upstream server connection. This includes settings like connection timeouts, keep-alive intervals, and more. If not specified, default values are used.",
       "type": "object",
@@ -778,10 +836,6 @@
         }
       },
       "additionalProperties": false
-    },
-    "Url": {
-      "title": "Url",
-      "description": "Field whose value conforms to the standard URL format as specified in RFC 3986 (https://datatracker.ietf.org/doc/html/rfc3986)."
     }
   }
 }

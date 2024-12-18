@@ -1,21 +1,25 @@
 use std::collections::BTreeMap;
 use std::path::Path;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
 use super::helpers::{GRAPHQL_RC, TAILCALL_RC, TAILCALL_RC_SCHEMA};
 use crate::cli::runtime::{confirm_and_write, create_directory, select_prompt};
-use crate::core::config::{Config, Expr, Field, Resolver, RootSchema, Source};
+use crate::core::config::{
+    Config, Expr, Field, Link, LinkType, Resolver, RootSchema, RuntimeConfig, Source,
+};
 use crate::core::merge_right::MergeRight;
 use crate::core::runtime::TargetRuntime;
 use crate::core::{config, Type};
+
+const SCHEMA_FILENAME: &str = "main.graphql";
 
 pub(super) async fn init_command(runtime: TargetRuntime, folder_path: &str) -> Result<()> {
     create_directory(folder_path).await?;
 
     let selection = select_prompt(
         "Please select the format in which you want to generate the config.",
-        vec![Source::GraphQL, Source::Json, Source::Yml],
+        vec![Source::Json, Source::Yml],
     )?;
 
     let tailcallrc = include_str!("../../../generated/.tailcallrc.graphql");
@@ -25,30 +29,24 @@ pub(super) async fn init_command(runtime: TargetRuntime, folder_path: &str) -> R
     let tailcall_rc_schema = Path::new(folder_path).join(TAILCALL_RC_SCHEMA);
     let graphql_rc = Path::new(folder_path).join(GRAPHQL_RC);
 
-    match selection {
-        Source::GraphQL => {
-            // .tailcallrc.graphql
-            confirm_and_write(
-                runtime.clone(),
-                &tailcall_rc.display().to_string(),
-                tailcallrc.as_bytes(),
-            )
-            .await?;
+    // .tailcallrc.graphql
+    confirm_and_write(
+        runtime.clone(),
+        &tailcall_rc.display().to_string(),
+        tailcallrc.as_bytes(),
+    )
+    .await?;
 
-            // .graphqlrc.yml
-            confirm_and_write_yml(runtime.clone(), &graphql_rc).await?;
-        }
+    // .graphqlrc.yml
+    confirm_and_write_yml(runtime.clone(), &graphql_rc).await?;
 
-        Source::Json | Source::Yml => {
-            // .tailcallrc.schema.json
-            confirm_and_write(
-                runtime.clone(),
-                &tailcall_rc_schema.display().to_string(),
-                tailcallrc_json.as_bytes(),
-            )
-            .await?;
-        }
-    }
+    // .tailcallrc.schema.json
+    confirm_and_write(
+        runtime.clone(),
+        &tailcall_rc_schema.display().to_string(),
+        tailcallrc_json.as_bytes(),
+    )
+    .await?;
 
     create_main(runtime.clone(), folder_path, selection).await?;
 
@@ -97,12 +95,21 @@ fn main_config() -> Config {
     };
 
     Config {
-        server: Default::default(),
-        upstream: Default::default(),
         schema: RootSchema { query: Some("Query".to_string()), ..Default::default() },
         types: BTreeMap::from([("Query".into(), query_type)]),
         ..Default::default()
     }
+}
+
+fn runtime_config() -> RuntimeConfig {
+    let config = RuntimeConfig::default();
+
+    config.links(vec![Link {
+        id: Some("main".to_string()),
+        src: SCHEMA_FILENAME.to_string(),
+        type_of: LinkType::Config,
+        ..Default::default()
+    }])
 }
 
 async fn create_main(
@@ -111,19 +118,37 @@ async fn create_main(
     source: Source,
 ) -> Result<()> {
     let config = main_config();
+    let runtime_config = runtime_config();
 
-    let content = match source {
-        Source::GraphQL => config.to_sdl(),
-        Source::Json => config.to_json(true)?,
-        Source::Yml => config.to_yaml()?,
+    let runtime_config = match source {
+        Source::Json => runtime_config.to_json(true)?,
+        Source::Yml => runtime_config.to_yaml()?,
+        _ => {
+            return Err(anyhow!(
+                "Only json/yaml formats are supported for json configs"
+            ))
+        }
     };
 
-    let path = folder_path
+    let schema = config.to_sdl();
+
+    let runtime_config_path = folder_path
         .as_ref()
         .join(format!("main.{}", source.ext()))
         .display()
         .to_string();
+    let schema_path = folder_path
+        .as_ref()
+        .join(SCHEMA_FILENAME)
+        .display()
+        .to_string();
 
-    confirm_and_write(runtime.clone(), &path, content.as_bytes()).await?;
+    confirm_and_write(
+        runtime.clone(),
+        &runtime_config_path,
+        runtime_config.as_bytes(),
+    )
+    .await?;
+    confirm_and_write(runtime.clone(), &schema_path, schema.as_bytes()).await?;
     Ok(())
 }

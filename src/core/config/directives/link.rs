@@ -93,4 +93,9 @@ pub struct Link {
     /// Additional metadata pertaining to the linked resource.
     #[serde(default, skip_serializing_if = "is_default")]
     pub meta: Option<serde_json::Value>,
+    ///
+    /// The proto paths to be used when resolving dependencies.
+    /// Only valid when [`Link::type_of`] is [`LinkType::Protobuf`]
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub proto_paths: Option<Vec<String>>,
 }

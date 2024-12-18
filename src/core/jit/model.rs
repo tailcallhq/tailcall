@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::fmt::{Debug, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 use std::num::NonZeroU64;
 use std::sync::Arc;
 
@@ -13,11 +13,19 @@ use super::Error;
 use crate::core::blueprint::Index;
 use crate::core::ir::model::IR;
 use crate::core::ir::TypedValue;
-use crate::core::json::JsonLike;
+use crate::core::json::{JsonLike, JsonLikeOwned};
+use crate::core::path::PathString;
 use crate::core::scalar::Scalar;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Variables<Value>(HashMap<String, Value>);
+
+impl<V: JsonLikeOwned + Display> PathString for Variables<V> {
+    fn path_string<'a, T: AsRef<str>>(&'a self, path: &'a [T]) -> Option<Cow<'a, str>> {
+        self.get(path[0].as_ref())
+            .map(|v| Cow::Owned(v.to_string()))
+    }
+}
 
 impl<Value> Default for Variables<Value> {
     fn default() -> Self {
@@ -94,6 +102,22 @@ pub struct Arg<Input> {
     pub type_of: crate::core::Type,
     pub value: Option<Input>,
     pub default_value: Option<Input>,
+}
+
+impl<Input: Display> Display for Arg<Input> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let v = self
+            .value
+            .as_ref()
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| {
+                self.default_value
+                    .as_ref()
+                    .map(|v| v.to_string())
+                    .unwrap_or_default()
+            });
+        write!(f, "{}: {}", self.name, v)
+    }
 }
 
 impl<Input> Arg<Input> {
