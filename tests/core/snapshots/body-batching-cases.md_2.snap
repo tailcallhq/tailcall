@@ -1,0 +1,33 @@
+---
+source: tests/core/spec.rs
+expression: response
+snapshot_kind: text
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "foo": [
+        {
+          "a": 11,
+          "b": 12,
+          "bar": {
+            "a": 11,
+            "b": 12
+          }
+        },
+        {
+          "a": 21,
+          "b": 22,
+          "bar": {
+            "a": 21,
+            "b": 22
+          }
+        }
+      ]
+    }
+  }
+}

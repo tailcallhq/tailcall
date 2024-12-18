@@ -1,6 +1,7 @@
 ---
 source: src/core/jit/model.rs
 expression: async_directive
+snapshot_kind: text
 ---
 ConstDirective {
     name: Positioned {

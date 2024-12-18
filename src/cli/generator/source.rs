@@ -1,4 +1,5 @@
-use thiserror::Error;
+use crate::core::config;
+use crate::core::config::SourceError;
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum ConfigSource {
@@ -6,29 +7,25 @@ pub enum ConfigSource {
     Yml,
 }
 
-impl ConfigSource {
-    fn ext(&self) -> &str {
-        match self {
-            Self::Json => "json",
-            Self::Yml => "yml",
+impl TryFrom<config::Source> for ConfigSource {
+    type Error = SourceError;
+
+    fn try_from(value: config::Source) -> Result<Self, Self::Error> {
+        match value {
+            config::Source::Json => Ok(Self::Json),
+            config::Source::Yml => Ok(Self::Yml),
+            config::Source::GraphQL => {
+                Err(SourceError::UnsupportedFileFormat(value.ext().to_string()))
+            }
         }
-    }
-
-    fn ends_with(&self, file: &str) -> bool {
-        file.ends_with(&format!(".{}", self.ext()))
-    }
-
-    /// Detect the config format from the file name
-    pub fn detect(name: &str) -> Result<Self, UnsupportedFileFormat> {
-        const ALL: &[ConfigSource] = &[ConfigSource::Json, ConfigSource::Yml];
-
-        ALL.iter()
-            .find(|format| format.ends_with(name))
-            .copied()
-            .ok_or(UnsupportedFileFormat(name.to_string()))
     }
 }
 
-#[derive(Debug, Error, PartialEq)]
-#[error("Unsupported config extension: {0}")]
-pub struct UnsupportedFileFormat(String);
+impl ConfigSource {
+    /// Detect the config format from the file name
+    pub fn detect(name: &str) -> Result<Self, SourceError> {
+        let source = config::Source::detect(name)?;
+
+        ConfigSource::try_from(source)
+    }
+}

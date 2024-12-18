@@ -1,6 +1,7 @@
 ---
 source: src/core/blueprint/index.rs
 expression: index
+snapshot_kind: text
 ---
 Index {
     map: {
@@ -58,7 +59,7 @@ Index {
                                                 ),
                                                 headers: {},
                                                 body: Some(
-                                                    "{{.args.input}}",
+                                                    String("{{.args.input}}"),
                                                 ),
                                                 description: None,
                                                 encoding: ApplicationJson,
@@ -127,7 +128,7 @@ Index {
                                                 ),
                                                 headers: {},
                                                 body: Some(
-                                                    "{{.args.input}}",
+                                                    String("{{.args.input}}"),
                                                 ),
                                                 description: None,
                                                 encoding: ApplicationJson,
@@ -205,7 +206,7 @@ Index {
                                                 ),
                                                 headers: {},
                                                 body: Some(
-                                                    "{{.args.input}}",
+                                                    String("{{.args.input}}"),
                                                 ),
                                                 description: None,
                                                 encoding: ApplicationJson,
@@ -286,7 +287,7 @@ Index {
                                                 ),
                                                 headers: {},
                                                 body: Some(
-                                                    "{{.args.input}}",
+                                                    String("{{.args.input}}"),
                                                 ),
                                                 description: None,
                                                 encoding: ApplicationJson,

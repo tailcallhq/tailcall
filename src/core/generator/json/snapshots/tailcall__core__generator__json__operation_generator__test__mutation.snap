@@ -1,6 +1,7 @@
 ---
 source: src/core/generator/json/operation_generator.rs
 expression: config.to_sdl()
+snapshot_kind: text
 ---
 input Input1 {
   body: String

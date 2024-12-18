@@ -1,6 +1,7 @@
 ---
 source: tests/core/spec.rs
 expression: formatter
+snapshot_kind: text
 ---
 schema @server @upstream(onRequest: "onRequest") @link(src: "test.js", type: Script) {
   query: Query

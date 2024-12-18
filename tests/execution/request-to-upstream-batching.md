@@ -1,68 +1,22 @@
 # Batched graphql request to batched upstream query
 
-```json @config
-{
-  "server": {
-    "batchRequests": true
-  },
-  "upstream": {
-    "batch": {
-      "maxSize": 100,
-      "delay": 1,
-      "headers": []
-    }
-  },
-  "schema": {
-    "query": "Query"
-  },
-  "types": {
-    "Query": {
-      "fields": {
-        "user": {
-          "type": {
-            "name": "User"
-          },
-          "args": {
-            "id": {
-              "type": {
-                "name": "Int",
-                "required": true
-              }
-            }
-          },
-          "http": {
-            "url": "http://jsonplaceholder.typicode.com/users",
-            "query": [
-              {
-                "key": "id",
-                "value": "{{.args.id}}"
-              }
-            ],
-            "batchKey": ["id"]
-          },
-          "cache": null
-        }
-      },
-      "cache": null
-    },
-    "User": {
-      "fields": {
-        "id": {
-          "type": {
-            "name": "Int"
-          },
-          "cache": null
-        },
-        "name": {
-          "type": {
-            "name": "String"
-          },
-          "cache": null
-        }
-      },
-      "cache": null
-    }
-  }
+```graphql @config
+schema @server(batchRequests: true) @upstream(batch: {maxSize: 100, delay: 1, headers: []}) {
+  query: Query
+}
+
+type Query {
+  user(id: Int!): User
+    @http(
+      url: "http://jsonplaceholder.typicode.com/users"
+      query: [{key: "id", value: "{{.args.id}}"}]
+      batchKey: ["id"]
+    )
+}
+
+type User {
+  id: Int
+  name: String
 }
 ```
 

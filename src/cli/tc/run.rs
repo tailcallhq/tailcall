@@ -46,11 +46,11 @@ async fn run_command(cli: Cli) -> Result<()> {
             validate_rc_config_files(runtime, &file_paths).await;
             start::start_command(file_paths, &config_reader).await?;
         }
-        Command::Check { file_paths, n_plus_one_queries, schema, format, verify_ssl } => {
+        Command::Check { file_paths, n_plus_one_queries, schema, verify_ssl } => {
             let (runtime, config_reader) = get_runtime_and_config_reader(verify_ssl);
             validate_rc_config_files(runtime.clone(), &file_paths).await;
             check::check_command(
-                check::CheckParams { file_paths, n_plus_one_queries, schema, format, runtime },
+                check::CheckParams { file_paths, n_plus_one_queries, schema, runtime },
                 &config_reader,
             )
             .await?;

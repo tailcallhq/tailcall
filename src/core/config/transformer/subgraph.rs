@@ -275,7 +275,7 @@ impl KeysExtractor {
                 Valid::from_iter(
                     [
                         Self::parse_str(http.url.as_str()).trace("url"),
-                        Self::parse_str_option(http.body.as_deref()).trace("body"),
+                        Self::parse_json_option(http.body.as_ref()).trace("body"),
                         Self::parse_key_value_iter(http.headers.iter()).trace("headers"),
                         Self::parse_key_value_iter(http.query.iter().map(|q| KeyValue {
                             key: q.key.to_string(),
@@ -355,9 +355,9 @@ impl KeysExtractor {
         .map_to(keys)
     }
 
-    fn parse_str_option(s: Option<&str>) -> Valid<Keys, String> {
+    fn parse_json_option(s: Option<&serde_json::Value>) -> Valid<Keys, String> {
         if let Some(s) = s {
-            Self::parse_str(s)
+            Self::parse_str(&s.to_string())
         } else {
             Valid::succeed(Keys::new())
         }
@@ -483,7 +483,9 @@ mod tests {
         fn test_extract_http() {
             let http = Http {
                 url: "http://tailcall.run/users/{{.value.id}}".to_string(),
-                body: Some(r#"{ "obj": "{{.value.obj}}"} "#.to_string()),
+                body: Some(serde_json::Value::String(
+                    r#"{ "obj": "{{.value.obj}}"} "#.to_string(),
+                )),
                 headers: vec![KeyValue {
                     key: "{{.value.header.key}}".to_string(),
                     value: "{{.value.header.value}}".to_string(),

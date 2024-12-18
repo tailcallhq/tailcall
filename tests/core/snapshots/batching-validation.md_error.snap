@@ -1,0 +1,46 @@
+---
+source: tests/core/spec.rs
+expression: errors
+snapshot_kind: text
+---
+[
+  {
+    "message": "batchKey requires either body or query parameters",
+    "trace": [
+      "Query",
+      "posts",
+      "@http"
+    ],
+    "description": null
+  },
+  {
+    "message": "Request body batching requires exactly one dynamic value in the body.",
+    "trace": [
+      "Query",
+      "user",
+      "@http",
+      "body"
+    ],
+    "description": null
+  },
+  {
+    "message": "Request body batching requires exactly one dynamic value in the body.",
+    "trace": [
+      "Query",
+      "userWithId",
+      "@http",
+      "body"
+    ],
+    "description": null
+  },
+  {
+    "message": "Request body batching requires exactly one dynamic value in the body.",
+    "trace": [
+      "Query",
+      "userWithIdTest",
+      "@http",
+      "body"
+    ],
+    "description": null
+  }
+]

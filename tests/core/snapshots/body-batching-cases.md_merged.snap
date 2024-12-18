@@ -1,0 +1,54 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+snapshot_kind: text
+---
+schema @server(port: 8000) @upstream(batch: {delay: 1, headers: []}, httpCache: 42) {
+  query: Query
+}
+
+type Bar {
+  a: Int
+  b: Int
+}
+
+type Foo {
+  a: Int
+  b: Int
+  bar: Bar
+    @http(url: "http://jsonplaceholder.typicode.com/bar", body: {id: "{{.value.a}}"}, batchKey: ["a"], method: "POST")
+}
+
+type Post {
+  body: String!
+  id: Int!
+  title: String!
+  user: User
+    @http(
+      url: "http://jsonplaceholder.typicode.com/users"
+      body: {key: "id", value: "{{.value.userId}}"}
+      batchKey: ["id"]
+      method: "POST"
+    )
+  userId: Int!
+}
+
+type Query {
+  foo: [Foo] @http(url: "http://jsonplaceholder.typicode.com/foo")
+  posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts")
+  user: User @http(url: "http://jsonplaceholder.typicode.com/users/1")
+  users: [User] @http(url: "http://jsonplaceholder.typicode.com/users")
+}
+
+type User {
+  email: String!
+  id: Int!
+  name: String!
+  post: Post
+    @http(
+      url: "http://jsonplaceholder.typicode.com/posts"
+      body: {userId: "{{.value.id}}", title: "title", body: "body"}
+      batchKey: ["userId"]
+      method: "POST"
+    )
+}

@@ -71,7 +71,7 @@ directive @graphQL(
   argument to batch several requests into a single batch request.Make sure you have 
   also specified batch settings to the `@upstream` and to the `@graphQL` operator.
   """
-  batch: Boolean!
+  batch: Boolean
   """
   Enables deduplication of IO operations to enhance performance.This flag prevents 
   duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
@@ -173,10 +173,10 @@ directive @http(
   batchKey: [String!]
   """
   The body of the API call. It's used for methods like POST or PUT that send data to 
-  the server. You can pass it as a static object or use a Mustache template to substitute 
-  variables from the GraphQL variables.
+  the server. You can pass it as a static object or use a Mustache template with object 
+  to substitute variables from the GraphQL variables.
   """
-  body: String
+  body: JSON
   """
   Enables deduplication of IO operations to enhance performance.This flag prevents 
   duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
@@ -247,35 +247,6 @@ directive @js(
   name: String!
 ) repeatable on FIELD_DEFINITION | OBJECT
 
-"""
-The @link directive allows you to import external resources, such as configuration 
-– which will be merged into the config importing it –, or a .proto file – which
- will be later used by `@grpc` directive –.
-"""
-directive @link(
-  """
-  Custom headers for gRPC reflection server.
-  """
-  headers: [KeyValue]
-  """
-  The id of the link. It is used to reference the link in the schema.
-  """
-  id: String
-  """
-  Additional metadata pertaining to the linked resource.
-  """
-  meta: JSON
-  """
-  The source of the link. It can be a URL or a path to a file. If a path is provided, 
-  it is relative to the file that imports the link.
-  """
-  src: String!
-  """
-  The type of the link. It can be `Config`, or `Protobuf`.
-  """
-  type: LinkType
-) repeatable on SCHEMA
-
 directive @modify(
   name: String
   omit: Boolean
@@ -302,200 +273,6 @@ directive @protected(
   """
   id: [String!]
 ) on OBJECT | FIELD_DEFINITION
-
-"""
-The `@server` directive, when applied at the schema level, offers a comprehensive 
-set of server configurations. It dictates how the server behaves and helps tune tailcall 
-for various use-cases.
-"""
-directive @server(
-  """
-  `apolloTracing` exposes GraphQL query performance data, including execution time 
-  of queries and individual resolvers.
-  """
-  apolloTracing: Boolean
-  """
-  `batchRequests` combines multiple requests into one, improving performance but potentially 
-  introducing latency and complicating debugging. Use judiciously. @default `false`.
-  """
-  batchRequests: Boolean
-  """
-  `enableFederation` enables functionality to Tailcall server to act as a federation 
-  subgraph.
-  """
-  enableFederation: Boolean
-  enableJIT: Boolean
-  """
-  `globalResponseTimeout` sets the maximum query duration before termination, acting 
-  as a safeguard against long-running queries.
-  """
-  globalResponseTimeout: Int
-  """
-  `headers` contains key-value pairs that are included as default headers in server 
-  responses, allowing for consistent header management across all responses.
-  """
-  headers: Headers
-  """
-  `hostname` sets the server hostname.
-  """
-  hostname: String
-  """
-  `introspection` allows clients to fetch schema information directly, aiding tools 
-  and applications in understanding available types, fields, and operations. @default 
-  `true`.
-  """
-  introspection: Boolean
-  """
-  `pipelineFlush` allows to control flushing behavior of the server pipeline.
-  """
-  pipelineFlush: Boolean
-  """
-  `port` sets the Tailcall running port. @default `8000`.
-  """
-  port: Int
-  """
-  `queryValidation` checks incoming GraphQL queries against the schema, preventing 
-  errors from invalid queries. Can be disabled for performance. @default `false`.
-  """
-  queryValidation: Boolean
-  """
-  `responseValidation` Tailcall automatically validates responses from upstream services 
-  using inferred schema. @default `false`.
-  """
-  responseValidation: Boolean
-  """
-  `routes` allows customization of server endpoint paths. It provides options to change 
-  the default paths for status and GraphQL endpoints. Default values are: - status: 
-  "/status" - graphQL: "/graphql" If not specified, these default values will be used.
-  """
-  routes: Routes
-  """
-  A link to an external JS file that listens on every HTTP request response event.
-  """
-  script: ScriptOptions
-  """
-  `showcase` enables the /showcase/graphql endpoint.
-  """
-  showcase: Boolean
-  """
-  This configuration defines local variables for server operations. Useful for storing 
-  constant configurations, secrets, or shared information.
-  """
-  vars: [KeyValue]
-  """
-  `version` sets the HTTP version for the server. Options are `HTTP1` and `HTTP2`. 
-  @default `HTTP1`.
-  """
-  version: HttpVersion
-  """
-  `workers` sets the number of worker threads. @default the number of system cores.
-  """
-  workers: Int
-) on SCHEMA
-
-"""
-The @telemetry directive facilitates seamless integration with OpenTelemetry, enhancing 
-the observability of your GraphQL services powered by Tailcall.  By leveraging this 
-directive, developers gain access to valuable insights into the performance and behavior 
-of their applications.
-"""
-directive @telemetry(
-  export: TelemetryExporter
-  """
-  The list of headers that will be sent as additional attributes to telemetry exporters 
-  Be careful about **leaking sensitive information** from requests when enabling the 
-  headers that may contain sensitive data
-  """
-  requestHeaders: [String!]
-) on SCHEMA
-
-"""
-The `upstream` directive allows you to control various aspects of the upstream server 
-connection. This includes settings like connection timeouts, keep-alive intervals, 
-and more. If not specified, default values are used.
-"""
-directive @upstream(
-  """
-  `allowedHeaders` defines the HTTP headers allowed to be forwarded to upstream services. 
-  If not set, no headers are forwarded, enhancing security but possibly limiting data 
-  flow.
-  """
-  allowedHeaders: [String!]
-  """
-  An object that specifies the batch settings, including `maxSize` (the maximum size 
-  of the batch), `delay` (the delay in milliseconds between each batch), and `headers` 
-  (an array of HTTP headers to be included in the batch).
-  """
-  batch: Batch
-  """
-  The time in seconds that the connection will wait for a response before timing out.
-  """
-  connectTimeout: Int
-  """
-  The `http2Only` setting allows you to specify whether the client should always issue 
-  HTTP2 requests, without checking if the server supports it or not. By default it 
-  is set to `false` for all HTTP requests made by the server, but is automatically 
-  set to true for GRPC.
-  """
-  http2Only: Boolean
-  """
-  Providing httpCache size enables Tailcall's HTTP caching, adhering to the [HTTP Caching 
-  RFC](https://tools.ietf.org/html/rfc7234), to enhance performance by minimizing redundant 
-  data fetches. Defaults to `0` if unspecified.
-  """
-  httpCache: Int
-  """
-  The time in seconds between each keep-alive message sent to maintain the connection.
-  """
-  keepAliveInterval: Int
-  """
-  The time in seconds that the connection will wait for a keep-alive message before 
-  closing.
-  """
-  keepAliveTimeout: Int
-  """
-  A boolean value that determines whether keep-alive messages should be sent while 
-  the connection is idle.
-  """
-  keepAliveWhileIdle: Boolean
-  """
-  onRequest field gives the ability to specify the global request interception handler.
-  """
-  onRequest: String
-  """
-  The time in seconds that the connection pool will wait before closing idle connections.
-  """
-  poolIdleTimeout: Int
-  """
-  The maximum number of idle connections that will be maintained per host.
-  """
-  poolMaxIdlePerHost: Int
-  """
-  The `proxy` setting defines an intermediary server through which the upstream requests 
-  will be routed before reaching their intended endpoint. By specifying a proxy URL, 
-  you introduce an additional layer, enabling custom routing and security policies.
-  """
-  proxy: Proxy
-  """
-  The time in seconds between each TCP keep-alive message sent to maintain the connection.
-  """
-  tcpKeepAlive: Int
-  """
-  The maximum time in seconds that the connection will wait for a response.
-  """
-  timeout: Int
-  """
-  The User-Agent header value to be used in HTTP requests. @default `Tailcall/1.0`
-  """
-  userAgent: String
-  """
-  A boolean value that determines whether to verify certificates. Setting this as `false` 
-  will make tailcall accept self-signed certificates. NOTE: use this *only* during 
-  development or testing. It is highly recommended to keep this enabled (`true`) in 
-  production.
-  """
-  verifySSL: Boolean
-) on SCHEMA
 
 """
 The `@discriminate` directive is used to drive Tailcall discriminator to use a field 
@@ -653,156 +430,6 @@ input Schema {
 }
 
 """
-Type to configure Cross-Origin Resource Sharing (CORS) for a server.
-"""
-input Cors {
-  """
-  Indicates whether the server allows credentials (e.g., cookies, authorization headers) 
-  to be sent in cross-origin requests.
-  """
-  allowCredentials: Boolean
-  """
-  A list of allowed headers in cross-origin requests. This can be used to specify custom 
-  headers that are allowed to be included in cross-origin requests.
-  """
-  allowHeaders: [String!]
-  """
-  A list of allowed HTTP methods in cross-origin requests. These methods specify the 
-  actions that are permitted in cross-origin requests.
-  """
-  allowMethods: [Method]
-  """
-  A list of origins that are allowed to access the server's resources in cross-origin 
-  requests. An origin can be a domain, a subdomain, or even 'null' for local file schemes.
-  """
-  allowOrigins: [String!]
-  """
-  Indicates whether requests from private network addresses are allowed in cross-origin 
-  requests. Private network addresses typically include IP addresses reserved for internal 
-  networks.
-  """
-  allowPrivateNetwork: Boolean
-  """
-  A list of headers that the server exposes to the browser in cross-origin responses. 
-  Exposing certain headers allows the client-side code to access them in the response.
-  """
-  exposeHeaders: [String!]
-  """
-  The maximum time (in seconds) that the client should cache preflight OPTIONS requests 
-  in order to avoid sending excessive requests to the server.
-  """
-  maxAge: Int
-  """
-  A list of header names that indicate the values of which might cause the server's 
-  response to vary, potentially affecting caching.
-  """
-  vary: [String!]
-}
-
-input Headers {
-  """
-  `cacheControl` sends `Cache-Control` headers in responses when activated. The `max-age` 
-  value is the least of the values received from upstream services. @default `false`.
-  """
-  cacheControl: Boolean
-  """
-  `cors` allows Cross-Origin Resource Sharing (CORS) for a server.
-  """
-  cors: Cors
-  """
-  `headers` are key-value pairs included in every server response. Useful for setting 
-  headers like `Access-Control-Allow-Origin` for cross-origin requests or additional 
-  headers for downstream services.
-  """
-  custom: [KeyValue]
-  """
-  `experimental` allows the use of `X-*` experimental headers in the response. @default 
-  `[]`.
-  """
-  experimental: [String!]
-  """
-  `setCookies` when enabled stores `set-cookie` headers and all the response will be 
-  sent with the headers.
-  """
-  setCookies: Boolean
-}
-
-input Routes {
-  graphQL: String!
-  status: String!
-}
-
-input ScriptOptions {
-  timeout: Int
-}
-
-input Apollo {
-  """
-  Setting `apiKey` for Apollo.
-  """
-  apiKey: String!
-  """
-  Setting `graphRef` for Apollo in the format <graphId>@<variant>.
-  """
-  graphRef: String!
-  """
-  Setting `platform` for Apollo.
-  """
-  platform: String
-  """
-  Setting `userVersion` for Apollo.
-  """
-  userVersion: String
-  """
-  Setting `version` for Apollo.
-  """
-  version: String
-}
-
-"""
-Output the opentelemetry data to otlp collector
-"""
-input OtlpExporter {
-  headers: [KeyValue]
-  url: String!
-}
-
-"""
-Output the telemetry metrics data to prometheus server
-"""
-input PrometheusExporter {
-  format: PrometheusFormat
-  path: String!
-}
-
-"""
-Output the opentelemetry data to the stdout. Mostly used for debug purposes
-"""
-input StdoutExporter {
-  """
-  Output to stdout in pretty human-readable format
-  """
-  pretty: Boolean!
-}
-
-input TelemetryExporter {
-  stdout: StdoutExporter
-  otlp: OtlpExporter
-  prometheus: PrometheusExporter
-  apollo: Apollo
-}
-
-input Batch {
-  delay: Int!
-  headers: [String!]
-  maxSize: Int
-}
-
-input Proxy {
-  url: String!
-}
-
-"""
 The @graphQL operator allows to specify GraphQL API server request to fetch data 
 from.
 """
@@ -816,7 +443,7 @@ input GraphQL {
   argument to batch several requests into a single batch request.Make sure you have 
   also specified batch settings to the `@upstream` and to the `@graphQL` operator.
   """
-  batch: Boolean!
+  batch: Boolean
   """
   Enables deduplication of IO operations to enhance performance.This flag prevents 
   duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
@@ -918,10 +545,10 @@ input Http {
   batchKey: [String!]
   """
   The body of the API call. It's used for methods like POST or PUT that send data to 
-  the server. You can pass it as a static object or use a Mustache template to substitute 
-  variables from the GraphQL variables.
+  the server. You can pass it as a static object or use a Mustache template with object 
+  to substitute variables from the GraphQL variables.
   """
-  body: String
+  body: JSON
   """
   Enables deduplication of IO operations to enhance performance.This flag prevents 
   duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
@@ -1016,22 +643,6 @@ input Cache {
   maxAge: Int!
 }
 
-"""
-The @telemetry directive facilitates seamless integration with OpenTelemetry, enhancing 
-the observability of your GraphQL services powered by Tailcall.  By leveraging this 
-directive, developers gain access to valuable insights into the performance and behavior 
-of their applications.
-"""
-input Telemetry {
-  export: TelemetryExporter
-  """
-  The list of headers that will be sent as additional attributes to telemetry exporters 
-  Be careful about **leaking sensitive information** from requests when enabling the 
-  headers that may contain sensitive data
-  """
-  requestHeaders: [String!]
-}
-
 enum Encoding {
   ApplicationJson
   ApplicationXWwwFormUrlencoded
@@ -1047,56 +658,4 @@ enum Method {
   OPTIONS
   CONNECT
   TRACE
-}
-
-enum LinkType {
-  """
-  Points to another Tailcall Configuration file. The imported configuration will be merged into the importing configuration.
-  """
-  Config
-  """
-  Points to a Protobuf file. The imported Protobuf file will be used by the `@grpc` directive. If your API exposes a reflection endpoint, you should set the type to `Grpc` instead.
-  """
-  Protobuf
-  """
-  Points to a JS file. The imported JS file will be used by the `@js` directive.
-  """
-  Script
-  """
-  Points to a Cert file. The imported Cert file will be used by the server to serve over HTTPS.
-  """
-  Cert
-  """
-  Points to a Key file. The imported Key file will be used by the server to serve over HTTPS.
-  """
-  Key
-  """
-  A trusted document that contains GraphQL operations (queries, mutations) that can be exposed a REST API using the `@rest` directive.
-  """
-  Operation
-  """
-  Points to a Htpasswd file. The imported Htpasswd file will be used by the server to authenticate users.
-  """
-  Htpasswd
-  """
-  Points to a Jwks file. The imported Jwks file will be used by the server to authenticate users.
-  """
-  Jwks
-  """
-  Points to a reflection endpoint. The imported reflection endpoint will be used by the `@grpc` directive to resolve data from gRPC services.
-  """
-  Grpc
-}
-
-enum HttpVersion {
-  HTTP1
-  HTTP2
-}
-
-"""
-Output format for prometheus data
-"""
-enum PrometheusFormat {
-  text
-  protobuf
 }

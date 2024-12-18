@@ -1,0 +1,35 @@
+---
+source: tests/core/spec.rs
+expression: response
+snapshot_kind: text
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "users": [
+        {
+          "id": 1,
+          "name": "user-1",
+          "post": {
+            "id": 1,
+            "title": "user-1",
+            "userId": 1
+          }
+        },
+        {
+          "id": 2,
+          "name": "user-2",
+          "post": {
+            "id": 2,
+            "title": "user-2",
+            "userId": 2
+          }
+        }
+      ]
+    }
+  }
+}

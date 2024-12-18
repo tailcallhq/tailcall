@@ -14,27 +14,27 @@ pub trait InputDefinition {
 }
 
 pub fn into_input_definition(schema: SchemaObject, name: &str) -> TypeSystemDefinition {
-    let description = get_description(&schema);
+    let description = get_description(&schema).cloned();
 
     TypeSystemDefinition::Type(pos(TypeDefinition {
         name: pos(Name::new(name)),
         kind: TypeKind::InputObject(InputObjectType {
-            fields: into_input_value_definition(&schema),
+            fields: into_input_value_definition(schema),
         }),
-        description: description.map(|inner| pos(inner.clone())),
+        description: description.map(pos),
         directives: vec![],
         extend: false,
     }))
 }
 
-pub fn into_input_value_definition(schema: &SchemaObject) -> Vec<Positioned<InputValueDefinition>> {
+pub fn into_input_value_definition(schema: SchemaObject) -> Vec<Positioned<InputValueDefinition>> {
     let mut arguments_type = vec![];
     if let Some(subschema) = schema.subschemas.clone() {
         let list = subschema.any_of.or(subschema.all_of).or(subschema.one_of);
         if let Some(list) = list {
             for schema in list {
                 let schema_object = schema.into_object();
-                arguments_type.extend(build_arguments_type(&schema_object));
+                arguments_type.extend(build_arguments_type(schema_object));
             }
 
             return arguments_type;
@@ -44,22 +44,19 @@ pub fn into_input_value_definition(schema: &SchemaObject) -> Vec<Positioned<Inpu
     build_arguments_type(schema)
 }
 
-fn build_arguments_type(schema: &SchemaObject) -> Vec<Positioned<InputValueDefinition>> {
+fn build_arguments_type(schema: SchemaObject) -> Vec<Positioned<InputValueDefinition>> {
     let mut arguments = vec![];
-    if let Some(properties) = schema
-        .object
-        .as_ref()
-        .map(|object| object.properties.clone())
-    {
-        for (name, property) in properties.into_iter() {
+    if let Some(obj) = schema.object {
+        let required = obj.required;
+        for (name, property) in obj.properties.into_iter() {
             let property = property.into_object();
             let description = get_description(&property);
+            let nullable = !required.contains(&name);
             let definition = pos(InputValueDefinition {
                 description: description.map(|inner| pos(inner.to_owned())),
                 name: pos(Name::new(&name)),
                 ty: pos(determine_input_value_type_from_schema(
-                    name,
-                    property.clone(),
+                    name, &property, nullable,
                 )),
                 default_value: None,
                 directives: Vec::new(),
@@ -72,7 +69,11 @@ fn build_arguments_type(schema: &SchemaObject) -> Vec<Positioned<InputValueDefin
     arguments
 }
 
-fn determine_input_value_type_from_schema(mut name: String, schema: SchemaObject) -> Type {
+fn determine_input_value_type_from_schema(
+    mut name: String,
+    schema: &SchemaObject,
+    nullable: bool,
+) -> Type {
     first_char_to_upper(&mut name);
     if let Some(instance_type) = &schema.instance_type {
         match instance_type {
@@ -82,10 +83,10 @@ fn determine_input_value_type_from_schema(mut name: String, schema: SchemaObject
                 | InstanceType::Number
                 | InstanceType::String
                 | InstanceType::Integer => Type {
-                    nullable: false,
+                    nullable,
                     base: BaseType::Named(Name::new(get_instance_type_name(typ))),
                 },
-                _ => determine_type_from_schema(name, &schema),
+                _ => determine_type_from_schema(name, schema),
             },
             SingleOrVec::Vec(typ) => match typ.first().unwrap() {
                 InstanceType::Null
@@ -93,14 +94,14 @@ fn determine_input_value_type_from_schema(mut name: String, schema: SchemaObject
                 | InstanceType::Number
                 | InstanceType::String
                 | InstanceType::Integer => Type {
-                    nullable: true,
+                    nullable,
                     base: BaseType::Named(Name::new(get_instance_type_name(typ.first().unwrap()))),
                 },
-                _ => determine_type_from_schema(name, &schema),
+                _ => determine_type_from_schema(name, schema),
             },
         }
     } else {
-        determine_type_from_schema(name, &schema)
+        determine_type_from_schema(name, schema)
     }
 }
 
@@ -145,14 +146,16 @@ fn determine_type_from_arr_valid(name: String, array_valid: &ArrayValidation) ->
                 nullable: true,
                 base: BaseType::List(Box::new(determine_input_value_type_from_schema(
                     name,
-                    schema.clone().into_object(),
+                    &schema.clone().into_object(),
+                    false,
                 ))),
             },
             SingleOrVec::Vec(schemas) => Type {
                 nullable: true,
                 base: BaseType::List(Box::new(determine_input_value_type_from_schema(
                     name,
-                    schemas[0].clone().into_object(),
+                    &schemas[0].clone().into_object(),
+                    false,
                 ))),
             },
         }

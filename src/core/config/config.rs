@@ -1,7 +1,7 @@
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt::{self, Display};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use async_graphql::parser::types::ServiceDocument;
 use derive_setters::Setters;
 use indexmap::IndexMap;
@@ -38,8 +38,7 @@ use crate::core::scalar::Scalar;
     schemars::JsonSchema,
     MergeRight,
 )]
-#[serde(rename_all = "camelCase")]
-pub struct Config {
+pub struct RuntimeConfig {
     ///
     /// Dictates how the server behaves and helps tune tailcall for all ingress
     /// requests. Features such as request batching, SSL, HTTP2 etc. can be
@@ -54,29 +53,7 @@ pub struct Config {
     pub upstream: Upstream,
 
     ///
-    /// Specifies the entry points for query and mutation in the generated
-    /// GraphQL schema.
-    pub schema: RootSchema,
-
-    ///
-    /// A map of all the types in the schema.
-    #[serde(default)]
-    #[setters(skip)]
-    pub types: BTreeMap<String, Type>,
-
-    ///
-    /// A map of all the union types in the schema.
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub unions: BTreeMap<String, Union>,
-
-    ///
-    /// A map of all the enum types in the schema
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub enums: BTreeMap<String, Enum>,
-
-    ///
     /// A list of all links in the schema.
-    #[serde(default, skip_serializing_if = "is_default")]
     pub links: Vec<Link>,
 
     /// Enable [opentelemetry](https://opentelemetry.io) support
@@ -84,43 +61,73 @@ pub struct Config {
     pub telemetry: Telemetry,
 }
 
+#[derive(Clone, Debug, Default, Setters, PartialEq, Eq, MergeRight)]
+pub struct Config {
+    ///
+    /// Dictates how the server behaves and helps tune tailcall for all ingress
+    /// requests. Features such as request batching, SSL, HTTP2 etc. can be
+    /// configured here.
+    pub server: Server,
+
+    ///
+    /// Dictates how tailcall should handle upstream requests/responses.
+    /// Tuning upstream can improve performance and reliability for connections.
+    pub upstream: Upstream,
+
+    ///
+    /// Specifies the entry points for query and mutation in the generated
+    /// GraphQL schema.
+    pub schema: RootSchema,
+
+    ///
+    /// A map of all the types in the schema.
+    #[setters(skip)]
+    pub types: BTreeMap<String, Type>,
+
+    ///
+    /// A map of all the union types in the schema.
+    pub unions: BTreeMap<String, Union>,
+
+    ///
+    /// A map of all the enum types in the schema
+    pub enums: BTreeMap<String, Enum>,
+
+    ///
+    /// A list of all links in the schema.
+    pub links: Vec<Link>,
+
+    /// Enable [opentelemetry](https://opentelemetry.io) support
+    pub telemetry: Telemetry,
+}
+
 ///
 /// Represents a GraphQL type.
 /// A type can be an object, interface, enum or scalar.
-#[derive(
-    Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight,
-)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, MergeRight)]
 pub struct Type {
     ///
     /// A map of field name and its definition.
     pub fields: BTreeMap<String, Field>,
-    #[serde(default, skip_serializing_if = "is_default")]
     ///
     /// Additional fields to be added to the type
     pub added_fields: Vec<AddField>,
-    #[serde(default, skip_serializing_if = "is_default")]
     ///
     /// Documentation for the type that is publicly visible.
     pub doc: Option<String>,
-    #[serde(default, skip_serializing_if = "is_default")]
     ///
     /// Interfaces that the type implements.
     pub implements: BTreeSet<String>,
-    #[serde(default, skip_serializing_if = "is_default")]
     ///
     /// Setting to indicate if the type can be cached.
     pub cache: Option<Cache>,
     ///
     /// Marks field as protected by auth providers
-    #[serde(default)]
     pub protected: Option<Protected>,
     ///
     /// Apollo federation entity resolver.
-    #[serde(flatten, default, skip_serializing_if = "is_default")]
     pub resolvers: ResolverSet,
     ///
     /// Any additional directives
-    #[serde(default, skip_serializing_if = "is_default")]
     pub directives: Vec<Directive>,
 }
 
@@ -158,59 +165,38 @@ impl Type {
     }
 }
 
-#[derive(
-    Serialize,
-    Deserialize,
-    Clone,
-    Debug,
-    Default,
-    Setters,
-    PartialEq,
-    Eq,
-    schemars::JsonSchema,
-    MergeRight,
-)]
+#[derive(Clone, Debug, Default, Setters, PartialEq, Eq, MergeRight)]
 #[setters(strip_option)]
 pub struct RootSchema {
     pub query: Option<String>,
-    #[serde(default, skip_serializing_if = "is_default")]
     pub mutation: Option<String>,
-    #[serde(default, skip_serializing_if = "is_default")]
     pub subscription: Option<String>,
 }
 
 ///
 /// A field definition containing all the metadata information about resolving a
 /// field.
-#[derive(
-    Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
-)]
+#[derive(Clone, Debug, Default, Setters, PartialEq, Eq)]
 #[setters(strip_option)]
 pub struct Field {
     ///
     /// Refers to the type of the value the field can be resolved to.
-    #[serde(rename = "type", default, skip_serializing_if = "is_default")]
     pub type_of: crate::core::Type,
 
     ///
     /// Map of argument name and its definition.
-    #[serde(default, skip_serializing_if = "is_default")]
-    #[schemars(with = "HashMap::<String, Arg>")]
     pub args: IndexMap<String, Arg>,
 
     ///
     /// Publicly visible documentation for the field.
-    #[serde(default, skip_serializing_if = "is_default")]
     pub doc: Option<String>,
 
     ///
     /// Allows modifying existing fields.
-    #[serde(default, skip_serializing_if = "is_default")]
     pub modify: Option<Modify>,
 
     ///
     /// Omits a field from public consumption.
-    #[serde(default, skip_serializing_if = "is_default")]
     pub omit: Option<Omit>,
 
     ///
@@ -219,12 +205,10 @@ pub struct Field {
 
     ///
     /// Stores the default value for the field
-    #[serde(default, skip_serializing_if = "is_default")]
     pub default_value: Option<Value>,
 
     ///
     /// Marks field as protected by auth provider
-    #[serde(default)]
     pub protected: Option<Protected>,
 
     ///
@@ -233,12 +217,10 @@ pub struct Field {
 
     ///
     /// Resolver for the field
-    #[serde(flatten, default, skip_serializing_if = "is_default")]
     pub resolvers: ResolverSet,
 
     ///
     /// Any additional directives
-    #[serde(default, skip_serializing_if = "is_default")]
     pub directives: Vec<Directive>,
 }
 
@@ -288,32 +270,26 @@ impl Field {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Inline {
     pub path: Vec<String>,
 }
 
-#[derive(Default, Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct Arg {
-    #[serde(rename = "type")]
     pub type_of: crate::core::Type,
-    #[serde(default, skip_serializing_if = "is_default")]
     pub doc: Option<String>,
-    #[serde(default, skip_serializing_if = "is_default")]
     pub modify: Option<Modify>,
-    #[serde(default, skip_serializing_if = "is_default")]
     pub default_value: Option<Value>,
 }
 
-#[derive(
-    Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight,
-)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, MergeRight)]
 pub struct Union {
     pub types: BTreeSet<String>,
     pub doc: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
+#[derive(Clone, Debug, PartialEq, Eq, MergeRight)]
 /// Definition of GraphQL enum type
 pub struct Enum {
     pub variants: BTreeSet<Variant>,
@@ -321,26 +297,14 @@ pub struct Enum {
 }
 
 /// Definition of GraphQL value
-#[derive(
-    Serialize,
-    Deserialize,
-    Clone,
-    Debug,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    schemars::JsonSchema,
-    MergeRight,
-)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, MergeRight)]
 pub struct Variant {
     pub name: String,
     // directive: alias
     pub alias: Option<Alias>,
 }
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub enum GraphQLOperationType {
     #[default]
     Query,
@@ -356,7 +320,47 @@ impl Display for GraphQLOperationType {
     }
 }
 
+impl RuntimeConfig {
+    pub fn from_json(json: &str) -> Result<Self> {
+        Ok(serde_json::from_str(json)?)
+    }
+
+    pub fn from_yaml(yaml: &str) -> Result<Self> {
+        Ok(serde_yaml_ng::from_str(yaml)?)
+    }
+
+    pub fn from_source(source: Source, config: &str) -> Result<Self> {
+        match source {
+            Source::Json => RuntimeConfig::from_json(config),
+            Source::Yml => RuntimeConfig::from_yaml(config),
+            _ => Err(anyhow!("Only the json/yaml runtime configs are supported")),
+        }
+    }
+
+    pub fn to_yaml(&self) -> Result<String> {
+        Ok(serde_yaml_ng::to_string(self)?)
+    }
+
+    pub fn to_json(&self, pretty: bool) -> Result<String> {
+        if pretty {
+            Ok(serde_json::to_string_pretty(self)?)
+        } else {
+            Ok(serde_json::to_string(self)?)
+        }
+    }
+}
+
 impl Config {
+    pub fn with_runtime_config(self, runtime_config: RuntimeConfig) -> Self {
+        Self {
+            server: runtime_config.server,
+            upstream: runtime_config.upstream,
+            links: runtime_config.links,
+            telemetry: runtime_config.telemetry,
+            ..self
+        }
+    }
+
     pub fn is_root_operation_type(&self, type_name: &str) -> bool {
         let type_name = type_name.to_lowercase();
 
@@ -386,18 +390,6 @@ impl Config {
         self.enums.get(name)
     }
 
-    pub fn to_yaml(&self) -> Result<String> {
-        Ok(serde_yaml_ng::to_string(self)?)
-    }
-
-    pub fn to_json(&self, pretty: bool) -> Result<String> {
-        if pretty {
-            Ok(serde_json::to_string_pretty(self)?)
-        } else {
-            Ok(serde_json::to_string(self)?)
-        }
-    }
-
     /// Renders current config to graphQL string
     pub fn to_sdl(&self) -> String {
         crate::core::document::print(self.into())
@@ -423,14 +415,6 @@ impl Config {
             || self.enums.contains_key(name)
     }
 
-    pub fn from_json(json: &str) -> Result<Self> {
-        Ok(serde_json::from_str(json)?)
-    }
-
-    pub fn from_yaml(yaml: &str) -> Result<Self> {
-        Ok(serde_yaml_ng::from_str(yaml)?)
-    }
-
     pub fn from_sdl(sdl: &str) -> Valid<Self, String> {
         let doc = async_graphql::parser::parse_schema(sdl);
         match doc {
@@ -439,11 +423,10 @@ impl Config {
         }
     }
 
-    pub fn from_source(source: Source, schema: &str) -> Result<Self> {
+    pub fn from_source(source: Source, content: &str) -> Result<Self> {
         match source {
-            Source::GraphQL => Ok(Config::from_sdl(schema).to_result()?),
-            Source::Json => Ok(Config::from_json(schema)?),
-            Source::Yml => Ok(Config::from_yaml(schema)?),
+            Source::GraphQL => Ok(Config::from_sdl(content).to_result()?),
+            source => Ok(Config::from(RuntimeConfig::from_source(source, content)?)),
         }
     }
 
@@ -659,13 +642,9 @@ impl Config {
             .add_directive(Grpc::directive_definition(generated_types))
             .add_directive(Http::directive_definition(generated_types))
             .add_directive(JS::directive_definition(generated_types))
-            .add_directive(Link::directive_definition(generated_types))
             .add_directive(Modify::directive_definition(generated_types))
             .add_directive(Omit::directive_definition(generated_types))
             .add_directive(Protected::directive_definition(generated_types))
-            .add_directive(Server::directive_definition(generated_types))
-            .add_directive(Telemetry::directive_definition(generated_types))
-            .add_directive(Upstream::directive_definition(generated_types))
             .add_directive(Discriminate::directive_definition(generated_types))
             .add_input(GraphQL::input_definition())
             .add_input(Grpc::input_definition())
@@ -673,14 +652,25 @@ impl Config {
             .add_input(Expr::input_definition())
             .add_input(JS::input_definition())
             .add_input(Modify::input_definition())
-            .add_input(Cache::input_definition())
-            .add_input(Telemetry::input_definition());
+            .add_input(Cache::input_definition());
 
         for scalar in Scalar::iter() {
             builder = builder.add_scalar(scalar.scalar_definition());
         }
 
         builder.build()
+    }
+}
+
+impl From<RuntimeConfig> for Config {
+    fn from(config: RuntimeConfig) -> Self {
+        Self {
+            server: config.server,
+            upstream: config.upstream,
+            links: config.links,
+            telemetry: config.telemetry,
+            ..Default::default()
+        }
     }
 }
 
