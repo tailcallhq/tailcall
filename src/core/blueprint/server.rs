@@ -14,7 +14,6 @@ use crate::core::config::{self, ConfigModule, HttpVersion, PrivateKey, Routes};
 
 #[derive(Clone, Debug, Setters)]
 pub struct Server {
-    pub enable_jit: bool,
     pub enable_apollo_tracing: bool,
     pub enable_cache_control_header: bool,
     pub enable_set_cookie_header: bool,
@@ -124,7 +123,6 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
             ))
             .map(
                 |(hostname, http, response_headers, script, experimental_headers, cors)| Server {
-                    enable_jit: (config_server).enable_jit(),
                     enable_apollo_tracing: (config_server).enable_apollo_tracing(),
                     enable_cache_control_header: (config_server).enable_cache_control(),
                     enable_set_cookie_header: (config_server).enable_set_cookies(),
