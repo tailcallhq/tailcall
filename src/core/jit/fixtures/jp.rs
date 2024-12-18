@@ -88,10 +88,8 @@ impl<'a, Value: Deserialize<'a> + Clone + 'a + JsonLike<'a> + std::fmt::Debug> J
 
     fn plan(query: &str, variables: &Variables<async_graphql::Value>) -> OperationPlan<Value> {
         let config = ConfigModule::from(Config::from_sdl(Self::CONFIG).to_result().unwrap());
-        let builder = Builder::new(
-            &Blueprint::try_from(&config).unwrap(),
-            async_graphql::parser::parse_query(query).unwrap(),
-        );
+        let doc = async_graphql::parser::parse_query(query).unwrap();
+        let builder = Builder::new(&Blueprint::try_from(&config).unwrap(), &doc);
 
         let plan = builder.build(None).unwrap();
         let plan = transform::Skip::new(variables)

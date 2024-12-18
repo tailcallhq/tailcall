@@ -75,6 +75,8 @@ impl JITExecutor {
         &self,
         request: async_graphql::Request,
     ) -> impl Future<Output = AnyResponse<Vec<u8>>> + Send + '_ {
+        // TODO: hash considering only the query itself ignoring specified operation and
+        // variables that could differ for the same query
         let hash = Self::req_hash(&request);
 
         async move {
@@ -135,6 +137,7 @@ impl JITExecutor {
     }
 }
 
+// TODO: used only for introspection, simplify somehow?
 impl From<jit::Request<Value>> for async_graphql::Request {
     fn from(value: jit::Request<Value>) -> Self {
         let mut request = async_graphql::Request::new(value.query);
