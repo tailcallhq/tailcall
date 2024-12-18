@@ -64,16 +64,16 @@ impl Conditions {
     }
 }
 
-pub struct Builder {
+pub struct Builder<'a> {
     pub index: Arc<Index>,
     pub arg_id: Counter<usize>,
     pub field_id: Counter<usize>,
-    pub document: ExecutableDocument,
+    pub document: &'a ExecutableDocument,
 }
 
 // TODO: make generic over Value (Input) type
-impl Builder {
-    pub fn new(blueprint: &Blueprint, document: ExecutableDocument) -> Self {
+impl<'a> Builder<'a> {
+    pub fn new(blueprint: &Blueprint, document: &'a ExecutableDocument) -> Self {
         let index = Arc::new(blueprint.index());
         Self {
             document,
@@ -372,7 +372,7 @@ mod tests {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
-        Builder::new(&blueprint, document).build(None).unwrap()
+        Builder::new(&blueprint, &document).build(None).unwrap()
     }
 
     #[tokio::test]
@@ -640,25 +640,23 @@ mod tests {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
-        let error = Builder::new(&blueprint, document.clone())
-            .build(None)
-            .unwrap_err();
+        let error = Builder::new(&blueprint, &document).build(None).unwrap_err();
 
         assert_eq!(error, BuildError::OperationNameRequired);
 
-        let error = Builder::new(&blueprint, document.clone())
+        let error = Builder::new(&blueprint, &document)
             .build(Some("unknown"))
             .unwrap_err();
 
         assert_eq!(error, BuildError::OperationNotFound("unknown".to_string()));
 
-        let plan = Builder::new(&blueprint, document.clone())
+        let plan = Builder::new(&blueprint, &document)
             .build(Some("GetPosts"))
             .unwrap();
         assert!(plan.is_query());
         insta::assert_debug_snapshot!(plan.selection);
 
-        let plan = Builder::new(&blueprint, document.clone())
+        let plan = Builder::new(&blueprint, &document)
             .build(Some("CreateNewPost"))
             .unwrap();
         assert!(!plan.is_query());

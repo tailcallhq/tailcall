@@ -345,7 +345,7 @@ mod tests {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let config = ConfigModule::from(config);
 
-        let builder = Builder::new(&Blueprint::try_from(&config).unwrap(), doc);
+        let builder = Builder::new(&Blueprint::try_from(&config).unwrap(), &doc);
         let plan = builder.build(None).unwrap();
         let plan = plan
             .try_map(|v| {
