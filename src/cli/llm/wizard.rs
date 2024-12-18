@@ -3,10 +3,11 @@ use genai::adapter::AdapterKind;
 use genai::chat::{ChatOptions, ChatRequest, ChatResponse};
 use genai::resolver::AuthResolver;
 use genai::Client;
-use super::error::{Error, Result};
-use reqwest::{StatusCode};
-use tokio_retry::strategy::{ExponentialBackoff};
+use reqwest::StatusCode;
+use tokio_retry::strategy::ExponentialBackoff;
 use tokio_retry::RetryIf;
+
+use super::error::{Error, Result};
 
 #[derive(Setters, Clone)]
 pub struct Wizard<Q, A> {
@@ -57,7 +58,8 @@ impl<Q, A> Wizard<Q, A> {
                     .exec_chat(self.model.as_str(), request, None) // Execute chat request
                     .await
                     .map_err(Error::from)
-                    .and_then(A::try_from) // Convert the response into the desired result
+                    .and_then(A::try_from) // Convert the response into the
+                                           // desired result
             },
             |err: &Error| {
                 // Check if the error is a ReqwestError and if the status is 429
@@ -67,7 +69,7 @@ impl<Q, A> Wizard<Q, A> {
                     }
                 }
                 false
-            }
+            },
         )
         .await
     }

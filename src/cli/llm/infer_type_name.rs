@@ -145,8 +145,9 @@ impl InferTypeName {
                         total
                     );
 
-                    // TODO: case where suggested names are already used, then extend the base
-                    // question with `suggest different names, we have already used following
+                    // TODO: case where suggested names are already used, then
+                    // extend the base question with
+                    // `suggest different names, we have already used following
                     // names: [names list]`
                 }
                 Err(e) => {
