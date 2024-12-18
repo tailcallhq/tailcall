@@ -33,7 +33,7 @@ pub(super) async fn init_command(runtime: TargetRuntime, folder_path: &str) -> R
     let tailcall_rc_schema = Path::new(folder_path).join(TAILCALL_RC_SCHEMA);
     let graphql_rc = Path::new(folder_path).join(GRAPHQL_RC);
 
-    match configuration_format {
+    match selection {
         Source::GraphQL => {
             // .tailcallrc.graphql
             runtime
@@ -57,7 +57,7 @@ pub(super) async fn init_command(runtime: TargetRuntime, folder_path: &str) -> R
         }
     }
 
-    create_main(runtime.clone(), folder_path, configuration_format).await?;
+    create_main(runtime.clone(), folder_path, selection).await?;
 
     Ok(())
 }
@@ -162,7 +162,7 @@ async fn create_main(
         .join(SCHEMA_FILENAME)
         .display()
         .to_string();
-  
+
     confirm_and_write(
         runtime.clone(),
         &runtime_config_path,
