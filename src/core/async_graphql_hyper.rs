@@ -408,6 +408,17 @@ impl GraphQLArcResponse {
     pub fn into_response(self) -> Result<Response<hyper::Body>> {
         self.build_response(StatusCode::OK, self.default_body()?)
     }
+
+    /// Transforms a plain `GraphQLResponse` into a `Response<Body>`.
+    /// Differs as `to_response` by flattening the response's data
+    /// `{"data": {"user": {"name": "John"}}}` becomes `{"name": "John"}`.
+    pub fn into_rest_response(self) -> Result<Response<hyper::Body>> {
+        if !self.response.is_ok() {
+            return self.build_response(StatusCode::INTERNAL_SERVER_ERROR, self.default_body()?);
+        }
+
+        self.into_response()
+    }
 }
 
 #[cfg(test)]

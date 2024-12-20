@@ -5,21 +5,23 @@ use std::sync::Arc;
 
 use async_graphql::{BatchRequest, Value};
 use async_graphql_value::{ConstValue, Extensions};
+use derive_setters::Setters;
 use futures_util::stream::FuturesOrdered;
 use futures_util::StreamExt;
 use tailcall_hasher::TailcallHasher;
 
 use super::{AnyResponse, BatchResponse, Response};
-use crate::core::app_context::AppContext;
+use crate::core::{app_context::AppContext, async_graphql_hyper::GraphQLRequest};
 use crate::core::async_graphql_hyper::OperationId;
 use crate::core::http::RequestContext;
 use crate::core::jit::{self, ConstValueExecutor, OPHash, Pos, Positioned};
 
-#[derive(Clone)]
+#[derive(Clone, Setters)]
 pub struct JITExecutor {
     app_ctx: Arc<AppContext>,
     req_ctx: Arc<RequestContext>,
     operation_id: OperationId,
+    flatten_response: bool,
 }
 
 impl JITExecutor {
@@ -28,7 +30,7 @@ impl JITExecutor {
         req_ctx: Arc<RequestContext>,
         operation_id: OperationId,
     ) -> Self {
-        Self { app_ctx, req_ctx, operation_id }
+        Self { app_ctx, req_ctx, operation_id, flatten_response: false }
     }
 
     #[inline(always)]
@@ -62,21 +64,20 @@ impl JITExecutor {
     }
 
     #[inline(always)]
-    fn req_hash(request: &async_graphql::Request) -> OPHash {
+    fn req_hash(request: &impl Hash) -> OPHash {
         let mut hasher = TailcallHasher::default();
-        request.query.hash(&mut hasher);
+        request.hash(&mut hasher);
 
         OPHash::new(hasher.finish())
     }
 }
 
 impl JITExecutor {
-    pub fn execute(
-        &self,
-        request: async_graphql::Request,
-    ) -> impl Future<Output = AnyResponse<Vec<u8>>> + Send + '_ {
-        // TODO: hash considering only the query itself ignoring specified operation and
-        // variables that could differ for the same query
+    pub fn execute<T>(&self, request: T) -> impl Future<Output = AnyResponse<Vec<u8>>> + Send + '_
+    where
+        jit::Request<ConstValue>: TryFrom<T, Error = super::Error>,
+        T: Hash + Send + 'static,
+    {
         let hash = Self::req_hash(&request);
 
         async move {
@@ -84,7 +85,14 @@ impl JITExecutor {
                 return response.clone();
             }
 
-            let jit_request = jit::Request::from(request);
+            let jit_request = match jit::Request::try_from(request) {
+                Ok(request) => request,
+                Err(error) => {
+                    return Response::<async_graphql::Value>::default()
+                        .with_errors(vec![Positioned::new(error, Pos::default())])
+                        .into()
+                }
+            };
             let exec = if let Some(op) = self.app_ctx.operation_plans.get(&hash) {
                 ConstValueExecutor::from(op.value().clone())
             } else {
@@ -102,6 +110,7 @@ impl JITExecutor {
                 exec
             };
 
+            let exec = exec.flatten_response(self.flatten_response);
             let is_const = exec.plan.is_const;
             let is_protected = exec.plan.is_protected;
 
@@ -125,10 +134,10 @@ impl JITExecutor {
     /// Execute a GraphQL batch query.
     pub async fn execute_batch(&self, batch_request: BatchRequest) -> BatchResponse<Vec<u8>> {
         match batch_request {
-            BatchRequest::Single(request) => BatchResponse::Single(self.execute(request).await),
+            BatchRequest::Single(request) => BatchResponse::Single(self.execute(GraphQLRequest(request)).await),
             BatchRequest::Batch(requests) => {
                 let futs = FuturesOrdered::from_iter(
-                    requests.into_iter().map(|request| self.execute(request)),
+                    requests.into_iter().map(|request| self.execute(GraphQLRequest(request))),
                 );
                 let responses = futs.collect::<Vec<_>>().await;
                 BatchResponse::Batch(responses)

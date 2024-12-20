@@ -590,7 +590,7 @@ mod test {
         let bp = Blueprint::try_from(&module).unwrap();
 
         let request = Request::new(query);
-        let jit_request = jit::Request::from(request);
+        let jit_request = jit::Request::try_from(request).unwrap();
         jit_request.create_plan(&bp).unwrap()
     }
 
