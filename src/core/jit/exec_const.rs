@@ -9,14 +9,14 @@ use super::context::Context;
 use super::exec::{Executor, IRExecutor};
 use super::graphql_error::GraphQLError;
 use super::{transform, AnyResponse, BuildError, Error, OperationPlan, Request, Response, Result};
+use crate::core::app_context::AppContext;
 use crate::core::http::RequestContext;
 use crate::core::ir::model::IR;
 use crate::core::ir::{self, EmptyResolverContext, EvalContext};
 use crate::core::jit::synth::Synth;
 use crate::core::jit::transform::InputResolver;
-use crate::core::json::{JsonLike, JsonLikeList};
+use crate::core::json::{JsonLike, JsonLikeList, JsonObjectLike};
 use crate::core::Transform;
-use crate::core::{app_context::AppContext, json::JsonObjectLike};
 
 /// A specialized executor that executes with async_graphql::Value
 #[derive(Setters)]

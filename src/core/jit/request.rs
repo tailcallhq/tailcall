@@ -1,14 +1,14 @@
 use std::collections::HashMap;
-use std::ops::DerefMut;
 
 use async_graphql::parser::types::ExecutableDocument;
 use async_graphql_value::ConstValue;
 use tailcall_valid::Validator;
 
 use super::{transform, Builder, OperationPlan, Result, Variables};
+use crate::core::async_graphql_hyper::{GraphQLRequest, ParsedGraphQLRequest};
+use crate::core::blueprint::Blueprint;
 use crate::core::transform::TransformerOps;
 use crate::core::Transform;
-use crate::core::{async_graphql_hyper::GraphQLRequest, blueprint::Blueprint};
 
 #[derive(Debug, Clone)]
 pub struct Request<V> {
@@ -19,28 +19,26 @@ pub struct Request<V> {
     pub parsed_query: ExecutableDocument,
 }
 
-// NOTE: This is hot code and should allocate minimal memory
-impl TryFrom<async_graphql::Request> for Request<ConstValue> {
-    type Error = super::Error;
-
-    fn try_from(mut value: async_graphql::Request) -> Result<Self> {
-        let variables = std::mem::take(value.variables.deref_mut());
-
-        Ok(Self {
-            parsed_query: value.parsed_query()?.clone(),
-            query: value.query,
-            operation_name: value.operation_name,
-            variables: Variables::from_iter(variables.into_iter().map(|(k, v)| (k.to_string(), v))),
-            extensions: value.extensions.0,
-        })
-    }
-}
-
 impl TryFrom<GraphQLRequest> for Request<ConstValue> {
     type Error = super::Error;
 
     fn try_from(value: GraphQLRequest) -> Result<Self> {
-        Self::try_from(value.0)
+        let value = ParsedGraphQLRequest::try_from(value)?;
+
+        Self::try_from(value)
+    }
+}
+
+impl TryFrom<ParsedGraphQLRequest> for Request<ConstValue> {
+    type Error = super::Error;
+    fn try_from(value: ParsedGraphQLRequest) -> Result<Self> {
+        Ok(Self {
+            parsed_query: value.parsed_query,
+            query: value.query,
+            operation_name: value.operation_name,
+            variables: Variables::from(value.variables),
+            extensions: value.extensions,
+        })
     }
 }
 

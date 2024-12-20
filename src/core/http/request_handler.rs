@@ -252,12 +252,11 @@ async fn handle_rest_apis(
             { HTTP_ROUTE } = http_route
         );
         return async {
-            let mut graphql_request = p_request.into_request(body).await?;
+            let graphql_request = p_request.into_request(body).await?;
             let operation_id = graphql_request.operation_id(&req.headers);
             let exec = JITExecutor::new(app_ctx.clone(), req_ctx.clone(), operation_id)
                 .flatten_response(true);
             let mut response = graphql_request
-                .data(req_ctx.clone())
                 .execute_with_jit(exec)
                 .await
                 .set_cache_control(
