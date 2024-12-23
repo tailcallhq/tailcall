@@ -4,7 +4,7 @@ error: true
 
 # test-hostname-faliure
 
-```graphql @config
+```graphql @schema
 schema @server(hostname: "abc") {
   query: Query
 }

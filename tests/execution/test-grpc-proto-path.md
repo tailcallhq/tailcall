@@ -4,7 +4,7 @@ error: true
 
 # test-grpc-proto-path
 
-```graphql @config
+```graphql @schema
 schema @link(id: "news", src: "tailcall/src/grpcnews.proto", type: Protobuf) {
   query: Query
 }

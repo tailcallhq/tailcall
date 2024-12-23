@@ -4,7 +4,7 @@ error: true
 
 # test-empty-link
 
-```graphql @config
+```graphql @schema
 schema @link(type: Config, src: "") @link(type: Config) {
   query: Query
 }

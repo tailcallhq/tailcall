@@ -6,7 +6,7 @@ skip: true
 
 TODO: Skipped because tailcall does not send the `@log` directive to the remote server. Moreover it does not correctly format the scalar to string value.
 
-```graphql @config
+```graphql @schema
 schema @server(port: 8001, queryValidation: false, hostname: "0.0.0.0") @upstream(httpCache: 42) {
   query: Query
 }

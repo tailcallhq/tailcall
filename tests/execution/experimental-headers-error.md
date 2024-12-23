@@ -4,7 +4,7 @@ error: true
 
 # test-experimental-headers-error
 
-```graphql @config
+```graphql @schema
 schema @server(headers: {experimental: ["non-experimental", "foo", "bar", "tailcall"]}) {
   query: Query
 }

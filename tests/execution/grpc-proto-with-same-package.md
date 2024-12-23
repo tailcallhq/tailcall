@@ -33,7 +33,7 @@ service BarService {
 }
 ```
 
-```graphql @config
+```graphql @schema
 schema @server(port: 8000) @link(src: "foo.proto", type: Protobuf) @link(src: "bar.proto", type: Protobuf) {
   query: Query
 }

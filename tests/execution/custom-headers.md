@@ -1,6 +1,6 @@
 # Custom Headers
 
-```graphql @config
+```graphql @schema
 schema @server(headers: {custom: [{key: "x-id", value: "1"}, {key: "x-name", value: "John Doe"}]}) @upstream {
   query: Query
 }

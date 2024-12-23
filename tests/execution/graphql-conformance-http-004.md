@@ -1,6 +1,6 @@
 # Test complex aliasing
 
-```graphql @config
+```graphql @schema
 schema @server(port: 8001, queryValidation: false, hostname: "0.0.0.0") @upstream(httpCache: 42) {
   query: Query
 }

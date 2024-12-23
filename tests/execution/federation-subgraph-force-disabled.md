@@ -1,6 +1,6 @@
 # Federation subgraph with no entities in the config
 
-```graphql @config
+```graphql @schema
 schema @server(port: 8000, enableFederation: false) @upstream(httpCache: 42, batch: {delay: 100}) {
   query: Query
 }

@@ -1,6 +1,6 @@
 # Ref other
 
-```graphql @config
+```graphql @schema
 schema @server {
   query: Query
 }

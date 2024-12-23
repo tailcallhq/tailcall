@@ -38,7 +38,7 @@ type User {
 }
 ```
 
-```graphql @config
+```graphql @schema
 schema
   @server(port: 8000)
   @upstream(httpCache: 10, batch: {delay: 10})

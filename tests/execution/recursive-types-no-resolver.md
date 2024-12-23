@@ -6,7 +6,7 @@ error: true
 
 Should throw error about missing resolver without panicking with stack overflow error.
 
-```graphql @config
+```graphql @schema
 schema @server {
   query: Query
 }

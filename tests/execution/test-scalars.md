@@ -1,6 +1,6 @@
 # Test scalars
 
-```graphql @config
+```graphql @schema
 # this is custom scalars in config
 scalar AnyScalar
 

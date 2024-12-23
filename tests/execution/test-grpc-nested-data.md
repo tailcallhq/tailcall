@@ -40,7 +40,7 @@ message NewsList {
 }
 ```
 
-```graphql @config
+```graphql @schema
 schema
   @server(port: 8000)
   @upstream(httpCache: 42, batch: {delay: 10})

@@ -31,7 +31,7 @@ message NewsId {
 }
 ```
 
-```graphql @config
+```graphql @schema
 schema @server(port: 8000) @link(type: Script, src: "test.js") @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
 }

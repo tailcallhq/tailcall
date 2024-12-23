@@ -1,6 +1,6 @@
 # Sending requests to verify Cache-Control behavior
 
-```graphql @config
+```graphql @schema
 schema @server(headers: {cacheControl: true}) @upstream {
   query: Query
 }

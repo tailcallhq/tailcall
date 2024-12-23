@@ -1,6 +1,6 @@
 # Basic queries with field modify check
 
-```graphql @config
+```graphql @schema
 schema @server(port: 8001, queryValidation: false, hostname: "0.0.0.0") @upstream(httpCache: 42) {
   query: Query
 }
@@ -39,7 +39,7 @@ type User {
     query: |
       query getUser {
         user(id: 4) {
-          city 
+          city
           newName
         }
       }

@@ -4,7 +4,7 @@ error: true
 
 # test-batch-operator-post
 
-```graphql @config
+```graphql @schema
 schema @server @upstream(batch: {delay: 1}) {
   query: Query
 }

@@ -1,6 +1,6 @@
 # Apollo Tracing
 
-```graphql @config
+```graphql @schema
 schema
   @server(port: 8000, hostname: "0.0.0.0")
   @telemetry(export: {apollo: {apiKey: "<api_key>", graphRef: "tailcall-demo-3@current"}}) {

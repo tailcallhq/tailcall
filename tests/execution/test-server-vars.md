@@ -4,7 +4,7 @@ identity: true
 
 # test-server-vars
 
-```graphql @config
+```graphql @schema
 schema @server(vars: [{key: "foo", value: "bar"}]) @upstream {
   query: Query
 }

@@ -1,6 +1,6 @@
 # Cors allow cred vary
 
-```graphql @config
+```graphql @schema
 schema
   @upstream(batch: {delay: 1, maxSize: 1000})
   @server(

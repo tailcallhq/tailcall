@@ -1,6 +1,6 @@
 # test-merge-nested
 
-```graphql @config
+```graphql @schema
 schema @server {
   query: Query
 }
@@ -17,7 +17,7 @@ type Foo {
 }
 ```
 
-```graphql @config
+```graphql @schema
 schema @server {
   query: Query
 }

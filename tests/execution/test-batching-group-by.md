@@ -4,7 +4,7 @@ identity: true
 
 # test-batching-group-by
 
-```graphql @config
+```graphql @schema
 schema @server(port: 4000) @upstream(batch: {delay: 1, headers: [], maxSize: 1000}) {
   query: Query
 }

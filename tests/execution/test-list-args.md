@@ -1,6 +1,6 @@
 # With List args
 
-```graphql @config
+```graphql @schema
 schema @server(queryValidation: true) {
   query: Query
 }

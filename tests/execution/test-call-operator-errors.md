@@ -4,7 +4,7 @@ error: true
 
 # test-call-operator
 
-```graphql @config
+```graphql @schema
 schema @server {
   query: Query
 }

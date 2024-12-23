@@ -1,6 +1,6 @@
 # Test scalar validation for input and output types
 
-```graphql @config
+```graphql @schema
 schema @server(port: 8000, hostname: "localhost") {
   query: Query
 }

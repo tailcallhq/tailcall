@@ -1,6 +1,6 @@
 # default value for input Type
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

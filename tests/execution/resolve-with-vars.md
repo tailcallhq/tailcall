@@ -1,6 +1,6 @@
 # Resolve with vars
 
-```graphql @config
+```graphql @schema
 schema @server(vars: [{key: "id", value: "1"}]) {
   query: Query
 }

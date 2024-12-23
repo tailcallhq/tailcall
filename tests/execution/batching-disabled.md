@@ -1,6 +1,6 @@
 # Batching disabled
 
-```graphql @config
+```graphql @schema
 schema @server @upstream(httpCache: 42, batch: {maxSize: 100, delay: 0, headers: []}) {
   query: Query
 }

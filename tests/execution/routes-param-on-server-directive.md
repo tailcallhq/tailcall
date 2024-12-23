@@ -1,6 +1,6 @@
 # Sending field index list
 
-```graphql @config
+```graphql @schema
 schema @server(port: 8000, routes: {graphQL: "/tailcall-gql", status: "/health"}) {
   query: Query
 }

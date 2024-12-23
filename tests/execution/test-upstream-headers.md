@@ -1,6 +1,6 @@
 # test-upstream-headers
 
-```graphql @config
+```graphql @schema
 schema @upstream(allowedHeaders: ["x-foo", "X-bar"]) {
   query: Query
 }

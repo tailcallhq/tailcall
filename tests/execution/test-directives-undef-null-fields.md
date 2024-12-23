@@ -4,7 +4,7 @@ error: true
 
 # test-directives-undef-null-fields
 
-```graphql @config
+```graphql @schema
 schema @server(vars: [{key: "a", value: "1"}, {key: "c", value: "d"}]) {
   query: Query
 }

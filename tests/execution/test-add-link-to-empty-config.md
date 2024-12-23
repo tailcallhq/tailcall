@@ -29,7 +29,7 @@ type Query {
 }
 ```
 
-```graphql @config
+```graphql @schema
 schema @server @upstream @link(src: "link-expr.graphql", type: Config) @link(src: "link-enum.graphql", type: Config) {
   query: Query
 }

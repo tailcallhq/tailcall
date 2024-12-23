@@ -1,6 +1,6 @@
 # Enum Arguments
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

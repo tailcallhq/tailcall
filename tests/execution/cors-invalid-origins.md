@@ -4,7 +4,7 @@ error: true
 
 # Cors invalid allowOrigins
 
-```graphql @config
+```graphql @schema
 schema
   @upstream(batch: {delay: 1, maxSize: 1000})
   @server(headers: {cors: {allowCredentials: true, allowOrigins: ["*"], allowMethods: [POST, OPTIONS]}}) {

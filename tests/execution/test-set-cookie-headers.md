@@ -1,6 +1,6 @@
 # Set Cookie Header
 
-```graphql @config
+```graphql @schema
 schema @server(port: 8080, hostname: "0.0.0.0", headers: {setCookies: true}) {
   query: Query
 }

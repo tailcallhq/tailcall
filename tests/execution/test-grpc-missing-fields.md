@@ -39,7 +39,7 @@ message NewsList {
 }
 ```
 
-```graphql @config
+```graphql @schema
 schema @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
 }

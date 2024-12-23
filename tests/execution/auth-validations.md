@@ -4,7 +4,7 @@ error: true
 
 # auth multiple
 
-```graphql @config
+```graphql @schema
 schema @server @upstream @link(id: "a", src: ".htpasswd_a", type: Htpasswd) {
   query: Query
 }

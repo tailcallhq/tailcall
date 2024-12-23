@@ -1,6 +1,6 @@
 # auth multiple
 
-```graphql @config
+```graphql @schema
 schema
   @server
   @upstream

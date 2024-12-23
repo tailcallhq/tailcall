@@ -4,7 +4,7 @@ error: true
 
 # batching validation
 
-```graphql @config
+```graphql @schema
 schema @upstream(httpCache: 42, batch: {delay: 1}) {
   query: Query
 }

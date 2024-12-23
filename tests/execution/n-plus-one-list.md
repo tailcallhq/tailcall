@@ -1,6 +1,6 @@
 # n + 1 Request List
 
-```graphql @config
+```graphql @schema
 schema @upstream(batch: {delay: 1, maxSize: 1000}) {
   query: Query
 }

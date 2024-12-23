@@ -1,6 +1,6 @@
 # Test scalars related to integer representation
 
-```graphql @config
+```graphql @schema
 schema @server(port: 8000, hostname: "localhost") {
   query: Query
 }

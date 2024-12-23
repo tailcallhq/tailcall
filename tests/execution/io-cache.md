@@ -1,6 +1,6 @@
 # Call operator with GraphQL data source
 
-```graphql @config
+```graphql @schema
 schema @server(port: 8000, hostname: "0.0.0.0") @upstream(httpCache: 42) {
   query: Query
 }

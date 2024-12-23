@@ -6,7 +6,7 @@ skip: true
 
 TODO: Skipped because Tailcall does not parse the scalar type correctly into a string.
 
-```graphql @config
+```graphql @schema
 schema @server(port: 8001, queryValidation: false, hostname: "0.0.0.0") @upstream(httpCache: 42) {
   query: Query
 }

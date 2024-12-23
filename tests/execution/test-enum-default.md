@@ -28,7 +28,7 @@ message NewsList {
 }
 ```
 
-```graphql @config
+```graphql @schema
 # for test upstream server see [repo](https://github.com/tailcallhq/rust-grpc)
 schema
   @server(port: 8080)

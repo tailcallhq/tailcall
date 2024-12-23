@@ -1,6 +1,6 @@
 # Batching default
 
-```graphql @config
+```graphql @schema
 schema @server @upstream(httpCache: 42, batch: {delay: 10}) {
   query: Query
 }

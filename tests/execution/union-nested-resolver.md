@@ -1,6 +1,6 @@
 # Field with resolver in one of the possible types of Union
 
-```graphql @config
+```graphql @schema
 schema @server(port: 8030) @upstream {
   query: Query
 }

@@ -1,6 +1,6 @@
 # Batching group by
 
-```graphql @config
+```graphql @schema
 schema @server(port: 8000, queryValidation: false) @upstream(httpCache: 42, batch: {delay: 1, maxSize: 1000}) {
   query: Query
 }
