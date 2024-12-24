@@ -119,30 +119,17 @@ async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
     request: T,
     req: Parts,
 ) -> anyhow::Result<Response<Body>> {
-    let mut response = if app_ctx.blueprint.server.enable_jit {
-        let operation_id = request.operation_id(&req.headers);
-        let exec = JITExecutor::new(app_ctx.clone(), req_ctx.clone(), operation_id);
-        request
-            .execute_with_jit(exec)
-            .await
-            .set_cache_control(
-                app_ctx.blueprint.server.enable_cache_control_header,
-                req_ctx.get_min_max_age().unwrap_or(0),
-                req_ctx.is_cache_public().unwrap_or(true),
-            )
-            .into_response()?
-    } else {
-        request
-            .data(req_ctx.clone())
-            .execute(&app_ctx.schema)
-            .await
-            .set_cache_control(
-                app_ctx.blueprint.server.enable_cache_control_header,
-                req_ctx.get_min_max_age().unwrap_or(0),
-                req_ctx.is_cache_public().unwrap_or(true),
-            )
-            .into_response()?
-    };
+    let operation_id = request.operation_id(&req.headers);
+    let exec = JITExecutor::new(app_ctx.clone(), req_ctx.clone(), operation_id);
+    let mut response = request
+        .execute_with_jit(exec)
+        .await
+        .set_cache_control(
+            app_ctx.blueprint.server.enable_cache_control_header,
+            req_ctx.get_min_max_age().unwrap_or(0),
+            req_ctx.is_cache_public().unwrap_or(true),
+        )
+        .into_response()?;
 
     update_response_headers(&mut response, req_ctx, app_ctx);
     Ok(response)

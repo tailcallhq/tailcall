@@ -16,13 +16,11 @@ pub fn benchmark_handle_request(c: &mut Criterion) {
     let sdl = std::fs::read_to_string("./ci-benchmark/benchmark.graphql").unwrap();
     let config_module: ConfigModule = Config::from_sdl(sdl.as_str()).to_result().unwrap().into();
 
-    let mut blueprint = Blueprint::try_from(&config_module).unwrap();
-    let mut blueprint_clone = blueprint.clone();
+    let blueprint = Blueprint::try_from(&config_module).unwrap();
 
     let endpoints = config_module.extensions().endpoint_set.clone();
     let endpoints_clone = endpoints.clone();
 
-    blueprint.server.enable_jit = false;
     let server_config = tokio_runtime
         .block_on(ServerConfig::new(blueprint.clone(), endpoints.clone()))
         .unwrap();
@@ -47,9 +45,8 @@ pub fn benchmark_handle_request(c: &mut Criterion) {
         })
     });
 
-    blueprint_clone.server.enable_jit = true;
     let server_config = tokio_runtime
-        .block_on(ServerConfig::new(blueprint_clone, endpoints_clone))
+        .block_on(ServerConfig::new(blueprint, endpoints_clone))
         .unwrap();
     let server_config = Arc::new(server_config);
 

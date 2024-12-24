@@ -29,10 +29,9 @@ use crate::core::macros::MergeRight;
 /// comprehensive set of server configurations. It dictates how the server
 /// behaves and helps tune tailcall for various use-cases.
 pub struct Server {
-    // The `enableJIT` option activates Just-In-Time (JIT) compilation. When set to true, it
-    // optimizes execution of each incoming request independently, resulting in significantly
-    // better performance in most cases, it's enabled by default.
-    #[serde(default, skip_serializing_if = "is_default", rename = "enableJIT")]
+    #[deprecated(note = "No longer used, TODO: drop it")]
+    #[serde(default, skip_serializing, rename = "enableJIT")]
+    #[schemars(skip)]
     pub enable_jit: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
@@ -260,10 +259,6 @@ impl Server {
 
     pub fn get_pipeline_flush(&self) -> bool {
         self.pipeline_flush.unwrap_or(true)
-    }
-
-    pub fn enable_jit(&self) -> bool {
-        self.enable_jit.unwrap_or(true)
     }
 
     pub fn get_routes(&self) -> Routes {
