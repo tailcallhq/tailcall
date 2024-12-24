@@ -8,6 +8,8 @@ use async_graphql_value::ConstValue;
 use super::jit::Directive as JitDirective;
 use super::json::JsonLikeOwned;
 
+use unicode_segmentation::UnicodeSegmentation;
+
 struct LineBreaker<'a> {
     string: &'a str,
     break_at: usize,
@@ -28,19 +30,36 @@ impl<'a> Iterator for LineBreaker<'a> {
             return None;
         }
 
-        let end_index = self
-            .string
-            .chars()
-            .skip(self.index + self.break_at)
-            .enumerate()
-            .find(|(_, ch)| ch.is_whitespace())
-            .map(|(index, _)| self.index + self.break_at + index + 1)
-            .unwrap_or(self.string.len());
+        let graphemes = self.string[self.index..].graphemes(true).peekable();
+        let mut iter = graphemes;
+        let mut current_len = 0;
+        let mut last_valid_index = self.index;
+
+        while let Some(grapheme) = iter.peek() {
+            let grapheme_len = grapheme.len();
+
+            if current_len + grapheme_len > self.break_at {
+                break;
+            }
+
+            iter.next();
+            current_len += grapheme_len;
+            last_valid_index += grapheme_len;
+        }
+
+        // 빈 공간을 찾는다.
+        while let Some(grapheme) = iter.next() {
+            if grapheme.chars().any(|ch| ch.is_whitespace()) {
+                last_valid_index += grapheme.len();
+                break;
+            }
+            last_valid_index += grapheme.len();
+        }
 
         let start_index = self.index;
-        self.index = end_index;
+        self.index = last_valid_index;
 
-        Some(&self.string[start_index..end_index])
+        Some(&self.string[start_index..self.index])
     }
 }
 
@@ -485,7 +504,7 @@ mod tests {
 
         let result = get_formatted_docs(input, indent);
         let expected = String::from(
-            "    \"\"\"\n    This is a test string for get_formatted_docs function.\n    \"\"\"\n",
+            "    \"\"\"\n    get_formatted_docs 함수 테스트를 위한 문장입니다. 테스트를 위해 \n    긴 문장을 입력하는 중 입니다. テストのために長い文章を入力しているところです。なんて素敵な長文です！\n    \"\"\"\n",
         );
 
         assert_eq!(result, expected)
