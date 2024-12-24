@@ -160,6 +160,7 @@ mod tests {
             type_of: LinkType::Protobuf,
             headers: None,
             meta: None,
+            proto_paths: None,
         }]);
         let method = GrpcMethod {
             package: id.to_string(),

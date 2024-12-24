@@ -9,8 +9,14 @@ expression: response
   },
   "body": {
     "data": {
-      "firstUser": {
-        "name": "Leanne Graham"
+      "queryNodeA": {
+        "name": "nodeA",
+        "nodeB": {
+          "name": "nodeB"
+        },
+        "nodeC": {
+          "name": "nodeC"
+        }
       }
     }
   }

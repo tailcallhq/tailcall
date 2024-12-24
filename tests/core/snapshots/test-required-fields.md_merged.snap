@@ -1,8 +1,9 @@
 ---
 source: tests/core/spec.rs
 expression: formatter
+snapshot_kind: text
 ---
-schema @server(enableJIT: true) @upstream {
+schema @server @upstream {
   query: Query
 }
 

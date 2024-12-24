@@ -1,6 +1,7 @@
 ---
 source: src/core/blueprint/index.rs
 expression: index
+snapshot_kind: text
 ---
 Index {
     map: {

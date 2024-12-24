@@ -1,6 +1,7 @@
 ---
 source: src/core/config/transformer/subgraph.rs
 expression: keys_a.merge_right(keys_b)
+snapshot_kind: text
 ---
 Keys(
     {
