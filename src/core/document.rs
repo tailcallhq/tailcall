@@ -4,11 +4,10 @@ use std::fmt::Display;
 use async_graphql::parser::types::*;
 use async_graphql::Positioned;
 use async_graphql_value::ConstValue;
+use unicode_segmentation::UnicodeSegmentation;
 
 use super::jit::Directive as JitDirective;
 use super::json::JsonLikeOwned;
-
-use unicode_segmentation::UnicodeSegmentation;
 
 struct LineBreaker<'a> {
     string: &'a str,
@@ -47,8 +46,7 @@ impl<'a> Iterator for LineBreaker<'a> {
             last_valid_index += grapheme_len;
         }
 
-        // 빈 공간을 찾는다.
-        while let Some(grapheme) = iter.next() {
+        for grapheme in iter {
             if grapheme.chars().any(|ch| ch.is_whitespace()) {
                 last_valid_index += grapheme.len();
                 break;
