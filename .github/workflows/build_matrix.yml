@@ -10,7 +10,7 @@ jobs:
   # IMPORTANT: in case of changing the structure of this file make sure to test
   # the changes against `npm/gen-root.ts` file
   setup-matrix:
-    runs-on: blacksmith-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.setup-matrix.outputs.matrix }}
     steps:
@@ -33,34 +33,34 @@ jobs:
               ]
             include:
               - build: linux-x64-gnu
-                os: blacksmith-4vcpu-ubuntu-2204
+                os: ubuntu-latest
                 rust: stable
                 target: x86_64-unknown-linux-gnu
                 libc: glibc
 
               - build: linux-x64-musl
-                os: blacksmith-4vcpu-ubuntu-2204
+                os: ubuntu-latest
                 rust: stable
                 target: x86_64-unknown-linux-musl
                 libc: musl
                 cross: true
 
               - build: linux-arm64-gnu
-                os: blacksmith-4vcpu-ubuntu-2204
+                os: ubuntu-latest
                 rust: stable
                 target: aarch64-unknown-linux-gnu
                 libc: glibc
                 cross: true
 
               - build: linux-arm64-musl
-                os: blacksmith-4vcpu-ubuntu-2204
+                os: ubuntu-latest
                 rust: stable
                 target: aarch64-unknown-linux-musl
                 libc: musl
                 cross: true
 
               - build: linux-ia32-gnu
-                os: blacksmith-4vcpu-ubuntu-2204
+                os: ubuntu-latest
                 rust: stable
                 target: i686-unknown-linux-gnu
                 libc: glibc
