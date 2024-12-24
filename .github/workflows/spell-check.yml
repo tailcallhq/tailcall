@@ -19,7 +19,7 @@ on:
 jobs:
   check_spelling:
     name: Check spelling
-    runs-on: blacksmith-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
