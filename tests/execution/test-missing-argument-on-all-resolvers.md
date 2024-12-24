@@ -40,6 +40,13 @@ message NewsList {
 }
 ```
 
+```yaml @config
+links:
+  - id: news
+    type: Protobuf
+    src: news.proto
+```
+
 ```graphql @schema
 schema @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query

@@ -6,7 +6,7 @@ schema @server {
 }
 
 type Query {
-  hi: Foo @expr(body: "world")
+  hi: Foo @expr(body: {b: "hello"})
 }
 
 type Foo {

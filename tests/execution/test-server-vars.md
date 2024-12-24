@@ -4,8 +4,15 @@ identity: true
 
 # test-server-vars
 
+```yaml @config
+server:
+  vars:
+    - key: "foo"
+      value: "bar"
+```
+
 ```graphql @schema
-schema @server(vars: [{key: "foo", value: "bar"}]) @upstream {
+schema @server @upstream {
   query: Query
 }
 

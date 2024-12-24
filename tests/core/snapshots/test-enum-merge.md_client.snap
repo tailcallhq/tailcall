@@ -1,0 +1,18 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+snapshot_kind: text
+---
+enum Foo {
+  BAR
+  BAZ
+  BOOM
+}
+
+type Query {
+  foo: Foo
+}
+
+schema {
+  query: Query
+}

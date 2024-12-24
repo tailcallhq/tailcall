@@ -1,7 +1,13 @@
 # Test scalar validation for input and output types
 
+```yaml @config
+server:
+  port: 8000
+  hostname: localhost
+```
+
 ```graphql @schema
-schema @server(port: 8000, hostname: "localhost") {
+schema {
   query: Query
 }
 

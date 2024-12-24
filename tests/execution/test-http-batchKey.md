@@ -1,7 +1,16 @@
 # Http with args as body
 
+```yaml @config
+server:
+  port: 8000
+upstream:
+  batch:
+    delay: 10
+    maxSize: 1000
+```
+
 ```graphql @schema
-schema @server(port: 8000) @upstream(batch: {maxSize: 1000, delay: 10}) {
+schema {
   query: Query
 }
 

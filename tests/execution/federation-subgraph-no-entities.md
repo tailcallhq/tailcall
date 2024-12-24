@@ -1,7 +1,16 @@
 # Federation subgraph with no entities in the config
 
+```yaml @config
+server:
+  port: 8000
+upstream:
+  httpCache: 42
+  batch:
+    delay: 100
+```
+
 ```graphql @schema
-schema @server(port: 8000) @upstream(httpCache: 42, batch: {delay: 100}) {
+schema {
   query: Query
 }
 

@@ -1,7 +1,16 @@
 # Basic queries with field ordering check
 
+```yaml @config
+server:
+  port: 8001
+  queryValidation: false
+  hostname: "0.0.0.0"
+upstream:
+  httpCache: 42
+```
+
 ```graphql @schema
-schema @server(port: 8001, queryValidation: false, hostname: "0.0.0.0") @upstream(httpCache: 42) {
+schema {
   query: Query
 }
 

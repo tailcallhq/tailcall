@@ -1,7 +1,14 @@
 # test-enable-jit
 
+```yaml @config
+server:
+  port: 8000
+  hostname: "0.0.0.0"
+  enableJIT: true
+```
+
 ```graphql @schema
-schema @server(port: 8000, hostname: "0.0.0.0", enableJIT: true) {
+schema {
   query: Query
 }
 

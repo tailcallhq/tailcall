@@ -8,8 +8,14 @@ function onResponse(data) {
 }
 ```
 
+```yaml @config
+links:
+  - src: test.js
+    type: Script
+```
+
 ```graphql @schema
-schema @server @link(type: Script, src: "test.js") {
+schema {
   query: Query
 }
 

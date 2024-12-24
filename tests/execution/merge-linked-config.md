@@ -3,7 +3,7 @@
 Merge should happen only on schema while configurations like schema, upstream, telemetry should be defined only by the root config
 
 ```graphql @file:link-1.graphql
-schema @server(port: 3000) @upstream(httpCache: 42, batch: {delay: 22}) {
+schema {
   query: Query
 }
 
@@ -17,7 +17,7 @@ type Query {
 ```
 
 ```graphql @file:link-2.graphql
-schema @server(port: 4000) @upstream(httpCache: 33, batch: {delay: 48}) {
+schema {
   query: Query
 }
 
@@ -38,12 +38,22 @@ type User {
 }
 ```
 
+```yaml @config
+server:
+  port: 8000
+upstream:
+  httpCache: 10
+  batch:
+    delay: 10
+links:
+  - src: "link-1.graphql"
+    type: Config
+  - src: "link-2.graphql"
+    type: Config
+```
+
 ```graphql @schema
-schema
-  @server(port: 8000)
-  @upstream(httpCache: 10, batch: {delay: 10})
-  @link(src: "link-1.graphql", type: Config)
-  @link(src: "link-2.graphql", type: Config) {
+schema {
   query: Query
 }
 ```

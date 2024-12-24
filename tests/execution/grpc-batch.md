@@ -1,5 +1,18 @@
 # Grpc datasource with batching
 
+```yaml @config
+server:
+  port: 8000
+upstream:
+  httpCache: 42
+  batch:
+    delay: 10
+links:
+  - id: "news"
+    src: "news.proto"
+    type: Protobuf
+```
+
 ```protobuf @file:news.proto
 syntax = "proto3";
 
@@ -37,10 +50,7 @@ message NewsList {
 ```
 
 ```graphql @schema
-schema
-  @server(port: 8000)
-  @upstream(httpCache: 42, batch: {delay: 10})
-  @link(id: "news", src: "news.proto", type: Protobuf) {
+schema {
   query: Query
 }
 

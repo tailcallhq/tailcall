@@ -36,11 +36,21 @@ message NewsList {
 }
 ```
 
+```yaml @config
+upstream:
+  httpCache: 42
+  batch:
+    delay: 10
+server:
+  port: 8000
+links:
+  - id: "news"
+    src: "news.proto"
+    type: Protobuf
+```
+
 ```graphql @schema
-schema
-  @server(port: 8000)
-  @upstream(httpCache: 42, batch: {delay: 10})
-  @link(id: "news", src: "news.proto", type: Protobuf) {
+schema {
   query: Query
 }
 
@@ -49,12 +59,14 @@ type Query {
   newsById(news: NewsInput!): News!
     @grpc(method: "news.NewsService.GetNews", url: "http://localhost:50051", body: "{{.args.news}}")
 }
+
 input NewsInput {
   id: Int
   title: String
   body: String
   postImage: String
 }
+
 type NewsData {
   news: [News]
 }

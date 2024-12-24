@@ -1,7 +1,15 @@
 # Experimental headers
 
+```yaml @config
+server:
+  headers:
+    experimental:
+      - "x-tailcall"
+      - "X-experimental"
+```
+
 ```graphql @schema
-schema @server(headers: {experimental: ["x-tailcall", "X-experimental"]}) {
+schema {
   query: Query
 }
 

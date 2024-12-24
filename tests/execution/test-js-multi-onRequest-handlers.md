@@ -28,8 +28,16 @@ function bar({request}) {
 }
 ```
 
+```yml @config
+upstream:
+  onRequest: "foo"
+links:
+  - type: Script
+    src: "test1.js"
+```
+
 ```graphql @schema
-schema @server @upstream(onRequest: "foo") @link(type: Script, src: "test1.js") {
+schema {
   query: Query
 }
 

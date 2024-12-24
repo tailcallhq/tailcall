@@ -1,7 +1,15 @@
 # Set Cookie Header
 
+```yaml @config
+server:
+  port: 8080
+  hostname: "0.0.0.0"
+  headers:
+    setCookies: true
+```
+
 ```graphql @schema
-schema @server(port: 8080, hostname: "0.0.0.0", headers: {setCookies: true}) {
+schema {
   query: Query
 }
 

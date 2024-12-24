@@ -1,19 +1,22 @@
 # Cors allow cred false
 
+```yaml @config
+upstream:
+  batch:
+    delay: 1
+    maxSize: 1000
+server:
+  headers:
+    cors:
+      allowHeaders: ["Authorization"]
+      allowMethods: [POST, OPTIONS]
+      allowOrigins: ["abc.com", "xyz.com"]
+      allowPrivateNetwork: true
+      maxAge: 23
+```
+
 ```graphql @schema
-schema
-  @upstream(batch: {delay: 1, maxSize: 1000})
-  @server(
-    headers: {
-      cors: {
-        allowHeaders: ["Authorization"]
-        allowMethods: [POST, OPTIONS]
-        allowOrigins: ["abc.com", "xyz.com"]
-        allowPrivateNetwork: true
-        maxAge: 23
-      }
-    }
-  ) {
+schema {
   query: Query
 }
 

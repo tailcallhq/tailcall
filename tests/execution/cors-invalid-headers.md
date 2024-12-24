@@ -4,10 +4,21 @@ error: true
 
 # Cors invalid allowHeaders
 
+```yaml @config
+upstream:
+  batch:
+    delay: 1
+    maxSize: 1000
+server:
+  headers:
+    cors:
+      allowCredentials: true
+      allowHeaders: ["*"]
+      allowMethods: [POST, OPTIONS]
+```
+
 ```graphql @schema
-schema
-  @upstream(batch: {delay: 1, maxSize: 1000})
-  @server(headers: {cors: {allowCredentials: true, allowHeaders: ["*"], allowMethods: [POST, OPTIONS]}}) {
+schema {
   query: Query
 }
 

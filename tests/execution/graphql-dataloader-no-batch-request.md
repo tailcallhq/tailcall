@@ -1,7 +1,13 @@
 # Graphql datasource
 
+```yaml @config
+upstream:
+  batch:
+    delay: 1
+```
+
 ```graphql @schema
-schema @upstream(batch: {delay: 1}) {
+schema {
   query: Query
 }
 

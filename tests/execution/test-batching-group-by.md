@@ -4,8 +4,17 @@ identity: true
 
 # test-batching-group-by
 
+```yaml @config
+server:
+  port: 4000
+upstream:
+  batch:
+    delay: 1
+    maxSize: 1000
+```
+
 ```graphql @schema
-schema @server(port: 4000) @upstream(batch: {delay: 1, headers: [], maxSize: 1000}) {
+schema @server @upstream {
   query: Query
 }
 

@@ -16,7 +16,8 @@ schema
       }
     }
   )
-  @upstream(batch: {delay: 1, headers: [], maxSize: 1000}) {
+  @upstream(batch: {delay: 1, headers: [], maxSize: 1000})
+  @link(src: "schema_0.graphql", type: Config) {
   query: Query
 }
 

@@ -1,7 +1,12 @@
 # Showcase GraphQL Request
 
+```yaml @config
+server:
+  showcase: true
+```
+
 ```graphql @schema
-schema @server(showcase: true) {
+schema {
   query: Query
 }
 

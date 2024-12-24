@@ -1,7 +1,16 @@
 # Auth with BasicAuth
 
+```yaml @config
+server:
+  port: 8000
+links:
+  - id: htpasswd
+    src: .htpasswd
+    type: Htpasswd
+```
+
 ```graphql @schema
-schema @server(port: 8000) @link(id: "htpasswd", type: Htpasswd, src: ".htpasswd") {
+schema {
   query: Query
   mutation: Mutation
 }

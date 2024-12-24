@@ -36,11 +36,21 @@ message NewsList {
 }
 ```
 
+```yaml @config
+server:
+  port: 8000
+upstream:
+  httpCache: 42
+  batch:
+    delay: 10
+links:
+  - id: "news"
+    src: "news.proto"
+    type: Protobuf
+```
+
 ```graphql @schema
-schema
-  @server(port: 8000)
-  @upstream(httpCache: 42, batch: {delay: 10})
-  @link(id: "news", src: "news.proto", type: Protobuf) {
+schema {
   query: Query
 }
 

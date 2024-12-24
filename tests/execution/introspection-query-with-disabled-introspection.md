@@ -1,7 +1,17 @@
 # Test schema inspection with false flag
 
+```yaml @config
+server:
+  port: 8001
+  queryValidation: false
+  hostname: "0.0.0.0"
+  introspection: false
+upstream:
+  httpCache: 42
+```
+
 ```graphql @schema
-schema @server(port: 8001, queryValidation: false, hostname: "0.0.0.0", introspection: false) @upstream(httpCache: 42) {
+schema {
   query: Query
 }
 

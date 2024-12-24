@@ -4,8 +4,14 @@ error: true
 
 # test-experimental-headers-error
 
+```yaml @config
+server:
+  headers:
+    experimental: ["non-experimental", "foo", "bar", "tailcall"]
+```
+
 ```graphql @schema
-schema @server(headers: {experimental: ["non-experimental", "foo", "bar", "tailcall"]}) {
+schema {
   query: Query
 }
 

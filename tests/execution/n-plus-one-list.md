@@ -1,7 +1,14 @@
 # n + 1 Request List
 
+```yaml @config
+upstream:
+  batch:
+    delay: 1
+    maxSize: 1000
+```
+
 ```graphql @schema
-schema @upstream(batch: {delay: 1, maxSize: 1000}) {
+schema {
   query: Query
 }
 

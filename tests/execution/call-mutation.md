@@ -1,7 +1,7 @@
 # Call mutation
 
 ```graphql @schema
-schema @server {
+schema {
   query: Query
   mutation: Mutation
 }

@@ -1,7 +1,15 @@
 # Sending field index list
 
+```yaml @config
+server:
+  port: 8000
+  routes:
+    graphQL: "/tailcall-gql"
+    status: "/health"
+```
+
 ```graphql @schema
-schema @server(port: 8000, routes: {graphQL: "/tailcall-gql", status: "/health"}) {
+schema {
   query: Query
 }
 

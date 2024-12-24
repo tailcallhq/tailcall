@@ -1,7 +1,12 @@
 # Setting SkipEmpty
 
+```yaml @config
+server:
+  port: 8000
+```
+
 ```graphql @schema
-schema @server(port: 8000) {
+schema {
   query: Query
 }
 

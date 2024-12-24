@@ -7,7 +7,8 @@ schema
   @server(port: 8000)
   @upstream
   @link(src: "test.js", type: Script)
-  @link(id: "news", src: "news.proto", type: Protobuf) {
+  @link(id: "news", src: "news.proto", type: Protobuf)
+  @link(src: "schema_0.graphql", type: Config) {
   query: Query
 }
 

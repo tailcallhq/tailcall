@@ -4,8 +4,13 @@ error: true
 
 # test-directives-undef-null-fields
 
+```yaml @config
+server:
+  vars: [{key: "a", value: "1"}, {key: "c", value: "d"}]
+```
+
 ```graphql @schema
-schema @server(vars: [{key: "a", value: "1"}, {key: "c", value: "d"}]) {
+schema {
   query: Query
 }
 

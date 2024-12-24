@@ -1,5 +1,17 @@
 # Grpc map type
 
+```yaml @config
+server:
+  port: 8000
+upstream:
+  httpCache: 42
+  batch:
+    delay: 10
+links:
+  - src: "map.proto"
+    type: Protobuf
+```
+
 ```protobuf @file:map.proto
 syntax = "proto3";
 
@@ -20,11 +32,7 @@ service MapService {
 ```
 
 ```graphql @schema
-schema @server(port: 8000) @upstream(httpCache: 42, batch: {delay: 10}) @link(src: "map.proto", type: Protobuf) {
-  query: Query
-}
-
-schema @server @upstream {
+schema {
   query: Query
 }
 

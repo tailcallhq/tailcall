@@ -1,7 +1,18 @@
 # Apollo federation query for batching resolvers
 
+```yaml @config
+server:
+  port: 8000
+  enableFederation: true
+
+upstream:
+  httpCache: 42
+  batch:
+    delay: 100
+```
+
 ```graphql @schema
-schema @server(port: 8000, enableFederation: true) @upstream(httpCache: 42, batch: {delay: 100}) {
+schema {
   query: Query
 }
 

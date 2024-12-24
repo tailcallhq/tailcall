@@ -1,7 +1,17 @@
 # jsonplaceholder-call-post
 
+```yaml @config
+server:
+  port: 8000
+  hostname: "0.0.0.0"
+upstream:
+  httpCache: 42
+  batch:
+    delay: 100
+```
+
 ```graphql @schema
-schema @server(port: 8000, hostname: "0.0.0.0") @upstream(httpCache: 42, batch: {delay: 100}) {
+schema {
   query: Query
 }
 

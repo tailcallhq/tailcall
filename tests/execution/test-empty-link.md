@@ -4,8 +4,15 @@ error: true
 
 # test-empty-link
 
+```yaml @config
+links:
+  - type: Config
+    src: ""
+  - type: Config
+```
+
 ```graphql @schema
-schema @link(type: Config, src: "") @link(type: Config) {
+schema {
   query: Query
 }
 

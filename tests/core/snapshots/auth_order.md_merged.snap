@@ -3,7 +3,11 @@ source: tests/core/spec.rs
 expression: formatter
 snapshot_kind: text
 ---
-schema @server @upstream @link(id: "htpasswd", src: ".htpasswd", type: Htpasswd) {
+schema
+  @server
+  @upstream
+  @link(id: "htpasswd", src: ".htpasswd", type: Htpasswd)
+  @link(src: "schema_0.graphql", type: Config) {
   query: Query
 }
 

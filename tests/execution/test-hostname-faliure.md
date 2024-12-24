@@ -4,8 +4,13 @@ error: true
 
 # test-hostname-faliure
 
+```yaml @config
+server:
+  hostname: abc
+```
+
 ```graphql @schema
-schema @server(hostname: "abc") {
+schema {
   query: Query
 }
 

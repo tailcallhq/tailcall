@@ -3,7 +3,11 @@ source: tests/core/spec.rs
 expression: formatter
 snapshot_kind: text
 ---
-schema @server(port: 8000) @upstream @link(id: "jwks", src: "jwks.json", type: Jwks) {
+schema
+  @server(port: 8000)
+  @upstream
+  @link(id: "jwks", src: "jwks.json", type: Jwks)
+  @link(src: "schema_0.graphql", type: Config) {
   query: Query
   mutation: Mutation
 }

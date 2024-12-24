@@ -9,8 +9,14 @@ query ($id: Int!) @rest(method: GET, path: "/user/$id") {
 }
 ```
 
+```yaml @config
+links:
+  - type: Operation
+    src: operation-user.graphql
+```
+
 ```graphql @schema
-schema @server @link(type: Operation, src: "operation-user.graphql") {
+schema {
   query: Query
 }
 

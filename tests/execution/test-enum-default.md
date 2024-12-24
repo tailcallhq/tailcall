@@ -28,12 +28,22 @@ message NewsList {
 }
 ```
 
+```yaml @config
+upstream:
+  httpCache: 42
+  batch:
+    delay: 10
+server:
+  port: 8080
+links:
+  - id: "news"
+    src: "./service.proto"
+    type: Protobuf
+```
+
 ```graphql @schema
 # for test upstream server see [repo](https://github.com/tailcallhq/rust-grpc)
-schema
-  @server(port: 8080)
-  @upstream(httpCache: 42, batch: {delay: 10})
-  @link(id: "news", src: "./service.proto", type: Protobuf) {
+schema {
   query: Query
 }
 

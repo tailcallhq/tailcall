@@ -1,7 +1,16 @@
 # Batched graphql request to batched upstream query
 
+```yaml @config
+server:
+  batchRequests: true
+upstream:
+  batch:
+    delay: 1
+    maxSize: 100
+```
+
 ```graphql @schema
-schema @server(batchRequests: true) @upstream(batch: {maxSize: 100, delay: 1, headers: []}) {
+schema {
   query: Query
 }
 

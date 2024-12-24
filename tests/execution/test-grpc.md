@@ -40,11 +40,21 @@ message NewsList {
 }
 ```
 
+```yaml @config
+server:
+  port: 8000
+upstream:
+  batch:
+    delay: 10
+    maxSize: 1000
+links:
+  - id: "news"
+    src: "news.proto"
+    type: Protobuf
+```
+
 ```graphql @schema
-schema
-  @server(port: 8000)
-  @upstream(batch: {delay: 10, headers: [], maxSize: 1000})
-  @link(id: "news", src: "news.proto", type: Protobuf) {
+schema @server @upstream {
   query: Query
 }
 

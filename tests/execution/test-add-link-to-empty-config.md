@@ -4,6 +4,14 @@ identity: true
 
 # test-add-link-to-empty-config
 
+```yaml @config
+links:
+  - src: "link-expr.graphql"
+    type: Config
+  - src: "link-enum.graphql"
+    type: Config
+```
+
 ```graphql @file:link-expr.graphql
 schema @server @upstream {
   query: Query
@@ -15,7 +23,7 @@ type Query {
 ```
 
 ```graphql @file:link-enum.graphql
-schema @server {
+schema @server @upstream {
   query: Query
 }
 
@@ -30,7 +38,7 @@ type Query {
 ```
 
 ```graphql @schema
-schema @server @upstream @link(src: "link-expr.graphql", type: Config) @link(src: "link-enum.graphql", type: Config) {
+schema @server @upstream {
   query: Query
 }
 ```

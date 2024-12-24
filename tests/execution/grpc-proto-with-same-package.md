@@ -33,8 +33,18 @@ service BarService {
 }
 ```
 
+```yaml @config
+server:
+  port: 8000
+links:
+  - src: "foo.proto"
+    type: Protobuf
+  - src: "bar.proto"
+    type: Protobuf
+```
+
 ```graphql @schema
-schema @server(port: 8000) @link(src: "foo.proto", type: Protobuf) @link(src: "bar.proto", type: Protobuf) {
+schema {
   query: Query
 }
 

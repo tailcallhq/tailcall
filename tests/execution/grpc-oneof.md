@@ -44,8 +44,20 @@ service OneOfService {
 
 ```
 
+```yaml @config
+server:
+  port: 8000
+upstream:
+  httpCache: 42
+  batch:
+    delay: 10
+links:
+  - src: "oneof.proto"
+    type: Protobuf
+```
+
 ```graphql @schema
-schema @server(port: 8000) @upstream(httpCache: 42, batch: {delay: 10}) @link(src: "oneof.proto", type: Protobuf) {
+schema {
   query: Query
 }
 

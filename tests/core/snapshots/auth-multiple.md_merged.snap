@@ -8,7 +8,8 @@ schema
   @upstream
   @link(id: "a", src: ".htpasswd_a", type: Htpasswd)
   @link(id: "b", src: ".htpasswd_b", type: Htpasswd)
-  @link(id: "c", src: ".htpasswd_c", type: Htpasswd) {
+  @link(id: "c", src: ".htpasswd_c", type: Htpasswd)
+  @link(src: "schema_0.graphql", type: Config) {
   query: Query
 }
 
