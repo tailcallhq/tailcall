@@ -3,7 +3,7 @@ source: tests/core/spec.rs
 expression: formatter
 snapshot_kind: text
 ---
-schema @server(vars: [{key: "foo", value: "bar"}]) @upstream {
+schema @server(vars: [{key: "foo", value: "bar"}]) @upstream @link(src: "schema_0.graphql", type: Config) {
   query: Query
 }
 

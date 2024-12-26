@@ -1,7 +1,12 @@
 # Sending a batched graphql request
 
-```graphql @config
-schema @server(batchRequests: true) @upstream {
+```yaml @config
+server:
+  batchRequests: true
+```
+
+```graphql @schema
+schema {
   query: Query
 }
 

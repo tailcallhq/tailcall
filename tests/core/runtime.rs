@@ -10,7 +10,7 @@ use derive_setters::Setters;
 use tailcall::cli::javascript::init_worker_io;
 use tailcall::core::blueprint::Script;
 use tailcall::core::cache::InMemoryCache;
-use tailcall::core::config::Source;
+use tailcall::core::config::RuntimeConfig;
 use tailcall::core::runtime::TargetRuntime;
 use tailcall::core::worker::{Command, Event};
 
@@ -25,7 +25,7 @@ pub struct ExecutionSpec {
     pub name: String,
     pub safe_name: String,
 
-    pub server: Vec<(Source, String)>,
+    pub config: RuntimeConfig,
     pub mock: Option<Vec<Mock>>,
     pub env: Option<HashMap<String, String>>,
     pub test: Option<Vec<APIRequest>>,

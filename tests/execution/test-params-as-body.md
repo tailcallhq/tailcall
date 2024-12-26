@@ -1,7 +1,12 @@
 # Http with args as body
 
-```graphql @config
-schema @server(port: 8000) {
+```yaml @config
+server:
+  port: 8000
+```
+
+```graphql @schema
+schema {
   query: Query
 }
 

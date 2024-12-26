@@ -4,8 +4,18 @@ error: true
 
 # Apollo federation validation
 
-```graphql @config
-schema @server(port: 8000, enableFederation: true) @upstream(httpCache: 42, batch: {delay: 100}) {
+```yaml @config
+server:
+  port: 8000
+  enableFederation: true
+upstream:
+  httpCache: 42
+  batch:
+    delay: 100
+```
+
+```graphql @schema
+schema {
   query: Query
 }
 

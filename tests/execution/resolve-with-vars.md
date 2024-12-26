@@ -1,7 +1,12 @@
 # Resolve with vars
 
-```graphql @config
-schema @server(vars: [{key: "id", value: "1"}]) {
+```yaml @config
+server:
+  vars: [{key: "id", value: "1"}]
+```
+
+```graphql @schema
+schema {
   query: Query
 }
 

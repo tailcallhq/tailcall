@@ -4,7 +4,7 @@ identity: true
 
 # omit-many
 
-```graphql @config
+```graphql @schema
 schema @server @upstream {
   query: Query
 }

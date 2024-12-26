@@ -1,7 +1,12 @@
 # Field with resolver in one of the possible types of Union
 
-```graphql @config
-schema @server(port: 8030) @upstream {
+```yaml @config
+server:
+  port: 8030
+```
+
+```graphql @schema
+schema {
   query: Query
 }
 

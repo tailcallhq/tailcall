@@ -4,7 +4,7 @@ error: true
 
 # test-grpc-invalid-proto-id
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

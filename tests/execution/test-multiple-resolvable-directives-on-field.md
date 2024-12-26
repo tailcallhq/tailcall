@@ -1,6 +1,6 @@
 # Multiple resolvable directives on field
 
-```graphql @config
+```graphql @schema
 schema @server {
   query: Query
 }

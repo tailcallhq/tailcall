@@ -4,7 +4,7 @@ identity: true
 
 # test-http-headers
 
-```graphql @config
+```graphql @schema
 schema @server @upstream {
   query: Query
 }

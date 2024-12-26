@@ -1,5 +1,14 @@
-```graphql @config
-schema @server(port: 8080) @upstream(httpCache: 42, batch: {delay: 100}) {
+```yaml @config
+server:
+  port: 8080
+upstream:
+  httpCache: 42
+  batch:
+    delay: 100
+```
+
+```graphql @schema
+schema {
   query: Query
 }
 

@@ -2,10 +2,17 @@
 error: true
 ---
 
+```yaml @config
+upstream:
+  httpCache: 42
+  batch:
+    delay: 1
+```
+
 # batching validation
 
-```graphql @config
-schema @upstream(httpCache: 42, batch: {delay: 1}) {
+```graphql @schema
+schema {
   query: Query
 }
 

@@ -1,7 +1,14 @@
 # auth order
 
-```graphql @config
-schema @server @upstream @link(id: "htpasswd", src: ".htpasswd", type: Htpasswd) {
+```yaml @config
+links:
+  - id: htpasswd
+    src: .htpasswd
+    type: Htpasswd
+```
+
+```graphql @schema
+schema {
   query: Query
 }
 

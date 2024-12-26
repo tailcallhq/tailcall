@@ -4,7 +4,7 @@ error: true
 
 # test-missing-root-types
 
-```graphql @config
+```graphql @schema
 schema {
   query: QueryType
   mutation: MutationDef

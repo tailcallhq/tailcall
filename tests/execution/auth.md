@@ -4,12 +4,18 @@ identity: true
 
 # auth
 
-```graphql @config
-schema
-  @server
-  @upstream
-  @link(id: "htpasswd", src: ".htpasswd", type: Htpasswd)
-  @link(id: "jwks", src: "jwks.json", type: Jwks) {
+```yaml @config
+links:
+  - id: htpasswd
+    src: .htpasswd
+    type: Htpasswd
+  - id: jwks
+    src: jwks.json
+    type: Jwks
+```
+
+```graphql @schema
+schema @server @upstream {
   query: Query
 }
 
