@@ -6,7 +6,8 @@ snapshot_kind: text
 schema
   @server(enableFederation: true, port: 8000)
   @upstream(batch: {delay: 100, headers: []}, httpCache: 42)
-  @link(src: "./posts.graphql", type: Config) {
+  @link(src: "./posts.graphql", type: Config)
+  @link(src: "schema_0.graphql", type: Config) {
   query: Query
 }
 

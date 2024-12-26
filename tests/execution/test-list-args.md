@@ -1,7 +1,12 @@
 # With List args
 
-```graphql @config
-schema @server(queryValidation: true) {
+```yaml @config
+server:
+  queryValidation: true
+```
+
+```graphql @schema
+schema {
   query: Query
 }
 

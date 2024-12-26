@@ -4,7 +4,7 @@ error: true
 
 # test-enum-empty
 
-```graphql @config
+```graphql @schema
 schema @server {
   query: Query
 }

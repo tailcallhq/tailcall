@@ -1,6 +1,6 @@
 # Add field with composition
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

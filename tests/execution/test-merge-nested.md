@@ -1,12 +1,12 @@
 # test-merge-nested
 
-```graphql @config
+```graphql @schema
 schema @server {
   query: Query
 }
 
 type Query {
-  hi: Foo @expr(body: "world")
+  hi: Foo @expr(body: {b: "hello"})
 }
 
 type Foo {
@@ -17,7 +17,7 @@ type Foo {
 }
 ```
 
-```graphql @config
+```graphql @schema
 schema @server {
   query: Query
 }

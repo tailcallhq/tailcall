@@ -2,9 +2,6 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "RuntimeConfig",
   "type": "object",
-  "required": [
-    "links"
-  ],
   "properties": {
     "links": {
       "description": "A list of all links in the schema.",
@@ -15,7 +12,6 @@
     },
     "server": {
       "description": "Dictates how the server behaves and helps tune tailcall for all ingress requests. Features such as request batching, SSL, HTTP2 etc. can be configured here.",
-      "default": {},
       "allOf": [
         {
           "$ref": "#/definitions/Server"
@@ -32,7 +28,6 @@
     },
     "upstream": {
       "description": "Dictates how tailcall should handle upstream requests/responses. Tuning upstream can improve performance and reliability for connections.",
-      "default": {},
       "allOf": [
         {
           "$ref": "#/definitions/Upstream"

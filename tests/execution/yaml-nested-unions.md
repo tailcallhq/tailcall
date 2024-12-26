@@ -1,6 +1,6 @@
 # Using union types inside other union types
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

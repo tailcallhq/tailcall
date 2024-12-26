@@ -3,7 +3,10 @@ source: tests/core/spec.rs
 expression: formatter
 snapshot_kind: text
 ---
-schema @server(enableFederation: true, port: 8000) @upstream(batch: {delay: 100, headers: []}, httpCache: 42) {
+schema
+  @server(enableFederation: true, port: 8000)
+  @upstream(batch: {delay: 100, headers: []}, httpCache: 42)
+  @link(src: "schema_0.graphql", type: Config) {
   query: Query
 }
 

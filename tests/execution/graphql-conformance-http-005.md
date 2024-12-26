@@ -1,6 +1,15 @@
 # Test field aliasing
 
-```graphql @config
+```yaml @config
+server:
+  port: 8001
+  hostname: "0.0.0.0"
+  queryValidation: false
+upstream:
+  httpCache: 42
+```
+
+```graphql @schema
 schema @server(port: 8001, queryValidation: false, hostname: "0.0.0.0") @upstream(httpCache: 42) {
   query: Query
 }

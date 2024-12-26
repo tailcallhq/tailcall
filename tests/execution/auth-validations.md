@@ -4,8 +4,15 @@ error: true
 
 # auth multiple
 
-```graphql @config
-schema @server @upstream @link(id: "a", src: ".htpasswd_a", type: Htpasswd) {
+```yaml @config
+links:
+  - id: a
+    src: .htpasswd_a
+    type: Htpasswd
+```
+
+```graphql @schema
+schema {
   query: Query
 }
 

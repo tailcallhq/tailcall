@@ -4,7 +4,7 @@ error: true
 
 # test-field-already-implemented-from-Interface
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

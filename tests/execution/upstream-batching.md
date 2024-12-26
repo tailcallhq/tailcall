@@ -1,7 +1,14 @@
 # Sending requests to be batched by the upstream server
 
-```graphql @config
-schema @server @upstream(batch: {maxSize: 100, delay: 1, headers: []}) {
+```yaml @config
+upstream:
+  batch:
+    delay: 1
+    maxSize: 100
+```
+
+```graphql @schema
+schema {
   query: Query
 }
 

@@ -59,7 +59,12 @@ impl Transform for Subgraph {
                             let key = Key { fields };
 
                             to_directive(key.to_directive()).map(|directive| {
-                                ty.directives.push(directive);
+                                // Prevent transformer to push the same directive multiple times
+                                if !ty.directives.iter().any(|d| {
+                                    d.name == directive.name && d.arguments == directive.arguments
+                                }) {
+                                    ty.directives.push(directive);
+                                }
                             })
                         }
                         None => Valid::succeed(()),

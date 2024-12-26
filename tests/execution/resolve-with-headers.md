@@ -1,7 +1,13 @@
 # Resolve with headers
 
-```graphql @config
-schema @upstream(allowedHeaders: ["authorization"]) {
+```yaml @config
+upstream:
+  allowedHeaders:
+    - authorization
+```
+
+```graphql @schema
+schema {
   query: Query
 }
 

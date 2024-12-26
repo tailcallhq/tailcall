@@ -4,7 +4,7 @@ error: true
 
 # Test validation for multiple resolvable directives on field
 
-```graphql @config
+```graphql @schema
 schema @server {
   query: Query
 }

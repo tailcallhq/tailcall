@@ -4,7 +4,7 @@ error: true
 
 # test-grpc-invalid-method-format
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

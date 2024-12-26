@@ -1,0 +1,16 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+snapshot_kind: text
+---
+type Query {
+  foo(x: Test): Boolean
+}
+
+input Test {
+  b: String
+}
+
+schema {
+  query: Query
+}

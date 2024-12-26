@@ -4,8 +4,14 @@ identity: true
 
 # test-upstream
 
-```graphql @config
-schema @server @upstream(proxy: {url: "http://localhost:8085"}) {
+```yaml @config
+upstream:
+  proxy:
+    url: "http://localhost:8085"
+```
+
+```graphql @schema
+schema @server @upstream {
   query: Query
 }
 

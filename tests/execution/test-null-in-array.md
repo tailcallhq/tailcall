@@ -1,6 +1,6 @@
 # Empty Array Response
 
-```graphql @config
+```graphql @schema
 schema @server {
   query: Query
 }

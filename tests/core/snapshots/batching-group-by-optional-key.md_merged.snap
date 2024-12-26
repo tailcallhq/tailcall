@@ -5,7 +5,8 @@ snapshot_kind: text
 ---
 schema
   @server(port: 8000, queryValidation: false)
-  @upstream(batch: {delay: 1, headers: [], maxSize: 1000}, httpCache: 42) {
+  @upstream(batch: {delay: 1, headers: [], maxSize: 1000}, httpCache: 42)
+  @link(src: "schema_0.graphql", type: Config) {
   query: Query
 }
 

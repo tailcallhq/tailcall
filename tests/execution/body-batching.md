@@ -1,9 +1,18 @@
 # Batching post
 
-```graphql @config
-schema
-  @server(port: 8000, queryValidation: false)
-  @upstream(httpCache: 42, batch: {maxSize: 1000, delay: 1, headers: []}) {
+```yaml @config
+server:
+  port: 8000
+  queryValidation: false
+upstream:
+  httpCache: 42
+  batch:
+    delay: 1
+    maxSize: 1000
+```
+
+```graphql @schema
+schema {
   query: Query
 }
 

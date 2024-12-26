@@ -6,7 +6,8 @@ snapshot_kind: text
 schema
   @server(port: 8080)
   @upstream(batch: {delay: 10, headers: []}, httpCache: 42)
-  @link(id: "news", src: "./service.proto", type: Protobuf) {
+  @link(id: "news", src: "./service.proto", type: Protobuf)
+  @link(src: "schema_0.graphql", type: Config) {
   query: Query
 }
 

@@ -3,7 +3,10 @@ source: tests/core/spec.rs
 expression: formatter
 snapshot_kind: text
 ---
-schema @server(port: 8080) @upstream(batch: {delay: 100, headers: []}, httpCache: 42) {
+schema
+  @server(port: 8080)
+  @upstream(batch: {delay: 100, headers: []}, httpCache: 42)
+  @link(src: "schema_0.graphql", type: Config) {
   query: Query
 }
 

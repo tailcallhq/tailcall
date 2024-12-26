@@ -1,7 +1,7 @@
 # Test merge input
 
-```graphql @config
-schema @server {
+```graphql @schema
+schema {
   query: Query
 }
 
@@ -15,8 +15,8 @@ type Query {
 }
 ```
 
-```graphql @config
-schema @server {
+```graphql @schema
+schema {
   query: Query
 }
 

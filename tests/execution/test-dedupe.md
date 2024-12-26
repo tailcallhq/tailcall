@@ -1,7 +1,15 @@
 # testing dedupe functionality
 
-```graphql @config
-schema @server(port: 8000) @upstream(batch: {delay: 1}) {
+```yaml @config
+server:
+  port: 8000
+upstream:
+  batch:
+    delay: 1
+```
+
+```graphql @schema
+schema {
   query: Query
 }
 

@@ -7,7 +7,8 @@ schema
   @server(port: 8000)
   @upstream(batch: {delay: 10, headers: []}, httpCache: 10)
   @link(src: "link-1.graphql", type: Config)
-  @link(src: "link-2.graphql", type: Config) {
+  @link(src: "link-2.graphql", type: Config)
+  @link(src: "schema_0.graphql", type: Config) {
   query: Query
 }
 
