@@ -3,7 +3,7 @@ source: tests/core/spec.rs
 expression: formatter
 snapshot_kind: text
 ---
-schema @server(port: 8000, queryValidation: false) @upstream {
+schema @server(port: 8000, queryValidation: false) @upstream @link(src: "schema_0.graphql", type: Config) {
   query: Query
 }
 

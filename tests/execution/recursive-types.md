@@ -1,6 +1,6 @@
 # Recursive Type
 
-```graphql @config
+```graphql @schema
 schema @server {
   query: Query
   mutation: Mutation

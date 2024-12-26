@@ -1,7 +1,17 @@
 # Custom Headers
 
-```graphql @config
-schema @server(headers: {custom: [{key: "x-id", value: "1"}, {key: "x-name", value: "John Doe"}]}) @upstream {
+```yaml @config
+server:
+  headers:
+    custom:
+      - key: "x-id"
+        value: "1"
+      - key: "x-name"
+        value: "John Doe"
+```
+
+```graphql @schema
+schema {
   query: Query
 }
 

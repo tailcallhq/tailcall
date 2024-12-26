@@ -4,7 +4,7 @@ error: true
 
 # test-missing-query-resolver
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

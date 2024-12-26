@@ -4,7 +4,7 @@ error: true
 
 # input-type-protected-error
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
   mutation: Mutation

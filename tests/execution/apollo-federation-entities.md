@@ -1,10 +1,19 @@
 # Apollo federation query
 
-```graphql @config
-schema
-  @server(port: 8000, enableFederation: true)
-  @upstream(httpCache: 42, batch: {delay: 100})
-  @link(src: "./posts.graphql") {
+```yaml @config
+server:
+  port: 8000
+  enableFederation: true
+upstream:
+  httpCache: 42
+  batch:
+    delay: 100
+links:
+  - src: ./posts.graphql
+```
+
+```graphql @schema
+schema {
   query: Query
 }
 

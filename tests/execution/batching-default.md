@@ -1,7 +1,14 @@
 # Batching default
 
-```graphql @config
-schema @server @upstream(httpCache: 42, batch: {delay: 10}) {
+```yaml @config
+upstream:
+  httpCache: 42
+  batch:
+    delay: 10
+```
+
+```graphql @schema
+schema {
   query: Query
 }
 

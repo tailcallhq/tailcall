@@ -1,6 +1,6 @@
 # test-dbl-usage
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

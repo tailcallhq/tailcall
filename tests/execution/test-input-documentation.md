@@ -4,7 +4,7 @@ identity: true
 
 # test-input-type-documentation
 
-```graphql @config
+```graphql @schema
 schema @server @upstream {
   query: Query
   mutation: Mutation

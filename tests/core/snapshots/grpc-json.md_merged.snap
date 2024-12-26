@@ -3,7 +3,11 @@ source: tests/core/spec.rs
 expression: formatter
 snapshot_kind: text
 ---
-schema @server(port: 8000) @upstream @link(id: "news", src: "news.proto", type: Protobuf) {
+schema
+  @server(port: 8000)
+  @upstream
+  @link(id: "news", src: "news.proto", type: Protobuf)
+  @link(src: "schema_0.graphql", type: Config) {
   query: Query
 }
 

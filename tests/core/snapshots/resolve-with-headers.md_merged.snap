@@ -3,7 +3,7 @@ source: tests/core/spec.rs
 expression: formatter
 snapshot_kind: text
 ---
-schema @server @upstream(allowedHeaders: ["authorization"]) {
+schema @server @upstream(allowedHeaders: ["authorization"]) @link(src: "schema_0.graphql", type: Config) {
   query: Query
 }
 

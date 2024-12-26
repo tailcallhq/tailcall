@@ -4,8 +4,14 @@ error: true
 
 # test-batch-operator-post
 
-```graphql @config
-schema @server @upstream(batch: {delay: 1}) {
+```yaml @config
+upstream:
+  batch:
+    delay: 1
+```
+
+```graphql @schema
+schema {
   query: Query
 }
 

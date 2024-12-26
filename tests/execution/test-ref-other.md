@@ -4,7 +4,12 @@ identity: true
 
 # test-ref-other
 
-```graphql @config
+```yaml @config
+server:
+  port: 8000
+```
+
+```graphql @schema
 schema @server(port: 8000) @upstream {
   query: Query
 }

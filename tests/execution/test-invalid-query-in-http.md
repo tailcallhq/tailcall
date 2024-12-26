@@ -4,7 +4,7 @@ error: true
 
 # test-invalid-query-in-http
 
-```graphql @config
+```graphql @schema
 schema @server(vars: [{key: "id", value: "1"}]) {
   query: Query
 }
