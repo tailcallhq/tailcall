@@ -10,7 +10,8 @@ use crate::core::directive::DirectiveCodec;
 fn validate_query(config: &Config) -> Valid<&str, BlueprintError> {
     let query_type_name = config
         .schema
-        .query.as_deref()
+        .query
+        .as_deref()
         // Based on the [spec](https://spec.graphql.org/October2021/#sec-Root-Operation-Types.Default-Root-Operation-Type-Names)
         // the default name for query type is `Query` is not specified explicitly
         .unwrap_or("Query");
@@ -72,7 +73,8 @@ pub fn validate_field_has_resolver(
 fn validate_mutation(config: &Config) -> Valid<Option<&str>, BlueprintError> {
     let mutation_type_name = config
         .schema
-        .mutation.as_deref()
+        .mutation
+        .as_deref()
         // Based on the [spec](https://spec.graphql.org/October2021/#sec-Root-Operation-Types.Default-Root-Operation-Type-Names)
         // the default name for mutation type is `Mutation` is not specified explicitly
         .unwrap_or("Mutation");
