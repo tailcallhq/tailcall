@@ -9,4 +9,4 @@ upstream:
   httpCache: 42
 
 links:
-  - src: ./jsonplaceholder.graphql
+  - src: jsonplaceholder.graphql

@@ -10,4 +10,4 @@ upstream:
   httpCache: 42
 
 links:
-  - src: ./jsonplaceholder_batch.graphql
+  - src: jsonplaceholder_batch.graphql
