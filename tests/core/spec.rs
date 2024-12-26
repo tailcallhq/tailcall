@@ -16,11 +16,10 @@ use tailcall::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::core::blueprint::{Blueprint, BlueprintError};
 use tailcall::core::config::reader::ConfigReader;
 use tailcall::core::config::transformer::Required;
-use tailcall::core::config::{Config, ConfigModule, ConfigReaderContext, Source};
+use tailcall::core::config::{Config, ConfigModule, ConfigReaderContext, LinkType, Source};
 use tailcall::core::http::handle_request;
 use tailcall::core::mustache::PathStringEval;
 use tailcall::core::print_schema::print_schema;
-use tailcall::core::variance::Invariant;
 use tailcall::core::Mustache;
 use tailcall_prettier::Parser;
 use tailcall_valid::{Cause, Valid, ValidationError, Validator};
@@ -97,54 +96,53 @@ async fn check_identity(spec: &ExecutionSpec, reader_ctx: &ConfigReaderContext<'
     // enabled for either new tests that request it or old graphql_spec
     // tests that were explicitly written with it in mind
     if spec.check_identity {
-        for (source, content) in spec.server.iter() {
-            if matches!(source, Source::GraphQL) {
-                let mustache = Mustache::parse(content);
-                let content = PathStringEval::new().eval_partial(&mustache, reader_ctx);
-                let config = Config::from_source(source.to_owned(), &content).unwrap();
-                let actual = config.to_sdl();
+        for link in spec
+            .config
+            .links
+            .iter()
+            .filter(|link| link.type_of == LinkType::Config)
+        {
+            let content = reader_ctx.runtime.file.read(&link.src).await.unwrap();
+            let mustache = Mustache::parse(&content);
+            let content = PathStringEval::new().eval_partial(&mustache, reader_ctx);
+            let config = Config::from_source(Source::GraphQL, &content).unwrap();
+            let actual = config.to_sdl();
 
-                // \r is added automatically in windows, it's safe to replace it with \n
-                let content = content.replace("\r\n", "\n");
+            // \r is added automatically in windows, it's safe to replace it with \n
+            let content = content.replace("\r\n", "\n");
 
-                let path_str = spec.path.display().to_string();
-                let context = format!("path: {}", path_str);
+            let path_str = spec.path.display().to_string();
+            let context = format!("path: {}", path_str);
 
-                let actual = tailcall_prettier::format(actual, &tailcall_prettier::Parser::Gql)
-                    .await
-                    .map_err(|e| e.with_context(context.clone()))
-                    .unwrap();
+            let actual = tailcall_prettier::format(actual, &tailcall_prettier::Parser::Gql)
+                .await
+                .map_err(|e| e.with_context(context.clone()))
+                .unwrap();
 
-                let expected = tailcall_prettier::format(content, &tailcall_prettier::Parser::Gql)
-                    .await
-                    .map_err(|e| e.with_context(context.clone()))
-                    .unwrap();
+            let expected = tailcall_prettier::format(content, &tailcall_prettier::Parser::Gql)
+                .await
+                .map_err(|e| e.with_context(context.clone()))
+                .unwrap();
 
-                pretty_assertions::assert_eq!(
-                    actual,
-                    expected,
-                    "Identity check failed for {:#?}",
-                    spec.path,
-                );
-            } else {
-                panic!(
-                    "Spec {:#?} has \"check identity\" enabled, but its config isn't in GraphQL.",
-                    spec.path
-                );
-            }
+            pretty_assertions::assert_eq!(
+                actual,
+                expected,
+                "Identity check failed for {:#?}",
+                spec.path,
+            );
         }
     }
 }
 
 async fn run_query_tests_on_spec(
     spec: ExecutionSpec,
-    server: Vec<ConfigModule>,
+    config_module: &ConfigModule,
     mock_http_client: Arc<Http>,
 ) {
     if let Some(tests) = spec.test.as_ref() {
         let app_ctx = spec
             .app_context(
-                server.first().unwrap(),
+                config_module,
                 spec.env.clone().unwrap_or_default(),
                 mock_http_client.clone(),
             )
@@ -200,42 +198,27 @@ async fn test_spec(spec: ExecutionSpec) {
 
     let reader = ConfigReader::init(runtime);
 
-    // Resolve all configs
-    let config_modules = join_all(spec.server.iter().map(|(source, content)| async {
-        let mustache = Mustache::parse(content);
-        let content = PathStringEval::new().eval_partial(&mustache, &reader_ctx);
+    let config = Config::from(spec.config.clone());
 
-        let config = Config::from_source(source.to_owned(), &content)?;
+    let config_module = reader.resolve(config, spec.path.parent()).await;
 
-        reader.resolve(config, spec.path.parent()).await
-    }))
-    .await;
-
-    let config_module = Valid::from_iter(config_modules.iter(), |config_module| {
-        Valid::from(config_module.as_ref().map_err(|e| {
-            match e.downcast_ref::<ValidationError<String>>() {
+    let config_module =
+        Valid::from(
+            config_module.map_err(|e| match e.downcast_ref::<ValidationError<String>>() {
                 Some(err) => err.clone(),
                 None => ValidationError::new(e.to_string()),
-            }
-        }))
-    })
-    .and_then(|cfgs| {
-        let mut cfgs = cfgs.into_iter();
-        let config_module = cfgs.next().expect("At least one config should be defined");
-
-        cfgs.fold(Valid::succeed(config_module.clone()), |acc, c| {
-            acc.and_then(|acc| acc.unify(c.clone()))
-        })
-    })
-    // Apply required transformers to the configuration
-    .and_then(|cfg| cfg.transform(Required));
+            }),
+        )
+        // Apply required transformers to the configuration
+        .and_then(|cfg| cfg.transform(Required));
 
     // check sdl error if any
     if is_sdl_error(&spec, config_module.clone()).await {
         return;
     }
 
-    let merged = config_module.to_result().unwrap().to_sdl();
+    let config_module = config_module.to_result().unwrap();
+    let merged = config_module.to_sdl();
 
     let formatter = tailcall_prettier::format(merged, &Parser::Gql)
         .await
@@ -245,34 +228,25 @@ async fn test_spec(spec: ExecutionSpec) {
 
     insta::assert_snapshot!(snapshot_name, formatter);
 
-    let config_modules = config_modules
-        .into_iter()
-        .collect::<Result<Vec<_>, _>>()
-        .unwrap();
-
     check_identity(&spec, &reader_ctx).await;
 
     // client: Check if client spec matches snapshot
-    if config_modules.len() == 1 {
-        let config = &config_modules[0];
+    let client = print_schema(
+        (Blueprint::try_from(&config_module)
+            .context(format!("file: {}", spec.path.to_str().unwrap()))
+            .unwrap())
+        .to_schema(),
+    );
 
-        let client = print_schema(
-            (Blueprint::try_from(config)
-                .context(format!("file: {}", spec.path.to_str().unwrap()))
-                .unwrap())
-            .to_schema(),
-        );
+    let formatted = tailcall_prettier::format(client, &Parser::Gql)
+        .await
+        .unwrap();
+    let snapshot_name = format!("{}_client", spec.safe_name);
 
-        let formatted = tailcall_prettier::format(client, &Parser::Gql)
-            .await
-            .unwrap();
-        let snapshot_name = format!("{}_client", spec.safe_name);
-
-        insta::assert_snapshot!(snapshot_name, formatted);
-    }
+    insta::assert_snapshot!(snapshot_name, formatted);
 
     // run query tests
-    run_query_tests_on_spec(spec, config_modules, mock_http_client).await;
+    run_query_tests_on_spec(spec, &config_module, mock_http_client).await;
 }
 
 pub async fn load_and_test_execution_spec(path: &Path) -> anyhow::Result<()> {

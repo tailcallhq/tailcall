@@ -1,7 +1,14 @@
 # Multiple Configs
 
-```graphql @config
-schema @server @link(id: "types", type: Config, src: "types.graphql") {
+```yaml @config
+links:
+  - id: types
+    type: Config
+    src: types.graphql
+```
+
+```graphql @schema
+schema {
   query: Query
 }
 

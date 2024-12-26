@@ -1,11 +1,17 @@
 # test-alias-on-enum
 
-```graphql @config
-schema @server(batchRequests: true) @upstream(batch: {delay: 1, headers: [], maxSize: 100}) {
-  query: Query
-}
+```yaml @config
+upstream:
+  batch:
+    delay: 1
+    headers: []
+    maxSize: 100
+server:
+  batchRequests: true
+```
 
-schema @server(enableJIT: false) {
+```graphql @schema
+schema {
   query: Query
 }
 

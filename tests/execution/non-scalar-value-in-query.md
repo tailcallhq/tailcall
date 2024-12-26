@@ -4,7 +4,7 @@ error: true
 
 # test objects in args
 
-```graphql @config
+```graphql @schema
 schema @server @upstream {
   query: Query
 }

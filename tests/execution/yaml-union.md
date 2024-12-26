@@ -1,6 +1,6 @@
 # Using Union types in yaml config
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

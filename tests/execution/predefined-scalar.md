@@ -2,7 +2,7 @@
 error: true
 ---
 
-```graphql @config
+```graphql @schema
 scalar Boolean
 scalar Float
 scalar ID

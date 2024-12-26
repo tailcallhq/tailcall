@@ -4,8 +4,27 @@ error: true
 
 # test-duplicated-link
 
+```yaml @config
+links:
+  - id: placeholder
+    src: jsonplaceholder.graphql
+    type: Config
+  - id: placeholder1
+    src: jsonplaceholder.graphql
+    type: Config
+  - id: placeholder1
+    src: jsonplaceholder.graphql
+    type: Config
+  - id: placeholder2
+    src: jsonplaceholder.graphql
+    type: Config
+  - id: placeholder2
+    src: jsonplaceholder.graphql
+    type: Config
+```
+
 ```graphql @file:jsonplaceholder.graphql
-schema @server(port: 8000, hostname: "0.0.0.0") @upstream(httpCache: 42, batch: {delay: 100}) {
+schema {
   query: Query
 }
 
@@ -33,13 +52,8 @@ type Post {
 }
 ```
 
-```graphql @config
-schema
-  @link(type: Config, src: "jsonplaceholder.graphql", id: "placeholder")
-  @link(type: Config, src: "jsonplaceholder.graphql", id: "placeholder1")
-  @link(type: Config, src: "jsonplaceholder.graphql", id: "placeholder1")
-  @link(type: Config, src: "jsonplaceholder.graphql", id: "placeholder2")
-  @link(type: Config, src: "jsonplaceholder.graphql", id: "placeholder2") {
+```graphql @schema
+schema {
   query: Query
 }
 

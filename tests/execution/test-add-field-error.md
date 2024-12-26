@@ -4,7 +4,7 @@ error: true
 
 # test-add-field-error
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

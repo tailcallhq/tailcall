@@ -4,7 +4,7 @@ error: true
 
 # test-groupby-without-batching
 
-```graphql @config
+```graphql @schema
 schema @upstream(httpCache: 42) {
   query: Query
 }

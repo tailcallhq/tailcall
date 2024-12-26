@@ -15,7 +15,8 @@ use tailcall::cli::javascript;
 use tailcall::core::app_context::AppContext;
 use tailcall::core::blueprint::Blueprint;
 use tailcall::core::cache::InMemoryCache;
-use tailcall::core::config::{ConfigModule, Source};
+use tailcall::core::config::{ConfigModule, Link, RuntimeConfig, Source};
+use tailcall::core::merge_right::MergeRight;
 use tailcall::core::runtime::TargetRuntime;
 use tailcall::core::worker::{Command, Event};
 use tailcall::core::{EnvIO, WorkerIO};
@@ -51,7 +52,7 @@ impl ExecutionSpec {
             .peekable();
 
         let mut name: Option<String> = None;
-        let mut server: Vec<(Source, String)> = Vec::with_capacity(2);
+        let mut config = RuntimeConfig::default();
         let mut mock: Option<Vec<Mock>> = None;
         let mut env: Option<HashMap<String, String>> = None;
         let mut files: BTreeMap<String, String> = BTreeMap::new();
@@ -59,6 +60,7 @@ impl ExecutionSpec {
         let mut runner: Option<Annotation> = None;
         let mut check_identity = false;
         let mut sdl_error = false;
+        let mut links_counter = 0;
 
         while let Some(node) = children.next() {
             match node {
@@ -172,8 +174,16 @@ impl ExecutionSpec {
 
                             match name {
                                 "config" => {
-                                    // Server configs are only parsed if the test isn't skipped.
-                                    server.push((source, content));
+                                    config = config.merge_right(
+                                        RuntimeConfig::from_source(source, &content).unwrap(),
+                                    );
+                                }
+                                "schema" => {
+                                    // Schemas configs are only parsed if the test isn't skipped.
+                                    let name = format!("schema_{}.graphql", links_counter);
+                                    files.insert(name.clone(), content);
+                                    config.links.push(Link { src: name, ..Default::default() });
+                                    links_counter += 1;
                                 }
                                 "mock" => {
                                     if mock.is_none() {
@@ -240,9 +250,9 @@ impl ExecutionSpec {
             }
         }
 
-        if server.is_empty() {
+        if links_counter == 0 {
             return Err(anyhow!(
-                "Unexpected blocks in {:?}: You must define a GraphQL Config in an execution test.",
+                "Unexpected blocks in {:?}: You must define a GraphQL Schema in an execution test.",
                 path,
             ));
         }
@@ -252,7 +262,7 @@ impl ExecutionSpec {
             name: name.unwrap_or_else(|| path.file_name().unwrap().to_str().unwrap().to_string()),
             safe_name: path.file_name().unwrap().to_str().unwrap().to_string(),
 
-            server,
+            config,
             mock,
             env,
             test,

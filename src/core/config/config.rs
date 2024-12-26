@@ -43,17 +43,18 @@ pub struct RuntimeConfig {
     /// Dictates how the server behaves and helps tune tailcall for all ingress
     /// requests. Features such as request batching, SSL, HTTP2 etc. can be
     /// configured here.
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "is_default")]
     pub server: Server,
 
     ///
     /// Dictates how tailcall should handle upstream requests/responses.
     /// Tuning upstream can improve performance and reliability for connections.
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "is_default")]
     pub upstream: Upstream,
 
     ///
     /// A list of all links in the schema.
+    #[serde(default, skip_serializing_if = "is_default")]
     pub links: Vec<Link>,
 
     /// Enable [opentelemetry](https://opentelemetry.io) support

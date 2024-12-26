@@ -4,8 +4,14 @@ error: true
 
 # test-response-header-value
 
-```graphql @config
-schema @server(headers: {custom: [{key: "a", value: "a \n b"}]}) {
+```yaml @config
+server:
+  headers:
+    custom: [{key: "a", value: "a \n b"}]
+```
+
+```graphql @schema
+schema {
   query: Query
 }
 

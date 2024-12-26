@@ -1,6 +1,6 @@
 # test-input-with-arg-type
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }
