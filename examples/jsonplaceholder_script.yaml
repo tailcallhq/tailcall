@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=../generated/.tailcallrc.schema.json
+
+server:
+  port: 8000
+  hostname: "0.0.0.0"
+
+upstream:
+  httpCache: 42
+
+links:
+  - src: ./jsonplaceholder_script.graphql
+  - type: Script
+    src: scripts/echo.js

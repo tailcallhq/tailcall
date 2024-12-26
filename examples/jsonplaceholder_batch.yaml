@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=../generated/.tailcallrc.schema.json
+
+server:
+  port: 8000
+
+upstream:
+  batch:
+    delay: 1
+    maxSize: 1000
+  httpCache: 42
+
+links:
+  - src: ./jsonplaceholder_batch.graphql
