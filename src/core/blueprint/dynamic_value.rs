@@ -2,9 +2,10 @@ use async_graphql_value::{ConstValue, Name};
 use indexmap::IndexMap;
 use serde_json::Value;
 
-use crate::core::mustache::Mustache;
+use crate::core::Mustache;
 
 #[derive(Debug, Clone, PartialEq)]
+/// This is used to express dynamic value resolver engine.
 pub enum DynamicValue<A> {
     Value(A),
     Mustache(Mustache),
@@ -25,18 +26,14 @@ impl<A> DynamicValue<A> {
     pub fn prepend(self, name: &str) -> Self {
         match self {
             DynamicValue::Value(value) => DynamicValue::Value(value),
-            DynamicValue::Mustache(mut mustache) => {
-                if mustache.is_const() {
-                    DynamicValue::Mustache(mustache)
-                } else {
-                    let segments = mustache.segments_mut();
-                    if let Some(crate::core::mustache::Segment::Expression(vec)) =
-                        segments.get_mut(0)
-                    {
+            DynamicValue::Mustache(mut m) => {
+                for seg in m.segments_mut() {
+                    if let crate::core::mustache::Segment::Expression(vec) = seg {
                         vec.insert(0, name.to_string());
                     }
-                    DynamicValue::Mustache(mustache)
                 }
+
+                DynamicValue::Mustache(m)
             }
             DynamicValue::Object(index_map) => {
                 let index_map = index_map
@@ -60,7 +57,7 @@ impl TryFrom<&DynamicValue<ConstValue>> for ConstValue {
         match value {
             DynamicValue::Value(v) => Ok(v.to_owned()),
             DynamicValue::Mustache(_) => Err(anyhow::anyhow!(
-                "mustache cannot be converted to const value"
+                "Mustache template cannot be converted to const value"
             )),
             DynamicValue::Object(obj) => {
                 let out: Result<IndexMap<Name, ConstValue>, anyhow::Error> = obj
@@ -82,7 +79,7 @@ impl<A> DynamicValue<A> {
     // Helper method to determine if the value is constant (non-mustache).
     pub fn is_const(&self) -> bool {
         match self {
-            DynamicValue::Mustache(m) => m.is_const(),
+            DynamicValue::Mustache(t) => t.is_const(),
             DynamicValue::Object(obj) => obj.values().all(|v| v.is_const()),
             DynamicValue::Array(arr) => arr.iter().all(|v| v.is_const()),
             _ => true,
@@ -93,6 +90,7 @@ impl<A> DynamicValue<A> {
 impl TryFrom<&Value> for DynamicValue<ConstValue> {
     type Error = anyhow::Error;
 
+    /// Used to convert json notation to dynamic value
     fn try_from(value: &Value) -> Result<Self, Self::Error> {
         match value {
             Value::Object(obj) => {
@@ -109,7 +107,8 @@ impl TryFrom<&Value> for DynamicValue<ConstValue> {
                 Ok(DynamicValue::Array(out?))
             }
             Value::String(s) => {
-                let m = Mustache::parse(s.as_str());
+                let m = Mustache::parse(s);
+
                 if m.is_const() {
                     Ok(DynamicValue::Value(ConstValue::from_json(value.clone())?))
                 } else {

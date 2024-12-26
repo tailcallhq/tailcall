@@ -6,6 +6,7 @@ use derive_more::From;
 use thiserror::Error;
 
 use crate::core::jit::graphql_error::{Error as ExtensionError, ErrorExtensions};
+use crate::core::mustache::JqRuntimeError;
 use crate::core::{auth, cache, worker, Errata};
 
 #[derive(From, Debug, Error, Clone)]
@@ -32,6 +33,8 @@ pub enum Error {
     Worker(worker::Error),
 
     Cache(cache::Error),
+
+    DynamicValue(JqRuntimeError),
 
     #[from(ignore)]
     Entity(String),
@@ -67,7 +70,8 @@ impl From<Error> for Errata {
             }
             Error::Worker(err) => Errata::new("Worker Error").description(err.to_string()),
             Error::Cache(err) => Errata::new("Cache Error").description(err.to_string()),
-            Error::Entity(message) => Errata::new("Entity Resolver Error").description(message)
+            Error::Entity(message) => Errata::new("Entity Resolver Error").description(message),
+            Error::DynamicValue(err) => Errata::new("Dynamic Value Rendering Error").description(err.to_string())
         }
     }
 }

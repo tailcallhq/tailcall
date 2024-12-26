@@ -76,8 +76,8 @@ impl<Ctx: ResolverContextLike> EvalContext<'_, Ctx> {
             return match path[0].as_ref() {
                 "value" => Some(ValueString::Value(ctx.path_value(&[] as &[T])?)),
                 "args" => Some(ValueString::Value(ctx.path_arg::<&str>(&[])?)),
-                "vars" => Some(ValueString::String(Cow::Owned(
-                    json!(ctx.vars()).to_string(),
+                "vars" => Some(ValueString::Value(Cow::Owned(
+                    async_graphql_value::ConstValue::from_json(json!(ctx.vars())).unwrap(),
                 ))),
                 _ => None,
             };
@@ -102,6 +102,26 @@ impl<Ctx: ResolverContextLike> EvalContext<'_, Ctx> {
 impl<Ctx: ResolverContextLike> PathValue for EvalContext<'_, Ctx> {
     fn raw_value<'b, T: AsRef<str>>(&'b self, path: &[T]) -> Option<ValueString<'b>> {
         self.to_raw_value(path)
+    }
+}
+
+impl PathValue for serde_json::Value {
+    fn raw_value<'a, T: AsRef<str>>(&'a self, path: &[T]) -> Option<ValueString<'a>> {
+        let serde_json::Value::Object(map) = self else {
+            return None;
+        };
+
+        let (first, rest) = path.split_first()?;
+
+        if rest.is_empty() {
+            map.get(first.as_ref()).map(|v| {
+                ValueString::Value(Cow::Owned(
+                    async_graphql_value::ConstValue::from_json(v.clone()).unwrap(),
+                ))
+            })
+        } else {
+            map.get(first.as_ref()).and_then(|v| v.raw_value(rest))
+        }
     }
 }
 
@@ -361,9 +381,11 @@ mod tests {
                 Some(ValueString::String(Cow::Borrowed("var")))
             );
             assert_eq!(EVAL_CTX.raw_value(&["vars", "missing"]), None);
+            let mut map = IndexMap::new();
+            map.insert(Name::new("existing"), Value::String("var".to_string()));
             assert_eq!(
                 EVAL_CTX.raw_value(&["vars"]),
-                Some(ValueString::String(Cow::Borrowed(r#"{"existing":"var"}"#)))
+                Some(ValueString::Value(Cow::Owned(Value::Object(map))))
             );
 
             // envs
