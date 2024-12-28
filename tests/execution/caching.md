@@ -1,7 +1,14 @@
 # Caching
 
-```graphql @config
-schema @upstream(batch: {delay: 1, maxSize: 1000}) {
+```yaml @config
+upstream:
+  batch:
+    delay: 1
+    maxSize: 1000
+```
+
+```graphql @schema
+schema {
   query: Query
 }
 

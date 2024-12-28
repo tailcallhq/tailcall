@@ -4,7 +4,7 @@ identity: true
 
 # add-field-many-list
 
-```graphql @config
+```graphql @schema
 schema @server @upstream {
   query: Query
 }

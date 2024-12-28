@@ -2,7 +2,7 @@
 
 In some cases, when the resolved data shape does not strongly correspond to GraphQL types, the discriminator may return the first possible type or no possible types at all.
 
-```graphql @config
+```graphql @schema
 schema @server {
   query: Query
 }

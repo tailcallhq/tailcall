@@ -1,6 +1,6 @@
 # test-merge-server-sdl
 
-```graphql @config
+```graphql @schema
 schema @server {
   query: Query
 }

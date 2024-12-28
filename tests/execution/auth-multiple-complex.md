@@ -1,12 +1,20 @@
 # auth multiple
 
-```graphql @config
-schema
-  @server
-  @upstream
-  @link(id: "a", src: ".htpasswd_a", type: Htpasswd)
-  @link(id: "b", src: ".htpasswd_b", type: Htpasswd)
-  @link(id: "c", src: ".htpasswd_c", type: Htpasswd) {
+```yaml @config
+links:
+  - id: a
+    src: .htpasswd_a
+    type: Htpasswd
+  - id: b
+    src: .htpasswd_b
+    type: Htpasswd
+  - id: c
+    src: .htpasswd_c
+    type: Htpasswd
+```
+
+```graphql @schema
+schema {
   query: Query
 }
 

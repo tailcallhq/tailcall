@@ -1,6 +1,6 @@
 # Env value
 
-```graphql @config
+```graphql @schema
 schema @server {
   query: Query
 }

@@ -5719,6 +5719,7 @@ dependencies = [
  "tracing-opentelemetry",
  "tracing-subscriber",
  "ttl_cache",
+ "unicode-segmentation",
  "update-informer",
  "url",
  "urlencoding",

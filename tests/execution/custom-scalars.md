@@ -1,6 +1,6 @@
 # Using all custom scalars
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

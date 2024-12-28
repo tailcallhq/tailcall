@@ -4,7 +4,7 @@ error: true
 
 # test-inline-error
 
-```graphql @config
+```graphql @schema
 schema {
   query: Query
 }

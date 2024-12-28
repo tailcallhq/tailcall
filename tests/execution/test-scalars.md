@@ -1,10 +1,16 @@
 # Test scalars
 
-```graphql @config
+```yaml @config
+server:
+  port: 8000
+  hostname: localhost
+```
+
+```graphql @schema
 # this is custom scalars in config
 scalar AnyScalar
 
-schema @server(port: 8000, hostname: "localhost") {
+schema {
   query: Query
 }
 

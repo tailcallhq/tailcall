@@ -4,7 +4,7 @@ error: true
 
 # undeclared-type
 
-```graphql @config
+```graphql @schema
 schema @server {
   query: Query
 }

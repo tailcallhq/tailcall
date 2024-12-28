@@ -12,8 +12,18 @@ function onRequest(request) {}
 function onRequest(request) {}
 ```
 
-```graphql @config
-schema @server @link(type: Script, src: "test1.js") @link(type: Script, src: "test2.js") {
+```yml @config
+upstream:
+  onRequest: "onRequest"
+links:
+  - type: Script
+    src: "test1.js"
+  - type: Script
+    src: "test2.js"
+```
+
+```graphql @schema
+schema {
   query: Query
 }
 

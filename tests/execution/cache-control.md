@@ -1,7 +1,13 @@
 # Sending requests to verify Cache-Control behavior
 
-```graphql @config
-schema @server(headers: {cacheControl: true}) @upstream {
+```yaml @config
+server:
+  headers:
+    cacheControl: true
+```
+
+```graphql @schema
+schema {
   query: Query
 }
 
