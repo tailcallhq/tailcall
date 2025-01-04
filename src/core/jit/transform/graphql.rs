@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::collections::{HashMap, HashSet};
 use std::convert::Infallible;
 use std::fmt::{Debug, Display};
 use std::marker::PhantomData;
@@ -20,18 +21,25 @@ impl<A> GraphQL<A> {
     }
 }
 
-fn compute_selection_set<A: Display + Debug + JsonLikeOwned>(base_field: &mut [Field<A>]) {
+fn compute_selection_set<A: Display + Debug + JsonLikeOwned>(
+    base_field: &mut [Field<A>],
+    interfaces: &HashSet<String>,
+) {
     for field in base_field.iter_mut() {
         if let Some(ir) = field.ir.as_mut() {
             ir.modify_io(&mut |io| {
                 if let IO::GraphQL { req_template, .. } = io {
-                    if let Some(v) = format_selection_set(field.selection.iter()) {
+                    if let Some(v) = format_selection_set(
+                        field.selection.iter(),
+                        interfaces,
+                        interfaces.contains(field.type_of.name()),
+                    ) {
                         req_template.selection = Some(Mustache::parse(&v).into());
                     }
                 }
             });
         }
-        compute_selection_set(field.selection.as_mut());
+        compute_selection_set(field.selection.as_mut(), interfaces);
     }
 }
 
@@ -40,7 +48,11 @@ impl<A: Display + Debug + JsonLikeOwned + Clone> Transform for GraphQL<A> {
     type Error = Infallible;
 
     fn transform(&self, mut plan: Self::Value) -> Valid<Self::Value, Self::Error> {
-        compute_selection_set(&mut plan.selection);
+        let interfaces = match plan.interfaces {
+            Some(ref interfaces) => interfaces,
+            None => &HashSet::new(),
+        };
+        compute_selection_set(&mut plan.selection, interfaces);
 
         Valid::succeed(plan)
     }
@@ -48,7 +60,11 @@ impl<A: Display + Debug + JsonLikeOwned + Clone> Transform for GraphQL<A> {
 
 fn format_selection_set<'a, A: 'a + Display + JsonLikeOwned>(
     selection_set: impl Iterator<Item = &'a Field<A>>,
+    interfaces: &HashSet<String>,
+    is_parent_interface: bool,
 ) -> Option<String> {
+    let mut fragments_fields = HashMap::new();
+    let mut normal_fields = vec![];
     let set = selection_set
         .filter(|field| !matches!(&field.ir, Some(IR::IO(_)) | Some(IR::Dynamic(_))))
         .map(|field| {
@@ -58,7 +74,20 @@ fn format_selection_set<'a, A: 'a + Display + JsonLikeOwned>(
             } else {
                 field.name.to_string()
             };
-            format_selection_field(field, &field_name)
+            let is_this_field_interface = interfaces.contains(field.type_of.name());
+            let formatted_selection_fields =
+                format_selection_field(field, &field_name, interfaces, is_this_field_interface);
+            match &field.parent_fragment {
+                Some(fragment) if is_parent_interface => {
+                    fragments_fields
+                        .entry(fragment.to_owned())
+                        .or_insert_with(Vec::new)
+                        .push(formatted_selection_fields);
+                }
+                _ => {
+                    normal_fields.push(formatted_selection_fields);
+                }
+            }
         })
         .collect::<Vec<_>>();
 
@@ -66,12 +95,30 @@ fn format_selection_set<'a, A: 'a + Display + JsonLikeOwned>(
         return None;
     }
 
-    Some(format!("{{ {} }}", set.join(" ")))
+    let string_set: Vec<String> = fragments_fields
+        .into_iter()
+        .map(|(fragment_name, fields)| {
+            format!("... on {} {{ {} }}", fragment_name, fields.join(" "))
+        })
+        .collect();
+
+    //Don't force user to query the type and get it automatically
+    if is_parent_interface {
+        normal_fields.push("__typename".to_owned());
+    }
+    normal_fields.push(string_set.join(" "));
+    Some(format!("{{ {} }}", normal_fields.join(" ")))
 }
 
-fn format_selection_field<A: Display + JsonLikeOwned>(field: &Field<A>, name: &str) -> String {
+fn format_selection_field<A: Display + JsonLikeOwned>(
+    field: &Field<A>,
+    name: &str,
+    interfaces: &HashSet<String>,
+    is_parent_interface: bool,
+) -> String {
     let arguments = format_selection_field_arguments(field);
-    let selection_set = format_selection_set(field.selection.iter());
+    let selection_set =
+        format_selection_set(field.selection.iter(), interfaces, is_parent_interface);
 
     let mut output = format!("{}{}", name, arguments);
 
