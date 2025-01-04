@@ -95,7 +95,7 @@ fn format_selection_set<'a, A: 'a + Display + JsonLikeOwned>(
         return None;
     }
 
-    let string_set: Vec<String> = fragments_fields
+    let fragments_set: Vec<String> = fragments_fields
         .into_iter()
         .map(|(fragment_name, fields)| {
             format!("... on {} {{ {} }}", fragment_name, fields.join(" "))
@@ -106,7 +106,7 @@ fn format_selection_set<'a, A: 'a + Display + JsonLikeOwned>(
     if is_parent_interface {
         normal_fields.push("__typename".to_owned());
     }
-    normal_fields.push(string_set.join(" "));
+    normal_fields.push(fragments_set.join(" "));
     Some(format!("{{ {} }}", normal_fields.join(" ")))
 }
 
