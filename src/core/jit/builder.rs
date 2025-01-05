@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
 use std::sync::Arc;
 
@@ -11,7 +11,7 @@ use async_graphql_value::Value;
 
 use super::model::{Directive as JitDirective, *};
 use super::BuildError;
-use crate::core::blueprint::{Blueprint, Index, QueryField};
+use crate::core::blueprint::{Blueprint, Definition, Index, QueryField};
 use crate::core::counter::{Count, Counter};
 use crate::core::jit::model::OperationPlan;
 use crate::core::{scalar, Type};
@@ -66,6 +66,7 @@ impl Conditions {
 
 pub struct Builder<'a> {
     pub index: Arc<Index>,
+    pub interfaces: Arc<HashSet<String>>,
     pub arg_id: Counter<usize>,
     pub field_id: Counter<usize>,
     pub document: &'a ExecutableDocument,
@@ -75,11 +76,23 @@ pub struct Builder<'a> {
 impl<'a> Builder<'a> {
     pub fn new(blueprint: &Blueprint, document: &'a ExecutableDocument) -> Self {
         let index = Arc::new(blueprint.index());
+        let interfaces = Arc::new(
+            blueprint
+                .definitions
+                .iter()
+                .filter_map(|def| match def {
+                    Definition::Interface(interface) => Some(interface.name.to_owned()),
+                    _ => None,
+                })
+                .collect(),
+        );
+
         Self {
             document,
             index,
             arg_id: Counter::default(),
             field_id: Counter::default(),
+            interfaces,
         }
     }
 
@@ -364,7 +377,7 @@ impl<'a> Builder<'a> {
             operation.ty,
             self.index.clone(),
             is_introspection_query,
-            Some(self.index.get_interfaces()),
+            Some(Arc::clone(&self.interfaces)),
         );
         Ok(plan)
     }
