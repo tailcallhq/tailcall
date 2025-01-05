@@ -40,16 +40,14 @@ impl Index {
         matches!(def, Some(Definition::Scalar(_))) || scalar::Scalar::is_predefined(type_name)
     }
 
-    pub fn get_interfaces(&self) -> Box<HashSet<String>> {
-        Box::new(
-            self.map
-                .iter()
-                .filter_map(|(_, (def, _))| match def {
-                    Definition::Interface(i) => Some(i.name.to_owned()),
-                    _ => None,
-                })
-                .collect(),
-        )
+    pub fn get_interfaces(&self) -> HashSet<String> {
+        self.map
+            .iter()
+            .filter_map(|(_, (def, _))| match def {
+                Definition::Interface(i) => Some(i.name.to_owned()),
+                _ => None,
+            })
+            .collect()
     }
 
     pub fn type_is_enum(&self, type_name: &str) -> bool {

@@ -364,7 +364,7 @@ impl<'a> Builder<'a> {
             operation.ty,
             self.index.clone(),
             is_introspection_query,
-            Some(*self.index.get_interfaces()),
+            Some(self.index.get_interfaces()),
         );
         Ok(plan)
     }
