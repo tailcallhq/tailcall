@@ -105,8 +105,8 @@ fn format_selection_set<'a, A: 'a + Display + JsonLikeOwned>(
     //Don't force user to query the type and get it automatically
     if is_parent_interface {
         normal_fields.push("__typename".to_owned());
+        normal_fields.push(fragments_set.join(" "));
     }
-    normal_fields.push(fragments_set.join(" "));
     Some(format!("{{ {} }}", normal_fields.join(" ")))
 }
 
