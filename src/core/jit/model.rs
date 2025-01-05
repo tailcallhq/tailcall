@@ -317,7 +317,7 @@ pub struct OperationPlan<Input> {
     pub min_cache_ttl: Option<NonZeroU64>,
     pub selection: Vec<Field<Input>>,
     pub before: Option<IR>,
-    pub interfaces: Option<Arc<HashSet<String>>>,
+    pub interfaces: Option<HashSet<String>>,
 }
 
 impl<Input> OperationPlan<Input> {
@@ -355,7 +355,7 @@ impl<Input> OperationPlan<Input> {
         operation_type: OperationType,
         index: Arc<Index>,
         is_introspection_query: bool,
-        interfaces: Option<Arc<HashSet<String>>>,
+        interfaces: Option<HashSet<String>>,
     ) -> Self
     where
         Input: Clone,
