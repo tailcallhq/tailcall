@@ -44,7 +44,7 @@ impl Index {
         self.map
             .iter()
             .filter_map(|(_, (def, _))| match def {
-                Definition::Interface(i) => Some(i.name.to_owned()),
+                Definition::Interface(interface) => Some(interface.name.to_owned()),
                 _ => None,
             })
             .collect()
