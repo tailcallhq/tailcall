@@ -1,0 +1,210 @@
+name: Tailcall temp build
+
+on:
+  workflow_dispatch:
+    inputs:
+      build-tailcall:
+        description: Build Tailcall
+        required: false
+        type: boolean
+        default: true
+  pull_request:
+    types:
+      - labeled
+      - synchronize
+    branches:
+      - main
+    paths-ignore:
+      - "**.md"
+  push:
+    branches:
+      - "main"
+    tags:
+      - "v*"
+    paths-ignore:
+      - "**.md"
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: ${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check architecture
+        run: uname -m
+  check_if_build:
+    name: Check if Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: MedHeikelBouzayene/tailcall
+          ref: main
+
+  test:
+    name: Run Tests on linux-x64-gnu
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: MedHeikelBouzayene/tailcall
+          ref: main
+
+      - uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.11.0"
+      - name: Install Prettier
+        run: npm i -g prettier
+
+      - name: Install Stable Toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: x86_64-unknown-linux-gnu
+
+      - name: Run Cargo Test
+        run: cargo llvm-cov --workspace --all-features --lcov --output-path lcov.info
+
+  check-examples:
+    name: Check Examples
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: MedHeikelBouzayene/tailcall
+          ref: main
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Build Project
+        run: cargo build
+
+      - name: Check all examples
+        run: ./examples/lint.sh
+
+  draft_release:
+    name: Draft Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout Current Branch (Fast)
+        uses: actions/checkout@v4
+        with:
+          repository: MedHeikelBouzayene/tailcall
+          ref: main
+
+      - id: create_release
+        uses: release-drafter/release-drafter@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          config-name: release-drafter.yml
+
+      - name: Set Output for Later Jobs
+        id: set_output
+        run: |
+          echo "create_release_name=${{ steps.create_release.outputs.name }}" >> $GITHUB_OUTPUT
+          echo "create_release_id=${{ steps.create_release.outputs.id }}" >> $GITHUB_OUTPUT
+    outputs:
+      create_release_name: ${{ steps.set_output.outputs.create_release_name }}
+      create_release_id: ${{ steps.set_output.outputs.create_release_id }}
+
+  release:
+    name: Release
+    needs: [test, draft_release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      APP_VERSION: ${{ needs.draft_release.outputs.create_release_name }}
+
+    steps:
+      - name: Checkout Current Branch (Fast)
+        uses: actions/checkout@v4
+        with:
+          repository: MedHeikelBouzayene/tailcall
+          ref: main
+
+      - name: Install Correct Toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: x86_64-unknown-linux-gnu
+
+      - name: Build
+        env:
+          APP_VERSION: ${{ needs.draft_release.outputs.create_release_name}}
+        uses: ClementTsang/cargo-action@v0.0.6
+        with:
+          use-cross: false
+          command: build
+          args: --release --target x86_64-unknown-linux-gnu
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.11.0
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: |
+          cd npm
+          npm install
+
+      - name: Run generate.js script
+        run: |
+          cd npm
+          npm run gen -- --target x86_64-unknown-linux-gnu --version ${{ env.APP_VERSION }} --build linux-x64-gnu --ext '' --libc glibc
+
+      - name: Rename Binary with Target Name
+        run: |
+          pwd
+          cp target/x86_64-unknown-linux-gnu/release/tailcall target/x86_64-unknown-linux-gnu/release/tailcall-x86_64-unknown-linux-gnu
+
+      - name: Upload x86_64-unknown-linux-gnu Binary
+        uses: xresloader/upload-to-github-release@v1
+        with:
+          release_id: ${{ needs.draft_release.outputs.create_release_id }}
+          file: target/x86_64-unknown-linux-gnu/release/tailcall-x86_64-unknown-linux-gnu
+          overwrite: true
+
+  semantic_release:
+    name: Semantic Release
+    needs: [draft_release, release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      APP_VERSION: ${{needs.draft_release.outputs.create_release_name }}
+    steps:
+      - name: Publish Release
+        uses: test-room-7/action-publish-release-drafts@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          tag-name: ${{needs.draft_release.outputs.create_release_name }}
