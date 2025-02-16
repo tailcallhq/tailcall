@@ -91,6 +91,19 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     let req_ctx = Arc::new(create_request_context(&req, app_ctx));
     let (req, body) = req.into_parts();
     let bytes = hyper::body::to_bytes(body).await?;
+    let bytes = if req.headers.get("content-type")
+        == Some(&HeaderValue::from_str("application/graphql")?)
+    {
+        let decoded_str = String::from_utf8_lossy(&bytes).clone();
+        let enriched_str = if decoded_str.contains("\\") {
+            format!(r#"{{"query": {} }}"#, decoded_str)
+        } else {
+            format!(r#"{{"query": {:?} }}"#, decoded_str)
+        };
+        hyper::body::to_bytes(enriched_str).await?
+    } else {
+        bytes
+    };
     let graphql_request = serde_json::from_slice::<T>(&bytes);
     match graphql_request {
         Ok(request) => {
