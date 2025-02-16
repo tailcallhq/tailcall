@@ -1,0 +1,22 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+snapshot_kind: text
+---
+schema
+  @server(hostname: "0.0.0.0", port: 8001, queryValidation: false)
+  @upstream(httpCache: 42)
+  @link(src: "schema_0.graphql", type: Config) {
+  query: Query
+}
+
+type Query {
+  user(id: ID!): User!
+    @graphQL(args: [{key: "id", value: "{{.args.id}}"}], url: "http://upstream/graphql", name: "user")
+}
+
+type User {
+  city: String
+  id: ID!
+  name: String!
+}

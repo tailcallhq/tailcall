@@ -293,7 +293,7 @@ async fn run_test(
                     |acc, (key, value)| acc.header(key, value),
                 )
                 .body(body)?;
-
+            println!("{:?}", req);
             if app_ctx.blueprint.server.enable_batch_requests {
                 handle_request::<GraphQLBatchRequest>(req, app_ctx).await
             } else {
