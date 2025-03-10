@@ -150,7 +150,7 @@ impl ArgId {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct FieldId(usize);
 
 impl Debug for FieldId {
@@ -428,7 +428,9 @@ impl<Input> OperationPlan<Input> {
     {
         match &field.type_condition {
             Some(type_condition) => match value.get_type_name() {
-                Some(value_type) => self.index.is_type_implements(value_type, type_condition),
+                Some(value_type) => 
+                     self.index.is_type_implements(value_type, type_condition)
+                ,
                 // if there is no __typename in value that means there is a bug in implementation
                 // such we haven't resolved the concrete type or type shouldn't be
                 // inferred here at all and we should just use the field

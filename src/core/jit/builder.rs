@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
 use std::sync::Arc;
 
@@ -135,10 +135,22 @@ impl<'a> Builder<'a> {
         fragments: &HashMap<&str, &FragmentDefinition>,
     ) -> Vec<Field<Value>> {
         let mut fields = vec![];
+        let mut fragments_fields = vec![];
+        let mut visited = HashSet::new();
 
         for selection in &selection.items {
             match &selection.node {
                 Selection::Field(Positioned { node: gql_field, .. }) => {
+                    let field_name = gql_field.name.node.as_str();
+                    let output_name = gql_field
+                        .alias
+                        .as_ref()
+                        .map(|a| a.node.as_str())
+                        .unwrap_or(field_name);
+                    if visited.contains(output_name) {
+                        continue;
+                    }
+                    visited.insert(output_name);
                     let conditions = self.include(&gql_field.directives);
 
                     // Skip fields based on GraphQL's skip/include conditions
@@ -163,7 +175,6 @@ impl<'a> Builder<'a> {
                     }
 
                     let (include, skip) = conditions.into_variable_tuple();
-                    let field_name = gql_field.name.node.as_str();
                     let request_args = gql_field
                         .arguments
                         .iter()
@@ -229,11 +240,7 @@ impl<'a> Builder<'a> {
                             selection: child_fields,
                             parent_fragment,
                             name: field_name.to_string(),
-                            output_name: gql_field
-                                .alias
-                                .as_ref()
-                                .map(|a| a.node.to_string())
-                                .unwrap_or(field_name.to_owned()),
+                            output_name: output_name.to_string(),
                             ir,
                             is_enum: self.index.type_is_enum(type_of.name()),
                             type_of,
@@ -251,10 +258,10 @@ impl<'a> Builder<'a> {
                         let typename_field = Field {
                             id: FieldId::new(self.field_id.next()),
                             name: field_name.to_string(),
-                            output_name: field_name.to_string(),
+                            output_name: output_name.to_string(),
                             ir: None,
                             type_of: Type::Named { name: "String".to_owned(), non_null: true },
-                            type_condition: None,
+                            type_condition: Some(type_condition.to_string()),
                             skip,
                             include,
                             args: Vec::new(),
@@ -273,7 +280,7 @@ impl<'a> Builder<'a> {
                     if let Some(fragment) =
                         fragments.get(fragment_spread.fragment_name.node.as_str())
                     {
-                        fields.extend(self.iter(
+                        fragments_fields.extend(self.iter(
                             Some(fragment.type_condition.node.on.node.as_str()),
                             &fragment.selection_set.node,
                             fragment.type_condition.node.on.node.as_str(),
@@ -287,7 +294,7 @@ impl<'a> Builder<'a> {
                         .as_ref()
                         .map(|cond| cond.node.on.node.as_str())
                         .unwrap_or(type_condition);
-                    fields.extend(self.iter(
+                    fragments_fields.extend(self.iter(
                         Some(type_of),
                         &fragment.selection_set.node,
                         type_of,
@@ -296,7 +303,18 @@ impl<'a> Builder<'a> {
                 }
             }
         }
-
+        let mut fragments_visited = HashSet::new();
+        for field in fragments_fields {
+            if visited.contains(field.output_name.as_str())
+                || fragments_visited
+                    .contains(&(field.output_name.clone(), field.type_condition.clone()))
+            {
+                continue;
+            }
+            fragments_visited.insert((field.output_name.clone(), field.type_condition.clone()));
+            fields.push(field);
+        }
+        fields.sort_by(|a, b| a.id.cmp(&b.id));
         fields
     }
     #[inline(always)]

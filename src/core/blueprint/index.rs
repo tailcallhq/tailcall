@@ -87,9 +87,14 @@ impl Index {
         if type_name == type_or_interface {
             return true;
         }
-
         if let Some((Definition::Object(obj), _)) = self.map.get(type_name) {
-            obj.implements.contains(type_or_interface)
+            if obj.implements.contains(type_or_interface) {
+                true
+            } else if let Some((Definition::Union(union), _)) = self.map.get(type_or_interface) {
+                union.types.contains(type_name)
+            } else {
+                false
+            }
         } else {
             false
         }
