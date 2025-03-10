@@ -79,7 +79,7 @@ fn format_selection_set<'a, A: 'a + Display + JsonLikeOwned>(
             let formatted_selection_fields =
                 format_selection_field(field, &field_name, interfaces, is_this_field_interface);
             is_typename_requested = is_typename_requested
-                || (field_name == "__typename" && field.parent_fragment == None);
+                || (field_name == "__typename" && field.parent_fragment.is_none());
             match &field.parent_fragment {
                 Some(fragment) if is_parent_interface => {
                     fragments_fields
