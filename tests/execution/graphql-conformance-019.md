@@ -41,21 +41,6 @@ interface NodeC {
           - name: nodeB
             __typename: NodeB
             nodeB_id: nodeB_id
-
-- request:
-    method: POST
-    url: http://upstream/graphql
-    textBody: {"query": "query { nodeC { ...on NodeA { __typename nodeA_id } ...on NodeB { name nodeB_id } } }"}
-  expectedHits: 0
-  response:
-    status: 200
-    body:
-      data:
-        nodeC:
-          - __typename: NodeA
-            nodeA_id: nodeA_id
-          - name: nodeB
-            nodeB_id: nodeB_id
 ```
 
 ```yml @test
