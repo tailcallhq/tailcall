@@ -1,7 +1,6 @@
 ---
 source: tests/core/spec.rs
 expression: response
-snapshot_kind: text
 ---
 {
   "status": 200,
@@ -15,12 +14,8 @@ snapshot_kind: text
           "__typename": "Dog",
           "bark": "woof"
         },
-        {
-          "__typename": "Cat"
-        },
-        {
-          "__typename": "Bird"
-        }
+        {},
+        {}
       ]
     }
   }

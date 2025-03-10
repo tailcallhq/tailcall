@@ -9,15 +9,16 @@ expression: response
   },
   "body": {
     "data": {
-      "animals": [
-        {},
+      "queryNodeC": [
         {
-          "__typename": "Cat",
-          "meow": "meow"
+          "name": "nodeA",
+          "__typename": "NodeA",
+          "nodeA_id": "nodeA_id"
         },
         {
-          "__typename": "Bird",
-          "tweet": "tweet"
+          "name": "nodeB",
+          "__typename": "NodeB",
+          "nodeB_id": "nodeB_id"
         }
       ]
     }
