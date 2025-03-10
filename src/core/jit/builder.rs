@@ -303,15 +303,10 @@ impl<'a> Builder<'a> {
                 }
             }
         }
-        let mut fragments_visited = HashSet::new();
         for field in fragments_fields {
-            if visited.contains(field.output_name.as_str())
-                || fragments_visited
-                    .contains(&(field.output_name.clone(), field.type_condition.clone()))
-            {
+            if visited.contains(field.output_name.as_str()) {
                 continue;
             }
-            fragments_visited.insert((field.output_name.clone(), field.type_condition.clone()));
             fields.push(field);
         }
         fields.sort_by(|a, b| a.id.cmp(&b.id));
