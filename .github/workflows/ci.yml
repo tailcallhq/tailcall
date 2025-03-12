@@ -54,7 +54,7 @@ jobs:
       - name: Install Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.13"
 
       - name: Install cargo-lambda
         run: pip install cargo-lambda
@@ -350,7 +350,7 @@ jobs:
       - name: Install Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.13"
 
       - name: Install cargo-lambda
         run: pip install cargo-lambda
