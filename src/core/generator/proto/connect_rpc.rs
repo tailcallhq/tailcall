@@ -1,4 +1,5 @@
 use std::fmt::Display;
+
 use tailcall_valid::Valid;
 
 use crate::core::config::{Config, Grpc, Http, Resolver, ResolverSet};
@@ -12,9 +13,13 @@ enum ConnectProtocolVersion {
 
 impl Display for ConnectProtocolVersion {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", match self {
-            ConnectProtocolVersion::V1 => "1".to_string(),
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                ConnectProtocolVersion::V1 => "1".to_string(),
+            }
+        )
     }
 }
 
