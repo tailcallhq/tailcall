@@ -150,7 +150,7 @@ impl ArgId {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct FieldId(usize);
 
 impl Debug for FieldId {

@@ -54,7 +54,7 @@ jobs:
       - name: Install Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.13"
 
       - name: Install cargo-lambda
         run: pip install cargo-lambda
@@ -78,7 +78,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20.11.0"
+          node-version: "20.18.3"
 
       - name: Install Wasm Pack
         run: cargo install wasm-bindgen-cli --vers "0.2.92"
@@ -106,7 +106,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20.11.0"
+          node-version: "20.18.3"
 
       - name: Package Install
         run: npm install
@@ -131,7 +131,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20.11.0"
+          node-version: "20.18.3"
       - name: Install Prettier
         run: npm i -g prettier
 
@@ -290,7 +290,7 @@ jobs:
         if: (startsWith(github.event.head_commit.message, 'feat') || startsWith(github.event.head_commit.message, 'fix')) && (github.event_name == 'push' && github.ref == 'refs/heads/main')
         uses: actions/setup-node@v4
         with:
-          node-version: 20.11.0
+          node-version: 20.18.3
           registry-url: https://registry.npmjs.org
 
       - name: Install dependencies
@@ -350,7 +350,7 @@ jobs:
       - name: Install Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.13"
 
       - name: Install cargo-lambda
         run: pip install cargo-lambda
@@ -403,7 +403,7 @@ jobs:
       - name: Install Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20.11.0
+          node-version: 20.18.3
           registry-url: https://registry.npmjs.org
       - name: Install Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
