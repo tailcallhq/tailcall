@@ -1,7 +1,27 @@
+use std::fmt::Display;
+
 use tailcall_valid::Valid;
 
 use crate::core::config::{Config, Grpc, Http, Resolver, ResolverSet};
 use crate::core::Transform;
+
+const HEADER_CONNECT_PROTOCOL_VERSION: &str = "Connect-Protocol-Version";
+
+enum ConnectProtocolVersion {
+    V1,
+}
+
+impl Display for ConnectProtocolVersion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                ConnectProtocolVersion::V1 => "1".to_string(),
+            }
+        )
+    }
+}
 
 pub struct ConnectRPC;
 
@@ -47,7 +67,12 @@ impl From<Grpc> for Http {
         let endpoint = parts[parts.len() - 1].to_string();
 
         let new_url = format!("{}/{}/{}", url, method, endpoint);
-        let headers = grpc.headers;
+        let mut headers = grpc.headers;
+        headers.push(crate::core::config::KeyValue {
+            key: HEADER_CONNECT_PROTOCOL_VERSION.to_string(),
+            value: ConnectProtocolVersion::V1.to_string(),
+        });
+
         let batch_key = grpc.batch_key;
         let dedupe = grpc.dedupe;
         let select = grpc.select;
@@ -135,6 +160,14 @@ mod tests {
                 .unwrap()
                 .value,
             "bar".to_string()
+        );
+        assert_eq!(
+            http.headers
+                .iter()
+                .find(|h| h.key == "Connect-Protocol-Version")
+                .unwrap()
+                .value,
+            "1".to_string()
         );
         assert_eq!(http.body, Some(json!({})));
     }
