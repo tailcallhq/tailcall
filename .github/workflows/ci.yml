@@ -63,7 +63,7 @@ jobs:
           python-version: "3.13"
 
       - name: Install cargo-lambda
-        run: pip install cargo-lambda==v1.7.0
+        run: pip install cargo-lambda
 
       - name: Build
         env:
@@ -368,7 +368,7 @@ jobs:
           python-version: "3.13"
 
       - name: Install cargo-lambda
-        run: pip install cargo-lambda==v1.7.0
+        run: pip install cargo-lambda
 
       - name: Build
         env:
