@@ -47,8 +47,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - name: Install musl-tools
-        run: sudo apt-get update && sudo apt-get install -y musl-tools
+      - name: Install musl-tools and OpenSSL development libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools musl-dev libssl-dev pkg-config
+          sudo ln -s /usr/include/x86_64-linux-gnu/asm /usr/include/x86_64-linux-musl/asm
+          sudo ln -s /usr/include/asm-generic /usr/include/x86_64-linux-musl/asm-generic
 
       - name: Install Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
@@ -65,6 +69,10 @@ jobs:
 
       - name: Build
         run: cargo lambda build
+        env:
+          OPENSSL_DIR: /usr
+          OPENSSL_INCLUDE_DIR: /usr/include
+          OPENSSL_LIB_DIR: /usr/lib/x86_64-linux-gnu
 
   test_wasm:
     name: Run Tests (WASM)
@@ -347,8 +355,12 @@ jobs:
     steps:
       - name: Checkout Current Branch (Fast)
         uses: actions/checkout@v4
-      - name: Install musl-tools
-        run: sudo apt-get update && sudo apt-get install -y musl-tools
+      - name: Install musl-tools and OpenSSL development libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools musl-dev libssl-dev pkg-config
+          sudo ln -s /usr/include/x86_64-linux-gnu/asm /usr/include/x86_64-linux-musl/asm
+          sudo ln -s /usr/include/asm-generic /usr/include/x86_64-linux-musl/asm-generic
 
       - name: Install Correct Toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
@@ -367,6 +379,9 @@ jobs:
         env:
           APP_VERSION: ${{ needs.draft_release.outputs.create_release_name }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          OPENSSL_DIR: /usr
+          OPENSSL_INCLUDE_DIR: /usr/include
+          OPENSSL_LIB_DIR: /usr/lib/x86_64-linux-gnu
         run: cargo lambda build -p tailcall-aws-lambda --release --target x86_64-unknown-linux-musl
 
       - name: Rename Binary with Target Name
