@@ -21,11 +21,8 @@ type Query {
     url: http://jsonplaceholder.typicode.com/users/1
   response:
     status: 419
-    body: {
-      code: "UM0018",
-      message: "change limit exceeded",
-      cause: "exceeded the maximum allowed number of name changes"
-    }
+    body:
+      {code: "UM0018", message: "change limit exceeded", cause: "exceeded the maximum allowed number of name changes"}
 ```
 
 ```yml @test
