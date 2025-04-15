@@ -87,6 +87,14 @@ impl ErrorExtensions for Error {
                 e.set("grpcStatusMessage", grpc_status_message);
                 e.set("grpcStatusDetails", grpc_status_details.clone());
             }
+            if let Error::IO(message) = self {
+                if !message.is_empty() {
+                    e.set(
+                        "ioError",
+                        serde_json::from_str::<ConstValue>(&message).unwrap_or_default(),
+                    );
+                }
+            }
         })
     }
 }

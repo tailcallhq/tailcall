@@ -122,8 +122,9 @@ impl HttpIO for Http {
                 .map(|body| String::from_utf8_lossy(&body.to_bytes()).to_string())
                 .unwrap_or_default();
 
-            // Create a detailed error message with both status code and body
-            return Err(anyhow::anyhow!(status_code).context(error_body));
+            // Return the JSON error body directly as the error so it can be processed in
+            // the error module
+            return Err(anyhow::anyhow!(error_body));
         }
 
         let mut response = Response { status: status_code, ..Default::default() };

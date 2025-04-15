@@ -17,7 +17,14 @@ expression: response
             "line": 1,
             "column": 9
           }
-        ]
+        ],
+        "extensions": {
+          "ioError": {
+            "code": "UM0018",
+            "message": "change limit exceeded",
+            "cause": "exceeded the maximum allowed number of name changes"
+          }
+        }
       }
     ]
   }
