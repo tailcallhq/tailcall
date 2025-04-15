@@ -176,12 +176,19 @@ impl HttpIO for NativeHttp {
             tracing::Span::current().set_attribute(status_code.key, status_code.value);
         }
 
-        Ok(Response::from_reqwest(
-            response?
-                .error_for_status()
-                .map_err(|err| err.without_url())?,
-        )
-        .await?)
+        // Get the response
+        let response = response?;
+
+        // Check if it's an error status
+        if let Err(err) = response.error_for_status_ref() {
+            // Get the body content first
+            let body_text = response.text().await?;
+            // Create an error with the status code and add body content as context
+            return Err(anyhow::Error::new(err.without_url()).context(body_text));
+        }
+
+        // If not an error status, proceed normally
+        Ok(Response::from_reqwest(response).await?)
     }
 }
 
@@ -281,5 +288,71 @@ mod tests {
 
         let resp = make_request(&url1, &native_http).await;
         assert_eq!(resp.headers.get("x-cache-lookup").unwrap(), "MISS");
+    }
+    #[tokio::test]
+    async fn test_native_http_error_with_body() {
+        let server = start_mock_server();
+
+        // Mock a 404 response with an error message body
+        server.mock(|when, then| {
+            when.method(httpmock::Method::GET).path("/error-with-body");
+            then.status(404).body("{\"error\":\"Resource not found\"}");
+        });
+
+        let native_http = NativeHttp::init(&Default::default(), &Default::default());
+        let port = server.port();
+        let request_url = format!("http://localhost:{}/error-with-body", port);
+
+        // Create a request that will result in a 404 error
+        let request = reqwest::Request::new(Method::GET, request_url.parse().unwrap());
+        let result = native_http.execute(request).await;
+
+        // Assert that we get an error
+        assert!(result.is_err());
+
+        // Convert the error to a string to check its content
+        let error = result.unwrap_err();
+        let error_string = format!("{:?}", error);
+        // Check that the error contains both the status code and the error message
+        assert!(
+            error_string.contains("404"),
+            "Error should contain status code"
+        );
+        assert!(
+            error_string.contains("Resource not found"),
+            "Error should contain the error message body"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_native_http_error_without_body() {
+        let server = start_mock_server();
+
+        // Mock a 500 response with an empty body
+        server.mock(|when, then| {
+            when.method(httpmock::Method::GET)
+                .path("/error-without-body");
+            then.status(500).body("");
+        });
+
+        let native_http = NativeHttp::init(&Default::default(), &Default::default());
+        let port = server.port();
+        let request_url = format!("http://localhost:{}/error-without-body", port);
+
+        // Create a request that will result in a 500 error
+        let request = reqwest::Request::new(Method::GET, request_url.parse().unwrap());
+        let result = native_http.execute(request).await;
+
+        // Assert that we get an error
+        assert!(result.is_err());
+
+        // Convert the error to a string to check its content
+        let error = result.unwrap_err();
+        let error_string = format!("{:?}", error);
+        // Check that the error contains the status code but the body is empty
+        assert!(
+            error_string.contains("500"),
+            "Error should contain status code"
+        );
     }
 }
