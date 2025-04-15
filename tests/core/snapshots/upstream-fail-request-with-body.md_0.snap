@@ -11,7 +11,7 @@ expression: response
     "data": null,
     "errors": [
       {
-        "message": "IOException: {}",
+        "message": "IOException: {\"code\":\"UM0018\",\"message\":\"change limit exceeded\",\"cause\":\"exceeded the maximum allowed number of name changes\"}",
         "locations": [
           {
             "line": 1,

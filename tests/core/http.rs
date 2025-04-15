@@ -115,7 +115,15 @@ impl HttpIO for Http {
         let status_code = reqwest::StatusCode::from_u16(mock_response.0.status)?;
 
         if status_code.is_client_error() || status_code.is_server_error() {
-            return Err(anyhow::format_err!("Status code error"));
+            // Include the actual error body from the mock in the error
+            let error_body = mock_response
+                .0
+                .body
+                .map(|body| String::from_utf8_lossy(&body.to_bytes()).to_string())
+                .unwrap_or_default();
+
+            // Create a detailed error message with both status code and body
+            return Err(anyhow::anyhow!(status_code).context(error_body));
         }
 
         let mut response = Response { status: status_code, ..Default::default() };
