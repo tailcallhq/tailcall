@@ -91,7 +91,7 @@ impl ErrorExtensions for Error {
                 if !message.is_empty() {
                     e.set(
                         "ioError",
-                        serde_json::from_str::<ConstValue>(&message).unwrap_or_default(),
+                        serde_json::from_str::<ConstValue>(message).unwrap_or_default(),
                     );
                 }
             }
