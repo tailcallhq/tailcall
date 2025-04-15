@@ -73,6 +73,8 @@ jobs:
           OPENSSL_DIR: /usr
           OPENSSL_INCLUDE_DIR: /usr/include
           OPENSSL_LIB_DIR: /usr/lib/x86_64-linux-gnu
+          # Disable sanitizers to fix UBSAN undefined reference errors
+          RUSTFLAGS: "-C target-feature=+crt-static -C link-arg=-lgcc"
 
   test_wasm:
     name: Run Tests (WASM)
@@ -382,6 +384,8 @@ jobs:
           OPENSSL_DIR: /usr
           OPENSSL_INCLUDE_DIR: /usr/include
           OPENSSL_LIB_DIR: /usr/lib/x86_64-linux-gnu
+          # Disable sanitizers to fix UBSAN undefined reference errors
+          RUSTFLAGS: "-C target-feature=+crt-static -C link-arg=-lgcc"
         run: cargo lambda build -p tailcall-aws-lambda --release --target x86_64-unknown-linux-musl
 
       - name: Rename Binary with Target Name
