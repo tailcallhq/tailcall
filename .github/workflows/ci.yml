@@ -47,9 +47,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - name: Install musl-tools
+        run: |
+          sudo apt-get update && sudo apt-get install -y musl-tools
 
       - name: Install Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: x86_64-unknown-linux-musl
+          rustflags: -C target-feature=+crt-static -C linker=rust-lld
 
       - name: Install Python
         uses: actions/setup-python@v5
@@ -60,8 +66,11 @@ jobs:
         run: pip install cargo-lambda
 
       - name: Build
-        run: cargo lambda build
-
+        env:
+          RUSTFLAGS: -C target-feature=+crt-static -C linker=rust-lld
+        run: |
+          # Disable sanitizer features in dependencies
+          CARGO_FEATURE_SANITIZE=0 CARGO_FEATURE_SANITIZE_MEMORY=0 cargo lambda build --release --target x86_64-unknown-linux-musl
   test_wasm:
     name: Run Tests (WASM)
     runs-on: ubuntu-latest
@@ -343,9 +352,15 @@ jobs:
     steps:
       - name: Checkout Current Branch (Fast)
         uses: actions/checkout@v4
+      - name: Install musl-tools
+        run: |
+          sudo apt-get update && sudo apt-get install -y musl-tools
 
       - name: Install Correct Toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: x86_64-unknown-linux-musl
+          rustflags: -C target-feature=+crt-static -C linker=rust-lld
 
       - name: Install Python
         uses: actions/setup-python@v5
@@ -359,7 +374,10 @@ jobs:
         env:
           APP_VERSION: ${{ needs.draft_release.outputs.create_release_name }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: cargo lambda build -p tailcall-aws-lambda --release --target x86_64-unknown-linux-musl
+          RUSTFLAGS: -C target-feature=+crt-static -C linker=rust-lld
+        run: |
+          # Disable sanitizer features in dependencies
+          CARGO_FEATURE_SANITIZE=0 CARGO_FEATURE_SANITIZE_MEMORY=0 cargo lambda build -p tailcall-aws-lambda --release --target x86_64-unknown-linux-musl
 
       - name: Rename Binary with Target Name
         run: |
