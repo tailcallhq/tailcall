@@ -30,14 +30,7 @@ impl HttpIO for LambdaHttp {
         let request_str = format!("{} {}", request.method(), request.url());
         let response = self.client.execute(request).await?;
 
-        // Check if it's an error status
-        if let Err(err) = response.error_for_status_ref() {
-            let body_text = response.text().await?;
-            // Create an error with the status code and add body content as context
-            return Err(anyhow::Error::new(err.without_url()).context(body_text));
-        }
-
-        let res = Response::from_reqwest(response).await?;
+        let res = Response::from_reqwest_with_error_handling(response).await?;
         tracing::info!("{} {}", request_str, res.status.as_u16());
         Ok(res)
     }

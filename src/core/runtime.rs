@@ -119,17 +119,7 @@ pub mod test {
     impl HttpIO for TestHttp {
         async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
             let response = self.client.execute(request).await?;
-
-            // Check if it's an error status
-            if let Err(err) = response.error_for_status_ref() {
-                // Get the body content first (this is the key step)
-                let body_text = response.text().await?;
-
-                // Create an error with the status code and add body content as context
-                return Err(anyhow::Error::new(err.without_url()).context(body_text));
-            }
-
-            Response::from_reqwest(response).await
+            Response::from_reqwest_with_error_handling(response).await
         }
     }
 

@@ -147,7 +147,7 @@ impl ErrorExtensionValues {
     {
         self.0.extend(
             iter.into_iter()
-                .map(|(k, v)| (k.as_ref().to_string(), v.into()))
+                .map(|(k, v)| (k.as_ref().to_string(), v.into())),
         );
     }
 

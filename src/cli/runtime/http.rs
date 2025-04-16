@@ -179,16 +179,7 @@ impl HttpIO for NativeHttp {
         // Get the response
         let response = response?;
 
-        // Check if it's an error status
-        if let Err(err) = response.error_for_status_ref() {
-            // Get the body content first
-            let body_text = response.text().await?;
-            // Create an error with the status code and add body content as context
-            return Err(anyhow::Error::new(err.without_url()).context(body_text));
-        }
-
-        // If not an error status, proceed normally
-        Ok(Response::from_reqwest(response).await?)
+        Response::from_reqwest_with_error_handling(response).await
     }
 }
 
