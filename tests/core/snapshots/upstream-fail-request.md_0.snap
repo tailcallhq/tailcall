@@ -17,10 +17,7 @@ expression: response
             "line": 1,
             "column": 9
           }
-        ],
-        "extensions": {
-          "ioError": {}
-        }
+        ]
       }
     ]
   }

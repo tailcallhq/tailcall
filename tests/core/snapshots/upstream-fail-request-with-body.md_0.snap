@@ -19,11 +19,9 @@ expression: response
           }
         ],
         "extensions": {
-          "ioError": {
-            "code": "UM0018",
-            "message": "change limit exceeded",
-            "cause": "exceeded the maximum allowed number of name changes"
-          }
+          "cause": "exceeded the maximum allowed number of name changes",
+          "code": "UM0018",
+          "message": "change limit exceeded"
         }
       }
     ]

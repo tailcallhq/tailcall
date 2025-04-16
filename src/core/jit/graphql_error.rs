@@ -138,6 +138,19 @@ impl ErrorExtensionValues {
         self.0.insert(name.as_ref().to_string(), value.into());
     }
 
+    /// Extend the extension values with key-value pairs
+    pub fn extend<K, V, I>(&mut self, iter: I)
+    where
+        K: AsRef<str>,
+        V: Into<async_graphql::Value>,
+        I: IntoIterator<Item = (K, V)>,
+    {
+        self.0.extend(
+            iter.into_iter()
+                .map(|(k, v)| (k.as_ref().to_string(), v.into()))
+        );
+    }
+
     /// Unset an extension value.
     pub fn unset(&mut self, name: impl AsRef<str>) {
         self.0.remove(name.as_ref());

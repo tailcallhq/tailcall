@@ -19,7 +19,7 @@ expression: response
           }
         ],
         "extensions": {
-          "ioError": null
+          "cause": "Cannot discriminate the type of a non object type."
         }
       }
     ]
