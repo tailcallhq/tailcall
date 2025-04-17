@@ -33,12 +33,8 @@ impl HttpIO for WasmHttp {
         let url = request.url().clone();
         // TODO: remove spawn local
         let res = spawn_local(async move {
-            let response = client
-                .execute(request)
-                .await?
-                .error_for_status()
-                .map_err(|err| err.without_url())?;
-            Response::from_reqwest(response).await
+            let response = client.execute(request).await?;
+            Response::from_reqwest_with_error_handling(response).await
         })
         .await?;
         tracing::info!("{} {} {}", method, url, res.status.as_u16());

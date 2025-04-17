@@ -11,7 +11,6 @@ use crate::core::{auth, cache, worker, Errata};
 #[derive(From, Debug, Error, Clone)]
 pub enum Error {
     IO(String),
-
     GRPC {
         grpc_code: i32,
         grpc_description: String,
@@ -86,6 +85,13 @@ impl ErrorExtensions for Error {
                 e.set("grpcDescription", grpc_description);
                 e.set("grpcStatusMessage", grpc_status_message);
                 e.set("grpcStatusDetails", grpc_status_details.clone());
+            }
+            if let Error::IO(message) = self {
+                if let Ok(ConstValue::Object(map)) = serde_json::from_str::<ConstValue>(message) {
+                    e.extend(map);
+                } else {
+                    e.set("cause", message);
+                }
             }
         })
     }

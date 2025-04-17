@@ -118,13 +118,8 @@ pub mod test {
     #[async_trait::async_trait]
     impl HttpIO for TestHttp {
         async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
-            let response = self.client.execute(request).await;
-            Response::from_reqwest(
-                response?
-                    .error_for_status()
-                    .map_err(|err| err.without_url())?,
-            )
-            .await
+            let response = self.client.execute(request).await?;
+            Response::from_reqwest_with_error_handling(response).await
         }
     }
 

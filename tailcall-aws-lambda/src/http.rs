@@ -27,15 +27,11 @@ impl LambdaHttp {
 #[async_trait::async_trait]
 impl HttpIO for LambdaHttp {
     async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
-        let req_str = format!("{} {}", request.method(), request.url());
-        let response = self
-            .client
-            .execute(request)
-            .await?
-            .error_for_status()
-            .map_err(|err| err.without_url())?;
-        let res = Response::from_reqwest(response).await?;
-        tracing::info!("{} {}", req_str, res.status.as_u16());
+        let request_str = format!("{} {}", request.method(), request.url());
+        let response = self.client.execute(request).await?;
+
+        let res = Response::from_reqwest_with_error_handling(response).await?;
+        tracing::info!("{} {}", request_str, res.status.as_u16());
         Ok(res)
     }
 }

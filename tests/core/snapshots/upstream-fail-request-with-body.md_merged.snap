@@ -1,0 +1,16 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server @upstream @link(src: "schema_0.graphql", type: Config) {
+  query: Query
+}
+
+type Query {
+  user: User @http(url: "http://jsonplaceholder.typicode.com/users/1")
+}
+
+type User {
+  id: Int
+  name: String
+}
