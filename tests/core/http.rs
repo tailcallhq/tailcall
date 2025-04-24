@@ -9,6 +9,7 @@ use anyhow::anyhow;
 use http::header::{HeaderName, HeaderValue};
 use hyper::body::Bytes;
 use tailcall::core::http::Response;
+use tailcall::core::ir::Error;
 use tailcall::core::HttpIO;
 
 use super::runtime::{ExecutionMock, ExecutionSpec};
@@ -115,7 +116,20 @@ impl HttpIO for Http {
         let status_code = reqwest::StatusCode::from_u16(mock_response.0.status)?;
 
         if status_code.is_client_error() || status_code.is_server_error() {
-            return Err(anyhow::format_err!("Status code error"));
+            // Include the actual error body from the mock in the error
+            let error_body = mock_response
+                .0
+                .body
+                .map(|body| String::from_utf8_lossy(&body.to_bytes()).to_string())
+                .unwrap_or_default();
+
+            // Return the JSON error body directly as the error so it can be processed in
+            // the error module
+            let error = Error::HTTP {
+                message: format!("{}: {}", status_code, error_body),
+                body: error_body,
+            };
+            return Err(error.into());
         }
 
         let mut response = Response { status: status_code, ..Default::default() };

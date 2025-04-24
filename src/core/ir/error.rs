@@ -11,7 +11,10 @@ use crate::core::{auth, cache, worker, Errata};
 #[derive(From, Debug, Error, Clone)]
 pub enum Error {
     IO(String),
-
+    HTTP {
+        message: String,
+        body: String,
+    },
     GRPC {
         grpc_code: i32,
         grpc_description: String,
@@ -47,6 +50,8 @@ impl From<Error> for Errata {
     fn from(value: Error) -> Self {
         match value {
             Error::IO(message) => Errata::new("IOException").description(message),
+            Error::HTTP{ message, body:_ } => Errata::new("HTTP Error")
+                .description(message),
             Error::GRPC {
                 grpc_code,
                 grpc_description,
@@ -86,6 +91,14 @@ impl ErrorExtensions for Error {
                 e.set("grpcDescription", grpc_description);
                 e.set("grpcStatusMessage", grpc_status_message);
                 e.set("grpcStatusDetails", grpc_status_details.clone());
+            }
+
+            if let Error::HTTP { message: _, body } = self {
+                if let Ok(ConstValue::Object(map)) = serde_json::from_str::<ConstValue>(body) {
+                    e.extend(map);
+                } else {
+                    e.set("cause", body);
+                }
             }
         })
     }

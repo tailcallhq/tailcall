@@ -49,6 +49,27 @@ impl FromValue for ConstValue {
 }
 
 impl Response<Bytes> {
+    /// Handle error responses with body extraction for better error messages
+    /// This is a common pattern used across different HTTP clients
+    pub async fn from_reqwest_with_error_handling(
+        response: reqwest::Response,
+    ) -> anyhow::Result<Self> {
+        // Check if it's an error status
+        if let Err(err) = response.error_for_status_ref() {
+            // Get the body content first (this is the key step)
+            let body_text = response.text().await?;
+            // Create an error with the status code and add body content as context
+            let err = Error::HTTP {
+                message: err.without_url().to_string(),
+                body: body_text.clone(),
+            };
+            return Err(anyhow::Error::new(err).context(body_text));
+        }
+
+        // If not an error status, proceed normally
+        Self::from_reqwest(response).await
+    }
+
     pub async fn from_reqwest(resp: reqwest::Response) -> Result<Self> {
         let status = resp.status();
         let headers = resp.headers().to_owned();

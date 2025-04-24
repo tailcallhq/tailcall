@@ -1,0 +1,29 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": null,
+    "errors": [
+      {
+        "message": "HTTP Error: 429 Too Many Requests: {\"code\":\"UM0018\",\"message\":\"change limit exceeded\",\"cause\":\"exceeded the maximum allowed number of name changes\"}",
+        "locations": [
+          {
+            "line": 1,
+            "column": 9
+          }
+        ],
+        "extensions": {
+          "cause": "exceeded the maximum allowed number of name changes",
+          "code": "UM0018",
+          "message": "change limit exceeded"
+        }
+      }
+    ]
+  }
+}

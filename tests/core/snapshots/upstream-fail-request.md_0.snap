@@ -1,7 +1,6 @@
 ---
 source: tests/core/spec.rs
 expression: response
-snapshot_kind: text
 ---
 {
   "status": 200,
@@ -12,7 +11,7 @@ snapshot_kind: text
     "data": null,
     "errors": [
       {
-        "message": "IOException: Status code error",
+        "message": "HTTP Error: 503 Service Unavailable: {}",
         "locations": [
           {
             "line": 1,

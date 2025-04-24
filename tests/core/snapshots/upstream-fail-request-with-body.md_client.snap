@@ -1,0 +1,16 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+---
+type Query {
+  user: User
+}
+
+type User {
+  id: Int
+  name: String
+}
+
+schema {
+  query: Query
+}
