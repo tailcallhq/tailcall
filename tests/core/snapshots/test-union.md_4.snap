@@ -17,10 +17,7 @@ expression: response
             "line": 2,
             "column": 3
           }
-        ],
-        "extensions": {
-          "cause": "The type `Unknown` is not in the list of acceptable types [\"Bar\", \"Foo\"] of KeyedDiscriminator(type=\"FooBar\")"
-        }
+        ]
       }
     ]
   }

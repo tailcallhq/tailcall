@@ -17,10 +17,7 @@ expression: response
             "line": 2,
             "column": 3
           }
-        ],
-        "extensions": {
-          "cause": "Cannot discriminate the type of a non object type."
-        }
+        ]
       }
     ]
   }

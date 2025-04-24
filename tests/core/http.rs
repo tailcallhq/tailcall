@@ -9,6 +9,7 @@ use anyhow::anyhow;
 use http::header::{HeaderName, HeaderValue};
 use hyper::body::Bytes;
 use tailcall::core::http::Response;
+use tailcall::core::ir::Error;
 use tailcall::core::HttpIO;
 
 use super::runtime::{ExecutionMock, ExecutionSpec};
@@ -124,7 +125,11 @@ impl HttpIO for Http {
 
             // Return the JSON error body directly as the error so it can be processed in
             // the error module
-            return Err(anyhow::anyhow!(error_body));
+            let error = Error::HTTP {
+                message: format!("{}: {}", status_code, error_body),
+                body: error_body,
+            };
+            return Err(error.into());
         }
 
         let mut response = Response { status: status_code, ..Default::default() };

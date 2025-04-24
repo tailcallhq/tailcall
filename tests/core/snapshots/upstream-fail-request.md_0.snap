@@ -11,7 +11,7 @@ expression: response
     "data": null,
     "errors": [
       {
-        "message": "IOException: {}",
+        "message": "HTTP Error: 503 Service Unavailable: {}",
         "locations": [
           {
             "line": 1,
