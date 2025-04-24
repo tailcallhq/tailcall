@@ -170,7 +170,7 @@ jobs:
             echo "Using cached NASM"
           } else {
             $nasmUrl = 'https://github.com/microsoft/vcpkg/files/12073957/nasm-2.16.01-win64.zip'
-            $nasmZip = 'nasm.zip'
+            $nasmZip = 'nasm-2.16.01-win64.zip'
             Invoke-WebRequest -Uri $nasmUrl -OutFile $nasmZip
             Expand-Archive -Path $nasmZip -DestinationPath '.'
           }
