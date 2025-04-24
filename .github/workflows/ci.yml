@@ -169,7 +169,7 @@ jobs:
           if (Test-Path nasm-2.16.02) {
             echo "Using cached NASM"
           } else {
-            $nasmUrl = 'https://www.nasm.us/pub/nasm/releasebuilds/2.16.02/win64/nasm-2.16.02-win64.zip'
+            $nasmUrl = 'https://github.com/microsoft/vcpkg/files/12073957/nasm-2.16.01-win64.zip'
             $nasmZip = 'nasm.zip'
             Invoke-WebRequest -Uri $nasmUrl -OutFile $nasmZip
             Expand-Archive -Path $nasmZip -DestinationPath '.'
