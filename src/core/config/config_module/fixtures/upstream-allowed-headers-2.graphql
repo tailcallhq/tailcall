@@ -6,8 +6,4 @@ type Query {
   world: String @resolver(name: "world")
 }
 
-extend schema
-  @upstream(
-    baseURL: "http://localhost:8080",
-    allowedHeaders: ["x-user-id", "authorization"]
-  )
+extend schema @upstream(baseURL: "http://localhost:8080", allowedHeaders: ["x-user-id", "authorization"])
