@@ -85,6 +85,8 @@ impl Default for NativeHttp {
 }
 
 impl NativeHttp {
+    /// Initialize the HTTP client with the given upstream configuration and
+    /// telemetry settings.
     pub fn init(upstream: &Upstream, telemetry: &Telemetry) -> Self {
         let mut builder = Client::builder()
             .tcp_keepalive(Some(Duration::from_secs(upstream.tcp_keep_alive)))
