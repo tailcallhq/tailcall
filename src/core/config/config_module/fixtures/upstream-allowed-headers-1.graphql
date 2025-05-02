@@ -1,0 +1,12 @@
+schema {
+  query: Query
+}
+
+type Query {
+  hello: String @resolver(name: "hello")
+}
+
+extend schema
+  @upstream(
+    baseURL: "http://localhost:8080"
+  )
