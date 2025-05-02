@@ -289,15 +289,30 @@ impl Invariant for Cache {
             .trace(&trace_name)
         }))
         .fuse(self.config.schema.unify(other.config.schema))
-        .map( |(merged_types, merged_enums, schema)| {
+        .map(|(merged_types, merged_enums, schema)| {
             types.extend(merged_types);
             enums.extend(merged_enums);
+
+            // Merge upstream configuration, preserving allowed_headers from either config
+            // with preference given to other.config if it has allowed_headers set
+            let merged_upstream = {
+                let base_upstream = self.config.upstream.clone();
+                let allowed_headers = other.config.upstream.allowed_headers
+                    .clone()
+                    .or(base_upstream.allowed_headers.clone());
+                
+                crate::core::config::directives::Upstream {
+                    allowed_headers,
+                    ..base_upstream
+                }
+            };
 
             let config = Config {
                 types,
                 enums,
                 unions: self.config.unions.merge_right(other.config.unions),
                 schema,
+                upstream: merged_upstream,
                 ..self.config
             };
 
