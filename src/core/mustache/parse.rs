@@ -24,7 +24,7 @@ fn parse_name(input: &str) -> IResult<&str, String> {
     let alphanumeric_or_underscore_or_hyphen = nom::multi::many0(nom::branch::alt((
         nom::character::complete::alphanumeric1,
         nom::bytes::complete::tag("_"),
-        nom::bytes::complete::tag("-"), // Added support for hyphens
+        nom::bytes::complete::tag("-"),
     )));
 
     let parser =
