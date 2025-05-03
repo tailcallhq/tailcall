@@ -21,12 +21,14 @@ impl Mustache {
 fn parse_name(input: &str) -> IResult<&str, String> {
     let spaces = nom::character::complete::multispace0;
     let alpha = nom::character::complete::alpha1;
-    let alphanumeric_or_underscore = nom::multi::many0(nom::branch::alt((
+    let alphanumeric_or_underscore_or_hyphen = nom::multi::many0(nom::branch::alt((
         nom::character::complete::alphanumeric1,
         nom::bytes::complete::tag("_"),
+        nom::bytes::complete::tag("-"), // Added support for hyphens
     )));
 
-    let parser = nom::sequence::tuple((spaces, alpha, alphanumeric_or_underscore, spaces));
+    let parser =
+        nom::sequence::tuple((spaces, alpha, alphanumeric_or_underscore_or_hyphen, spaces));
 
     nom::combinator::map(parser, |(_, a, b, _)| {
         let b: String = b.into_iter().collect();
@@ -266,6 +268,19 @@ mod tests {
             Mustache::from(vec![Segment::Expression(vec![
                 "foo".to_string(),
                 "bar".to_string(),
+            ])])
+        );
+    }
+
+    #[test]
+    fn test_hyphenated_variable_names() {
+        let s = r"{{headers.user-id}}";
+        let mustache: Mustache = Mustache::parse(s);
+        assert_eq!(
+            mustache,
+            Mustache::from(vec![Segment::Expression(vec![
+                "headers".to_string(),
+                "user-id".to_string(),
             ])])
         );
     }
