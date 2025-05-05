@@ -19,8 +19,10 @@ const pkg = `@tailcallhq/core-${platform}-${arch}${libc}`
 
 try {
   // @ts-ignore
-  const {stdout, stderr} = await execa(`npm install ${pkg}@${version} --no-save`)
+  const {stdout, stderr} = await execa(`npm install ${pkg} --no-save`)
   stderr ? console.log(stderr) : console.log(`Successfully installed optional dependency: ${pkg}`, stdout)
 } catch (error) {
-  console.error(`Failed to install optional dependency: ${pkg}`, error.stderr)
+  console.error(`Failed to install optional dependency: ${pkg}`, error.stderr || error.message || 'Unknown error')
+  // Kill the process with a non-zero exit code
+  process.exit(1)
 }
