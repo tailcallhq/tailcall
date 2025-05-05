@@ -1,7 +1,6 @@
 ---
 source: tests/core/spec.rs
 expression: formatter
-snapshot_kind: text
 ---
 schema @server @upstream(allowedHeaders: ["X-bar", "x-foo"]) @link(src: "schema_0.graphql", type: Config) {
   query: Query
@@ -12,5 +11,7 @@ type Post {
 }
 
 type Query {
+  barField: String! @expr(body: "{{.headers.x-bar}}")
+  fooField: String! @expr(body: "{{.headers.x-foo}}")
   posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts")
 }
