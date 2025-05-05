@@ -1,13 +1,14 @@
 ---
 source: tests/core/spec.rs
 expression: formatted
-snapshot_kind: text
 ---
 type Post {
   id: Int
 }
 
 type Query {
+  barField: String!
+  fooField: String!
   posts: [Post]
 }
 
