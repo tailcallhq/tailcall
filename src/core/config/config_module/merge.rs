@@ -557,7 +557,6 @@ mod tests {
     #[test]
     fn test_upstream_merge_right_order() -> Result<()> {
         use crate::core::config::Config;
-        use crate::core::config::directives::Upstream;
 
         // Create a Config with specific upstream settings
         let mut config1 = Config::default();
