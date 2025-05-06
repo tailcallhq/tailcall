@@ -7,8 +7,8 @@ type Post {
 }
 
 type Query {
-  barField: String!
-  fooField: String!
+  barField: String
+  fooField: String
   posts: [Post]
 }
 
