@@ -26,7 +26,9 @@ npm i -g @tailcallhq/tailcall
 ```
 
 #### Windows Requirements
+
 If you're on Windows, you'll need to install:
+
 1. Microsoft Visual C++ Build Tools - [Download here](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
 2. Make sure your Node.js architecture (x86/x64) matches your Windows architecture
 
@@ -37,6 +39,7 @@ yarn global add @tailcallhq/tailcall
 ```
 
 #### Windows Requirements
+
 The same Windows requirements apply for Yarn installations as NPM.
 
 ### Home Brew
