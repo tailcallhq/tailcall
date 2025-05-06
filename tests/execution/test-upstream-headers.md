@@ -11,8 +11,8 @@ schema {
 }
 type Query {
   posts: [Post] @http(url: "http://jsonplaceholder.typicode.com/posts")
-  fooField: String! @expr(body: "{{.headers.x-foo}}")
-  barField: String! @expr(body: "{{.headers.x-bar}}")
+  fooField: String @expr(body: "{{.headers.x-foo}}")
+  barField: String @expr(body: "{{.headers.x-bar}}")
 }
 type Post {
   id: Int
