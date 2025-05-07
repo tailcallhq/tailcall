@@ -289,7 +289,7 @@ impl Invariant for Cache {
             .trace(&trace_name)
         }))
         .fuse(self.config.schema.unify(other.config.schema))
-        .map( |(merged_types, merged_enums, schema)| {
+        .map(|(merged_types, merged_enums, schema)| {
             types.extend(merged_types);
             enums.extend(merged_enums);
 
@@ -298,6 +298,7 @@ impl Invariant for Cache {
                 enums,
                 unions: self.config.unions.merge_right(other.config.unions),
                 schema,
+                upstream: self.config.upstream.merge_right(other.config.upstream),
                 ..self.config
             };
 
@@ -501,6 +502,91 @@ mod tests {
         let merged = merged.unify(subgraph_posts).to_result()?;
 
         assert_snapshot!(merged.to_sdl());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_upstream_allowed_headers_propagation() -> Result<()> {
+        use std::collections::BTreeSet;
+
+        use crate::core::config::Config;
+
+        // Create a Config with no allowed_headers
+        let config1 = Config::default();
+
+        // Create a Config with allowed_headers
+        let mut config2 = Config::default();
+        let mut headers = BTreeSet::new();
+        headers.insert("x-user-id".to_string());
+        headers.insert("authorization".to_string());
+        config2.upstream.allowed_headers = Some(headers.clone());
+
+        // Create Cache instances
+        let cache1 = Cache::from(config1.clone());
+        let cache2 = Cache::from(config2.clone());
+
+        // Verify initial state
+        assert_eq!(cache1.config.upstream.allowed_headers, None);
+        assert_eq!(
+            cache2.config.upstream.allowed_headers,
+            Some(headers.clone())
+        );
+
+        // Test merging cache1 and cache2
+        let merged = cache1.clone().unify(cache2.clone()).to_result()?;
+
+        // Verify that allowed_headers from cache2 are preserved in the merged cache
+        assert_eq!(
+            merged.config.upstream.allowed_headers,
+            Some(headers.clone())
+        );
+
+        // Test the reverse order (cache2 and cache1)
+        let merged_reverse = cache2.unify(cache1).to_result()?;
+
+        // Verify that allowed_headers from cache2 are still preserved
+        assert_eq!(
+            merged_reverse.config.upstream.allowed_headers,
+            Some(headers)
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_upstream_merge_right_order() -> Result<()> {
+        use crate::core::config::Config;
+
+        // Create a Config with specific upstream settings
+        let mut config1 = Config::default();
+        config1.upstream.connect_timeout = Some(30);
+        config1.upstream.timeout = Some(60);
+
+        // Create another Config with different upstream settings
+        let mut config2 = Config::default();
+        config2.upstream.timeout = Some(120); // This should override config1's timeout
+        config2.upstream.http_cache = Some(1000); // This should be added to the merged config
+
+        // Create Cache instances
+        let cache1 = Cache::from(config1.clone());
+        let cache2 = Cache::from(config2.clone());
+
+        // Test merging cache1 and cache2
+        let merged = cache1.clone().unify(cache2.clone()).to_result()?;
+
+        // Verify that values from cache2 override those from cache1
+        assert_eq!(merged.config.upstream.connect_timeout, Some(30));
+        assert_eq!(merged.config.upstream.timeout, Some(120)); // Should be from config2
+        assert_eq!(merged.config.upstream.http_cache, Some(1000)); // Should be from config2
+
+        // Test the reverse order (cache2 and cache1)
+        let merged_reverse = cache2.unify(cache1).to_result()?;
+
+        // Verify that values from cache1 override those from cache2
+        assert_eq!(merged_reverse.config.upstream.connect_timeout, Some(30)); // Should be from config1
+        assert_eq!(merged_reverse.config.upstream.timeout, Some(60)); // Should be from config1
+        assert_eq!(merged_reverse.config.upstream.http_cache, Some(1000)); // Should be from config2
 
         Ok(())
     }
