@@ -10,7 +10,7 @@ jobs:
   # IMPORTANT: in case of changing the structure of this file make sure to test
   # the changes against `npm/gen-root.ts` file
   setup-matrix:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       matrix: ${{ steps.setup-matrix.outputs.matrix }}
     steps:
@@ -33,34 +33,34 @@ jobs:
               ]
             include:
               - build: linux-x64-gnu
-                os: ubuntu-latest
+                os: ubuntu-22.04
                 rust: stable
                 target: x86_64-unknown-linux-gnu
                 libc: glibc
 
               - build: linux-x64-musl
-                os: ubuntu-latest
+                os: ubuntu-22.04
                 rust: stable
                 target: x86_64-unknown-linux-musl
                 libc: musl
                 cross: true
 
               - build: linux-arm64-gnu
-                os: ubuntu-latest
+                os: ubuntu-22.04
                 rust: stable
                 target: aarch64-unknown-linux-gnu
                 libc: glibc
                 cross: true
 
               - build: linux-arm64-musl
-                os: ubuntu-latest
+                os: ubuntu-22.04
                 rust: stable
                 target: aarch64-unknown-linux-musl
                 libc: musl
                 cross: true
 
               - build: linux-ia32-gnu
-                os: ubuntu-latest
+                os: ubuntu-22.04
                 rust: stable
                 target: i686-unknown-linux-gnu
                 libc: glibc

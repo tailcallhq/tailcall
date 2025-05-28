@@ -60,6 +60,9 @@ async function genServerPackage(buildDefinitions: string[]) {
     name: name,
     type: "module",
     version: packageVersion,
+    bin: {
+      "tailcall": "./cli.js"
+    },
     optionalDependencies,
     scarfSettings: {
       defaultOptIn: true,
@@ -90,10 +93,19 @@ async function genServerPackage(buildDefinitions: string[]) {
     optionalDependencies,
   )};\n${preInstallScript}`
 
+  // Write script files
   await fs.writeFile(resolve(scriptsPath, "post-install.js"), postInstallScriptContent, "utf8")
   await fs.writeFile(resolve(scriptsPath, "pre-install.js"), preInstallScriptContent, "utf8")
+  
+  // Write package.json
   await fs.writeFile(resolve(directoryPath, "./package.json"), JSON.stringify(tailcallPackage, null, 2), "utf8")
-
+  
+  // Copy cli.js and set executable permissions
+  const cliPath = resolve(directoryPath, "cli.js")
+  await fs.copyFile(resolve(__dirname, "cli.js"), cliPath)
+  await fs.chmod(cliPath, 0o755) // Make cli.js executable
+  
+  // Copy README
   await fs.copyFile(resolve(__dirname, "../README.md"), resolve(directoryPath, "./README.md"))
 }
 
