@@ -45,7 +45,7 @@ async function genPlatformPackage() {
   }
 
   // Only set libc for non-Windows platforms
-  if (libc && os !== 'win32') platformPackage.libc = [libc]
+  if (libc && os !== "win32") platformPackage.libc = [libc]
 
   const packagePath = `@tailcallhq/core-${build}`
   const binPath = `${packagePath}/bin`
