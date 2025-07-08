@@ -1390,9 +1390,9 @@ dependencies = [
 
 [[package]]
 name = "derive_setters"
-version = "0.1.6"
+version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4e8ef033054e131169b8f0f9a7af8f5533a9436fadf3c500ed547f730f07090d"
+checksum = "ae5c625eda104c228c06ecaf988d1c60e542176bd7a490e60eeda3493244c0c9"
 dependencies = [
  "darling 0.20.10",
  "proc-macro2",
