@@ -70,7 +70,6 @@ where
             // this check?
             .map(|field| Self::resolve_field(&index, field?))
             .collect::<Result<Vec<_>, _>>()?;
-
         // adjust the pre-computed values in selection set like graphql query for
         // @graphql directive.
         Self::resolve_graphql_selection_set(&mut selection, variables);
@@ -87,6 +86,7 @@ where
             interfaces: None,
             selection,
             before: self.plan.before,
+            variables: variables.clone(),
         })
     }
 

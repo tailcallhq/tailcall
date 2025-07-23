@@ -346,7 +346,7 @@ mod tests {
         let config = ConfigModule::from(config);
 
         let builder = Builder::new(&Blueprint::try_from(&config).unwrap(), &doc);
-        let plan = builder.build(None).unwrap();
+        let plan = builder.build(None, Variables::new()).unwrap();
         let plan = plan
             .try_map(|v| {
                 // Earlier we hard OperationPlan<ConstValue> which has impl Deserialize

@@ -4,11 +4,12 @@ use std::convert::Infallible;
 use std::fmt::{Debug, Display};
 use std::marker::PhantomData;
 
+use async_graphql_value::Value;
 use tailcall_valid::Valid;
 
 use crate::core::document::print_directives;
 use crate::core::ir::model::{IO, IR};
-use crate::core::jit::{Field, OperationPlan};
+use crate::core::jit::{Field, OperationPlan, Variables};
 use crate::core::json::JsonLikeOwned;
 use crate::core::{Mustache, Transform};
 
@@ -21,9 +22,10 @@ impl<A> GraphQL<A> {
     }
 }
 
-fn compute_selection_set<A: Display + Debug + JsonLikeOwned>(
+fn compute_selection_set<A: Display + Debug + Clone + Into<Value> + JsonLikeOwned>(
     base_field: &mut [Field<A>],
     interfaces: &HashSet<String>,
+    variables: &Variables<A>,
 ) {
     for field in base_field.iter_mut() {
         if let Some(ir) = field.ir.as_mut() {
@@ -33,17 +35,18 @@ fn compute_selection_set<A: Display + Debug + JsonLikeOwned>(
                         field.selection.iter(),
                         interfaces,
                         interfaces.contains(field.type_of.name()),
+                        variables,
                     ) {
                         req_template.selection = Some(Mustache::parse(&v).into());
                     }
                 }
             });
         }
-        compute_selection_set(field.selection.as_mut(), interfaces);
+        compute_selection_set(field.selection.as_mut(), interfaces, variables);
     }
 }
 
-impl<A: Display + Debug + JsonLikeOwned + Clone> Transform for GraphQL<A> {
+impl<A: Display + Debug + JsonLikeOwned + Clone + Into<Value>> Transform for GraphQL<A> {
     type Value = OperationPlan<A>;
     type Error = Infallible;
 
@@ -52,16 +55,17 @@ impl<A: Display + Debug + JsonLikeOwned + Clone> Transform for GraphQL<A> {
             Some(ref interfaces) => interfaces,
             None => &HashSet::new(),
         };
-        compute_selection_set(&mut plan.selection, interfaces);
+        compute_selection_set(&mut plan.selection, interfaces, &plan.variables);
 
         Valid::succeed(plan)
     }
 }
 
-fn format_selection_set<'a, A: 'a + Display + JsonLikeOwned>(
+fn format_selection_set<'a, A: 'a + Display + Debug + Clone + Into<Value> + JsonLikeOwned>(
     selection_set: impl Iterator<Item = &'a Field<A>>,
     interfaces: &HashSet<String>,
     is_parent_interface: bool,
+    variables: &Variables<A>,
 ) -> Option<String> {
     let mut fragments_fields = HashMap::new();
     let mut normal_fields = vec![];
@@ -76,8 +80,13 @@ fn format_selection_set<'a, A: 'a + Display + JsonLikeOwned>(
                 field.name.to_string()
             };
             let is_this_field_interface = interfaces.contains(field.type_of.name());
-            let formatted_selection_fields =
-                format_selection_field(field, &field_name, interfaces, is_this_field_interface);
+            let formatted_selection_fields = format_selection_field(
+                field,
+                &field_name,
+                interfaces,
+                is_this_field_interface,
+                variables,
+            );
             is_typename_requested = is_typename_requested
                 || (field_name == "__typename" && field.parent_fragment.is_none());
             match &field.parent_fragment {
@@ -113,15 +122,20 @@ fn format_selection_set<'a, A: 'a + Display + JsonLikeOwned>(
     Some(format!("{{ {} }}", normal_fields.join(" ")))
 }
 
-fn format_selection_field<A: Display + JsonLikeOwned>(
+fn format_selection_field<A: Display + Debug + Clone + Into<Value> + JsonLikeOwned>(
     field: &Field<A>,
     name: &str,
     interfaces: &HashSet<String>,
     is_parent_interface: bool,
+    variables: &Variables<A>,
 ) -> String {
-    let arguments = format_selection_field_arguments(field);
-    let selection_set =
-        format_selection_set(field.selection.iter(), interfaces, is_parent_interface);
+    let arguments = format_selection_field_arguments(field, variables);
+    let selection_set = format_selection_set(
+        field.selection.iter(),
+        interfaces,
+        is_parent_interface,
+        variables,
+    );
 
     let mut output = format!("{}{}", name, arguments);
 
@@ -142,12 +156,18 @@ fn format_selection_field<A: Display + JsonLikeOwned>(
     output
 }
 
-fn format_selection_field_arguments<A: Display>(field: &Field<A>) -> Cow<'static, str> {
+fn format_selection_field_arguments<A: Display + Debug + Clone + Into<Value>>(
+    field: &Field<A>,
+    variables: &Variables<A>,
+) -> Cow<'static, str> {
     let arguments = field
         .args
         .iter()
         .filter(|a| a.value.is_some())
-        .map(|arg| arg.to_string())
+        .map(|arg| {
+            let a = render_value(&arg.value.as_ref().unwrap().to_owned().into(), variables);
+            format!("{}: {}", arg.name, a)
+        })
         .collect::<Vec<_>>()
         .join(",");
 
@@ -155,5 +175,29 @@ fn format_selection_field_arguments<A: Display>(field: &Field<A>) -> Cow<'static
         Cow::Borrowed("")
     } else {
         Cow::Owned(format!("({})", arguments.escape_default()))
+    }
+}
+
+fn render_value<A>(value: &Value, variables: &Variables<A>) -> Value
+where
+    A: Into<Value> + Display + Clone,
+{
+    match value {
+        Value::Null
+        | Value::Number(_)
+        | Value::String(_)
+        | Value::Boolean(_)
+        | Value::Binary(_)
+        | Value::Enum(_) => value.clone(),
+        Value::Variable(s) => variables
+            .get(s.as_str())
+            .map(|x| x.clone().into())
+            .unwrap_or(Value::Null),
+        Value::List(v) => Value::List(v.iter().map(|v| render_value(v, variables)).collect()),
+        Value::Object(o) => Value::Object(
+            o.into_iter()
+                .map(|(k, v)| (k.clone(), render_value(v, variables)))
+                .collect(),
+        ),
     }
 }

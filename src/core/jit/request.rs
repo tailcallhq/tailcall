@@ -43,7 +43,14 @@ impl Request<ConstValue> {
     ) -> Result<OperationPlan<async_graphql_value::Value>> {
         let doc = async_graphql::parser::parse_query(&self.query)?;
         let builder = Builder::new(blueprint, &doc);
-        let plan = builder.build(self.operation_name.as_deref())?;
+        let variables = Variables::from_iter(
+            self.variables
+                .clone()
+                .into_hashmap()
+                .into_iter()
+                .map(|(k, v)| (k, v.into())),
+        );
+        let plan = builder.build(self.operation_name.as_deref(), variables)?;
 
         transform::CheckConst::new()
             .pipe(transform::CheckProtected::new())

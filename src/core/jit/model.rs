@@ -318,6 +318,7 @@ pub struct OperationPlan<Input> {
     pub selection: Vec<Field<Input>>,
     pub before: Option<IR>,
     pub interfaces: Option<HashSet<String>>,
+    pub variables: Variables<Input>,
 }
 
 impl<Input> OperationPlan<Input> {
@@ -343,6 +344,7 @@ impl<Input> OperationPlan<Input> {
             min_cache_ttl: self.min_cache_ttl,
             before: self.before,
             interfaces: None,
+            variables: self.variables.try_map(&map)?,
         })
     }
 }
@@ -356,6 +358,7 @@ impl<Input> OperationPlan<Input> {
         index: Arc<Index>,
         is_introspection_query: bool,
         interfaces: Option<HashSet<String>>,
+        variables: Variables<Input>,
     ) -> Self
     where
         Input: Clone,
@@ -372,6 +375,7 @@ impl<Input> OperationPlan<Input> {
             min_cache_ttl: None,
             before: Default::default(),
             interfaces,
+            variables,
         }
     }
 

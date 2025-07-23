@@ -349,7 +349,11 @@ impl<'a> Builder<'a> {
     }
 
     #[inline(always)]
-    pub fn build(&self, operation_name: Option<&str>) -> Result<OperationPlan<Value>, BuildError> {
+    pub fn build(
+        &self,
+        operation_name: Option<&str>,
+        variables: Variables<Value>,
+    ) -> Result<OperationPlan<Value>, BuildError> {
         let mut fragments: HashMap<&str, &FragmentDefinition> = HashMap::new();
 
         for (name, fragment) in self.document.fragments.iter() {
@@ -379,6 +383,7 @@ impl<'a> Builder<'a> {
             self.index.clone(),
             is_introspection_query,
             Some(self.index.get_interfaces()),
+            variables,
         );
         Ok(plan)
     }
@@ -400,7 +405,9 @@ mod tests {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
-        Builder::new(&blueprint, &document).build(None).unwrap()
+        Builder::new(&blueprint, &document)
+            .build(None, Variables::new())
+            .unwrap()
     }
 
     #[tokio::test]
@@ -668,24 +675,26 @@ mod tests {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
-        let error = Builder::new(&blueprint, &document).build(None).unwrap_err();
+        let error = Builder::new(&blueprint, &document)
+            .build(None, Variables::new())
+            .unwrap_err();
 
         assert_eq!(error, BuildError::OperationNameRequired);
 
         let error = Builder::new(&blueprint, &document)
-            .build(Some("unknown"))
+            .build(Some("unknown"), Variables::new())
             .unwrap_err();
 
         assert_eq!(error, BuildError::OperationNotFound("unknown".to_string()));
 
         let plan = Builder::new(&blueprint, &document)
-            .build(Some("GetPosts"))
+            .build(Some("GetPosts"), Variables::new())
             .unwrap();
         assert!(plan.is_query());
         insta::assert_debug_snapshot!(plan.selection);
 
         let plan = Builder::new(&blueprint, &document)
-            .build(Some("CreateNewPost"))
+            .build(Some("CreateNewPost"), Variables::new())
             .unwrap();
         assert!(!plan.is_query());
         insta::assert_debug_snapshot!(plan.selection);
