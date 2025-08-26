@@ -1,0 +1,23 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+---
+type NodeA {
+  name: String
+  nodeA_id: String
+  nodeB(nodeB_id: String): NodeB
+}
+
+type NodeB {
+  name: String
+  nodeB_id: String
+}
+
+type Query {
+  queryNodeA: [NodeA!]
+  queryNodeB: [NodeB!]
+}
+
+schema {
+  query: Query
+}

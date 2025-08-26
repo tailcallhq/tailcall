@@ -1,14 +1,14 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 
-use async_graphql_extension_apollo_tracing::ApolloTracing;
+// use async_graphql_extension_apollo_tracing::ApolloTracing;
 
 use crate::cli::runtime::init;
 use crate::core::app_context::AppContext;
-use crate::core::blueprint::telemetry::TelemetryExporter;
+// use crate::core::blueprint::telemetry::TelemetryExporter;
 use crate::core::blueprint::{Blueprint, Http};
 use crate::core::rest::{EndpointSet, Unchecked};
-use crate::core::schema_extension::SchemaExtension;
+// use crate::core::schema_extension::SchemaExtension;
 
 pub struct ServerConfig {
     pub blueprint: Blueprint,
@@ -24,16 +24,16 @@ impl ServerConfig {
 
         let mut extensions = vec![];
 
-        if let Some(TelemetryExporter::Apollo(apollo)) = blueprint.telemetry.export.as_ref() {
-            let (graph_id, variant) = apollo.graph_ref.split_once('@').unwrap();
-            extensions.push(SchemaExtension::new(ApolloTracing::new(
-                apollo.api_key.clone(),
-                apollo.platform.clone().unwrap_or_default(),
-                graph_id.to_string(),
-                variant.to_string(),
-                apollo.version.clone().unwrap_or_default(),
-            )));
-        }
+        // if let Some(TelemetryExporter::Apollo(apollo)) = blueprint.telemetry.export.as_ref() {
+        //     let (graph_id, variant) = apollo.graph_ref.split_once('@').unwrap();
+        //     extensions.push(SchemaExtension::new(ApolloTracing::new(
+        //         apollo.api_key.clone(),
+        //         apollo.platform.clone().unwrap_or_default(),
+        //         graph_id.to_string(),
+        //         variant.to_string(),
+        //         apollo.version.clone().unwrap_or_default(),
+        //     )));
+        // }
         rt.add_extensions(extensions);
 
         let endpoints = endpoints.into_checked(&blueprint, rt.clone()).await?;

@@ -23,7 +23,7 @@ pub struct Variables<Value>(HashMap<String, Value>);
 impl<V: JsonLikeOwned + Display> PathString for Variables<V> {
     fn path_string<'a, T: AsRef<str>>(&'a self, path: &'a [T]) -> Option<Cow<'a, str>> {
         self.get(path[0].as_ref())
-            .map(|v| Cow::Owned(v.to_string()))
+            .map(|v| Cow::Owned(v.to_string().replace('"', "\\\"")))
     }
 }
 

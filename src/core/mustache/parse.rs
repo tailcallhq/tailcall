@@ -50,12 +50,27 @@ fn parse_expression(input: &str) -> IResult<&str, Segment> {
     )(input)
 }
 
+fn parse_dollar_variable(input: &str) -> IResult<&str, Segment> {
+    map(
+        nom::sequence::preceded(
+            char('$'), // match starting $
+            nom::bytes::complete::take_while1(|c: char| c.is_alphanumeric() || c == '_'),
+        ),
+        |txt: &str| Segment::Expression(vec![txt.to_string()]),
+    )(input)
+}
+
 fn parse_segment(input: &str) -> IResult<&str, Vec<Segment>> {
     let expression_result = many0(alt((
-        parse_expression,
-        map(take_until("{{"), |txt: &str| {
-            Segment::Literal(txt.to_string())
-        }),
+        alt((parse_expression, parse_dollar_variable)),
+        alt((
+            map(take_until("{{"), |txt: &str| {
+                Segment::Literal(txt.to_string())
+            }),
+            map(take_until("$"), |txt: &str| {
+                Segment::Literal(txt.to_string())
+            }),
+        )),
     )))(input);
 
     if let Ok((remaining, segments)) = expression_result {
