@@ -57,7 +57,7 @@ opentelemetry-otlp = { version = "0.16.0", features = [
 opentelemetry-system-metrics = { version = "0.2.0", optional = true }
 tailcall-http-cache = { path = "tailcall-http-cache", optional = true }
 tailcall-version = { path = "./tailcall-version", optional = true }
-genai = { git = "https://github.com/laststylebender14/rust-genai.git", rev = "63a542ce20132503c520f4e07108e0d768f243c3", optional = true }
+genai = { git = "https://github.com/laststylebender14/rust-genai.git", rev = "59e48b51825cdf190e5ebbb443c54ce2b00172cf", optional = true }
 ctrlc = { version = "3.4.5", optional = true }
 
 # dependencies safe for wasm:
