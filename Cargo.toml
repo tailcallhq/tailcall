@@ -266,6 +266,10 @@ members = [
     "tailcall-version",
 ]
 
+
+[workspace.lints.rust]
+unexpected_cfgs = { level = "deny", check-cfg = ["cfg(wasm_bindgen_unstable_test_coverage)"] }
+
 # Boost execution_spec snapshot diffing performance
 [profile.dev.package]
 insta.opt-level = 3
