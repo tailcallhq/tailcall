@@ -90,7 +90,7 @@ jobs:
           node-version: "20.19.1"
 
       - name: Install Wasm Pack
-        run: cargo install wasm-bindgen-cli --vers "0.2.92"
+        run: cargo install wasm-bindgen-cli --vers "0.2.106"
 
       - name: Test WASM
         run: |

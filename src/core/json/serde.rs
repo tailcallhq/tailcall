@@ -57,7 +57,7 @@ impl<'json> JsonLike<'json> for Value {
         }
     }
 
-    fn as_primitive(&self) -> Option<JsonPrimitive> {
+    fn as_primitive(&self) -> Option<JsonPrimitive<'_>> {
         let val = match self {
             Value::Null => JsonPrimitive::Null,
             Value::Bool(x) => JsonPrimitive::Bool(*x),

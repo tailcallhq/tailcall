@@ -59,7 +59,7 @@ impl<'json> JsonLike<'json> for ConstValue {
         }
     }
 
-    fn as_primitive(&self) -> Option<JsonPrimitive> {
+    fn as_primitive(&self) -> Option<JsonPrimitive<'_>> {
         let val = match self {
             ConstValue::Null => JsonPrimitive::Null,
             ConstValue::Boolean(x) => JsonPrimitive::Bool(*x),
@@ -209,7 +209,7 @@ impl<'json> JsonLike<'json> for Value {
         }
     }
 
-    fn as_primitive(&self) -> Option<JsonPrimitive> {
+    fn as_primitive(&self) -> Option<JsonPrimitive<'_>> {
         let val = match self {
             Value::Null => JsonPrimitive::Null,
             Value::Boolean(x) => JsonPrimitive::Bool(*x),
