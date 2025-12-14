@@ -14,7 +14,7 @@ impl Parser {
     pub fn detect(path: &str) -> Result<Self> {
         let ext = path
             .split('.')
-            .last()
+            .next_back()
             .ok_or(Error::FileExtensionNotFound)?
             .to_lowercase();
         match ext.as_str() {

@@ -4,7 +4,7 @@ use std::fmt::Debug;
 use lazy_static::lazy_static;
 use schemars::schema::{InstanceType, Schema, SchemaObject};
 use strum::IntoEnumIterator;
-use tailcall_macros::{gen_doc, Doc};
+use tailcall_macros::Doc;
 
 use crate::core::json::JsonLike;
 

@@ -207,12 +207,10 @@ mod tests {
 
     #[test]
     fn test_group_by_key() {
-        let arr = vec![
-            (json!("1"), json!({"id": "1"})),
+        let arr = [(json!("1"), json!({"id": "1"})),
             (json!("2"), json!({"id": "2"})),
             (json!("2"), json!({"id": "2"})),
-            (json!("3"), json!({"id": "3"})),
-        ];
+            (json!("3"), json!({"id": "3"}))];
         let input: Vec<(&serde_json::Value, &serde_json::Value)> =
             arr.iter().map(|a| (&a.0, &a.1)).collect();
 
@@ -231,12 +229,10 @@ mod tests {
 
     #[test]
     fn test_group_by_numeric_key() {
-        let arr = vec![
-            (json!(1), json!({"id": 1})),
+        let arr = [(json!(1), json!({"id": 1})),
             (json!(2), json!({"id": 2})),
             (json!(2), json!({"id": 2})),
-            (json!(3), json!({"id": 3})),
-        ];
+            (json!(3), json!({"id": 3}))];
         let input: Vec<(&serde_json::Value, &serde_json::Value)> =
             arr.iter().map(|a| (&a.0, &a.1)).collect();
 
