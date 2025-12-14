@@ -4,7 +4,7 @@ use std::fmt::Debug;
 use lazy_static::lazy_static;
 use schemars::schema::{InstanceType, Schema, SchemaObject};
 use strum::IntoEnumIterator;
-use tailcall_macros::{gen_doc, Doc};
+use tailcall_macros::Doc;
 
 use crate::core::json::JsonLike;
 
@@ -76,7 +76,7 @@ pub enum Scalar {
 }
 
 fn eval_str<'a, Value: JsonLike<'a>, F: Fn(&str) -> bool>(val: &'a Value, fxn: F) -> bool {
-    val.as_str().map_or(false, fxn)
+    val.as_str().is_some_and(fxn)
 }
 
 fn eval_signed<
@@ -88,7 +88,7 @@ fn eval_signed<
     val: &'a Value,
     fxn: F,
 ) -> bool {
-    val.as_i64().map_or(false, |n| fxn(n).is_ok())
+    val.as_i64().is_some_and(|n| fxn(n).is_ok())
 }
 
 fn eval_unsigned<
@@ -100,7 +100,7 @@ fn eval_unsigned<
     val: &'a Value,
     fxn: F,
 ) -> bool {
-    val.as_u64().map_or(false, |n| fxn(n).is_ok())
+    val.as_u64().is_some_and(|n| fxn(n).is_ok())
 }
 
 impl Scalar {

@@ -39,20 +39,19 @@ pub fn validate_argument(
         |type_: &str| Scalar::is_predefined(type_) || config.find_enum(type_).is_some();
 
     Valid::from_iter(template.segments(), |segment| match segment {
-        Segment::Expression(expr) if expr.first().map_or(false, |v| v.contains("args")) => {
-            match expr.get(1) {
-                Some(arg_name) if field.args.get(arg_name).is_some() => {
-                    let arg_type_of = field.args.get(arg_name).as_ref().unwrap().type_of.name();
-                    path_validator(config, expr.iter().skip(2), arg_type_of, scalar_validator)
-                        .trace(arg_name)
-                }
-                Some(arg_name) => {
-                    Valid::fail(BlueprintError::ArgumentNotFound(arg_name.to_string()))
-                        .trace(arg_name)
-                }
-                None => Valid::fail(BlueprintError::TooFewPartsInTemplate),
+        Segment::Expression(expr) if expr.first().is_some_and(|v| v.contains("args")) => match expr
+            .get(1)
+        {
+            Some(arg_name) if field.args.get(arg_name).is_some() => {
+                let arg_type_of = field.args.get(arg_name).as_ref().unwrap().type_of.name();
+                path_validator(config, expr.iter().skip(2), arg_type_of, scalar_validator)
+                    .trace(arg_name)
             }
-        }
+            Some(arg_name) => {
+                Valid::fail(BlueprintError::ArgumentNotFound(arg_name.to_string())).trace(arg_name)
+            }
+            None => Valid::fail(BlueprintError::TooFewPartsInTemplate),
+        },
         _ => Valid::succeed(()),
     })
     .unit()
