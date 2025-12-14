@@ -134,7 +134,7 @@ fn determine_type_from_schema(name: String, schema: &SchemaObject) -> Type {
 }
 
 fn determine_type_from_reference(reference: &str) -> Type {
-    let mut name = reference.split('/').last().unwrap().to_string();
+    let mut name = reference.split('/').next_back().unwrap().to_string();
     first_char_to_upper(&mut name);
     Type { nullable: true, base: BaseType::Named(Name::new(name)) }
 }

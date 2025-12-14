@@ -83,7 +83,7 @@ impl EndpointSet<Unchecked> {
 }
 
 impl EndpointSet<Checked> {
-    pub fn matches(&self, request: &Request) -> Option<PartialRequest> {
+    pub fn matches(&self, request: &Request) -> Option<PartialRequest<'_>> {
         self.endpoints.iter().find_map(|e| e.matches(request))
     }
 }

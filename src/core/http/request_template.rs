@@ -92,7 +92,7 @@ impl RequestTemplate {
     /// Returns true if there are not templates
     pub fn is_const(&self) -> bool {
         self.root_url.is_const()
-            && self.body_path.as_ref().map_or(true, |b| b.is_const())
+            && self.body_path.as_ref().is_none_or(|b| b.is_const())
             && self.query.iter().all(|query| query.value.is_const())
             && self.headers.iter().all(|(_, v)| v.is_const())
     }

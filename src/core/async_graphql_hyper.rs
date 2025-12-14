@@ -111,7 +111,6 @@ impl Hash for GraphQLRequest {
 }
 #[async_trait::async_trait]
 impl GraphQLRequestLike for GraphQLRequest {
-    #[must_use]
     fn data<D: Any + Send + Sync>(mut self, data: D) -> Self {
         self.0.data.insert(data);
         self

@@ -135,7 +135,7 @@ impl Response<Bytes> {
 
                 for detail in status.details {
                     let type_url = &detail.type_url;
-                    let type_name = type_url.split('/').last().unwrap_or("");
+                    let type_name = type_url.split('/').next_back().unwrap_or("");
 
                     if let Some(message) = operation.find_message(type_name) {
                         if let Ok(decoded) = message.decode(detail.value.as_slice()) {

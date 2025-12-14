@@ -30,6 +30,7 @@ impl FileRead {
 }
 
 /// Supported Resources by Resource Reader
+#[allow(clippy::large_enum_variant)]
 pub enum Resource {
     RawPath(String),
     Request(reqwest::Request),

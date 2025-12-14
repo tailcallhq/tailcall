@@ -1,5 +1,4 @@
 use std::fmt::Debug;
-use std::mem;
 use std::sync::{Arc, Mutex};
 
 use derive_getters::Getters;
@@ -38,7 +37,7 @@ where
         let mut ctx = ExecutorInner::new(store.clone(), &self.exec, &self.ctx);
         ctx.init().await;
 
-        let store = mem::replace(&mut *store.lock().unwrap(), Store::new());
+        let store = std::mem::take(&mut *store.lock().unwrap());
         store
     }
 

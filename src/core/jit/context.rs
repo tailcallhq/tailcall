@@ -24,7 +24,7 @@ impl<'a, Input> RequestContext<'a, Input> {
     pub fn plan(&self) -> &OperationPlan<Input> {
         self.plan
     }
-    pub fn errors(&self) -> MutexGuard<Vec<Positioned<Error>>> {
+    pub fn errors(&self) -> MutexGuard<'_, Vec<Positioned<Error>>> {
         self.errors.lock().unwrap()
     }
 }

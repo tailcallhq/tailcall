@@ -14,6 +14,7 @@ use crate::core::worker_hooks::WorkerHooks;
 use crate::core::{grpc, http};
 
 #[derive(Clone, Debug, Display)]
+#[allow(clippy::large_enum_variant)]
 pub enum IR {
     Dynamic(DynamicValue<Value>),
     #[strum(to_string = "{0}")]
@@ -42,6 +43,7 @@ pub struct Map {
 }
 
 #[derive(Clone, Debug, strum_macros::Display)]
+#[allow(clippy::large_enum_variant)]
 pub enum IO {
     Http {
         req_template: http::RequestTemplate,

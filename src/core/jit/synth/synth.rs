@@ -34,6 +34,7 @@ where
     }
 
     #[inline(always)]
+    #[allow(clippy::result_large_err)]
     pub fn synthesize<Output>(&'a self) -> Result<Output, Positioned<Error>>
     where
         Output: JsonLike<'a>,
@@ -55,7 +56,7 @@ where
         Ok(Output::object(data))
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments, clippy::result_large_err)]
     #[inline(always)]
     fn iter<Output>(
         &'a self,
@@ -99,6 +100,7 @@ where
 
     /// This guard ensures to return Null value only if node type permits it, in
     /// case it does not it throws an Error
+    #[allow(clippy::result_large_err)]
     fn node_nullable_guard<Output>(
         &'a self,
         node: &'a Field<Value>,
@@ -122,7 +124,7 @@ where
         }
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments, clippy::result_large_err)]
     #[inline(always)]
     fn iter_inner<Output>(
         &'a self,

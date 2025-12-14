@@ -31,7 +31,7 @@ impl InstallationMethod {
         }
 
         if let Ok(result) = which("tailcall") {
-            if result.to_str().map_or(false, |s| s.contains("homebrew")) {
+            if result.to_str().is_some_and(|s| s.contains("homebrew")) {
                 return InstallationMethod::Brew;
             }
         }

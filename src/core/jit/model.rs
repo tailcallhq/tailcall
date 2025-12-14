@@ -391,7 +391,7 @@ impl<Input> OperationPlan<Input> {
     }
 
     /// Returns a flat [Field] representation
-    pub fn iter_dfs(&self) -> DFS<Input> {
+    pub fn iter_dfs(&self) -> DFS<'_, Input> {
         DFS { stack: vec![self.selection.iter()] }
     }
 

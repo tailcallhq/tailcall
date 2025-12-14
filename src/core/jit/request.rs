@@ -37,6 +37,7 @@ impl From<async_graphql::Request> for Request<ConstValue> {
 }
 
 impl Request<ConstValue> {
+    #[allow(clippy::result_large_err)]
     pub fn create_plan(
         &self,
         blueprint: &Blueprint,

@@ -29,12 +29,13 @@ impl From<OperationPlan<Value>> for ConstValueExecutor {
 }
 
 impl ConstValueExecutor {
+    #[allow(clippy::result_large_err)]
     pub fn try_new(request: &Request<ConstValue>, app_ctx: &Arc<AppContext>) -> Result<Self> {
         let plan = request.create_plan(&app_ctx.blueprint)?;
         Ok(Self::from(plan))
     }
 
-    pub async fn execute<'a>(
+    pub async fn execute(
         self,
         app_ctx: &Arc<AppContext>,
         req_ctx: &RequestContext,

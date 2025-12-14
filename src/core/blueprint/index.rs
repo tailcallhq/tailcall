@@ -19,6 +19,7 @@ pub struct Index {
 }
 
 #[derive(Debug)]
+#[allow(clippy::large_enum_variant)]
 pub enum QueryField {
     Field((FieldDefinition, IndexMap<String, InputFieldDefinition>)),
     InputField(InputFieldDefinition),
