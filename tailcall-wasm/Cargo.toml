@@ -28,3 +28,6 @@ tailcall-valid = { workspace = true }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.42"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(wasm_bindgen_unstable_test_coverage)'] }
