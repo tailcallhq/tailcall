@@ -2,6 +2,7 @@
   "name": "tailcall",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "deploy": "npx wrangler deploy --minify",
     "dev-debug": "npx wrangler dev --port 19194 --env debug",
