@@ -64,7 +64,10 @@ export const mf = new Miniflare({
   scriptPath: "./build/worker/shim.mjs",
   cache: true,
   modules: true,
-  modulesRules: [{type: "CompiledWasm", include: ["**/*.wasm"], fallthrough: true}],
+  modulesRules: [
+    {type: "ESModule", include: ["**/*.js"]},
+    {type: "CompiledWasm", include: ["**/*.wasm"], fallthrough: true},
+  ],
   bindings: {BUCKET: "MY_R2"},
   r2Buckets: ["MY_R2"],
   fetchMock: mockAgent,
