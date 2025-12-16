@@ -45,7 +45,7 @@ pub trait JsonLike<'json>: Sized {
     }
 
     // Operators
-    fn as_primitive(&self) -> Option<JsonPrimitive>;
+    fn as_primitive(&self) -> Option<JsonPrimitive<'_>>;
     fn as_array(&self) -> Option<&Vec<Self>>;
     fn as_array_mut(&mut self) -> Option<&mut Vec<Self>>;
     fn into_array(self) -> Option<Vec<Self>>;
@@ -207,7 +207,7 @@ mod tests {
 
     #[test]
     fn test_group_by_key() {
-        let arr = vec![
+        let arr = [
             (json!("1"), json!({"id": "1"})),
             (json!("2"), json!({"id": "2"})),
             (json!("2"), json!({"id": "2"})),
@@ -231,7 +231,7 @@ mod tests {
 
     #[test]
     fn test_group_by_numeric_key() {
-        let arr = vec![
+        let arr = [
             (json!(1), json!({"id": 1})),
             (json!(2), json!({"id": 2})),
             (json!(2), json!({"id": 2})),

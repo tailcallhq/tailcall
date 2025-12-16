@@ -57,6 +57,7 @@ where
 }
 
 /// [std::collections::HashMap] cache.
+#[allow(dead_code)]
 pub struct HashMapCache<S = RandomState> {
     _mark: PhantomData<S>,
 }
@@ -79,6 +80,7 @@ where
     }
 }
 
+#[allow(dead_code)]
 pub struct HashMapCacheImpl<K, V, S>(HashMap<K, V, S>);
 
 impl<K, V, S> CacheStorage for HashMapCacheImpl<K, V, S>

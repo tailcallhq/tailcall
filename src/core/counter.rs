@@ -24,6 +24,7 @@ impl<A: Copy + num::Num> Count for Counter<A> {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Default)]
 pub struct AtomicCounter<A>(Mutex<A>);
 

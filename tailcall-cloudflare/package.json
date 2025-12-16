@@ -2,6 +2,7 @@
   "name": "tailcall",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "deploy": "npx wrangler deploy --minify",
     "dev-debug": "npx wrangler dev --port 19194 --env debug",
@@ -9,9 +10,9 @@
     "test": "cargo install -q worker-build && worker-build && vitest --run"
   },
   "devDependencies": {
-    "miniflare": "^3.20231218.3",
+    "miniflare": "^3.20241218.0",
     "vitest": "^2.0.0",
-    "wrangler": "^3.24.0",
-    "@cloudflare/workers-types": "^4.20240117.0"
+    "wrangler": "^3.99.0",
+    "@cloudflare/workers-types": "^4.20241218.0"
   }
 }

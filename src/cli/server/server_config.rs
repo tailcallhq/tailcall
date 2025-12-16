@@ -32,6 +32,7 @@ impl ServerConfig {
                 graph_id.to_string(),
                 variant.to_string(),
                 apollo.version.clone().unwrap_or_default(),
+                apollo.user_version.clone().unwrap_or_default(),
             )));
         }
         rt.add_extensions(extensions);

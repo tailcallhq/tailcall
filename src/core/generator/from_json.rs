@@ -111,8 +111,8 @@ impl Transform for FromJsonGenerator<'_> {
             // collect the required header keys
             let header_keys = sample.headers.as_ref().map(|headers_inner| {
                 headers_inner
-                    .iter()
-                    .map(|(k, _)| k.to_owned())
+                    .keys()
+                    .map(|k| k.to_owned())
                     .collect::<BTreeSet<_>>()
             });
 

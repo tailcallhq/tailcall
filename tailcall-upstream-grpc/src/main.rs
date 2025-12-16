@@ -216,6 +216,7 @@ fn init_tracer() -> Result<(), Error> {
 }
 
 /// Intercepts the request and checks if the token is valid.
+#[allow(clippy::result_large_err)]
 fn intercept(req: Request<()>) -> Result<Request<()>, Status> {
     match req.metadata().get("authorization") {
         Some(token) if token == "Bearer 123" => Ok(req),

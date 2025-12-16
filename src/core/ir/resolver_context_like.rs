@@ -165,7 +165,7 @@ impl SelectionField {
 
     /// Returns an iterator over the `selection_set` that yields
     /// `SelectionField` instances.
-    pub fn selection_set(&self) -> std::slice::Iter<SelectionField> {
+    pub fn selection_set(&self) -> std::slice::Iter<'_, SelectionField> {
         self.selection_set.iter()
     }
 }
