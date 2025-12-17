@@ -28,7 +28,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20.19.1"
+          node-version: "20.19.6"
       - name: Install Prettier
         run: npm install --global prettier
       - name: Install Stable Toolchain
