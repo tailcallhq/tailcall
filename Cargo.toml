@@ -185,7 +185,7 @@ rquickjs = { "version" = "0.7.0", optional = true, features = ["macro", "bindgen
 datatest-stable = "0.2.9"
 tokio-test = "0.4.4"
 tailcall-prettier = { path = "tailcall-prettier" }
-criterion = "0.5.1"
+criterion = "0.8.0"
 httpmock = "0.7.0"
 pretty_assertions = "1.4.0"
 stripmargin = "0.1.1"
