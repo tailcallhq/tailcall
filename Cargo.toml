@@ -186,7 +186,7 @@ datatest-stable = "0.2.9"
 tokio-test = "0.4.4"
 tailcall-prettier = { path = "tailcall-prettier" }
 criterion = "0.5.1"
-httpmock = "0.7.0"
+httpmock = "0.8.0"
 pretty_assertions = "1.4.0"
 stripmargin = "0.1.1"
 markdown = "1.0.0-alpha.17"
