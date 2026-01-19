@@ -2522,7 +2522,7 @@ dependencies = [
  "http 1.4.0",
  "hyper 1.6.0",
  "hyper-util",
- "rustls 0.23.35",
+ "rustls 0.23.36",
  "rustls-pki-types",
  "tokio",
  "tokio-rustls 0.26.0",
@@ -4508,7 +4508,7 @@ dependencies = [
  "quinn-proto",
  "quinn-udp",
  "rustc-hash 2.0.0",
- "rustls 0.23.35",
+ "rustls 0.23.36",
  "socket2 0.5.9",
  "thiserror 2.0.3",
  "tokio",
@@ -4526,7 +4526,7 @@ dependencies = [
  "rand",
  "ring",
  "rustc-hash 2.0.0",
- "rustls 0.23.35",
+ "rustls 0.23.36",
  "rustls-pki-types",
  "slab",
  "thiserror 2.0.3",
@@ -4759,7 +4759,7 @@ dependencies = [
  "percent-encoding",
  "pin-project-lite",
  "quinn",
- "rustls 0.23.35",
+ "rustls 0.23.36",
  "rustls-pemfile 2.2.0",
  "rustls-pki-types",
  "serde",
@@ -4959,9 +4959,9 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.23.35"
+version = "0.23.36"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "533f54bc6a7d4f647e46ad909549eda97bf5afc1585190ef692b4286b198bd8f"
+checksum = "c665f33d38cea657d9614f766881e4d510e0eda4239891eea56b4cadcf01801b"
 dependencies = [
  "once_cell",
  "ring",
@@ -5778,7 +5778,7 @@ dependencies = [
  "reqwest-middleware",
  "resource",
  "rquickjs",
- "rustls 0.23.35",
+ "rustls 0.23.36",
  "rustls-pemfile 1.0.4",
  "rustls-pki-types",
  "schemars",
@@ -6291,7 +6291,7 @@ version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c7bc40d0e5a97695bb96e27995cd3a08538541b0a846f65bba7a359f36700d4"
 dependencies = [
- "rustls 0.23.35",
+ "rustls 0.23.36",
  "rustls-pki-types",
  "tokio",
 ]
