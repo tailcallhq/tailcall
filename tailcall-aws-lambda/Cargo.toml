@@ -27,5 +27,5 @@ async-trait = "0.1.80"
 async-graphql-value = { version = "7.0.3", default-features = false }
 hyper = { version = "0.14.28", default-features = false }
 http = { workspace = true }
-reqwest = { version = "0.11", default-features = false, features = ["json","rustls-tls"] }
+reqwest = { version = "0.13", default-features = false, features = ["json","rustls-tls"] }
 tailcall = { path = "..", default-features = false}
