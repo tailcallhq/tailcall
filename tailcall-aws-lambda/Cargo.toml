@@ -16,7 +16,7 @@ edition = "2021"
 
 [dependencies]
 lambda_http = { version = "0.17.0", default-features = true }
-lambda_runtime = { version = "0.13.0", default-features = true }
+lambda_runtime = { version = "0.14.0", default-features = true }
 tokio = { version = "1", features = ["macros", "fs"] }
 tracing = { version = "0.1.40", features = ["log"] }
 tracing-subscriber = { version = "0.3.18", default-features = false, features = ["fmt"] }
