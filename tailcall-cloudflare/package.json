@@ -11,7 +11,7 @@
   },
   "devDependencies": {
     "miniflare": "^3.20241218.0",
-    "vitest": "^2.0.0",
+    "vitest": "^4.1.7",
     "wrangler": "^3.99.0",
     "@cloudflare/workers-types": "^4.20241218.0"
   }
