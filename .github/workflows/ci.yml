@@ -94,13 +94,15 @@ jobs:
         with:
           node-version: "20.20.0"
 
-      - name: Install Wasm Pack
-        run: cargo install wasm-bindgen-cli --vers "0.2.106"
+      # Install prebuilt binaries instead of compiling from source (saves
+      # several minutes of CI per run).
+      - name: Install WASM tooling
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-bindgen-cli@0.2.106,wasm-pack
 
       - name: Test WASM
-        run: |
-          cargo install wasm-pack
-          wasm-pack test --node
+        run: wasm-pack test --node
 
   test_cf:
     name: Run Tests (Cloudflare)
@@ -220,15 +222,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          profile: minimal
-          override: true
-
       - name: Install Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
 
       - name: Build Project
         run: cargo build
