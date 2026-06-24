@@ -22,10 +22,14 @@ async function getBuildDefinitions(): Promise<string[]> {
   const ciYML = await fs.readFile(ciYMLPath, "utf8").then(yml.parse)
   const steps = ciYML.jobs["setup-matrix"].steps
 
+  // Always use the full matrix (id: "setup-matrix"). A second, Linux-only step
+  // (id: "setup-matrix-reduced") exists purely to keep pull-request CI cheap and
+  // must NOT be used to generate npm packages, otherwise macOS/Windows packages
+  // would be dropped from the published root package.
   for (const step of steps) {
     const matrix = step?.with?.matrix
 
-    if (matrix) {
+    if (matrix && step?.id === "setup-matrix") {
       // Parse yaml again since matrix is defined as string inside setup-matrix
       return yml.parse(matrix).build
     }
