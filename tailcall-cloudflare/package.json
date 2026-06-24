@@ -7,7 +7,7 @@
     "deploy": "npx wrangler deploy --minify",
     "dev-debug": "npx wrangler dev --port 19194 --env debug",
     "dev": "npx wrangler dev --port 19194",
-    "test": "cargo install -q worker-build && worker-build && vitest --run"
+    "test": "cargo install -q worker-build@0.7.4 && worker-build && vitest --run"
   },
   "devDependencies": {
     "miniflare": "^3.20241218.0",

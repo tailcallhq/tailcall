@@ -2,6 +2,12 @@ name: Build matrix
 
 on:
   workflow_call:
+    inputs:
+      reduced:
+        description: "When true, emit a Linux-only matrix (no macOS/Windows). Used to keep PR CI cheap."
+        type: boolean
+        default: false
+        required: false
     outputs:
       matrix:
         value: ${{ jobs.setup-matrix.outputs.matrix }}
@@ -12,9 +18,29 @@ jobs:
   setup-matrix:
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.setup-matrix.outputs.matrix }}
+      matrix: ${{ steps.setup-matrix-reduced.outputs.matrix || steps.setup-matrix.outputs.matrix }}
     steps:
+      # Pull-request matrix: run a single native Ubuntu target only. macOS (10x),
+      # Windows (2x) and the slow cross-compiled Linux targets are skipped on PRs
+      # to minimise Actions billing. The full matrix below still runs on pushes to
+      # main so releases build and test every target.
+      - id: setup-matrix-reduced
+        if: ${{ inputs.reduced }}
+        uses: druzsan/setup-matrix@v2
+        with:
+          matrix: |
+            build:
+              [
+                linux-x64-gnu,
+              ]
+            include:
+              - build: linux-x64-gnu
+                os: ubuntu-latest
+                rust: stable
+                target: x86_64-unknown-linux-gnu
+                libc: glibc
       - id: setup-matrix
+        if: ${{ !inputs.reduced }}
         uses: druzsan/setup-matrix@v2
         with:
           matrix: |

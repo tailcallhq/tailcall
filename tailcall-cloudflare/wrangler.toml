@@ -5,7 +5,10 @@ compatibility_date = "2023-03-22"
 account_id = "59eda2a637301830ad43a6e3e4419346"
 
 [build]
-command = "cargo install -q worker-build && worker-build"
+# Pin worker-build to match the `worker` crate version (worker-build requires
+# `worker` >= its own version; an unpinned install grabs the latest and breaks
+# against the pinned `worker` dependency).
+command = "cargo install -q worker-build@0.7.4 && worker-build"
 
 # the path to config must start with the binding name of respective r2 bucket.
 [vars]
@@ -17,7 +20,7 @@ bucket_name = 'configs'
 preview_bucket_name = 'configs'
 
 [env.debug.build]
-command = "cargo install -q worker-build && worker-build"
+command = "cargo install -q worker-build@0.7.4 && worker-build"
 
 [env.debug.vars]
 BUCKET = "MY_R2"

@@ -1,7 +1,7 @@
 name: "Close Stale Issues and PR"
 on:
   schedule:
-    - cron: "0 * * * *" # This runs every hour
+    - cron: "0 0 * * *" # This runs once a day at 00:00 UTC
   workflow_dispatch:
 permissions:
   issues: write

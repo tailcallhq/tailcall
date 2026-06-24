@@ -12,15 +12,20 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  # TODO: cancel in progress is not ok for a release since it can be cancelled in a middle of updates
-  # and we can end up with partial release.
-  # but for pull-requests cancelling previously running jobs could be beneficial
-  # cancel-in-progress: true
+  # Cancel superseded runs on pull requests to avoid paying for stale matrix
+  # builds when a PR is pushed to repeatedly. Pushes to main (releases) are
+  # never cancelled, so a release can't be interrupted mid-update.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   setup_build_matrix:
     name: Outputs matrix used for cross compilation
     uses: ./.github/workflows/build_matrix.yml
+    # On pull requests, build/test only Linux targets (cheap 1x runners) and
+    # skip macOS (10x) and Windows (2x). The full multi-OS matrix still runs on
+    # pushes to main so releases continue to build every target.
+    with:
+      reduced: ${{ github.event_name == 'pull_request' }}
 
   check_if_build:
     name: Check if Build
@@ -132,7 +137,9 @@ jobs:
       matrix: ${{ fromJson(needs.setup_build_matrix.outputs.matrix) }}
 
     env:
-      WITH_COVERAGE: ${{ matrix.build == 'darwin-arm64' }}
+      # Run coverage on a cheap Linux runner instead of macOS (10x cost). This
+      # keeps Codecov reporting on pull requests where macOS is now skipped.
+      WITH_COVERAGE: ${{ matrix.build == 'linux-x64-gnu' }}
 
     steps:
       - uses: actions/checkout@v4
