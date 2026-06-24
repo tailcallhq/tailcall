@@ -92,7 +92,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20.20.0"
+          node-version: "20.20.2"
 
       # Install prebuilt binaries instead of compiling from source (saves
       # several minutes of CI per run).
@@ -122,7 +122,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20.20.0"
+          node-version: "20.20.2"
 
       - name: Package Install
         run: npm install
@@ -149,7 +149,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20.20.0"
+          node-version: "20.20.2"
       - name: Install Prettier
         run: npm i -g prettier
 
@@ -303,7 +303,7 @@ jobs:
         if: (startsWith(github.event.head_commit.message, 'feat') || startsWith(github.event.head_commit.message, 'fix')) && (github.event_name == 'push' && github.ref == 'refs/heads/main')
         uses: actions/setup-node@v4
         with:
-          node-version: 20.20.0
+          node-version: 20.20.2
           registry-url: https://registry.npmjs.org
 
       - name: Install dependencies
@@ -425,7 +425,7 @@ jobs:
       - name: Install Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20.20.0
+          node-version: 20.20.2
           registry-url: https://registry.npmjs.org
       - name: Install Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
