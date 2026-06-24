@@ -20,9 +20,10 @@ jobs:
     outputs:
       matrix: ${{ steps.setup-matrix-reduced.outputs.matrix || steps.setup-matrix.outputs.matrix }}
     steps:
-      # Linux-only matrix for pull requests: macOS (10x) and Windows (2x) runners
-      # are skipped on PRs to reduce Actions billing. The full matrix below still
-      # runs on pushes to main so releases build every target.
+      # Pull-request matrix: run a single native Ubuntu target only. macOS (10x),
+      # Windows (2x) and the slow cross-compiled Linux targets are skipped on PRs
+      # to minimise Actions billing. The full matrix below still runs on pushes to
+      # main so releases build and test every target.
       - id: setup-matrix-reduced
         if: ${{ inputs.reduced }}
         uses: druzsan/setup-matrix@v2
@@ -31,10 +32,6 @@ jobs:
             build:
               [
                 linux-x64-gnu,
-                linux-x64-musl,
-                linux-arm64-gnu,
-                linux-arm64-musl,
-                linux-ia32-gnu,
               ]
             include:
               - build: linux-x64-gnu
@@ -42,34 +39,6 @@ jobs:
                 rust: stable
                 target: x86_64-unknown-linux-gnu
                 libc: glibc
-
-              - build: linux-x64-musl
-                os: ubuntu-latest
-                rust: stable
-                target: x86_64-unknown-linux-musl
-                libc: musl
-                cross: true
-
-              - build: linux-arm64-gnu
-                os: ubuntu-latest
-                rust: stable
-                target: aarch64-unknown-linux-gnu
-                libc: glibc
-                cross: true
-
-              - build: linux-arm64-musl
-                os: ubuntu-latest
-                rust: stable
-                target: aarch64-unknown-linux-musl
-                libc: musl
-                cross: true
-
-              - build: linux-ia32-gnu
-                os: ubuntu-latest
-                rust: stable
-                target: i686-unknown-linux-gnu
-                libc: glibc
-                cross: true
       - id: setup-matrix
         if: ${{ !inputs.reduced }}
         uses: druzsan/setup-matrix@v2
