@@ -4,9 +4,13 @@ use std::fmt::{Debug, Display, Formatter};
 use std::num::NonZeroU64;
 use std::sync::Arc;
 
-use async_graphql::parser::types::{ConstDirective, OperationType};
+use async_graphql::parser::types::{
+    ConstDirective, Directive as GqlDirective, DocumentOperations, ExecutableDocument,
+    Field as GqlField, InlineFragment, OperationDefinition, OperationType, Selection, SelectionSet,
+    TypeCondition,
+};
 use async_graphql::{Name, Positioned as AsyncPositioned, ServerError};
-use async_graphql_value::ConstValue;
+use async_graphql_value::{ConstValue, Value};
 use serde::{Deserialize, Serialize};
 
 use super::Error;
@@ -444,6 +448,174 @@ impl<Input> OperationPlan<Input> {
     }
 }
 
+impl<Input> OperationPlan<Input>
+where
+    Input: Clone + Into<Value>,
+{
+    /// Builds an executable GraphQL document from this operation plan.
+    pub fn to_doc(&self) -> ExecutableDocument {
+        ExecutableDocument {
+            operations: DocumentOperations::Single(AsyncPositioned::new(
+                OperationDefinition {
+                    ty: self.operation_type,
+                    variable_definitions: vec![],
+                    directives: vec![],
+                    selection_set: self.selection_set_to_doc(self.selection.iter(), true),
+                },
+                Default::default(),
+            )),
+            fragments: HashMap::new(),
+        }
+    }
+
+    fn selection_set_to_doc<'a>(
+        &self,
+        fields: impl IntoIterator<Item = &'a Field<Input>>,
+        wrap_fragments: bool,
+    ) -> AsyncPositioned<SelectionSet>
+    where
+        Input: 'a,
+    {
+        let fields = fields.into_iter().collect::<Vec<_>>();
+        let pos = fields
+            .first()
+            .map(|field| field.pos.into())
+            .unwrap_or_default();
+        let mut items = Vec::new();
+        let mut fragment_groups: Vec<(&str, Vec<&Field<Input>>)> = Vec::new();
+
+        for field in fields {
+            if wrap_fragments {
+                if let Some(fragment) = field.parent_fragment.as_deref() {
+                    if let Some((_, fields)) = fragment_groups
+                        .iter_mut()
+                        .find(|(name, _)| *name == fragment)
+                    {
+                        fields.push(field);
+                    } else {
+                        fragment_groups.push((fragment, vec![field]));
+                    }
+                    continue;
+                }
+            }
+
+            items.push(self.field_selection_to_doc(field));
+        }
+
+        for (fragment, fields) in fragment_groups {
+            let pos = fields
+                .first()
+                .map(|field| field.pos.into())
+                .unwrap_or_default();
+
+            items.push(AsyncPositioned::new(
+                Selection::InlineFragment(AsyncPositioned::new(
+                    InlineFragment {
+                        type_condition: Some(AsyncPositioned::new(
+                            TypeCondition { on: AsyncPositioned::new(Name::new(fragment), pos) },
+                            pos,
+                        )),
+                        directives: vec![],
+                        selection_set: self.selection_set_to_doc(fields, false),
+                    },
+                    pos,
+                )),
+                pos,
+            ));
+        }
+
+        AsyncPositioned::new(SelectionSet { items }, pos)
+    }
+
+    fn field_selection_to_doc(&self, field: &Field<Input>) -> AsyncPositioned<Selection> {
+        let pos = field.pos.into();
+        AsyncPositioned::new(
+            Selection::Field(AsyncPositioned::new(self.field_to_doc(field), pos)),
+            pos,
+        )
+    }
+
+    fn field_to_doc(&self, field: &Field<Input>) -> GqlField {
+        let pos = field.pos.into();
+        GqlField {
+            alias: (field.output_name != field.name)
+                .then(|| AsyncPositioned::new(Name::new(&field.output_name), pos)),
+            name: AsyncPositioned::new(Name::new(&field.name), pos),
+            arguments: field
+                .args
+                .iter()
+                .filter_map(|arg| {
+                    arg.value.as_ref().map(|value| {
+                        (
+                            AsyncPositioned::new(Name::new(&arg.name), pos),
+                            AsyncPositioned::new(value.clone().into(), pos),
+                        )
+                    })
+                })
+                .collect(),
+            directives: self.field_directives_to_doc(field),
+            selection_set: self.selection_set_to_doc(field.selection.iter(), true),
+        }
+    }
+
+    fn field_directives_to_doc(&self, field: &Field<Input>) -> Vec<AsyncPositioned<GqlDirective>> {
+        let pos = field.pos.into();
+        let mut directives = field
+            .directives
+            .iter()
+            .map(|directive| {
+                AsyncPositioned::new(
+                    GqlDirective {
+                        name: AsyncPositioned::new(Name::new(&directive.name), pos),
+                        arguments: directive
+                            .arguments
+                            .iter()
+                            .map(|(name, value)| {
+                                (
+                                    AsyncPositioned::new(Name::new(name), pos),
+                                    AsyncPositioned::new(value.clone().into(), pos),
+                                )
+                            })
+                            .collect(),
+                    },
+                    pos,
+                )
+            })
+            .collect::<Vec<_>>();
+
+        if let Some(skip) = &field.skip {
+            directives.push(Self::condition_directive_to_doc("skip", skip.as_str(), pos));
+        }
+
+        if let Some(include) = &field.include {
+            directives.push(Self::condition_directive_to_doc(
+                "include",
+                include.as_str(),
+                pos,
+            ));
+        }
+
+        directives
+    }
+
+    fn condition_directive_to_doc(
+        name: &str,
+        variable: &str,
+        pos: async_graphql::Pos,
+    ) -> AsyncPositioned<GqlDirective> {
+        AsyncPositioned::new(
+            GqlDirective {
+                name: AsyncPositioned::new(Name::new(name), pos),
+                arguments: vec![(
+                    AsyncPositioned::new(Name::new("if"), pos),
+                    AsyncPositioned::new(Value::Variable(Name::new(variable)), pos),
+                )],
+            },
+            pos,
+        )
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Directive<Input> {
     pub name: String,
@@ -580,9 +752,9 @@ impl From<ServerError> for Positioned<Error> {
 
 #[cfg(test)]
 mod test {
-    use async_graphql::parser::types::ConstDirective;
+    use async_graphql::parser::types::{ConstDirective, DocumentOperations, Selection};
     use async_graphql::Request;
-    use async_graphql_value::ConstValue;
+    use async_graphql_value::{ConstValue, Value};
 
     use super::{Directive, OperationPlan};
     use crate::core::blueprint::Blueprint;
@@ -630,5 +802,66 @@ mod test {
         let actual = plan(r#"{ users { id comments {body} } }"#);
 
         assert!(actual.is_dedupe);
+    }
+
+    #[test]
+    fn test_operation_plan_to_doc_preserves_selection_fields() {
+        let actual = plan(
+            r#"
+            query($includeName: Boolean! = true) {
+                users {
+                    id @options(paging: $includeName)
+                    displayName: name @include(if: $includeName)
+                }
+            }
+            "#,
+        );
+
+        let doc = actual.to_doc();
+        let operation = match &doc.operations {
+            DocumentOperations::Single(operation) => &operation.node,
+            DocumentOperations::Multiple(_) => panic!("expected single operation"),
+        };
+
+        assert!(doc.fragments.is_empty());
+        assert!(operation.variable_definitions.is_empty());
+        assert_eq!(
+            operation.ty,
+            async_graphql::parser::types::OperationType::Query
+        );
+
+        let users = match &operation.selection_set.node.items[0].node {
+            Selection::Field(field) => &field.node,
+            _ => panic!("expected users field"),
+        };
+        assert_eq!(users.name.node.as_str(), "users");
+        assert!(users.alias.is_none());
+
+        let id = match &users.selection_set.node.items[0].node {
+            Selection::Field(field) => &field.node,
+            _ => panic!("expected id field"),
+        };
+        assert_eq!(id.name.node.as_str(), "id");
+        assert_eq!(id.directives.len(), 1);
+        assert_eq!(id.directives[0].node.name.node.as_str(), "options");
+        assert_eq!(id.directives[0].node.arguments[0].0.node.as_str(), "paging");
+        assert!(matches!(
+            &id.directives[0].node.arguments[0].1.node,
+            Value::Variable(name) if name.as_str() == "includeName"
+        ));
+
+        let name = match &users.selection_set.node.items[1].node {
+            Selection::Field(field) => &field.node,
+            _ => panic!("expected name field"),
+        };
+        assert_eq!(name.name.node.as_str(), "name");
+        assert_eq!(name.alias.as_ref().unwrap().node.as_str(), "displayName");
+        assert_eq!(name.directives.len(), 1);
+        assert_eq!(name.directives[0].node.name.node.as_str(), "include");
+        assert_eq!(name.directives[0].node.arguments[0].0.node.as_str(), "if");
+        assert!(matches!(
+            &name.directives[0].node.arguments[0].1.node,
+            Value::Variable(include) if include.as_str() == "includeName"
+        ));
     }
 }
