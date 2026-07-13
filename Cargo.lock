@@ -3962,9 +3962,9 @@ dependencies = [
 
 [[package]]
 name = "phonenumber"
-version = "0.3.9+9.0.21"
+version = "0.3.10+9.0.33"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9114f9c1683dd09c5f4fa024c89fdad783eaae21d3d52dd23ddaaffa29ffb168"
+checksum = "66d85d3cc5477bfe2f357939e7f02a5a566632508633af1a2c37577d0bef87d9"
 dependencies = [
  "either",
  "fnv",
