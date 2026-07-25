@@ -1,0 +1,19 @@
+{
+  "name": "graphql-benchmarks-analyze",
+  "version": "1.0.0",
+  "description": "JavaScript reimplementation of analyze.sh for graphql-benchmarks",
+  "main": "analyze.js",
+  "bin": {
+    "analyze": "./analyze.js"
+  },
+  "scripts": {
+    "start": "node analyze.js"
+  },
+  "dependencies": {
+    "canvas": "^2.11.2"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "license": "Apache-2.0"
+}
