@@ -130,3 +130,39 @@ Your contributions are invaluable! Kindly go through our [contribution guideline
 This initiative is protected under the Apache 2.0 License.
 
 <img referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=82cc2ee2-ff41-4844-9ae6-c9face103e81" />
+# graphql-benchmarks analyze.js
+
+This project is a JavaScript reimplementation of the `analyze.sh` script from the archived [graphql-benchmarks](https://github.com/tailcallhq/graphql-benchmarks) repository.
+
+## Purpose
+
+The original `analyze.sh` script analyzed benchmark results and generated summary statistics and plots. This project provides a cross-platform, testable, and dependency-light JavaScript alternative.
+
+## Requirements
+
+- Node.js (version 16 or higher)
+- npm (Node package manager)
+
+## Installation
+
+```bash
+npm install
+```
+
+## Usage
+
+```bash
+node analyze.js --input benchmark_results.txt --output ./output
+```
+
+- `--input`: Path to the input benchmark results file (default: `benchmark_results.txt`)
+- `--output`: Directory to save the summary and plots (default: `./output`)
+
+## Output
+
+- `summary.md`: Markdown file summarizing benchmark means and standard deviations.
+- `<benchmark_id>_histogram.png`: Histogram plots for each benchmark.
+
+## License
+
+Apache-2.0 License
