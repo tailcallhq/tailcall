@@ -5,4 +5,4 @@ edition = "2021"
 
 [dependencies]
 async-graphql = { workspace = true }
-schemars = { version = "0.8.17" }
+schemars = { version = "0.9.0" }

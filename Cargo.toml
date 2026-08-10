@@ -63,7 +63,7 @@ ctrlc = { version = "3.4.5", optional = true }
 # dependencies safe for wasm:
 
 rustls-pemfile = { version = "1.0.4" }
-schemars = { version = "0.8.17", features = ["derive"] }
+schemars = { version = "0.9.0", features = ["derive"] }
 hyper = { version = "0.14.28", features = ["server"], default-features = false }
 tokio = { workspace = true }
 anyhow = { workspace = true }
