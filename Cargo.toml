@@ -161,7 +161,7 @@ tailcall-macros = { path = "tailcall-macros" }
 tailcall-tracker = { path = "tailcall-tracker", optional = true }
 tailcall-typedefs-common = { path = "./tailcall-typedefs-common" }
 tonic-types = "0.12.1"
-base64 = "0.22.1"
+base64 = "0.23.0"
 tailcall-hasher = { path = "tailcall-hasher" }
 serde_json_borrow = { version = "0.7.1", default-features = false }
 pluralizer = "0.5.0"
