@@ -2414,7 +2414,7 @@ dependencies = [
  "http-cache",
  "http-cache-semantics",
  "reqwest 0.11.27",
- "reqwest-middleware",
+ "reqwest-middleware 0.2.5",
  "serde",
  "task-local-extensions",
  "url",
@@ -2519,13 +2519,14 @@ dependencies = [
 
 [[package]]
 name = "hyper"
-version = "1.6.0"
+version = "1.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc2b571658e38e0c01b1fdca3bbbe93c00d3d71693ff2770043f8c29bc7d6f80"
+checksum = "d22053281f852e11534f5198498373cbb59295120a20771d90f7ed1897490a72"
 dependencies = [
+ "atomic-waker",
  "bytes",
  "futures-channel",
- "futures-util",
+ "futures-core",
  "http 1.4.0",
  "http-body 1.0.1",
  "httparse",
@@ -2575,7 +2576,7 @@ checksum = "08afdbb5c31130e3034af566421053ab03787c640246a446327f550d11bcb333"
 dependencies = [
  "futures-util",
  "http 1.4.0",
- "hyper 1.6.0",
+ "hyper 1.11.0",
  "hyper-util",
  "rustls 0.23.43",
  "rustls-pki-types",
@@ -2599,19 +2600,22 @@ dependencies = [
 
 [[package]]
 name = "hyper-util"
-version = "0.1.11"
+version = "0.1.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "497bbc33a26fdd4af9ed9c70d63f61cf56a938375fbb32df34db9b1cd6d643f2"
+checksum = "96547c2556ec9d12fb1578c4eaf448b04993e7fb79cbaad930a656880a6bdfa0"
 dependencies = [
+ "base64 0.22.1",
  "bytes",
  "futures-channel",
  "futures-util",
  "http 1.4.0",
  "http-body 1.0.1",
- "hyper 1.6.0",
+ "hyper 1.11.0",
+ "ipnet",
  "libc",
+ "percent-encoding",
  "pin-project-lite",
- "socket2 0.5.9",
+ "socket2 0.6.1",
  "tokio",
  "tower-service",
  "tracing",
@@ -2974,7 +2978,7 @@ dependencies = [
  "http 1.4.0",
  "http-body 1.0.1",
  "http-body-util",
- "hyper 1.6.0",
+ "hyper 1.11.0",
  "lambda_runtime",
  "mime",
  "percent-encoding",
@@ -2999,7 +3003,7 @@ dependencies = [
  "http 1.4.0",
  "http-body-util",
  "http-serde 2.1.1",
- "hyper 1.6.0",
+ "hyper 1.11.0",
  "lambda_runtime_api_client",
  "pin-project",
  "serde",
@@ -3023,7 +3027,7 @@ dependencies = [
  "http 1.4.0",
  "http-body 1.0.1",
  "http-body-util",
- "hyper 1.6.0",
+ "hyper 1.11.0",
  "hyper-util",
  "tower 0.5.3",
  "tracing",
@@ -4777,7 +4781,7 @@ dependencies = [
  "http 1.4.0",
  "http-body 1.0.1",
  "http-body-util",
- "hyper 1.6.0",
+ "hyper 1.11.0",
  "hyper-rustls 0.27.3",
  "hyper-util",
  "ipnet",
@@ -4809,6 +4813,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "reqwest"
+version = "0.13.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "219c5811de6525e5416c7d5d53bb656d3afdbc6c5af816e0802bcfa42dbdc1c3"
+dependencies = [
+ "base64 0.22.1",
+ "bytes",
+ "futures-core",
+ "http 1.4.0",
+ "http-body 1.0.1",
+ "http-body-util",
+ "hyper 1.11.0",
+ "hyper-util",
+ "js-sys",
+ "log",
+ "percent-encoding",
+ "pin-project-lite",
+ "sync_wrapper 1.0.2",
+ "tokio",
+ "tower 0.5.3",
+ "tower-http",
+ "tower-service",
+ "url",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+]
+
+[[package]]
 name = "reqwest-eventsource"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4837,6 +4870,20 @@ dependencies = [
  "serde",
  "task-local-extensions",
  "thiserror 1.0.69",
+]
+
+[[package]]
+name = "reqwest-middleware"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "07bc3f1384cffa4f274dad2d4ddd73aed32fed8f786d96c6be8aa4e5fd3c3b58"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "http 1.4.0",
+ "reqwest 0.13.4",
+ "thiserror 2.0.3",
+ "tower-service",
 ]
 
 [[package]]
@@ -5815,7 +5862,7 @@ dependencies = [
  "rand",
  "regex",
  "reqwest 0.11.27",
- "reqwest-middleware",
+ "reqwest-middleware 0.5.2",
  "resource",
  "rquickjs",
  "rustls 0.23.43",
@@ -6558,8 +6605,27 @@ dependencies = [
  "futures-util",
  "pin-project-lite",
  "sync_wrapper 1.0.2",
+ "tokio",
  "tower-layer",
  "tower-service",
+]
+
+[[package]]
+name = "tower-http"
+version = "0.6.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4cfcf7e2740e6fc6d4d688b4ef00650406bb94adf4731e43c096c3a19fe40840"
+dependencies = [
+ "bitflags 2.10.0",
+ "bytes",
+ "futures-util",
+ "http 1.4.0",
+ "http-body 1.0.1",
+ "pin-project-lite",
+ "tower 0.5.3",
+ "tower-layer",
+ "tower-service",
+ "url",
 ]
 
 [[package]]
